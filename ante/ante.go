@@ -6,6 +6,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ibcante "github.com/cosmos/ibc-go/v3/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -15,6 +18,8 @@ type HandlerOptions struct {
 
 	IBCkeeper            *ibckeeper.Keeper
 	BypassMinFeeMsgTypes []string
+	TxCounterStoreKey    sdk.StoreKey
+	WasmConfig           wasmTypes.WasmConfig
 }
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
@@ -35,6 +40,8 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(),
+		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
+		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		ante.NewRejectExtensionOptionsDecorator(),
 		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
 		ante.NewValidateBasicDecorator(),
