@@ -31,9 +31,9 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	ethermintclient "github.com/tharsis/ethermint/client"
-	"github.com/tharsis/ethermint/crypto/hd"
-	ethermintserver "github.com/tharsis/ethermint/server"
+	ethermintclient "github.com/evmos/ethermint/client"
+	"github.com/evmos/ethermint/crypto/hd"
+	ethermintserver "github.com/evmos/ethermint/server"
 
 	noname "github.com/c2xdev/noname/v1/app"
 	"github.com/c2xdev/noname/v1/app/params"

@@ -3,7 +3,7 @@ package noname
 import (
 	"github.com/c2xdev/noname/v1/app/params"
 
-	"github.com/tharsis/ethermint/encoding/codec"
+	"github.com/evmos/ethermint/encoding/codec"
 )
 
 // MakeEncodingConfig creates an EncodingConfig for testing
