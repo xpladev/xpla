@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -32,8 +31,13 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
+	ethermintclient "github.com/tharsis/ethermint/client"
+	"github.com/tharsis/ethermint/crypto/hd"
+	ethermintserver "github.com/tharsis/ethermint/server"
+
 	noname "github.com/c2xdev/noname/v1/app"
 	"github.com/c2xdev/noname/v1/app/params"
+	nonameclient "github.com/c2xdev/noname/v1/client"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
@@ -48,6 +52,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(noname.DefaultNodeHome).
+		WithKeyringOptions(hd.EthSecp256k1Option()).
 		WithViper("")
 
 	rootCmd := &cobra.Command{
@@ -99,7 +104,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg.Seal()
 
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(noname.ModuleBasics, noname.DefaultNodeHome),
+		ethermintclient.ValidateChainID(
+			genutilcli.InitCmd(noname.ModuleBasics, noname.DefaultNodeHome),
+		),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, noname.DefaultNodeHome),
 		genutilcli.GenTxCmd(noname.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, noname.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(noname.ModuleBasics),
@@ -113,14 +120,14 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	ac := appCreator{
 		encCfg: encodingConfig,
 	}
-	server.AddCommands(rootCmd, noname.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
+	ethermintserver.AddCommands(rootCmd, noname.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(noname.DefaultNodeHome),
+		nonameclient.KeyCommands(noname.DefaultNodeHome),
 	)
 }
 
