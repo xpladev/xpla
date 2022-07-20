@@ -102,7 +102,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
-		NewEvmMinGasFilter(opts.EvmKeeper), // filter out evm denom from min-gas-prices
+		//NewEvmMinGasFilter(opts.EvmKeeper), // filter out evm denom from min-gas-prices
 		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
 		NewVestingAccountDecorator(),
 		NewAuthzLimiterDecorator(
