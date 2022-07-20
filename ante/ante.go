@@ -8,15 +8,14 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	vesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	ibcante "github.com/cosmos/ibc-go/v3/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	evmante "github.com/evmos/ethermint/app/ante"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
-	evmante "github.com/tharsis/ethermint/app/ante"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 )
 
 // HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
@@ -102,13 +101,8 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
-		//NewEvmMinGasFilter(opts.EvmKeeper), // filter out evm denom from min-gas-prices
 		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
-		NewVestingAccountDecorator(),
-		NewAuthzLimiterDecorator(
-			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
-			sdk.MsgTypeURL(&vesting.MsgCreateVestingAccount{}),
-		),
+		evmante.NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
@@ -120,20 +114,25 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		authante.NewIncrementSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator
 		ibcante.NewAnteDecorator(opts.IBCKeeper),
+		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
 	}
 	return sdk.ChainAnteDecorators(anteDecorators...)
 }
 
 func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper), // outermost AnteDecorator. SetUpContext must be called first
-		evmante.NewEthMempoolFeeDecorator(opts.EvmKeeper),   // Check eth effective gas price against minimal-gas-prices
+		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                      // outermost AnteDecorator. SetUpContext must be called first
+		evmante.NewEthMempoolFeeDecorator(opts.EvmKeeper),                        // Check eth effective gas price against minimal-gas-prices
+		evmante.NewEthMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
 		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
-		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.BankKeeper, opts.EvmKeeper),
+		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
 		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
 		evmante.NewCanTransferDecorator(opts.EvmKeeper),
+		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
 		evmante.NewEthIncrementSenderSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator.
+		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
+		evmante.NewEthEmitEventDecorator(opts.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
 	)
 }
 
