@@ -100,6 +100,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
+	ethermintapp "github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/x/evm"
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
@@ -237,9 +238,10 @@ var (
 )
 
 var (
-	_               servertypes.Application = (*XplaApp)(nil)
-	evmTrace                                = ""     //ethermintconfig.DefaultEVMTracer,
-	evmMaxGasWanted uint64                  = 500000 //ethermintconfig.DefaultMaxTxGasWanted
+	_ servertypes.Application = (*XplaApp)(nil)
+	// TODO: after test, take this values from appOpts
+	evmTrace               = ""     //ethermintconfig.DefaultEVMTracer,
+	evmMaxGasWanted uint64 = 500000 //ethermintconfig.DefaultMaxTxGasWanted
 )
 
 // XplaApp extends an ABCI application, but with most of its parameters exported.
@@ -339,7 +341,7 @@ func NewXplaApp(
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
 		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, rewardtypes.StoreKey,
 	)
-	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &XplaApp{
@@ -602,7 +604,7 @@ func NewXplaApp(
 			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
+		auth.NewAppModule(appCodec, app.AccountKeeper, ethermintapp.RandomGenesisAccounts),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
@@ -663,8 +665,6 @@ func NewXplaApp(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		evmtypes.ModuleName,
-		feemarkettypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
@@ -683,6 +683,8 @@ func NewXplaApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
 	)
 
@@ -708,14 +710,17 @@ func NewXplaApp(
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
+		// evm module denomination is used by the fees module, in AnteHandle
+		evmtypes.ModuleName,
+		// feemarket module needs to be initialized before genutil module,
+		// gentx transactions use MinGasPriceDecorator.AnteHandle
+		feemarkettypes.ModuleName,
 		genutiltypes.ModuleName,
 		routertypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
-		evmtypes.ModuleName,
-		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
 	)
 
