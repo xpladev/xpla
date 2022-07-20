@@ -1,6 +1,9 @@
 package types
 
 const (
+	// Default Denom
+	DefaultDenom = "unom"
+
 	// CoinType
 	CoinType = 1017
 

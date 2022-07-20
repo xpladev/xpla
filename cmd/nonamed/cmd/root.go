@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -34,10 +34,12 @@ import (
 	ethermintclient "github.com/evmos/ethermint/client"
 	"github.com/evmos/ethermint/crypto/hd"
 	ethermintserver "github.com/evmos/ethermint/server"
+	evmcfg "github.com/evmos/ethermint/server/config"
 
 	noname "github.com/c2xdev/noname/v1/app"
 	"github.com/c2xdev/noname/v1/app/params"
 	nonameclient "github.com/c2xdev/noname/v1/client"
+	nonametypes "github.com/c2xdev/noname/v1/types"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
@@ -84,12 +86,17 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 }
 
 func initAppConfig() (string, interface{}) {
-	srvCfg := serverconfig.DefaultConfig()
+	customAppTemplate, customAppConfig := evmcfg.AppConfig(nonametypes.DefaultDenom)
+	srvCfg, ok := customAppConfig.(evmcfg.Config)
+	if !ok {
+		panic(fmt.Errorf("unknown app config type %T", customAppConfig))
+	}
+
 	srvCfg.StateSync.SnapshotInterval = 1000
 	srvCfg.StateSync.SnapshotKeepRecent = 10
 
-	return params.CustomConfigTemplate, params.CustomAppConfig{
-		Config: *srvCfg,
+	return customAppTemplate + params.CustomConfigTemplate, params.CustomAppConfig{
+		Config: srvCfg,
 		BypassMinFeeMsgTypes: []string{
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),

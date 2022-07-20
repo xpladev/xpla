@@ -98,6 +98,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
+	ethermintapp "github.com/evmos/ethermint/app"
 	evmante "github.com/evmos/ethermint/app/ante"
 	"github.com/evmos/ethermint/x/evm"
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
@@ -234,6 +235,7 @@ var (
 
 var (
 	_               servertypes.Application = (*NonameApp)(nil)
+	// TODO: after test, take this values from appOpts
 	evmTrace                                = ""     //ethermintconfig.DefaultEVMTracer,
 	evmMaxGasWanted uint64                  = 500000 //ethermintconfig.DefaultMaxTxGasWanted
 )
@@ -332,7 +334,7 @@ func NewNonameApp(
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
 		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
 	)
-	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &NonameApp{
@@ -513,12 +515,6 @@ func NewNonameApp(
 		keys[feemarkettypes.StoreKey],
 		tkeys[feemarkettypes.TransientKey],
 	)
-	/*app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		appCodec,
-		keys[feemarkettypes.StoreKey],
-		app.GetSubspace(feemarkettypes.ModuleName),
-	)*/
-
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec,
 		keys[evmtypes.StoreKey],
@@ -589,7 +585,7 @@ func NewNonameApp(
 			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
+		auth.NewAppModule(appCodec, app.AccountKeeper, ethermintapp.RandomGenesisAccounts),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
@@ -648,8 +644,6 @@ func NewNonameApp(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		evmtypes.ModuleName,
-		feemarkettypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
@@ -668,6 +662,8 @@ func NewNonameApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -678,6 +674,7 @@ func NewNonameApp(
 	// can do so safely.
 	app.mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -691,15 +688,17 @@ func NewNonameApp(
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
-		authtypes.ModuleName,
+		// evm module denomination is used by the fees module, in AnteHandle
+		evmtypes.ModuleName,
+		// feemarket module needs to be initialized before genutil module,
+		// gentx transactions use MinGasPriceDecorator.AnteHandle
+		feemarkettypes.ModuleName,
 		genutiltypes.ModuleName,
 		routertypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
-		evmtypes.ModuleName,
-		feemarkettypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
