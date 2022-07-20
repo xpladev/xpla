@@ -35,6 +35,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	evmcfg "github.com/evmos/ethermint/server/config"
 
 	"github.com/c2xdev/xpla/v1/app/params"
 )
@@ -126,7 +127,7 @@ func InitTestnet(
 	valPubKeys := make([]cryptotypes.PubKey, numValidators)
 
 	simappConfig := params.CustomAppConfig{
-		Config: *srvconfig.DefaultConfig(),
+		Config: *evmcfg.DefaultConfig(),
 	}
 	simappConfig.MinGasPrices = minGasPrices
 	simappConfig.API.Enable = true
