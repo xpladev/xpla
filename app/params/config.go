@@ -1,7 +1,7 @@
 package params
 
 import (
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	evmconfig "github.com/evmos/ethermint/server/config"
 )
 
 var (
@@ -12,7 +12,7 @@ var (
 
 	// CustomConfigTemplate defines Noname's custom application configuration TOML
 	// template. It extends the core SDK template.
-	CustomConfigTemplate = serverconfig.DefaultConfigTemplate + `
+	CustomConfigTemplate = `
 ###############################################################################
 ###                        Custom Noname Configuration                        ###
 ###############################################################################
@@ -27,7 +27,7 @@ bypass-min-fee-msg-types = [{{ range .BypassMinFeeMsgTypes }}{{ printf "%q, " . 
 
 // CustomAppConfig defines Noname's custom application configuration.
 type CustomAppConfig struct {
-	serverconfig.Config
+	evmconfig.Config
 
 	// BypassMinFeeMsgTypes defines custom message types the operator may set that
 	// will bypass minimum fee checks during CheckTx.
