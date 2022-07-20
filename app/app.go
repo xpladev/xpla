@@ -98,15 +98,14 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	evmante "github.com/tharsis/ethermint/app/ante"
-	//ethermintconfig "github.com/tharsis/ethermint/server/config"
-	"github.com/tharsis/ethermint/x/evm"
-	evmrest "github.com/tharsis/ethermint/x/evm/client/rest"
-	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
-	"github.com/tharsis/ethermint/x/feemarket"
-	feemarketkeeper "github.com/tharsis/ethermint/x/feemarket/keeper"
-	feemarkettypes "github.com/tharsis/ethermint/x/feemarket/types"
+	evmante "github.com/evmos/ethermint/app/ante"
+	"github.com/evmos/ethermint/x/evm"
+	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/ethermint/x/feemarket"
+	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/strangelove-ventures/packet-forward-middleware/v2/router"
 	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/v2/router/keeper"
@@ -508,17 +507,17 @@ func NewNonameApp(
 	)
 
 	// Create Ethermint keepers
-	/*app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
+	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec,
 		app.GetSubspace(feemarkettypes.ModuleName),
 		keys[feemarkettypes.StoreKey],
 		tkeys[feemarkettypes.TransientKey],
-	)*/
-	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
+	)
+	/*app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec,
 		keys[feemarkettypes.StoreKey],
 		app.GetSubspace(feemarkettypes.ModuleName),
-	)
+	)*/
 
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec,
