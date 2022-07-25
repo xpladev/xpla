@@ -1,4 +1,4 @@
-module github.com/c2xdev/noname/v1
+module github.com/c2xdev/xpla/v1
 
 go 1.17
 

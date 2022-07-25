@@ -10,11 +10,11 @@ var (
 	// nolint: gosec
 	BypassMinFeeMsgTypesKey = "bypass-min-fee-msg-types"
 
-	// CustomConfigTemplate defines Noname's custom application configuration TOML
+	// CustomConfigTemplate defines Xpla's custom application configuration TOML
 	// template. It extends the core SDK template.
 	CustomConfigTemplate = serverconfig.DefaultConfigTemplate + `
 ###############################################################################
-###                        Custom Noname Configuration                        ###
+###                        Custom Xpla Configuration                        ###
 ###############################################################################
 # bypass-min-fee-msg-types defines custom message types the operator may set that
 # will bypass minimum fee checks during CheckTx.
@@ -25,7 +25,7 @@ bypass-min-fee-msg-types = [{{ range .BypassMinFeeMsgTypes }}{{ printf "%q, " . 
 `
 )
 
-// CustomAppConfig defines Noname's custom application configuration.
+// CustomAppConfig defines Xpla's custom application configuration.
 type CustomAppConfig struct {
 	serverconfig.Config
 

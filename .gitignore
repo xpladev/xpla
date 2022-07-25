@@ -19,8 +19,8 @@ docs/tutorial
 dist
 tools-stamp
 docs/node_modules
-nonamed
-!nonamed/
+xplad
+!xplad/
 
 # Testing
 coverage.txt

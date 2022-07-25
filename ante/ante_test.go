@@ -16,14 +16,14 @@ import (
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	nonameapp "github.com/c2xdev/noname/v1/app"
-	nonamehelpers "github.com/c2xdev/noname/v1/app/helpers"
+	xplaapp "github.com/c2xdev/xpla/v1/app"
+	xplahelpers "github.com/c2xdev/xpla/v1/app/helpers"
 )
 
 type IntegrationTestSuite struct {
 	suite.Suite
 
-	app         *nonameapp.NonameApp
+	app         *xplaapp.XplaApp
 	anteHandler sdk.AnteHandler
 	ctx         sdk.Context
 	clientCtx   client.Context
@@ -35,7 +35,7 @@ func TestIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *IntegrationTestSuite) SetupTest() {
-	app := nonamehelpers.Setup(s.T(), false, 1)
+	app := xplahelpers.Setup(s.T(), false, 1)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{
 		ChainID: fmt.Sprintf("test-chain-%s", tmrand.Str(4)),
 		Height:  1,

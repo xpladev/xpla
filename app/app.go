@@ -1,4 +1,4 @@
-package noname
+package xpla
 
 import (
 	"fmt"
@@ -108,8 +108,8 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/prometheus/client_golang/prometheus"
 
-	nonameante "github.com/c2xdev/noname/v1/ante"
-	nonameappparams "github.com/c2xdev/noname/v1/app/params"
+	xplaante "github.com/c2xdev/xpla/v1/ante"
+	xplaappparams "github.com/c2xdev/xpla/v1/app/params"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -222,13 +222,13 @@ var (
 )
 
 var (
-	_ servertypes.Application = (*NonameApp)(nil)
+	_ servertypes.Application = (*XplaApp)(nil)
 )
 
-// NonameApp extends an ABCI application, but with most of its parameters exported.
+// XplaApp extends an ABCI application, but with most of its parameters exported.
 // They are exported for convenience in creating helper functions, as object
 // capabilities aren't needed for testing.
-type NonameApp struct { // nolint: golint
+type XplaApp struct { // nolint: golint
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
@@ -282,11 +282,11 @@ func init() {
 		stdlog.Println("Failed to get home dir %2", err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, ".noname")
+	DefaultNodeHome = filepath.Join(userHomeDir, ".xpla")
 }
 
-// NewNonameApp returns a reference to an initialized Noname.
-func NewNonameApp(
+// NewXplaApp returns a reference to an initialized Xpla.
+func NewXplaApp(
 	logger log.Logger,
 	db dbm.DB,
 	traceStore io.Writer,
@@ -294,10 +294,10 @@ func NewNonameApp(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig nonameappparams.EncodingConfig,
+	encodingConfig xplaappparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) *NonameApp {
+) *XplaApp {
 
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
@@ -319,7 +319,7 @@ func NewNonameApp(
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
-	app := &NonameApp{
+	app := &XplaApp{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
@@ -664,8 +664,8 @@ func NewNonameApp(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	anteHandler, err := nonameante.NewAnteHandler(
-		nonameante.HandlerOptions{
+	anteHandler, err := xplaante.NewAnteHandler(
+		xplaante.HandlerOptions{
 			HandlerOptions: ante.HandlerOptions{
 				AccountKeeper:   app.AccountKeeper,
 				BankKeeper:      app.BankKeeper,
@@ -674,7 +674,7 @@ func NewNonameApp(
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
 			IBCkeeper:            app.IBCKeeper,
-			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(nonameappparams.BypassMinFeeMsgTypesKey)),
+			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
 			TxCounterStoreKey:    keys[wasm.StoreKey],
 			WasmConfig:           wasmConfig,
 		},
@@ -711,20 +711,20 @@ func NewNonameApp(
 }
 
 // Name returns the name of the App
-func (app *NonameApp) Name() string { return app.BaseApp.Name() }
+func (app *XplaApp) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
-func (app *NonameApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+func (app *XplaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	return app.mm.BeginBlock(ctx, req)
 }
 
 // EndBlocker application updates every end block
-func (app *NonameApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
+func (app *XplaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
 	return app.mm.EndBlock(ctx, req)
 }
 
 // InitChainer application update at chain initialization
-func (app *NonameApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+func (app *XplaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -736,12 +736,12 @@ func (app *NonameApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) ab
 }
 
 // LoadHeight loads a particular height
-func (app *NonameApp) LoadHeight(height int64) error {
+func (app *XplaApp) LoadHeight(height int64) error {
 	return app.LoadVersion(height)
 }
 
 // ModuleAccountAddrs returns all the app's module account addresses.
-func (app *NonameApp) ModuleAccountAddrs() map[string]bool {
+func (app *XplaApp) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
@@ -750,59 +750,59 @@ func (app *NonameApp) ModuleAccountAddrs() map[string]bool {
 	return modAccAddrs
 }
 
-// LegacyAmino returns NonameApp's amino codec.
+// LegacyAmino returns XplaApp's amino codec.
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
-func (app *NonameApp) LegacyAmino() *codec.LegacyAmino {
+func (app *XplaApp) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
 }
 
-// AppCodec returns Noname's app codec.
+// AppCodec returns Xpla's app codec.
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
-func (app *NonameApp) AppCodec() codec.Codec {
+func (app *XplaApp) AppCodec() codec.Codec {
 	return app.appCodec
 }
 
-// InterfaceRegistry returns Noname's InterfaceRegistry
-func (app *NonameApp) InterfaceRegistry() types.InterfaceRegistry {
+// InterfaceRegistry returns Xpla's InterfaceRegistry
+func (app *XplaApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
 }
 
 // GetKey returns the KVStoreKey for the provided store key.
 //
 // NOTE: This is solely to be used for testing purposes.
-func (app *NonameApp) GetKey(storeKey string) *sdk.KVStoreKey {
+func (app *XplaApp) GetKey(storeKey string) *sdk.KVStoreKey {
 	return app.keys[storeKey]
 }
 
 // GetTKey returns the TransientStoreKey for the provided store key.
 //
 // NOTE: This is solely to be used for testing purposes.
-func (app *NonameApp) GetTKey(storeKey string) *sdk.TransientStoreKey {
+func (app *XplaApp) GetTKey(storeKey string) *sdk.TransientStoreKey {
 	return app.tkeys[storeKey]
 }
 
 // GetMemKey returns the MemStoreKey for the provided mem key.
 //
 // NOTE: This is solely used for testing purposes.
-func (app *NonameApp) GetMemKey(storeKey string) *sdk.MemoryStoreKey {
+func (app *XplaApp) GetMemKey(storeKey string) *sdk.MemoryStoreKey {
 	return app.memKeys[storeKey]
 }
 
 // GetSubspace returns a param subspace for a given module name.
 //
 // NOTE: This is solely to be used for testing purposes.
-func (app *NonameApp) GetSubspace(moduleName string) paramstypes.Subspace {
+func (app *XplaApp) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
 // API server.
-func (app *NonameApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
+func (app *XplaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
 	// Register legacy tx routes.
@@ -823,12 +823,12 @@ func (app *NonameApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.API
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
-func (app *NonameApp) RegisterTxService(clientCtx client.Context) {
+func (app *XplaApp) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
-func (app *NonameApp) RegisterTendermintService(clientCtx client.Context) {
+func (app *XplaApp) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
 }
 

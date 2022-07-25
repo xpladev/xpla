@@ -12,8 +12,8 @@ ifeq (,$(VERSION))
   endif
 endif
 
-NAME := noname
-APPNAME := nonamed
+NAME := xpla
+APPNAME := xplad
 LEDGER_ENABLED ?= true
 TM_VERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::') # grab everything after the space in "github.com/tendermint/tendermint v0.34.7"
 
@@ -83,7 +83,7 @@ endif
 all: install
 
 install: go.sum
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/nonamed
+	go install -mod=readonly $(BUILD_FLAGS) ./cmd/xplad
 
 go.sum: go.mod
 	@go mod verify

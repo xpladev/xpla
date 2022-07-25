@@ -12,16 +12,16 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	nonameapp "github.com/c2xdev/noname/v1/app"
+	xplaapp "github.com/c2xdev/xpla/v1/app"
 )
 
 // SimAppChainID hardcoded chainID for simulation
 const (
-	SimAppChainID = "noname-app"
+	SimAppChainID = "xpla-app"
 )
 
 // DefaultConsensusParams defines the default Tendermint consensus params used
-// in NonameApp testing.
+// in XplaApp testing.
 var DefaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
 		MaxBytes: 200000,
@@ -43,7 +43,7 @@ type EmptyAppOptions struct{}
 
 func (EmptyAppOptions) Get(o string) interface{} { return nil }
 
-func Setup(t *testing.T, isCheckTx bool, invCheckPeriod uint) *nonameapp.NonameApp {
+func Setup(t *testing.T, isCheckTx bool, invCheckPeriod uint) *xplaapp.XplaApp {
 	t.Helper()
 
 	app, genesisState := setup(!isCheckTx, invCheckPeriod)
@@ -65,23 +65,23 @@ func Setup(t *testing.T, isCheckTx bool, invCheckPeriod uint) *nonameapp.NonameA
 	return app
 }
 
-func setup(withGenesis bool, invCheckPeriod uint) (*nonameapp.NonameApp, nonameapp.GenesisState) {
+func setup(withGenesis bool, invCheckPeriod uint) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 	db := dbm.NewMemDB()
-	encCdc := nonameapp.MakeEncodingConfig()
-	app := nonameapp.NewNonameApp(
+	encCdc := xplaapp.MakeEncodingConfig()
+	app := xplaapp.NewXplaApp(
 		log.NewNopLogger(),
 		db,
 		nil,
 		true,
 		map[int64]bool{},
-		nonameapp.DefaultNodeHome,
+		xplaapp.DefaultNodeHome,
 		invCheckPeriod,
 		encCdc,
 		EmptyAppOptions{},
 	)
 	if withGenesis {
-		return app, nonameapp.NewDefaultGenesisState()
+		return app, xplaapp.NewDefaultGenesisState()
 	}
 
-	return app, nonameapp.GenesisState{}
+	return app, xplaapp.GenesisState{}
 }

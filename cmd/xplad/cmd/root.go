@@ -32,14 +32,14 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	noname "github.com/c2xdev/noname/v1/app"
-	"github.com/c2xdev/noname/v1/app/params"
+	xpla "github.com/c2xdev/xpla/v1/app"
+	"github.com/c2xdev/xpla/v1/app/params"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
-	encodingConfig := noname.MakeEncodingConfig()
+	encodingConfig := xpla.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
@@ -47,12 +47,12 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
-		WithHomeDir(noname.DefaultNodeHome).
+		WithHomeDir(xpla.DefaultNodeHome).
 		WithViper("")
 
 	rootCmd := &cobra.Command{
-		Use:   "nonamed",
-		Short: "noname App",
+		Use:   "xplad",
+		Short: "xpla App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
@@ -68,8 +68,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
-			customTemplate, customNonameConfig := initAppConfig()
-			return server.InterceptConfigsPreRunHandler(cmd, customTemplate, customNonameConfig)
+			customTemplate, customXplaConfig := initAppConfig()
+			return server.InterceptConfigsPreRunHandler(cmd, customTemplate, customXplaConfig)
 		},
 	}
 
@@ -99,13 +99,13 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg.Seal()
 
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(noname.ModuleBasics, noname.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, noname.DefaultNodeHome),
-		genutilcli.GenTxCmd(noname.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, noname.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(noname.ModuleBasics),
-		AddGenesisAccountCmd(noname.DefaultNodeHome),
+		genutilcli.InitCmd(xpla.ModuleBasics, xpla.DefaultNodeHome),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome),
+		genutilcli.GenTxCmd(xpla.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome),
+		genutilcli.ValidateGenesisCmd(xpla.ModuleBasics),
+		AddGenesisAccountCmd(xpla.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		testnetCmd(noname.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		testnetCmd(xpla.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
 	)
@@ -113,14 +113,14 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	ac := appCreator{
 		encCfg: encodingConfig,
 	}
-	server.AddCommands(rootCmd, noname.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
+	server.AddCommands(rootCmd, xpla.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(noname.DefaultNodeHome),
+		keys.Commands(xpla.DefaultNodeHome),
 	)
 }
 
@@ -146,7 +146,7 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 	)
 
-	noname.ModuleBasics.AddQueryCommands(cmd)
+	xpla.ModuleBasics.AddQueryCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -173,7 +173,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 	)
 
-	noname.ModuleBasics.AddTxCommands(cmd)
+	xpla.ModuleBasics.AddTxCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -216,7 +216,7 @@ func (ac appCreator) newApp(
 		panic(err)
 	}
 
-	return noname.NewNonameApp(
+	return xpla.NewXplaApp(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
@@ -256,7 +256,7 @@ func (ac appCreator) appExport(
 		loadLatest = true
 	}
 
-	nonameApp := noname.NewNonameApp(
+	xplaApp := xpla.NewXplaApp(
 		logger,
 		db,
 		traceStore,
@@ -269,10 +269,10 @@ func (ac appCreator) appExport(
 	)
 
 	if height != -1 {
-		if err := nonameApp.LoadHeight(height); err != nil {
+		if err := xplaApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	}
 
-	return nonameApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+	return xplaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
 }
