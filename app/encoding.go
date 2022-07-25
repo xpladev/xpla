@@ -1,7 +1,7 @@
-package noname
+package xpla
 
 import (
-	"github.com/c2xdev/noname/v1/app/params"
+	"github.com/c2xdev/xpla/v1/app/params"
 
 	"github.com/cosmos/cosmos-sdk/std"
 )
