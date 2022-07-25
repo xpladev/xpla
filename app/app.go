@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	stdlog "log"
-	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -303,8 +302,7 @@ func init() {
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, ".xpla")
-	// apply custom power reduction for 'a' base denom unit 10^18
-	sdk.DefaultPowerReduction = sdk.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
+	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
 }
 
 // NewXplaApp returns a reference to an initialized Xpla.
