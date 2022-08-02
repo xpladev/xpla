@@ -2,8 +2,8 @@ package types
 
 const (
 	// CoinType
-	CoinType = 1017
+	CoinType = 60
 
 	// FullFundraiserPath is the parts of the BIP44 HD path
-	FullFundraiserPath = "m/44'/1017'/0'/0/0"
+	FullFundraiserPath = "m/44'/60'/0'/0/0"
 )
