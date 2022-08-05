@@ -100,7 +100,6 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	ethermintapp "github.com/evmos/ethermint/app"
-	evmante "github.com/evmos/ethermint/app/ante"
 	etherminttypes "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm"
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
@@ -724,7 +723,7 @@ func NewXplaApp(
 			FeeMarketKeeper:      app.FeeMarketKeeper,
 			FeegrantKeeper:       app.FeeGrantKeeper,
 			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
-			SigGasConsumer:       evmante.DefaultSigVerificationGasConsumer,
+			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
 			IBCKeeper:            app.IBCKeeper,
 			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
 			TxCounterStoreKey:    keys[wasm.StoreKey],
