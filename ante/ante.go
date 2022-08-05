@@ -92,7 +92,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	var sigGasConsumer = opts.SigGasConsumer
 	if sigGasConsumer == nil {
-		sigGasConsumer = authante.DefaultSigVerificationGasConsumer
+		sigGasConsumer = SigVerificationGasConsumer
 	}
 
 	anteDecorators := []sdk.AnteDecorator{
