@@ -16,8 +16,8 @@ import (
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	xplaapp "github.com/c2xdev/xpla/v1/app"
-	xplahelpers "github.com/c2xdev/xpla/v1/app/helpers"
+	xplaapp "github.com/c2xdev/xpla/app"
+	xplahelpers "github.com/c2xdev/xpla/app/helpers"
 )
 
 type IntegrationTestSuite struct {

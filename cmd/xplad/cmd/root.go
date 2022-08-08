@@ -32,8 +32,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	xpla "github.com/c2xdev/xpla/v1/app"
-	"github.com/c2xdev/xpla/v1/app/params"
+	xpla "github.com/c2xdev/xpla/app"
+	"github.com/c2xdev/xpla/app/params"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the

@@ -6,8 +6,8 @@ import (
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/stretchr/testify/require"
 
-	app "github.com/c2xdev/xpla/v1/app"
-	"github.com/c2xdev/xpla/v1/cmd/xplad/cmd"
+	app "github.com/c2xdev/xpla/app"
+	"github.com/c2xdev/xpla/cmd/xplad/cmd"
 )
 
 func TestRootCmdConfig(t *testing.T) {

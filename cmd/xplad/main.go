@@ -6,9 +6,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
-	app "github.com/c2xdev/xpla/v1/app"
-	"github.com/c2xdev/xpla/v1/cmd/xplad/cmd"
-	"github.com/c2xdev/xpla/v1/types"
+	app "github.com/c2xdev/xpla/app"
+	"github.com/c2xdev/xpla/cmd/xplad/cmd"
+	"github.com/c2xdev/xpla/types"
 )
 
 func main() {
