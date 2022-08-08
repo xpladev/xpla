@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/viper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -48,7 +49,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(xpla.DefaultNodeHome).
-		WithViper("")
+		WithViper("XPLA")
 
 	rootCmd := &cobra.Command{
 		Use:   "xplad",
@@ -68,8 +69,10 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
-			customTemplate, customXplaConfig := initAppConfig()
-			return server.InterceptConfigsPreRunHandler(cmd, customTemplate, customXplaConfig)
+			viper.Set(tmcli.HomeFlag, initClientCtx.HomeDir)
+
+			xplaTemplate, xplaAppConfig := initAppConfig()
+			return server.InterceptConfigsPreRunHandler(cmd, xplaTemplate, xplaAppConfig)
 		},
 	}
 
