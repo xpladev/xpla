@@ -23,7 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -634,6 +633,7 @@ func NewXplaApp(
 	// can do so safely.
 	app.mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -647,7 +647,6 @@ func NewXplaApp(
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
-		authtypes.ModuleName,
 		genutiltypes.ModuleName,
 		routertypes.ModuleName,
 		paramstypes.ModuleName,
@@ -669,14 +668,12 @@ func NewXplaApp(
 
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			HandlerOptions: ante.HandlerOptions{
-				AccountKeeper:   app.AccountKeeper,
-				BankKeeper:      app.BankKeeper,
-				FeegrantKeeper:  app.FeeGrantKeeper,
-				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
-			},
-			IBCkeeper:            app.IBCKeeper,
+			AccountKeeper:        app.AccountKeeper,
+			BankKeeper:           app.BankKeeper,
+			FeegrantKeeper:       app.FeeGrantKeeper,
+			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
+			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
+			IBCKeeper:            app.IBCKeeper,
 			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
 			TxCounterStoreKey:    keys[wasm.StoreKey],
 			WasmConfig:           wasmConfig,
