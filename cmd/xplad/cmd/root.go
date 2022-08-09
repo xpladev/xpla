@@ -6,13 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/viper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -29,12 +27,17 @@ import (
 	ibcchanneltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
+	ethermintclient "github.com/evmos/ethermint/client"
+	"github.com/evmos/ethermint/crypto/hd"
+
 	xpla "github.com/c2xdev/xpla/app"
 	"github.com/c2xdev/xpla/app/params"
+	xplaclient "github.com/c2xdev/xpla/client"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
@@ -49,6 +52,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(xpla.DefaultNodeHome).
+		WithKeyringOptions(hd.EthSecp256k1Option()).
 		WithViper("XPLA")
 
 	rootCmd := &cobra.Command{
@@ -102,7 +106,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg.Seal()
 
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(xpla.ModuleBasics, xpla.DefaultNodeHome),
+		ethermintclient.ValidateChainID(
+			genutilcli.InitCmd(xpla.ModuleBasics, xpla.DefaultNodeHome),
+		),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome),
 		genutilcli.GenTxCmd(xpla.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(xpla.ModuleBasics),
@@ -123,7 +129,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(xpla.DefaultNodeHome),
+		xplaclient.KeyCommands(xpla.DefaultNodeHome),
 	)
 }
 
