@@ -35,9 +35,9 @@ import (
 	ethermintclient "github.com/evmos/ethermint/client"
 	"github.com/evmos/ethermint/crypto/hd"
 
-	xpla "github.com/c2xdev/xpla/app"
-	"github.com/c2xdev/xpla/app/params"
-	xplaclient "github.com/c2xdev/xpla/client"
+	xpla "github.com/xpladev/xpla/app"
+	"github.com/xpladev/xpla/app/params"
+	xplaclient "github.com/xpladev/xpla/client"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the

@@ -12,7 +12,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	xplaapp "github.com/c2xdev/xpla/app"
+	xplaapp "github.com/xpladev/xpla/app"
 )
 
 // SimAppChainID hardcoded chainID for simulation

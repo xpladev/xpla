@@ -1,4 +1,4 @@
-module github.com/c2xdev/xpla
+module github.com/xpladev/xpla
 
 go 1.18
 

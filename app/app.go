@@ -108,8 +108,8 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/prometheus/client_golang/prometheus"
 
-	xplaante "github.com/c2xdev/xpla/ante"
-	xplaappparams "github.com/c2xdev/xpla/app/params"
+	xplaante "github.com/xpladev/xpla/ante"
+	xplaappparams "github.com/xpladev/xpla/app/params"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
