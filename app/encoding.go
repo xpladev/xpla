@@ -1,7 +1,7 @@
 package xpla
 
 import (
-	"github.com/c2xdev/xpla/app/params"
+	"github.com/xpladev/xpla/app/params"
 
 	"github.com/evmos/ethermint/encoding/codec"
 )

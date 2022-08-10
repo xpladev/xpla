@@ -36,7 +36,7 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	"github.com/c2xdev/xpla/app/params"
+	"github.com/xpladev/xpla/app/params"
 )
 
 var (
