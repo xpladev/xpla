@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
-	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -37,6 +36,8 @@ import (
 
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"
+	
+	"github.com/evmos/ethermint/client/debug"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
