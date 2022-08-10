@@ -37,7 +37,6 @@ import (
 
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"
-	xplaclient "github.com/xpladev/xpla/client"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
@@ -129,7 +128,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		xplaclient.KeyCommands(xpla.DefaultNodeHome),
+		ethermintclient.KeyCommands(xpla.DefaultNodeHome),
 	)
 }
 
