@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/CosmWasm/wasmd v0.28.0
 	github.com/cosmos/cosmos-sdk v0.45.5
-	github.com/cosmos/ibc-go/v3 v3.1.0
+	github.com/cosmos/ibc-go/v3 v3.1.1
 	github.com/ethereum/go-ethereum v1.10.16
 	github.com/evmos/ethermint v0.18.0
 	github.com/gorilla/mux v1.8.0
