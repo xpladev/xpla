@@ -19,7 +19,7 @@ func (k Keeper) GetReserveAccount(ctx sdk.Context) (reserveAccount string) {
 	return reserveAccount
 }
 
-func (k Keeper) GetValidators(ctx sdk.Context) (validators []string) {
-	k.paramSpace.Get(ctx, types.ParamStoreKeyValidators, &validators)
-	return validators
+func (k Keeper) GetRewardDistributeAccount(ctx sdk.Context) (rewardDistributeAccount string) {
+	k.paramSpace.Get(ctx, types.ParamStoreKeyRewardDistributeAccount, &rewardDistributeAccount)
+	return rewardDistributeAccount
 }

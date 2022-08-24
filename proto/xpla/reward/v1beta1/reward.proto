@@ -25,5 +25,5 @@ message Params {
         (gogoproto.nullable)   = false
     ];
     string reserve_account = 4;
-    repeated string validators = 5;
+    string reward_distribute_account = 5;
 }

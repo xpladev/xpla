@@ -10,12 +10,11 @@ import (
 )
 
 const (
-	DefaultReserveAccount = ""
+	DefaultReserveAccount          = ""
+	DefaultRewardDistributeAccount = ""
 )
 
 var (
-	DelegateProxyAccount = sdk.AccAddress(make([]byte, 20))
-
 	DefaultRateFeePool       = sdk.NewDecWithPrec(20, 2) // 20%
 	DefaultRateCommunityPool = sdk.NewDecWithPrec(80, 2) // 80%
 	DefaultRateReserve       = sdk.NewDecWithPrec(0, 2)  // 0%
@@ -23,11 +22,11 @@ var (
 
 // Parameter keys
 var (
-	ParamStoreKeyFeePoolRate       = []byte("feepoolrate")
-	ParamStoreKeyCommunityPoolRate = []byte("communitypoolrate")
-	ParamStoreKeyReserveRate       = []byte("reserverate")
-	ParamStoreKeyReserveAccount    = []byte("reserveaccount")
-	ParamStoreKeyValidators        = []byte("validators")
+	ParamStoreKeyFeePoolRate             = []byte("feepoolrate")
+	ParamStoreKeyCommunityPoolRate       = []byte("communitypoolrate")
+	ParamStoreKeyReserveRate             = []byte("reserverate")
+	ParamStoreKeyReserveAccount          = []byte("reserveaccount")
+	ParamStoreKeyRewardDistributeAccount = []byte("rewarddistributeaccount")
 )
 
 // ParamKeyTable - Key declaration for parameters
@@ -38,11 +37,11 @@ func ParamKeyTable() paramtypes.KeyTable {
 // DefaultParams returns default reward parameters
 func DefaultParams() Params {
 	return Params{
-		FeePoolRate:       DefaultRateFeePool,
-		CommunityPoolRate: DefaultRateCommunityPool,
-		ReserveRate:       DefaultRateReserve,
-		ReserveAccount:    DefaultReserveAccount,
-		Validators:        []string{},
+		FeePoolRate:             DefaultRateFeePool,
+		CommunityPoolRate:       DefaultRateCommunityPool,
+		ReserveRate:             DefaultRateReserve,
+		ReserveAccount:          DefaultReserveAccount,
+		RewardDistributeAccount: DefaultRewardDistributeAccount,
 	}
 }
 
@@ -57,8 +56,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyFeePoolRate, &p.FeePoolRate, validateFeePoolRate),
 		paramtypes.NewParamSetPair(ParamStoreKeyCommunityPoolRate, &p.CommunityPoolRate, validateCommunityPoolRate),
 		paramtypes.NewParamSetPair(ParamStoreKeyReserveRate, &p.ReserveRate, validateReserveRate),
-		paramtypes.NewParamSetPair(ParamStoreKeyReserveAccount, &p.ReserveAccount, validateReserveAccount),
-		paramtypes.NewParamSetPair(ParamStoreKeyValidators, &p.Validators, validateValidators),
+		paramtypes.NewParamSetPair(ParamStoreKeyReserveAccount, &p.ReserveAccount, validateAccount),
+		paramtypes.NewParamSetPair(ParamStoreKeyRewardDistributeAccount, &p.RewardDistributeAccount, validateAccount),
 	}
 }
 
@@ -156,7 +155,7 @@ func validateReserveRate(i interface{}) error {
 	return nil
 }
 
-func validateReserveAccount(i interface{}) error {
+func validateAccount(i interface{}) error {
 	v, ok := i.(string)
 	if !ok {
 		return fmt.Errorf("invalid reserve account parameter type: %T", i)
@@ -166,22 +165,6 @@ func validateReserveAccount(i interface{}) error {
 		_, err := sdk.AccAddressFromBech32(v)
 		if err != nil {
 			return fmt.Errorf("invalid reserve account: %s", err.Error())
-		}
-	}
-
-	return nil
-}
-
-func validateValidators(i interface{}) error {
-	v, ok := i.([]string)
-	if !ok {
-		return fmt.Errorf("invalid validators parameter type: %T", i)
-	}
-
-	for _, addr := range v {
-		_, err := sdk.ValAddressFromBech32(addr)
-		if err != nil {
-			return fmt.Errorf("invalid validator address: %s (%s)", addr, err.Error())
 		}
 	}
 

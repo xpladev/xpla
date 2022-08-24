@@ -33,7 +33,7 @@ func Test_validateAuxFuncs(t *testing.T) {
 	}
 }
 
-func Test_validateReserveAccountFuncs(t *testing.T) {
+func Test_validateAccountFuncs(t *testing.T) {
 	type args struct {
 		i interface{}
 	}
@@ -50,29 +50,7 @@ func Test_validateReserveAccountFuncs(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.wantErr, validateReserveAccount(tt.args.i) != nil)
-		})
-	}
-}
-
-func Test_validateValidatorsFuncs(t *testing.T) {
-	type args struct {
-		i interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{"wrong type", args{10.5}, true},
-		{"empty string", args{[]string{}}, false},
-		{"invalid bech", args{[]string{"a"}}, true},
-		{"valid", args{[]string{"cosmosvaloper1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkh52tw"}}, false},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.wantErr, validateValidators(tt.args.i) != nil)
+			require.Equal(t, tt.wantErr, validateAccount(tt.args.i) != nil)
 		})
 	}
 }

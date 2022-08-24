@@ -223,7 +223,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		wasm.ModuleName:                {authtypes.Burner},
-		rewardtypes.ModuleName:         {authtypes.Staking},
+		rewardtypes.ModuleName:         nil,
 	}
 )
 
@@ -550,9 +550,11 @@ func NewXplaApp(
 		appCodec,
 		keys[rewardtypes.StoreKey],
 		app.GetSubspace(rewardtypes.ModuleName),
+		app.AccountKeeper,
 		app.BankKeeper,
 		app.StakingKeeper,
 		app.DistrKeeper,
+		app.MintKeeper,
 	)
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))

@@ -6,21 +6,30 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/xpladev/xpla/x/reward/keeper"
 	"github.com/xpladev/xpla/x/reward/types"
+
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func EndBlocker(ctx sdk.Context, req abci.RequestEndBlock, k keeper.Keeper, bk types.BankKeeper, dk types.DistributionKeeper) []abci.ValidatorUpdate {
+func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper) {
 	params := k.GetParams(ctx)
+
+	if params.RewardDistributeAccount == "" {
+		return
+	}
+
 	total := params.TotalRate()
 
+	rewardDistributeAccount := sdk.MustAccAddressFromBech32(params.RewardDistributeAccount)
+
 	totalRewards := map[string]sdk.Coin{}
-	for _, strValidator := range params.Validators {
-		validator, err := sdk.ValAddressFromBech32(strValidator)
-		if err != nil {
-			panic(err)
-		}
-		reward, err := dk.WithdrawDelegationRewards(ctx, types.DelegateProxyAccount, validator)
+
+	sk.IterateDelegations(ctx, rewardDistributeAccount, func(index int64, delegation stakingtypes.DelegationI) (stop bool) {
+		validator := delegation.GetValidatorAddr()
+
+		reward, err := dk.WithdrawDelegationRewards(ctx, rewardDistributeAccount, validator)
 		if err == disttypes.ErrEmptyDelegationDistInfo {
-			continue
+			return false
 		} else if err != nil {
 			panic(err)
 		}
@@ -33,7 +42,9 @@ func EndBlocker(ctx sdk.Context, req abci.RequestEndBlock, k keeper.Keeper, bk t
 				totalRewards[coin.Denom] = coin
 			}
 		}
-	}
+
+		return false
+	})
 
 	feePoolRewards := sdk.NewCoins()
 	communityPoolRewards := sdk.NewCoins()
@@ -41,24 +52,38 @@ func EndBlocker(ctx sdk.Context, req abci.RequestEndBlock, k keeper.Keeper, bk t
 
 	feePoolRate := params.FeePoolRate.Mul(total)
 	communityPoolRate := params.CommunityPoolRate.Mul(total)
-	reserveRate := params.ReserveRate.Mul(total)
 	for denom, totalReward := range totalRewards {
-		feePoolRewards = append(feePoolRewards, sdk.NewCoin(denom, feePoolRate.MulInt(totalReward.Amount).RoundInt()))
-		communityPoolRewards = append(communityPoolRewards, sdk.NewCoin(denom, communityPoolRate.MulInt(totalReward.Amount).RoundInt()))
-		reserveRewards = append(reserveRewards, sdk.NewCoin(denom, reserveRate.MulInt(totalReward.Amount).RoundInt()))
+		feePoolReward := sdk.NewCoin(denom, feePoolRate.MulInt(totalReward.Amount).RoundInt())
+		feePoolRewards = append(feePoolRewards, feePoolReward)
+
+		communityPoolReward := sdk.NewCoin(denom, communityPoolRate.MulInt(totalReward.Amount).RoundInt())
+		communityPoolRewards = append(communityPoolRewards, communityPoolReward)
+
+		reserveRewards = append(reserveRewards, sdk.NewCoin(denom, totalReward.Amount.Sub(feePoolReward.Amount).Sub(communityPoolReward.Amount)))
 	}
 
 	// fee pool
 	if len(feePoolRewards) > 0 {
-		err := bk.SendCoinsFromAccountToModule(ctx, types.DelegateProxyAccount, disttypes.ModuleName, feePoolRewards)
+		err := bk.SendCoinsFromAccountToModule(ctx, rewardDistributeAccount, types.ModuleName, feePoolRewards)
 		if err != nil {
 			panic(err)
 		}
+
+	}
+	rewardAccount := k.GetRewardAccount(ctx)
+	balances := bk.GetAllBalances(ctx, rewardAccount.GetAddress())
+	blockPerYear := k.GetBlocksPerYear(ctx)
+	for index, balance := range balances {
+		balances[index].Amount = balance.Amount.Quo(sdk.NewInt(int64(blockPerYear)))
+	}
+	err := bk.SendCoinsFromModuleToModule(ctx, types.ModuleName, authtypes.FeeCollectorName, balances)
+	if err != nil {
+		panic(err)
 	}
 
 	// community
 	if len(communityPoolRewards) > 0 {
-		err := dk.FundCommunityPool(ctx, communityPoolRewards, types.DelegateProxyAccount)
+		err := dk.FundCommunityPool(ctx, communityPoolRewards, rewardDistributeAccount)
 		if err != nil {
 			panic(err)
 		}
@@ -67,8 +92,6 @@ func EndBlocker(ctx sdk.Context, req abci.RequestEndBlock, k keeper.Keeper, bk t
 	// reserve
 	if len(reserveRewards) > 0 && params.ReserveAccount != "" {
 		reserveAccount := sdk.MustAccAddressFromBech32(params.ReserveAccount)
-		bk.SendCoins(ctx, types.DelegateProxyAccount, reserveAccount, reserveRewards)
+		bk.SendCoins(ctx, rewardDistributeAccount, reserveAccount, reserveRewards)
 	}
-
-	return []abci.ValidatorUpdate{}
 }
