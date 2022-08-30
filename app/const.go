@@ -2,8 +2,9 @@ package xpla
 
 // nolint: gosec
 const (
-	appName     = "Xpla"
-	upgradeName = "Genesis"
+	appName              = "Xpla"
+	upgradeName          = "Genesis"
+	upgradeAddRewardName = "add-reward"
 
 	authzMsgExec                        = "/cosmos.authz.v1beta1.MsgExec"
 	authzMsgGrant                       = "/cosmos.authz.v1beta1.MsgGrant"
