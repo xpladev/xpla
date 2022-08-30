@@ -715,7 +715,7 @@ func NewXplaApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	app.UpgradeKeeper.SetUpgradeHandler(
-		upgradeAddRewardName,
+		upgradeName,
 		func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 			fromVM[rewardtypes.ModuleName] = rewardModule.ConsensusVersion()
 
@@ -736,7 +736,7 @@ func NewXplaApp(
 		panic(err)
 	}
 
-	if upgradeInfo.Name == upgradeAddRewardName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{rewardtypes.ModuleName},
 		}

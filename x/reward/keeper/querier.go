@@ -33,12 +33,7 @@ func queryParams(ctx sdk.Context, _ []string, _ abci.RequestQuery, k Keeper, leg
 }
 
 func queryPool(ctx sdk.Context, _ []string, _ abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
-	rewardAcc := k.GetRewardAccount(ctx)
-
-	pool := k.bankKeeper.GetAllBalances(ctx, rewardAcc.GetAddress())
-	if pool == nil {
-		pool = sdk.Coins{}
-	}
+	pool := k.PoolBalances(ctx)
 
 	bz, err := legacyQuerierCdc.MarshalJSON(pool)
 	if err != nil {
