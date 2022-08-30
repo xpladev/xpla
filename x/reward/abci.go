@@ -76,9 +76,12 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, 
 	for index, balance := range balances {
 		balances[index].Amount = balance.Amount.Quo(sdk.NewInt(int64(blockPerYear)))
 	}
-	err := bk.SendCoinsFromModuleToModule(ctx, types.ModuleName, authtypes.FeeCollectorName, balances)
-	if err != nil {
-		panic(err)
+
+	if !balances.IsZero() {
+		err := bk.SendCoinsFromModuleToModule(ctx, types.ModuleName, authtypes.FeeCollectorName, balances)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// community

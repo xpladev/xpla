@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/xpladev/xpla/x/reward/types"
@@ -46,4 +47,15 @@ func NewKeeper(
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
+}
+
+// FundFeeCollector allows an account to directly fund the fee collector fund.
+// The amount is added to the fee collector account
+// An error is returned if the amount cannot be sent to the module account.
+func (k Keeper) FundFeeCollector(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error {
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, authtypes.FeeCollectorName, amount); err != nil {
+		return err
+	}
+
+	return nil
 }
