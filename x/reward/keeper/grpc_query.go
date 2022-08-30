@@ -17,3 +17,13 @@ func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types
 
 	return &types.QueryParamsResponse{Params: params}, nil
 }
+
+// RewardPool queries the community pool coins
+func (k Keeper) Pool(c context.Context, req *types.QueryPoolRequest) (*types.QueryPoolResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	rewardAcc := k.GetRewardAccount(ctx)
+
+	pool := k.bankKeeper.GetAllBalances(ctx, rewardAcc.GetAddress())
+
+	return &types.QueryPoolResponse{Pool: pool}, nil
+}
