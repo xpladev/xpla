@@ -19,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -90,6 +91,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -107,6 +109,10 @@ import (
 	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/xpladev/xpla/x/reward"
+	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
+	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	xplaappparams "github.com/xpladev/xpla/app/params"
@@ -205,6 +211,7 @@ var (
 		router.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		wasm.AppModuleBasic{},
+		reward.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -218,6 +225,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		wasm.ModuleName:                {authtypes.Burner},
+		rewardtypes.ModuleName:         nil,
 	}
 )
 
@@ -261,6 +269,7 @@ type XplaApp struct { // nolint: golint
 	FeeGrantKeeper feegrantkeeper.Keeper
 	AuthzKeeper    authzkeeper.Keeper
 	RouterKeeper   routerkeeper.Keeper
+	RewardKeeper   rewardkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -316,7 +325,7 @@ func NewXplaApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
-		wasm.StoreKey,
+		wasm.StoreKey, rewardtypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -539,7 +548,20 @@ func NewXplaApp(
 
 	app.EvidenceKeeper = *evidenceKeeper
 
+	app.RewardKeeper = rewardkeeper.NewKeeper(
+		appCodec,
+		keys[rewardtypes.StoreKey],
+		app.GetSubspace(rewardtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		app.DistrKeeper,
+		app.MintKeeper,
+	)
+
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+
+	rewardModule := reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -570,6 +592,7 @@ func NewXplaApp(
 		icaModule,
 		routerModule,
 		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		rewardModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -600,6 +623,7 @@ func NewXplaApp(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
+		rewardtypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -623,6 +647,7 @@ func NewXplaApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
+		rewardtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -653,6 +678,7 @@ func NewXplaApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
+		rewardtypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -687,6 +713,36 @@ func NewXplaApp(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+
+	app.UpgradeKeeper.SetUpgradeHandler(
+		upgradeName,
+		func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+			fromVM[rewardtypes.ModuleName] = rewardModule.ConsensusVersion()
+
+			var params rewardtypes.Params
+			err := jsonpb.UnmarshalString(plan.Info, &params)
+			if err != nil {
+				panic(err)
+			}
+
+			app.RewardKeeper.SetParams(ctx, params)
+
+			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		},
+	)
+
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(err)
+	}
+
+	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := storetypes.StoreUpgrades{
+			Added: []string{rewardtypes.ModuleName},
+		}
+
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -860,6 +916,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(routertypes.ModuleName).WithKeyTable(routertypes.ParamKeyTable())
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
+	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
 
 	return paramsKeeper
 }

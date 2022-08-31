@@ -1,0 +1,28 @@
+syntax = "proto3";
+package xpla.reward.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/reward/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+service Msg {
+  // FundFeeCollector defines a method to allow an account to directly
+  // fund the fee collector.
+  rpc FundFeeCollector(MsgFundFeeCollector) returns (MsgFundFeeCollectorResponse);
+}
+
+// MsgFundFeeCollector allows an account to directly
+// fund the fee collector.
+message MsgFundFeeCollector {
+    option (gogoproto.equal)           = false;
+    option (gogoproto.goproto_getters) = false;
+  
+    repeated cosmos.base.v1beta1.Coin amount = 1
+        [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+    string depositor = 2;
+  }
+
+// MsgFundFeeCollectorResponse defines the Msg/FundFeeCollector response type.
+message MsgFundFeeCollectorResponse {}
+  
