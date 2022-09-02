@@ -1,4 +1,4 @@
-package xpla
+package app
 
 import (
 	"errors"
