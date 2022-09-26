@@ -1,0 +1,42 @@
+syntax = "proto3";
+package xpla.reward.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "xpla/reward/v1beta1/reward.proto";
+
+option go_package = "github.com/xpladev/xpla/x/reward/types";
+
+// Query defines the gRPC querier service for reward module.
+service Query {
+    // Params queries params of the reward module.
+    rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+        option (google.api.http).get = "/xpla/reward/v1beta1/params";
+    }
+
+    rpc Pool(QueryPoolRequest) returns (QueryPoolResponse) {
+      option (google.api.http).get = "/xpla/reward/v1beta1/pool";
+    }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryPoolRequest is the request type for the Query/Pool RPC
+// method.
+message QueryPoolRequest {}
+
+// QueryPoolResponse is the response type for the Query/Pool
+// RPC method.
+message QueryPoolResponse {
+  // pool defines reward pool's coins.
+  repeated cosmos.base.v1beta1.Coin pool = 1
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins", (gogoproto.nullable) = false];
+}

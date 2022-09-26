@@ -1,0 +1,13 @@
+syntax = "proto3";
+package xpla.reward.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/reward/types";
+
+import "gogoproto/gogo.proto";
+import "xpla/reward/v1beta1/reward.proto";
+
+// GenesisState defines the reward module's genesis state.
+message GenesisState {
+// params defines all the paramaters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"params\""];
+}
