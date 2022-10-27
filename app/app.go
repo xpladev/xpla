@@ -91,7 +91,6 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -116,6 +115,8 @@ import (
 
 	xplaante "github.com/xpladev/xpla/ante"
 	xplaappparams "github.com/xpladev/xpla/app/params"
+
+	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -556,8 +557,6 @@ func NewXplaApp(
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
-	rewardModule := reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper)
-
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.mm = module.NewManager(
@@ -587,7 +586,7 @@ func NewXplaApp(
 		icaModule,
 		routerModule,
 		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		rewardModule,
+		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -708,36 +707,11 @@ func NewXplaApp(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	app.setUpgradeHandlers()
 
-	app.UpgradeKeeper.SetUpgradeHandler(
-		upgradeName,
-		func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-			fromVM[rewardtypes.ModuleName] = rewardModule.ConsensusVersion()
-
-			var params rewardtypes.Params
-			err := jsonpb.UnmarshalString(plan.Info, &params)
-			if err != nil {
-				panic(err)
-			}
-
-			app.RewardKeeper.SetParams(ctx, params)
-
-			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
-		},
-	)
-
-	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
-	if err != nil {
-		panic(err)
-	}
-
-	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		storeUpgrades := storetypes.StoreUpgrades{
-			Added: []string{rewardtypes.ModuleName},
-		}
-
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
-	}
+	app.ScopedIBCKeeper = scopedIBCKeeper
+	app.ScopedTransferKeeper = scopedTransferKeeper
+	app.scopedWasmKeeper = scopedWasmKeeper
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -753,10 +727,6 @@ func NewXplaApp(
 		// `loadLatest` is set to true.
 		app.CapabilityKeeper.Seal()
 	}
-
-	app.ScopedIBCKeeper = scopedIBCKeeper
-	app.ScopedTransferKeeper = scopedTransferKeeper
-	app.scopedWasmKeeper = scopedWasmKeeper
 
 	return app
 }
@@ -914,4 +884,38 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
 
 	return paramsKeeper
+}
+
+func (app *XplaApp) setUpgradeHandlers() {
+	// XplaRewawrd upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		xplareward.UpgradeName,
+		xplareward.CreateUpgradeHandler(app.mm, app.configurator, app.RewardKeeper),
+	)
+
+	// When a planned update height is reached, the old binary will panic
+	// writing on disk the height and name of the update that triggered it
+	// This will read that value, and execute the preparations for the upgrade.
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
+	}
+
+	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		return
+	}
+
+	var storeUpgrades *storetypes.StoreUpgrades
+
+	switch upgradeInfo.Name {
+	case xplareward.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: xplareward.AddModules,
+		}
+	}
+
+	if storeUpgrades != nil {
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
+	}
 }
