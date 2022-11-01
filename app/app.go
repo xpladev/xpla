@@ -116,6 +116,7 @@ import (
 	xplaante "github.com/xpladev/xpla/ante"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 
+	"github.com/xpladev/xpla/app/upgrades/v1_2"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 
 	// unnamed import of statik for swagger UI support
@@ -893,6 +894,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 		xplareward.CreateUpgradeHandler(app.mm, app.configurator, app.RewardKeeper),
 	)
 
+	// v1_2 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v1_2.UpgradeName,
+		v1_2.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -912,6 +919,8 @@ func (app *XplaApp) setUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: xplareward.AddModules,
 		}
+	case v1_2.UpgradeName:
+		// no store upgrades in v1_2
 	}
 
 	if storeUpgrades != nil {
