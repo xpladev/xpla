@@ -34,9 +34,9 @@ import (
 	ethermintclient "github.com/evmos/ethermint/client"
 	"github.com/evmos/ethermint/crypto/hd"
 
+	"github.com/evmos/ethermint/client/debug"
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"
-	"github.com/evmos/ethermint/client/debug"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
@@ -58,6 +58,9 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		Use:   "xplad",
 		Short: "xpla App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			cmd.SetOut(cmd.OutOrStdout())
+			cmd.SetErr(cmd.ErrOrStderr())
+
 			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
 				return err
