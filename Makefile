@@ -100,7 +100,7 @@ go.sum: go.mod
 ###                                Protobuf                                 ###
 ###############################################################################
 
-containerProtoVer=v0.2
+containerProtoVer=v0.7
 containerProtoImage=tendermintdev/sdk-proto-gen:$(containerProtoVer)
 containerProtoGen=cosmos-sdk-proto-gen-$(containerProtoVer)
 containerProtoGenSwagger=cosmos-sdk-proto-gen-swagger-$(containerProtoVer)
