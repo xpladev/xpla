@@ -2,7 +2,7 @@ name: Go
 
 on:
   push:
-    branches: [ "main", "cube", "hypercube", "tesseract" ]
+    branches: [ "main", "cube", "hypercube", "tesseract", "release/*" ]
   pull_request:
     branches: [ "*" ]
 
