@@ -85,6 +85,10 @@ all: install
 install: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/xplad
 
+.PHONY: test
+test: go.sum
+	go test -short ./...
+
 go.sum: go.mod
 	@go mod verify
 	@go mod tidy
