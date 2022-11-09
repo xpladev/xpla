@@ -120,14 +120,13 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                      // outermost AnteDecorator. SetUpContext must be called first
-		evmante.NewEthMempoolFeeDecorator(opts.EvmKeeper),                        // Check eth effective gas price against minimal-gas-prices
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),                        // Check eth effective gas price against minimal-gas-prices
 		evmante.NewEthMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
 		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
 		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
 		evmante.NewCanTransferDecorator(opts.EvmKeeper),
-		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
 		evmante.NewEthIncrementSenderSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator.
 		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
 		evmante.NewEthEmitEventDecorator(opts.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
