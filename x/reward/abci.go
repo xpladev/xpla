@@ -35,6 +35,10 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, 
 		}
 
 		for _, coin := range reward {
+			if coin.Amount.IsZero() {
+				continue
+			}
+
 			c, exist := totalRewards[coin.Denom]
 			if exist {
 				totalRewards[coin.Denom] = c.Add(coin)
