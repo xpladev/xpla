@@ -30,10 +30,3 @@ jobs:
       run: |
         go mod tidy
         make test
-
-    - name: Integration test
-      run: |
-        cd integration_test && docker-compose up -d
-        docker ps
-        sleep 10s
-        docker-compose down
