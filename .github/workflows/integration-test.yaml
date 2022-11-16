@@ -1,0 +1,22 @@
+name: Integration test
+
+on:
+  push:
+    branches: [ "main", "cube", "hypercube", "tesseract", "release/*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Integration test
+      run: |
+        cd integration_test && docker-compose up -d
+        docker ps
+        sleep 10s
+        docker-compose down
