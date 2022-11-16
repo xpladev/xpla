@@ -36,14 +36,18 @@ RUN cp /lib/libwasmvm_muslc.`uname -m`.a /lib/libwasmvm_muslc.a
 RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LDFLAGS='-linkmode=external -extldflags "-L/localnet/mimalloc/build -lmimalloc -Wl,-z,muldefs -static"' make build
 
 # --------------------------------------------------------
-FROM alpine:3.15
-
-COPY --from=build /localnet/build/xplad /usr/bin/xplad
-
-# COPY docker/* /opt/
-# RUN chmod +x /opt/*.sh
+FROM alpine:3.15 AS runtime
 
 WORKDIR /opt
+RUN [ "mkdir", "-p", "/opt/integration_test" ]
+
+COPY --from=build /localnet/build/xplad /usr/bin/xplad
+COPY --from=build /localnet/integration_test /opt/integration_test
+
+# Expose Cosmos ports
+EXPOSE 9090
+EXPOSE 26656
+#EXPOSE 26657
 
 # Set entry point
 CMD [ "/usr/bin/xplad", "version" ]
