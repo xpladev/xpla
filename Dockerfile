@@ -46,6 +46,7 @@ COPY --from=build /localnet/integration_test /opt/integration_test
 
 # Expose Cosmos ports
 EXPOSE 9090
+EXPOSE 8545
 EXPOSE 26656
 #EXPOSE 26657
 
