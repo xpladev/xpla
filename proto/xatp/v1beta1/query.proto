@@ -1,0 +1,25 @@
+syntax = "proto3";
+package xpla.xatp.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "xpla/xatp/v1beta1/xatp.proto";
+
+option go_package = "github.com/xpladev/xpla/x/xatp/types";
+
+// Query defines the gRPC querier service for cw20 module.
+service Query {
+    // Params queries params of the cw20 module.
+    rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+        option (google.api.http).get = "/xpla/xatp/v1beta1/params";
+    }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}

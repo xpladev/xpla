@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -120,6 +121,12 @@ import (
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+
+	xatpupgrade "github.com/xpladev/xpla/app/upgrades/xatp"
+
+	xatp "github.com/xpladev/xpla/x/xatp"
+	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
+	xatptypes "github.com/xpladev/xpla/x/xatp/types"
 )
 
 var (
@@ -208,6 +215,7 @@ var (
 		ica.AppModuleBasic{},
 		wasm.AppModuleBasic{},
 		reward.AppModuleBasic{},
+		xatp.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -279,6 +287,8 @@ type XplaApp struct { // nolint: golint
 	mm *module.Manager
 
 	configurator module.Configurator
+
+	XATPKeeper xatpkeeper.Keeper
 }
 
 func init() {
@@ -321,7 +331,7 @@ func NewXplaApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
-		wasm.StoreKey, rewardtypes.StoreKey,
+		wasm.StoreKey, rewardtypes.StoreKey, xatptypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -555,6 +565,17 @@ func NewXplaApp(
 		app.MintKeeper,
 	)
 
+	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(&app.wasmKeeper)
+	app.XATPKeeper = xatpkeeper.NewKeeper(
+		appCodec,
+		keys[xatptypes.StoreKey],
+		app.GetSubspace(xatptypes.ModuleName),
+		contractKeeper,
+		app.wasmKeeper,
+		xatpkeeper.WasmExecute{Cdc: appCodec, StoreKey: keys[wasm.StoreKey]},
+		app.wasmKeeper,
+	)
+
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
@@ -587,6 +608,7 @@ func NewXplaApp(
 		routerModule,
 		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
+		xatp.NewAppModule(appCodec, app.XATPKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -618,6 +640,7 @@ func NewXplaApp(
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
+		xatptypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -642,6 +665,7 @@ func NewXplaApp(
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
+		xatptypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -673,6 +697,7 @@ func NewXplaApp(
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
+		xatptypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -697,6 +722,8 @@ func NewXplaApp(
 			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
 			TxCounterStoreKey:    keys[wasm.StoreKey],
 			WasmConfig:           wasmConfig,
+			XATPKeeper:           app.XATPKeeper,
+			MinGasPrices:         cast.ToString(appOpts.Get(server.FlagMinGasPrices)),
 		},
 	)
 	if err != nil {
@@ -708,6 +735,15 @@ func NewXplaApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.setUpgradeHandlers()
+
+	if manager := app.SnapshotManager(); manager != nil {
+		err := manager.RegisterExtensions(
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.wasmKeeper),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+		}
+	}
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
@@ -882,6 +918,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
+	paramsKeeper.Subspace(xatptypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -893,6 +930,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 		xplareward.CreateUpgradeHandler(app.mm, app.configurator, app.RewardKeeper),
 	)
 
+	app.UpgradeKeeper.SetUpgradeHandler(
+		xatpupgrade.UpgradeName,
+		xatpupgrade.CreateUpgradeHandler(app.mm, app.configurator, app.XATPKeeper),
+	)
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -911,6 +952,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 	case xplareward.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: xplareward.AddModules,
+		}
+
+	case xatpupgrade.UpgradeName:
+
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{xatptypes.ModuleName},
 		}
 	}
 

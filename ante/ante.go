@@ -16,6 +16,8 @@ import (
 
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
+
+	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -31,6 +33,8 @@ type HandlerOptions struct {
 	BypassMinFeeMsgTypes []string
 	TxCounterStoreKey    sdk.StoreKey
 	WasmConfig           wasmTypes.WasmConfig
+	XATPKeeper           xatpkeeper.Keeper
+	MinGasPrices         string
 }
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
@@ -74,13 +78,13 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
-		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.WasmConfig.SmartQueryGasLimit),
 
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
 		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
-		authante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper),
+		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.XATPKeeper, opts.MinGasPrices, opts.WasmConfig.SmartQueryGasLimit),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		authante.NewSetPubKeyDecorator(opts.AccountKeeper),
 		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
