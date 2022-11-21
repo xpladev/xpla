@@ -1,0 +1,21 @@
+syntax = "proto3";
+package xpla.xatp.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/xatp/types";
+
+import "gogoproto/gogo.proto";
+
+message Params {
+
+    string xatp_payer = 1;
+    repeated XATP xatps = 2 [
+        (gogoproto.nullable) = false
+    ];
+}
+
+
+message XATP {
+    string denom = 1;
+    string contract = 2;
+    string pair = 3;
+}

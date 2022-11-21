@@ -1,13 +1,21 @@
 package ante
 
 import (
+	"fmt"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
 
 	ethermintante "github.com/evmos/ethermint/app/ante"
+	xplatypes "github.com/xpladev/xpla/types"
+
+	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
+
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 )
 
 const maxBypassMinFeeMsgGasUsage = uint64(200_000)
@@ -17,65 +25,128 @@ const maxBypassMinFeeMsgGasUsage = uint64(200_000)
 // is rejected. This applies for both CheckTx and DeliverTx
 // If fee is high enough, then call next AnteHandler
 // CONTRACT: Tx must implement FeeTx to use MinGasPriceDecorator
-type MinGasPriceDecorator struct {
+type MempoolFeeDecorator struct {
 	BypassMinFeeMsgTypes []string
 
-	feesKeeper ethermintante.FeeMarketKeeper
-	evmKeeper  ethermintante.EVMKeeper
+	ak                 authante.AccountKeeper
+	xatpKeeper         xatpkeeper.Keeper
+	feesKeeper         ethermintante.FeeMarketKeeper
+	evmKeeper          ethermintante.EVMKeeper
+	smartQueryGasLimit uint64
 }
 
-func NewMinGasPriceDecorator(fk ethermintante.FeeMarketKeeper, ek ethermintante.EVMKeeper, bypassMsgTypes []string) MinGasPriceDecorator {
-	return MinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek, BypassMinFeeMsgTypes: bypassMsgTypes}
+func NewMempoolFeeDecorator(bypassMsgTypes []string, ak authante.AccountKeeper, ck xatpkeeper.Keeper, fk ethermintante.FeeMarketKeeper, ek ethermintante.EVMKeeper, sqgl uint64) MempoolFeeDecorator {
+	return MempoolFeeDecorator{
+		BypassMinFeeMsgTypes: bypassMsgTypes,
+		ak:                   ak,
+		xatpKeeper:           ck,
+		feesKeeper:           fk,
+		evmKeeper:            ek,
+		smartQueryGasLimit:   sqgl,
+	}
 }
 
-func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
 	feeTx, ok := tx.(sdk.FeeTx)
 	if !ok {
 		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "Tx must be a FeeTx")
 	}
 
-	minGasPrice := mpd.feesKeeper.GetParams(ctx).MinGasPrice
+	minGasPrice := mfd.feesKeeper.GetParams(ctx).MinGasPrice
 	gas := feeTx.GetGas()
 	msgs := feeTx.GetMsgs()
 
 	// Short-circuit if min gas price is 0 or if simulating
-	if minGasPrice.IsZero() || simulate || (mpd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
+	if minGasPrice.IsZero() || simulate || (mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
 		return next(ctx, tx, simulate)
 	}
 
-	evmDenom := mpd.evmKeeper.GetParams(ctx).EvmDenom
+	evmDenom := mfd.evmKeeper.GetParams(ctx).EvmDenom
 	minGasPrices := sdk.DecCoins{
 		{
 			Denom:  evmDenom,
 			Amount: minGasPrice,
 		},
 	}
+	// Only check for minimum fees if the execution mode is CheckTx and the tx does
+	// not contain operator configured bypass messages. If the tx does contain
+	// operator configured bypass messages only, it's total gas must be less than
+	// or equal to a constant, otherwise minimum fees are checked to prevent spam.
+	if ctx.IsCheckTx() && !simulate && !(mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
+		var decimal int64
+		var cw20Decimal *big.Int
 
-	feeCoins := feeTx.GetFee()
+		ctx = ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(mfd.smartQueryGasLimit)))
 
-	requiredFees := make(sdk.Coins, 0)
+		cw20Denoms := mfd.xatpKeeper.GetXATPs(ctx)
+		if len(cw20Denoms) > 0 && err == nil {
 
-	// Determine the required fees by multiplying each required minimum gas
-	// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-	gasLimit := sdk.NewDecFromBigInt(new(big.Int).SetUint64(gas))
+			for _, token := range cw20Denoms {
+				for _, gp := range minGasPrices {
+					if gp.Denom == xplatypes.DefaultDenom {
 
-	for _, gp := range minGasPrices {
-		fee := gp.Amount.Mul(gasLimit).Ceil().RoundInt()
-		if fee.IsPositive() {
-			requiredFees = requiredFees.Add(sdk.Coin{Denom: gp.Denom, Amount: fee})
+						ratioDec, err, _ := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, token.Denom)
+						if err != nil {
+							return ctx, err
+						}
+
+						if cw20Decimal == nil {
+							decimal = int64(len(gp.Amount.RoundInt().String()))
+							cw20Decimal = new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil))
+						}
+
+						minGasPrices = minGasPrices.Add(
+							sdk.DecCoin{
+								Denom:  token.Denom,
+								Amount: gp.Amount.Mul(ratioDec),
+							})
+					}
+				}
+			}
 		}
-	}
 
-	if !feeCoins.IsAnyGTE(requiredFees) {
-		return ctx, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "provided fee < minimum global fee (%s < %s). Please increase the gas price.", feeCoins, requiredFees)
+		if !minGasPrices.IsZero() {
+			requiredFees := make(sdk.Coins, len(minGasPrices))
+
+			// Determine the required fees by multiplying each required minimum gas
+			// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
+			glDec := sdk.NewDec(int64(gas))
+			var fee sdk.Dec
+			for i, gp := range minGasPrices {
+				fee = gp.Amount.Mul(glDec)
+
+				if gp.Denom != xplatypes.DefaultDenom {
+					fee = sdk.NewDecFromBigInt(new(big.Int).Div(fee.Ceil().RoundInt().BigInt(), cw20Decimal))
+				}
+
+				requiredFees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())
+			}
+
+			feeCoins := feeTx.GetFee()
+
+			// Determine the required fees by multiplying each required minimum gas
+			// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
+			gasLimit := sdk.NewDecFromBigInt(new(big.Int).SetUint64(gas))
+
+			for _, gp := range minGasPrices {
+				fee := gp.Amount.Mul(gasLimit).Ceil().RoundInt()
+				if fee.IsPositive() {
+					requiredFees = requiredFees.Add(sdk.Coin{Denom: gp.Denom, Amount: fee})
+				}
+			}
+
+			if !feeCoins.IsAnyGTE(requiredFees) {
+				return ctx, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "provided fee < minimum global fee (%s < %s). Please increase the gas price.", feeCoins, requiredFees)
+			}
+		}
 	}
 
 	return next(ctx, tx, simulate)
 }
 
-func (mpd MinGasPriceDecorator) bypassMinFeeMsgs(msgs []sdk.Msg) bool {
+func (mfd MempoolFeeDecorator) bypassMinFeeMsgs(msgs []sdk.Msg) bool {
 	for _, msg := range msgs {
-		if tmstrings.StringInSlice(sdk.MsgTypeURL(msg), mpd.BypassMinFeeMsgTypes) {
+		if tmstrings.StringInSlice(sdk.MsgTypeURL(msg), mfd.BypassMinFeeMsgTypes) {
 			continue
 		}
 
@@ -83,4 +154,178 @@ func (mpd MinGasPriceDecorator) bypassMinFeeMsgs(msgs []sdk.Msg) bool {
 	}
 
 	return true
+}
+
+type DeductFeeDecorator struct {
+	ak             authante.AccountKeeper
+	bankKeeper     types.BankKeeper
+	feegrantKeeper authante.FeegrantKeeper
+
+	xatpKeeper         xatpkeeper.Keeper
+	MinGasPrices       string
+	smartQueryGasLimit uint64
+}
+
+func NewDeductFeeDecorator(ak authante.AccountKeeper, bk types.BankKeeper, fk authante.FeegrantKeeper, xk xatpkeeper.Keeper, minGasPrices string, sqgl uint64) DeductFeeDecorator {
+	return DeductFeeDecorator{
+		ak:             ak,
+		bankKeeper:     bk,
+		feegrantKeeper: fk,
+
+		xatpKeeper:         xk,
+		MinGasPrices:       minGasPrices,
+		smartQueryGasLimit: sqgl,
+	}
+}
+
+func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	feeTx, ok := tx.(sdk.FeeTx)
+	if !ok {
+		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "Tx must be a FeeTx")
+	}
+
+	if addr := dfd.ak.GetModuleAddress(types.FeeCollectorName); addr == nil {
+		return ctx, fmt.Errorf("Fee collector module account (%s) has not been set", types.FeeCollectorName)
+	}
+
+	fee := feeTx.GetFee()
+	feePayer := feeTx.FeePayer()
+	feeGranter := feeTx.FeeGranter()
+
+	deductFeesFrom := feePayer
+
+	// if feegranter set deduct fee from feegranter account.
+	// this works with only when feegrant enabled.
+	if feeGranter != nil {
+		if dfd.feegrantKeeper == nil {
+			return ctx, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "fee grants are not enabled")
+		} else if !feeGranter.Equals(feePayer) {
+			err := dfd.feegrantKeeper.UseGrantedFees(ctx, feeGranter, feePayer, fee, tx.GetMsgs())
+
+			if err != nil {
+				return ctx, sdkerrors.Wrapf(err, "%s not allowed to pay fees from %s", feeGranter, feePayer)
+			}
+		}
+
+		deductFeesFrom = feeGranter
+	}
+
+	deductFeesFromAcc := dfd.ak.GetAccount(ctx, deductFeesFrom)
+	if deductFeesFromAcc == nil {
+		return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "fee payer address: %s does not exist", deductFeesFrom)
+	}
+
+	var isXpla bool = false
+	for _, coin := range fee {
+		denom := coin.Denom
+
+		if denom == xplatypes.DefaultDenom {
+			isXpla = true
+		}
+	}
+
+	// deduct the fees
+	if !feeTx.GetFee().IsZero() {
+
+		if isXpla {
+			err = DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc, feeTx.GetFee())
+			if err != nil {
+				return ctx, err
+			}
+
+		} else {
+
+			ctx = ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(dfd.smartQueryGasLimit)))
+			for _, coin := range fee {
+
+				denom := coin.Denom
+
+				ratioDec, err, _ := dfd.xatpKeeper.GetFeeInfoFromXATP(ctx, denom)
+				if err != nil {
+					return ctx, err
+				}
+
+				var xplaDecimal sdk.Dec
+				if denom != xplatypes.DefaultDenom {
+
+					minGasPrices, err := sdk.ParseDecCoins(dfd.MinGasPrices)
+					if err != nil {
+						return ctx, err
+					}
+
+					var decimal int64
+					for _, gp := range minGasPrices {
+
+						if gp.Denom == xplatypes.DefaultDenom {
+							decimal = int64(len(gp.Amount.RoundInt().String()))
+						}
+					}
+
+					xplaDecimal = sdk.NewDecFromBigInt(new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil)))
+
+					err = dfd.xatpKeeper.ExecuteContract(ctx, deductFeesFrom, denom, coin.Amount.String())
+					if err != nil {
+						return ctx, err
+					}
+				}
+
+				xatpPayer := dfd.xatpKeeper.GetXTPSPayer(ctx)
+				XatpPayerAcc, err := sdk.AccAddressFromBech32(xatpPayer)
+				if err != nil {
+					return ctx, err
+				}
+
+				accExists := dfd.ak.(authkeeper.AccountKeeper).HasAccount(ctx, XatpPayerAcc)
+				if !accExists {
+					return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "XATP payer account: %s not found", XatpPayerAcc)
+				}
+
+				deductFeesFromAcc0 := dfd.ak.GetAccount(ctx, XatpPayerAcc)
+
+				xplaValue := sdk.NewDecFromInt(coin.Amount).Quo(ratioDec)
+				xplaValue = xplaValue.Mul(xplaDecimal)
+				xplaFee := sdk.NewCoins(sdk.NewCoin(xplatypes.DefaultDenom, xplaValue.Ceil().RoundInt()))
+
+				err = DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc0, xplaFee)
+				if err != nil {
+					return ctx, err
+				}
+			}
+
+		}
+
+	} else {
+
+		if fee != nil && isXpla == false {
+
+			ctx = ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(dfd.smartQueryGasLimit)))
+			for _, coin := range fee {
+
+				executeCosts, _ := dfd.xatpKeeper.GetExecuteCost(ctx, coin.Denom)
+
+				ctx.GasMeter().ConsumeGas(executeCosts, "Loading CosmWasm module: execute")
+			}
+		}
+	}
+
+	events := sdk.Events{sdk.NewEvent(sdk.EventTypeTx,
+		sdk.NewAttribute(sdk.AttributeKeyFee, feeTx.GetFee().String()),
+	)}
+
+	ctx.EventManager().EmitEvents(events)
+
+	return next(ctx, tx, simulate)
+}
+
+func DeductFees(bankKeeper types.BankKeeper, ctx sdk.Context, acc types.AccountI, fees sdk.Coins) error {
+	if !fees.IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
+	}
+
+	err := bankKeeper.SendCoinsFromAccountToModule(ctx, acc.GetAddress(), types.FeeCollectorName, fees)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
+	}
+
+	return nil
 }

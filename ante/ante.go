@@ -17,6 +17,8 @@ import (
 	evmante "github.com/evmos/ethermint/app/ante"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
+
+	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
@@ -35,6 +37,8 @@ type HandlerOptions struct {
 	BypassMinFeeMsgTypes []string
 	TxCounterStoreKey    sdk.StoreKey
 	WasmConfig           wasmTypes.WasmConfig
+	XATPKeeper           xatpkeeper.Keeper
+	MinGasPrices         string
 }
 
 // NewAnteHandler returns an 'AnteHandler' that will run actions before a tx is sent to a module's handler.
@@ -99,13 +103,16 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
-		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes),
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper, opts.WasmConfig.SmartQueryGasLimit),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
 		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
 		authante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper),
 		authante.NewSetPubKeyDecorator(opts.AccountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
+		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.XATPKeeper, opts.MinGasPrices, opts.WasmConfig.SmartQueryGasLimit),
+		// SetPubKeyDecorator must be called before all signature verification decorators
+		authante.NewSetPubKeyDecorator(opts.AccountKeeper),
 		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
 		authante.NewSigGasConsumeDecorator(opts.AccountKeeper, sigGasConsumer),
 		authante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
@@ -117,8 +124,8 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 
 func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                                      // outermost AnteDecorator. SetUpContext must be called first
-		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes), // Check eth effective gas price against the global MinGasPrice
+		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper), // outermost AnteDecorator. SetUpContext must be called first
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper, opts.WasmConfig.SmartQueryGasLimit), // Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
 		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
