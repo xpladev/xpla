@@ -21,7 +21,7 @@ jobs:
         sleep 10s 
 
     - name: Integration test
-      run: echo "Test here"
+      run: cd integration_test && go test
 
     - name: Teardown
       run: cd integration_test && docker-compose down
