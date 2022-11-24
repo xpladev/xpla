@@ -159,7 +159,7 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 			"decimals": 6,
 			"initial_balances": [
 				{
-					"address": "xpla16wx7ye3ce060tjvmmpu8lm0ak5xr7gm2dp0kpt",
+					"address": "xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826",
 					"amount": "100000000"
 				}
 			]
@@ -207,7 +207,7 @@ ATTR:
 
 	queryStr := []byte(`{
 		"balance": {
-			"address": "xpla16wx7ye3ce060tjvmmpu8lm0ak5xr7gm2dp0kpt"
+			"address": "xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826"
 		}
 	}`)
 
@@ -228,6 +228,61 @@ ATTR:
 	assert.NoError(t.T(), err)
 
 	assert.Equal(t.T(), "100000000", amtResp.Balance)
+}
+
+func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
+	transferMsg := []byte(`
+		{
+			"transfer": {
+				"recipient": "xpla1y6gnay0pv49asun56la09jcmhg2kc949mpftvt",
+				"amount": "50000000"
+			}
+		}
+	`)
+
+	contractExecMsg := &wasmtype.MsgExecuteContract{
+		Sender:   t.UserWallet2.StringAddress,
+		Contract: t.TokenAddress,
+		Msg:      transferMsg,
+	}
+
+	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+	fee := sdktypes.Coin{
+		Denom:  "axpla",
+		Amount: feeAmt.Ceil().RoundInt(),
+	}
+
+	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, fee, xplaGeneralGasLimit)
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	time.Sleep(time.Second * 7)
+
+	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	queryStr := []byte(`{
+		"balance": {
+			"address": "xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826"
+		}
+	}`)
+
+	tokenResp, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
+		Address:   t.TokenAddress,
+		QueryData: queryStr,
+	})
+
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), tokenResp)
+
+	type AmtResp struct {
+		Balance string `json:"balance"`
+	}
+
+	amtResp := &AmtResp{}
+	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), "50000000", amtResp.Balance)
 }
 
 type EVMIntegrationTestSuite struct {
