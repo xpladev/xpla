@@ -226,6 +226,16 @@ func GetAccountNumber(conn *grpc.ClientConn, chainId, address string) (uint64, u
 }
 
 func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode string) (string, error) {
+	queryTxClient := txtype.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+
+	_, err := queryTxClient.Simulate(context.Background(), &txtype.SimulateRequest{
+		TxBytes: txBytes,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
 	client := txtype.NewServiceClient(desc.ServiceConn)
 	enummode := txtype.BroadcastMode_BROADCAST_MODE_SYNC
 

@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -30,11 +32,17 @@ type WASMIntegrationTestSuite struct {
 	ValidatorWallet1 *WalletInfo
 }
 
-func (u *WASMIntegrationTestSuite) SetupSuite() {
+func (i *WASMIntegrationTestSuite) SetupSuite() {
 	desc = NewServiceDesc("127.0.0.1", 9090, 10, true)
+
+	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1 = walletSetup()
 }
 func (i *WASMIntegrationTestSuite) SetupTest() {
 	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1 = walletSetup()
+
+	i.UserWallet1.RefreshSequence()
+	i.UserWallet2.RefreshSequence()
+	i.ValidatorWallet1.RefreshSequence()
 }
 
 func (i *WASMIntegrationTestSuite) TearDownTest() {
@@ -65,13 +73,13 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 		*coin,
 	)
 
-	feeAmt := sdktypes.NewDec(xplaGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 	fee := sdktypes.Coin{
 		Denom:  "axpla",
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGasLimit)
+	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -101,6 +109,43 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 	}
 
 	assert.Equal(t.T(), expected, delegatedList)
+}
+
+func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
+	contractBytes, err := os.ReadFile(filepath.Join(".", "misc", "dezswap_token.wasm"))
+	if err != nil {
+		panic(err)
+	}
+
+	storeMsg := &wasmtype.MsgStoreCode{
+		Sender:       t.UserWallet1.StringAddress,
+		WASMByteCode: contractBytes,
+	}
+
+	feeAmt := sdktypes.NewDec(xplaCodeGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+
+	fee := sdktypes.Coin{
+		Denom:  "axpla",
+		Amount: feeAmt.Ceil().RoundInt(),
+	}
+
+	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, fee, xplaCodeGasLimit)
+
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	time.Sleep(time.Second * 7)
+
+	queryClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	queryCodeMsg := &wasmtype.QueryCodeRequest{
+		CodeId: 1,
+	}
+
+	resp, err := queryClient.Code(context.Background(), queryCodeMsg)
+
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), resp)
 }
 
 type EVMIntegrationTestSuite struct {
