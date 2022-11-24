@@ -2,6 +2,7 @@ package integrationtest
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +28,8 @@ func TestWasmContractAndTx(t *testing.T) {
 
 type WASMIntegrationTestSuite struct {
 	suite.Suite
+
+	TokenAddress string
 
 	UserWallet1      *WalletInfo
 	UserWallet2      *WalletInfo
@@ -58,7 +62,6 @@ func (u *WASMIntegrationTestSuite) TearDownSuite() {
 // 2. Contract upload
 // 3. Contract initiate
 // 4. Contract execute
-// 5. Contract query
 
 func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 	amt := sdktypes.NewInt(100000000000000)
@@ -83,7 +86,7 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
-	time.Sleep(time.Second * 6)
+	time.Sleep(time.Second * 7)
 
 	queryClient := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
@@ -146,6 +149,85 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), resp)
+}
+
+func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
+	initMsg := []byte(`
+		{
+			"name": "testtoken",
+			"symbol": "TKN",
+			"decimals": 6,
+			"initial_balances": [
+				{
+					"address": "xpla16wx7ye3ce060tjvmmpu8lm0ak5xr7gm2dp0kpt",
+					"amount": "100000000"
+				}
+			]
+		}
+	`)
+
+	instantiateMsg := &wasmtype.MsgInstantiateContract{
+		Sender: t.UserWallet2.StringAddress,
+		Admin:  t.UserWallet2.StringAddress,
+		CodeID: 1,
+		Label:  "Integration test purpose",
+		Msg:    initMsg,
+	}
+
+	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+	fee := sdktypes.Coin{
+		Denom:  "axpla",
+		Amount: feeAmt.Ceil().RoundInt(),
+	}
+
+	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, fee, xplaGeneralGasLimit)
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	time.Sleep(time.Second * 7)
+
+	queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+	resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+		Hash: txhash,
+	})
+
+	assert.NoError(t.T(), err)
+
+ATTR:
+	for _, val := range resp.TxResponse.Events {
+		for _, attr := range val.Attributes {
+			if string(attr.Key) == "_contract_address" {
+				t.TokenAddress = string(attr.Value)
+				break ATTR
+			}
+		}
+	}
+
+	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	queryStr := []byte(`{
+		"balance": {
+			"address": "xpla16wx7ye3ce060tjvmmpu8lm0ak5xr7gm2dp0kpt"
+		}
+	}`)
+
+	tokenResp, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
+		Address:   t.TokenAddress,
+		QueryData: queryStr,
+	})
+
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), tokenResp)
+
+	type AmtResp struct {
+		Balance string `json:"balance"`
+	}
+
+	amtResp := &AmtResp{}
+	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), "100000000", amtResp.Balance)
 }
 
 type EVMIntegrationTestSuite struct {
