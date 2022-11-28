@@ -18,7 +18,12 @@ jobs:
       run: |
         cd integration_test && docker-compose up -d
         docker ps
-        sleep 10s 
+        sleep 10
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.x
 
     - name: Integration test
       run: cd integration_test && go test
