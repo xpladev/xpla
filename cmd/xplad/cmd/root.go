@@ -39,7 +39,6 @@ import (
 	"github.com/evmos/ethermint/client/debug"
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"
-	xplaclient "github.com/xpladev/xpla/client"
 	xplatypes "github.com/xpladev/xpla/types"
 )
 
@@ -140,7 +139,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		xplaclient.KeyCommands(xpla.DefaultNodeHome),
+		ethermintclient.KeyCommands(xpla.DefaultNodeHome),
 	)
 }
 
