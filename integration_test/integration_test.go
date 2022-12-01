@@ -3,6 +3,7 @@ package integrationtest
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -152,19 +153,19 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 }
 
 func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
-	initMsg := []byte(`
+	initMsg := []byte(fmt.Sprintf(`
 		{
 			"name": "testtoken",
 			"symbol": "TKN",
 			"decimals": 6,
 			"initial_balances": [
 				{
-					"address": "xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826",
+					"address": "%s",
 					"amount": "100000000"
 				}
 			]
 		}
-	`)
+	`, t.UserWallet2.StringAddress))
 
 	instantiateMsg := &wasmtype.MsgInstantiateContract{
 		Sender: t.UserWallet2.StringAddress,
@@ -205,11 +206,11 @@ ATTR:
 
 	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
-	queryStr := []byte(`{
+	queryStr := []byte(fmt.Sprintf(`{
 		"balance": {
-			"address": "xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826"
+			"address": "%s"
 		}
-	}`)
+	}`, t.UserWallet2.StringAddress))
 
 	tokenResp, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
 		Address:   t.TokenAddress,
@@ -231,14 +232,14 @@ ATTR:
 }
 
 func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
-	transferMsg := []byte(`
+	transferMsg := []byte(fmt.Sprintf(`
 		{
 			"transfer": {
-				"recipient": "xpla1y6gnay0pv49asun56la09jcmhg2kc949mpftvt",
+				"recipient": "%s",
 				"amount": "50000000"
 			}
 		}
-	`)
+	`, t.UserWallet1.StringAddress))
 
 	contractExecMsg := &wasmtype.MsgExecuteContract{
 		Sender:   t.UserWallet2.StringAddress,
@@ -260,11 +261,11 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 
 	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
-	queryStr := []byte(`{
+	queryStr := []byte(fmt.Sprintf(`{
 		"balance": {
-			"address": "xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826"
+			"address": "%s"
 		}
-	}`)
+	}`, t.UserWallet2.StringAddress))
 
 	tokenResp, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
 		Address:   t.TokenAddress,

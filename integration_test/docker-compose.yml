@@ -7,12 +7,15 @@ services:
       context: ../.
       target: runtime
 
+    volumes:
+      - ~/genesis:/genesis:rw
+
     ports:
       - "8545:8545"
       - "9090:9090"
       - "26656:26656"
     
-    entrypoint: sh -c "MONIKER=validator1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint.sh"
+    entrypoint: sh -c "MONIKER=validator1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_master.sh"
     
     networks:
       vpcbr:
@@ -21,15 +24,22 @@ services:
   node2:
     container_name: xpla-localnet-validator2
 
+    volumes:
+      - ~/genesis:/genesis:ro
+
+    depends_on:
+      - node1
+
     build:
       context: ../.
       target: runtime
 
     ports:
+      - "8555:8555"
       - "9100:9100"
       - "26666:26666"
     
-    entrypoint: sh -c "MONIKER=validator2 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint.sh"
+    entrypoint: sh -c "MONIKER=validator2 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -38,15 +48,22 @@ services:
   node3:
     container_name: xpla-localnet-validator3
 
+    volumes:
+      - ~/genesis:/genesis:ro
+
+    depends_on:
+      - node1
+
     build:
       context: ../.
       target: runtime
 
     ports:
+      - "8565:8565"
       - "9110:9110"
       - "26676:26676"
     
-    entrypoint: sh -c "MONIKER=validator3 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint.sh"
+    entrypoint: sh -c "MONIKER=validator3 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -55,15 +72,22 @@ services:
   node4:
     container_name: xpla-localnet-validator4
 
+    volumes:
+      - ~/genesis:/genesis:ro
+
+    depends_on:
+      - node1
+
     build:
       context: ../.
       target: runtime
 
     ports:
+      - "8575:8575"
       - "9120:9120"
       - "26686:26686"
     
-    entrypoint: sh -c "MONIKER=validator4 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint.sh"
+    entrypoint: sh -c "MONIKER=validator4 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
     networks:
       vpcbr:

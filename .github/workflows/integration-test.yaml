@@ -16,6 +16,7 @@ jobs:
 
     - name: Setup network
       run: |
+        mkdir ~/genesis
         cd integration_test && docker-compose up -d
         docker ps
         sleep 10
