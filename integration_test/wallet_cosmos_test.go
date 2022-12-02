@@ -21,6 +21,7 @@ import (
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	ethhd "github.com/evmos/ethermint/crypto/hd"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
 const (
@@ -97,21 +98,32 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 	return ret, nil
 }
 
-func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLimit int64) (string, error) {
+func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLimit int64, isEVM bool) (string, error) {
 	w.Lock()
 	defer w.Unlock()
+	var err error
 
 	txBuilder := w.EncCfg.TxConfig.NewTxBuilder()
-
-	err := txBuilder.SetMsgs(msg)
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, set msgs")
-		return "", err
-	}
-
-	txBuilder.SetGasLimit(uint64(gasLimit))
-	txBuilder.SetFeeAmount(types.NewCoins(fee))
 	txBuilder.SetMemo("")
+
+	if !isEVM {
+		err = txBuilder.SetMsgs(msg)
+		if err != nil {
+			err = errors.Wrap(err, "SendTx, set msgs")
+			return "", err
+		}
+
+		txBuilder.SetGasLimit(uint64(gasLimit))
+		txBuilder.SetFeeAmount(types.NewCoins(fee))
+	} else {
+		convertedMsg := msg.(*evmtypes.MsgEthereumTx)
+
+		_, err = convertedMsg.BuildTx(txBuilder, "axpla")
+		if err != nil {
+			err = errors.Wrap(err, "SendTx, build evm tx")
+			return "", err
+		}
+	}
 
 	sigV2 := signing.SignatureV2{
 		PubKey: w.PrivKey.PubKey(),
@@ -121,6 +133,7 @@ func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLi
 		},
 		Sequence: w.Sequence,
 	}
+
 	err = txBuilder.SetSignatures(sigV2)
 	if err != nil {
 		err = errors.Wrap(err, "SendTx, SetSignatures")
