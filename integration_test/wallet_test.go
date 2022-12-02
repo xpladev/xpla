@@ -152,7 +152,7 @@ func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLi
 		return "", err
 	}
 
-	txHash, err := BroadcastTx(desc.ServiceConn, w.ChainId, txBytes, "async")
+	txHash, err := BroadcastTx(desc.ServiceConn, w.ChainId, txBytes, txtype.BroadcastMode_BROADCAST_MODE_ASYNC)
 	if err != nil {
 		err = errors.Wrap(err, "SendTx, tx broadcast")
 		return "", err
@@ -225,7 +225,7 @@ func GetAccountNumber(conn *grpc.ClientConn, chainId, address string) (uint64, u
 	return baseAccount.GetAccountNumber(), baseAccount.GetSequence(), nil
 }
 
-func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode string) (string, error) {
+func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode txtype.BroadcastMode) (string, error) {
 	queryTxClient := txtype.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
 
 	_, err := queryTxClient.Simulate(context.Background(), &txtype.SimulateRequest{
@@ -237,12 +237,11 @@ func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode str
 	}
 
 	client := txtype.NewServiceClient(desc.ServiceConn)
-	enummode := txtype.BroadcastMode_BROADCAST_MODE_SYNC
 
 	if currtestingenv := os.Getenv("GOLANG_TESTING"); currtestingenv != "true" {
 		res, err := client.BroadcastTx(context.Background(), &txtype.BroadcastTxRequest{
 			TxBytes: txBytes,
-			Mode:    enummode,
+			Mode:    mode,
 		})
 
 		if err != nil {

@@ -87,7 +87,8 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
-	time.Sleep(time.Second * 7)
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
 
 	queryClient := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
@@ -138,7 +139,8 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
-	time.Sleep(time.Second * 7)
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
 
 	queryClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
@@ -185,7 +187,8 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
-	time.Sleep(time.Second * 7)
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
 
 	queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
 	resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
@@ -257,7 +260,8 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
-	time.Sleep(time.Second * 7)
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
 
 	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
@@ -327,4 +331,21 @@ func walletSetup() (userWallet1, userWallet2, validatorWallet1 *WalletInfo) {
 	}
 
 	return
+}
+
+func txCheck(txHash string) error {
+	var err error
+
+	for i := 0; i < 20; i++ {
+		txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		_, err = txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txHash})
+
+		if err == nil {
+			return nil
+		}
+
+		time.Sleep(time.Second / 2)
+	}
+
+	return err
 }
