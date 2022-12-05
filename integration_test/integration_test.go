@@ -125,7 +125,7 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 }
 
 func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
-	contractBytes, err := os.ReadFile(filepath.Join(".", "misc", "token.wasm"))
+	contractBytes, err := os.ReadFile(filepath.Join(".", "misc", "dezswap_token.wasm"))
 	if err != nil {
 		panic(err)
 	}
