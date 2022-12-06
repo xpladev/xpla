@@ -123,6 +123,10 @@ import (
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 
+	"github.com/xpladev/xpla/x/proxyevm"
+	proxyevmkeeper "github.com/xpladev/xpla/x/proxyevm/keeper"
+	proxyevmtypes "github.com/xpladev/xpla/x/proxyevm/types"
+
 	xplaante "github.com/xpladev/xpla/ante"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 
@@ -220,6 +224,7 @@ var (
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
 		reward.AppModuleBasic{},
+		proxyevm.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -282,6 +287,7 @@ type XplaApp struct { // nolint: golint
 	AuthzKeeper    authzkeeper.Keeper
 	RouterKeeper   routerkeeper.Keeper
 	RewardKeeper   rewardkeeper.Keeper
+	ProxyEvmKeeper proxyevmkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -340,7 +346,7 @@ func NewXplaApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
-		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, rewardtypes.StoreKey,
+		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, rewardtypes.StoreKey, proxyevmtypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -594,6 +600,13 @@ func NewXplaApp(
 		app.MintKeeper,
 	)
 
+	app.ProxyEvmKeeper = proxyevmkeeper.NewKeeper(
+		appCodec,
+		keys[rewardtypes.StoreKey],
+		app.AccountKeeper,
+		app.EvmKeeper,
+	)
+
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
@@ -628,6 +641,7 @@ func NewXplaApp(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
+		proxyevm.NewAppModule(appCodec, app.ProxyEvmKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -661,6 +675,7 @@ func NewXplaApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		rewardtypes.ModuleName,
+		proxyevmtypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -687,6 +702,7 @@ func NewXplaApp(
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
+		proxyevmtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -723,6 +739,7 @@ func NewXplaApp(
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
+		proxyevmtypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
