@@ -1,0 +1,29 @@
+syntax = "proto3";
+package xpla.proxyevm.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/proxyevm/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "ethermint/evm/v1/tx.proto";
+
+service Msg {
+  // FundFeeCollector defines a method to allow an account to directly
+  // fund the fee collector.
+  rpc CallEVM(MsgCallEVM) returns (ethermint.evm.v1.MsgEthereumTxResponse);
+}
+
+// MsgCallEVM submits the given message data to a evm smart contract
+message MsgCallEVM {
+    // Sender is the that actor that signed the messages
+  string sender = 1;
+  // Contract is the address of the smart contract
+  string contract = 2;
+  // Msg json encoded message to be passed to the contract
+  bytes data = 3;
+  // Funds coins that are transferred to the contract on execution
+  repeated cosmos.base.v1beta1.Coin funds = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
