@@ -11,7 +11,7 @@ import (
 )
 
 func registerQueryRoutes(clientCtx client.Context, r *mux.Router) {
-	// Get the current reward parameter values
+	// Get the current xatp parameter values
 	r.HandleFunc(
 		"/xatp/parameters",
 		paramsHandlerFn(clientCtx),

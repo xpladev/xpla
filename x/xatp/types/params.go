@@ -24,7 +24,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 	})
 }
 
-// DefaultParams returns default reward parameters
+// DefaultParams returns default xatp parameters
 func DefaultParams() Params {
 	return Params{
 		XatpPayer: DefaultXATPPayer,

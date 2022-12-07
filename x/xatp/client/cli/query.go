@@ -8,7 +8,7 @@ import (
 )
 
 func GetQueryCmd() *cobra.Command {
-	rewardQueryCmd := &cobra.Command{
+	xatpQueryCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "Querying commands for xatp module",
 		DisableFlagParsing:         true,
@@ -16,11 +16,11 @@ func GetQueryCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	rewardQueryCmd.AddCommand(
+	xatpQueryCmd.AddCommand(
 		GetCmdQueryParams(),
 	)
 
-	return rewardQueryCmd
+	return xatpQueryCmd
 }
 
 // GetCmdQueryParams implements the query params command.
