@@ -18,7 +18,7 @@ func (s *IntegrationTestSuite) TestMempoolFeeDecorator() {
 		sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
 		sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
 		sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
-	})
+	}, s.app.AccountKeeper, s.app.XATPKeeper, 3_000_000)
 	antehandler := sdk.ChainAnteDecorators(mfd)
 	priv1, _, addr1 := testdata.KeyTestPubAddr()
 
@@ -34,7 +34,7 @@ func (s *IntegrationTestSuite) TestMempoolFeeDecorator() {
 	s.Require().NoError(err)
 
 	// Set high gas price so standard test fee fails
-	feeAmt := sdk.NewDecCoinFromDec("uatom", sdk.NewDec(200).Quo(sdk.NewDec(100000)))
+	feeAmt := sdk.NewDecCoinFromDec("axpla", sdk.NewDec(200).Quo(sdk.NewDec(100000)))
 	minGasPrice := []sdk.DecCoin{feeAmt}
 	s.ctx = s.ctx.WithMinGasPrices(minGasPrice).WithIsCheckTx(true)
 
