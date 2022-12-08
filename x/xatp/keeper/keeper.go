@@ -226,36 +226,3 @@ func (k Keeper) ExecuteContract(ctx sdk.Context, deductFeesFrom sdk.AccAddress, 
 
 	return nil
 }
-
-func (k Keeper) GetExecuteCost(ctx sdk.Context, denom string) (uint64, error) {
-
-	_, err, contractAddr := k.GetFeeInfoFromXATP(ctx, denom)
-	if err != nil {
-		return 0, err
-	}
-
-	contractInfo, _, _, err := k.wasmExecute.ContractInstance(ctx, contractAddr)
-
-	if err != nil {
-		return 0, err
-	}
-
-	var xatpPayer string
-	k.paramSpace.Get(ctx, types.ParamStoreKeyXATPPayer, &xatpPayer)
-
-	msg :=
-		`
-		{
-			"transfer": {
-				"recipient":  "` + xatpPayer + `",
-				"amount": "1000000"
-			}
-		}
-	`
-	executeCosts := wasmkeeper.NewDefaultWasmGasRegister().InstantiateContractCosts(
-		k.wasmKeeper.IsPinnedCode(ctx, contractInfo.CodeID),
-		len(wasmTypes.RawContractMessage(msg)),
-	)
-
-	return executeCosts, nil
-}
