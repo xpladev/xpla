@@ -267,18 +267,6 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 		}
 
-	} else {
-
-		if fee != nil && isXpla == false {
-
-			ctx = ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(dfd.smartQueryGasLimit)))
-			for _, coin := range fee {
-
-				executeCosts, _ := dfd.xatpKeeper.GetExecuteCost(ctx, coin.Denom)
-
-				ctx.GasMeter().ConsumeGas(executeCosts, "Loading CosmWasm module: execute")
-			}
-		}
 	}
 
 	events := sdk.Events{sdk.NewEvent(sdk.EventTypeTx,
