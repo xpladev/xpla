@@ -2,6 +2,7 @@ package ante_test
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/stretchr/testify/suite"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	xplaapp "github.com/xpladev/xpla/app"
@@ -35,9 +35,11 @@ func TestIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *IntegrationTestSuite) SetupTest() {
-	app := xplahelpers.Setup(s.T(), false, 1)
+	chainId := fmt.Sprintf("test_%d-%d", rand.Intn(1000), rand.Intn(10))
+
+	app := xplahelpers.Setup(s.T(), chainId, false, 1)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{
-		ChainID: fmt.Sprintf("test-chain-%s", tmrand.Str(4)),
+		ChainID: chainId,
 		Height:  1,
 	})
 

@@ -43,7 +43,7 @@ type EmptyAppOptions struct{}
 
 func (EmptyAppOptions) Get(o string) interface{} { return nil }
 
-func Setup(t *testing.T, isCheckTx bool, invCheckPeriod uint) *xplaapp.XplaApp {
+func Setup(t *testing.T, chainId string, isCheckTx bool, invCheckPeriod uint) *xplaapp.XplaApp {
 	t.Helper()
 
 	app, genesisState := setup(!isCheckTx, invCheckPeriod)
@@ -55,6 +55,7 @@ func Setup(t *testing.T, isCheckTx bool, invCheckPeriod uint) *xplaapp.XplaApp {
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
+				ChainId:         chainId,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,

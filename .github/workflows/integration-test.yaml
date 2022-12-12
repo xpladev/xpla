@@ -1,0 +1,33 @@
+name: Integration test
+
+on:
+  push:
+    branches: [ "main", "cube", "hypercube", "tesseract", "release/*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup network
+      run: |
+        mkdir ~/genesis
+        cd integration_test && docker-compose up -d
+        docker ps
+        sleep 10
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.x
+
+    - name: Integration test
+      run: cd integration_test && go test
+
+    - name: Teardown
+      run: cd integration_test && docker-compose down
