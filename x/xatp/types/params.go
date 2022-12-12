@@ -3,67 +3,57 @@ package types
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 const (
-	DefaultXATPPayer = ""
+	DefaultPayer = ""
 )
 
 // Parameter keys
 var (
-	ParamStoreKeyXATPs     = []byte("xatps")
-	ParamStoreKeyXATPPayer = []byte("xatppayer")
+	ParamStoreKeyPayer = []byte("payer")
 )
 
 // ParamKeyTable - Key declaration for parameters
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
-		XatpPayer: DefaultXATPPayer,
-		Xatps:     []XATP{},
-	})
+	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
 // DefaultParams returns default xatp parameters
 func DefaultParams() Params {
 	return Params{
-		XatpPayer: DefaultXATPPayer,
-		Xatps:     []XATP{},
+		Payer: DefaultPayer,
 	}
 }
-
-/*func (p Params) String() string {
-	var str string
-	for i := 0; i < len(p.Xatps); i++ {
-
-		str += p.Xatps[i].Denom + "\n" + p.Xatps[i].Contract + "\n" + p.Xatps[i].Pair
-	}
-	return str
-}*/
 
 // ParamSetPairs returns the parameter set pairs.
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyXATPPayer, &p.XatpPayer, validateXplaPayer),
-		paramtypes.NewParamSetPair(ParamStoreKeyXATPs, &p.Xatps, validateXATPs),
+		paramtypes.NewParamSetPair(ParamStoreKeyPayer, &p.Payer, validatePayer),
 	}
 }
 
-func (p Params) ValidateBasic() error { return nil }
-
-func validateXATPs(i interface{}) error {
-	_, ok := i.([]XATP)
-	if !ok {
-		return fmt.Errorf("invalid cw20 fee contract parameter type: %T", i)
+func (p Params) Validate() error {
+	if err := validatePayer(p.Payer); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func validateXplaPayer(i interface{}) error {
-	_, ok := i.(string)
+func validatePayer(i interface{}) error {
+	v, ok := i.(string)
 	if !ok {
-		return fmt.Errorf("invalid xpla player parameter type: %T", i)
+		return fmt.Errorf("invalid payer parameter type: %T", i)
+	}
+
+	if v != "" {
+		_, err := sdk.AccAddressFromBech32(v)
+		if err != nil {
+			return fmt.Errorf("invalid payer account: %s", err.Error())
+		}
 	}
 
 	return nil

@@ -6,16 +6,11 @@ option go_package = "github.com/xpladev/xpla/x/xatp/types";
 import "gogoproto/gogo.proto";
 
 message Params {
-
-    string xatp_payer = 1;
-    repeated XATP xatps = 2 [
-        (gogoproto.nullable) = false
-    ];
+    string payer = 1;
 }
-
 
 message XATP {
     string denom = 1;
-    string contract = 2;
+    string token = 2;
     string pair = 3;
 }

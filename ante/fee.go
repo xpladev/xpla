@@ -57,7 +57,6 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 	// operator configured bypass messages only, it's total gas must be less than
 	// or equal to a constant, otherwise minimum fees are checked to prevent spam.
 	if ctx.IsCheckTx() && !simulate && !(mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
-
 		minGasPrices := ctx.MinGasPrices()
 
 		var decimal int64
@@ -65,34 +64,35 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 
 		ctx = ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(mfd.smartQueryGasLimit)))
 
-		cw20Denoms := mfd.xatpKeeper.GetXATPs(ctx)
-		if len(cw20Denoms) > 0 && err == nil {
-
-			for _, token := range cw20Denoms {
-				for _, gp := range minGasPrices {
-					if gp.Denom == xplatypes.DefaultDenom {
-
-						ratioDec, err, _ := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, token.Denom)
-						if err != nil {
-							return ctx, err
-						}
-
-						if cw20Decimal == nil {
-							decimal = int64(len(gp.Amount.RoundInt().String()))
-							cw20Decimal = new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil))
-						}
-
-						minGasPrices = minGasPrices.Add(
-							sdk.DecCoin{
-								Denom:  token.Denom,
-								Amount: gp.Amount.Mul(ratioDec),
-							})
-					}
+		if !minGasPrices.IsZero() {
+			var defaultGasPrice sdk.DecCoin
+			for _, minGasPrice := range minGasPrices {
+				if defaultGasPrice.Denom == xplatypes.DefaultDenom {
+					defaultGasPrice = minGasPrice
 				}
 			}
-		}
 
-		if !minGasPrices.IsZero() {
+			for _, fee := range feeCoins {
+				xatp, found := mfd.xatpKeeper.GetXatp(ctx, fee.Denom)
+				if found {
+					ratioDec, err, _ := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Token)
+					if err != nil {
+						return ctx, err
+					}
+
+					if cw20Decimal == nil {
+						decimal = int64(len(defaultGasPrice.Amount.RoundInt().String()))
+						cw20Decimal = new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil))
+					}
+
+					minGasPrices = minGasPrices.Add(
+						sdk.DecCoin{
+							Denom:  xatp.Denom,
+							Amount: defaultGasPrice.Amount.Mul(ratioDec),
+						})
+				}
+			}
+
 			requiredFees := make(sdk.Coins, len(minGasPrices))
 
 			// Determine the required fees by multiplying each required minimum gas
@@ -242,7 +242,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 					}
 				}
 
-				xatpPayer := dfd.xatpKeeper.GetXTPSPayer(ctx)
+				xatpPayer := dfd.xatpKeeper.GetPayer(ctx)
 				XatpPayerAcc, err := sdk.AccAddressFromBech32(xatpPayer)
 				if err != nil {
 					return ctx, err

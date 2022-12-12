@@ -572,8 +572,6 @@ func NewXplaApp(
 		app.GetSubspace(xatptypes.ModuleName),
 		contractKeeper,
 		app.wasmKeeper,
-		xatpkeeper.WasmExecute{Cdc: appCodec, StoreKey: keys[wasm.StoreKey]},
-		app.wasmKeeper,
 	)
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
