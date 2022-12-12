@@ -13,3 +13,12 @@ const (
 	// QuerierRoute is the querier route for xatp
 	QuerierRoute = ModuleName
 )
+
+var (
+	// Keys for store prefixes
+	XatpsKey = []byte{0x11}
+)
+
+func GetXatpKey(denom string) []byte {
+	return append(XatpsKey, []byte(denom)...)
+}

@@ -7,9 +7,15 @@ import (
 
 func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) {
 	k.SetParams(ctx, data.Params)
+
+	for _, xatp := range data.Xatps {
+		k.SetXatp(ctx, xatp)
+	}
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params := k.GetParams(ctx)
-	return types.NewGenesisState(params)
+	xatps := k.GetAllXatps(ctx)
+
+	return types.NewGenesisState(params, xatps)
 }

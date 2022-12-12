@@ -7,12 +7,10 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	xplatypes "github.com/xpladev/xpla/types"
 	"github.com/xpladev/xpla/x/xatp/types"
@@ -23,10 +21,6 @@ type WasmExecute struct {
 	StoreKey sdk.StoreKey
 }
 
-type WasmExecuteInterface interface {
-	ContractInstance(ctx sdk.Context, contractAddress sdk.AccAddress) (wasmTypes.ContractInfo, wasmTypes.CodeInfo, prefix.Store, error)
-}
-
 type Keeper struct {
 	storeKey   sdk.StoreKey
 	cdc        codec.BinaryCodec
@@ -34,13 +28,11 @@ type Keeper struct {
 
 	contractKeeper wasmTypes.ContractOpsKeeper
 	viewKeeper     wasmTypes.ViewKeeper
-	wasmExecute    WasmExecuteInterface
-	wasmKeeper     wasmkeeper.Keeper
 }
 
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	ck wasmTypes.ContractOpsKeeper, vk wasmTypes.ViewKeeper, we WasmExecuteInterface, wk wasmkeeper.Keeper,
+	ck wasmTypes.ContractOpsKeeper, vk wasmTypes.ViewKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -53,8 +45,6 @@ func NewKeeper(
 		paramSpace:     paramSpace,
 		contractKeeper: ck,
 		viewKeeper:     vk,
-		wasmExecute:    we,
-		wasmKeeper:     wk,
 	}
 }
 
@@ -63,44 +53,18 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-func (k WasmExecute) ContractInstance(ctx sdk.Context, contractAddress sdk.AccAddress) (wasmTypes.ContractInfo, wasmTypes.CodeInfo, prefix.Store, error) {
-	store := ctx.KVStore(k.StoreKey)
-
-	contractBz := store.Get(wasmTypes.GetContractAddressKey(contractAddress))
-	if contractBz == nil {
-		return wasmTypes.ContractInfo{}, wasmTypes.CodeInfo{}, prefix.Store{}, sdkerrors.Wrap(wasmTypes.ErrNotFound, "contract")
-	}
-	var contractInfo wasmTypes.ContractInfo
-	k.Cdc.MustUnmarshal(contractBz, &contractInfo)
-
-	codeInfoBz := store.Get(wasmTypes.GetCodeKey(contractInfo.CodeID))
-	if codeInfoBz == nil {
-		return contractInfo, wasmTypes.CodeInfo{}, prefix.Store{}, sdkerrors.Wrap(wasmTypes.ErrNotFound, "code info")
-	}
-	var codeInfo wasmTypes.CodeInfo
-	k.Cdc.MustUnmarshal(codeInfoBz, &codeInfo)
-	prefixStoreKey := wasmTypes.GetContractStorePrefix(contractAddress)
-	prefixStore := prefix.NewStore(ctx.KVStore(k.StoreKey), prefixStoreKey)
-	return contractInfo, codeInfo, prefixStore, nil
-}
-
 func (k Keeper) GetFeeInfoFromXATP(ctx sdk.Context, cw20 string) (sdk.Dec, error, sdk.AccAddress) {
 
 	var pair string
 	var contract string
-	cw20Denoms := k.GetXATPs(ctx)
+	cw20Denom, found := k.GetXatp(ctx, cw20)
 
-	for i := 0; i < len(cw20Denoms); i++ {
-		if cw20Denoms[i].Denom == cw20 {
-			pair = cw20Denoms[i].Pair
-			contract = cw20Denoms[i].Contract
-			break
-		}
-	}
-
-	if len(pair) == 0 {
+	if !found {
 		return sdk.Dec{}, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "Not found pair address"), nil
 	}
+
+	pair = cw20Denom.Pair
+	contract = cw20Denom.Token
 
 	PairContractAddr, err := sdk.AccAddressFromBech32(pair)
 
@@ -196,7 +160,7 @@ func (k Keeper) GetFeeInfoFromXATP(ctx sdk.Context, cw20 string) (sdk.Dec, error
 func (k Keeper) ExecuteContract(ctx sdk.Context, deductFeesFrom sdk.AccAddress, denom string, amount string) error {
 
 	var xatpPayer string
-	k.paramSpace.Get(ctx, types.ParamStoreKeyXATPPayer, &xatpPayer)
+	k.paramSpace.Get(ctx, types.ParamStoreKeyPayer, &xatpPayer)
 
 	_, err, contractAddr := k.GetFeeInfoFromXATP(ctx, denom)
 	if err != nil {

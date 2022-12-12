@@ -14,14 +14,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramSpace.SetParamSet(ctx, &params)
 }
 
-func (k Keeper) GetXTPSPayer(ctx sdk.Context) (xplaPayer string) {
-
-	k.paramSpace.Get(ctx, types.ParamStoreKeyXATPPayer, &xplaPayer)
-	return xplaPayer
-}
-
-func (k Keeper) GetXATPs(ctx sdk.Context) (xatps []types.XATP) {
-
-	k.paramSpace.Get(ctx, types.ParamStoreKeyXATPs, &xatps)
-	return xatps
+func (k Keeper) GetPayer(ctx sdk.Context) (payer string) {
+	k.paramSpace.Get(ctx, types.ParamStoreKeyPayer, &payer)
+	return payer
 }
