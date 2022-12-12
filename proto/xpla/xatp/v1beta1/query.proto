@@ -13,6 +13,14 @@ service Query {
     rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
         option (google.api.http).get = "/xpla/xatp/v1beta1/params";
     }
+
+    rpc Xatps(QueryXatpsRequest) returns (QueryXatpsResponse) {
+      option (google.api.http).get = "/xpla/xatp/v1beta1/xatps";
+    }
+
+    rpc Xatp(QueryXatpRequest) returns (QueryXatpResponse) {
+      option (google.api.http).get = "/xpla/xatp/v1beta1/xatp/{denom}";
+    }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -22,4 +30,18 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params defines the parameters of the module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryXatpsRequest {}
+
+message QueryXatpsResponse {
+  repeated XATP xatps = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryXatpRequest {
+  string denom = 1;
+}
+
+message QueryXatpResponse {
+  XATP xatp = 1 [(gogoproto.nullable) = false];
 }
