@@ -79,6 +79,9 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 			for _, minGasPrice := range minGasPrices {
 				if defaultGasPrice.Denom == xplatypes.DefaultDenom {
 					defaultGasPrice = minGasPrice
+					decimal = int64(len(defaultGasPrice.Amount.RoundInt().String()))
+					cw20Decimal = new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil)
+					break
 				}
 			}
 
@@ -88,11 +91,6 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 					ratioDec, err, _ := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Token)
 					if err != nil {
 						return ctx, err
-					}
-
-					if cw20Decimal == nil {
-						decimal = int64(len(defaultGasPrice.Amount.RoundInt().String()))
-						cw20Decimal = new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil))
 					}
 
 					minGasPrices = minGasPrices.Add(
