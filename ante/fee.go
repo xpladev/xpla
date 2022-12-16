@@ -77,7 +77,7 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 		if !minGasPrices.IsZero() {
 			var defaultGasPrice sdk.DecCoin
 			for _, minGasPrice := range minGasPrices {
-				if defaultGasPrice.Denom == xplatypes.DefaultDenom {
+				if minGasPrice.Denom == xplatypes.DefaultDenom {
 					defaultGasPrice = minGasPrice
 					decimal = int64(len(defaultGasPrice.Amount.RoundInt().String()))
 					cw20Decimal = new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil)
@@ -88,7 +88,7 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 			for _, fee := range feeCoins {
 				xatp, found := mfd.xatpKeeper.GetXatp(ctx, fee.Denom)
 				if found {
-					ratioDec, err, _ := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Token)
+					ratioDec, err := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Denom)
 					if err != nil {
 						return ctx, err
 					}
@@ -235,7 +235,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 				denom := coin.Denom
 
-				ratioDec, err, _ := dfd.xatpKeeper.GetFeeInfoFromXATP(ctx, denom)
+				ratioDec, err := dfd.xatpKeeper.GetFeeInfoFromXATP(ctx, denom)
 				if err != nil {
 					return ctx, err
 				}
@@ -258,7 +258,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 					xplaDecimal = sdk.NewDecFromBigInt(new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil)))
 
-					err = dfd.xatpKeeper.ExecuteContract(ctx, deductFeesFrom, denom, coin.Amount.String())
+					err = dfd.xatpKeeper.PayXATP(ctx, deductFeesFrom, denom, coin.Amount.String())
 					if err != nil {
 						return ctx, err
 					}

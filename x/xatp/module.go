@@ -38,7 +38,8 @@ func (AppModuleBasic) Name() string {
 }
 
 // RegisterLegacyAminoCodec registers the xatp module's types for the given codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the xatp
@@ -78,7 +79,8 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 }
 
 // RegisterInterfaces implements InterfaceModule
-func (b AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {
+func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
 }
 
 // AppModule implements an application module for the distribution module.
