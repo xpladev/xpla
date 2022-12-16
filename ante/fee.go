@@ -67,16 +67,11 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 	// operator configured bypass messages only, it's total gas must be less than
 	// or equal to a constant, otherwise minimum fees are checked to prevent spam.
 	if ctx.IsCheckTx() && !simulate && !(mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
-		var decimal int64
-		var cw20Decimal *big.Int
-
 		if !minGasPrices.IsZero() {
 			var defaultGasPrice sdk.DecCoin
 			for _, minGasPrice := range minGasPrices {
 				if minGasPrice.Denom == xplatypes.DefaultDenom {
 					defaultGasPrice = minGasPrice
-					decimal = int64(len(defaultGasPrice.Amount.RoundInt().String()))
-					cw20Decimal = new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil)
 					break
 				}
 			}
@@ -89,11 +84,7 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 						return ctx, err
 					}
 
-					minGasPrices = minGasPrices.Add(
-						sdk.DecCoin{
-							Denom:  xatp.Denom,
-							Amount: defaultGasPrice.Amount.Mul(ratioDec),
-						})
+					minGasPrices = minGasPrices.Add(sdk.NewDecCoinFromDec(xatp.Denom, defaultGasPrice.Amount.Mul(ratioDec)))
 				}
 			}
 
@@ -107,7 +98,11 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 				fee = gp.Amount.Mul(glDec)
 
 				if gp.Denom != xplatypes.DefaultDenom {
-					fee = sdk.NewDecFromBigInt(new(big.Int).Div(fee.Ceil().RoundInt().BigInt(), cw20Decimal))
+					xatp, found := mfd.xatpKeeper.GetXatp(ctx, gp.Denom)
+					if found {
+						decimal := sdk.NewDecFromIntWithPrec(sdk.NewInt(10), int64(xatp.Decimals))
+						fee = fee.Ceil().Quo(decimal)
+					}
 				}
 
 				requiredFees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())
