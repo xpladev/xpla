@@ -2,7 +2,6 @@ package ante
 
 import (
 	"fmt"
-	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -12,8 +11,6 @@ import (
 	xplatypes "github.com/xpladev/xpla/types"
 
 	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
-
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 )
 
 const maxBypassMinFeeMsgGasUsage = uint64(200_000)
@@ -127,14 +124,13 @@ type DeductFeeDecorator struct {
 	MinGasPrices string
 }
 
-func NewDeductFeeDecorator(ak authante.AccountKeeper, bk types.BankKeeper, fk authante.FeegrantKeeper, xk xatpkeeper.Keeper, minGasPrices string) DeductFeeDecorator {
+func NewDeductFeeDecorator(ak authante.AccountKeeper, bk types.BankKeeper, fk authante.FeegrantKeeper, xk xatpkeeper.Keeper) DeductFeeDecorator {
 	return DeductFeeDecorator{
 		ak:             ak,
 		bankKeeper:     bk,
 		feegrantKeeper: fk,
 
-		xatpKeeper:   xk,
-		MinGasPrices: minGasPrices,
+		xatpKeeper: xk,
 	}
 }
 
@@ -175,83 +171,54 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "fee payer address: %s does not exist", deductFeesFrom)
 	}
 
-	var isXpla bool = false
-	for _, coin := range fee {
-		denom := coin.Denom
-
-		if denom == xplatypes.DefaultDenom {
-			isXpla = true
-		}
-	}
-
 	// deduct the fees
 	if !feeTx.GetFee().IsZero() {
+		nativeFees := sdk.Coins{}
+		xatpFees := sdk.Coins{}
 
-		if isXpla {
-			err = DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc, feeTx.GetFee())
+		for _, fee := range feeTx.GetFee() {
+			xatp, found := dfd.xatpKeeper.GetXatp(ctx, fee.Denom)
+			if !found {
+				nativeFees = nativeFees.Add(fee)
+				continue
+			}
+
+			err := dfd.xatpKeeper.PayXATP(ctx, deductFeesFrom, xatp.Denom, fee.Amount.String())
 			if err != nil {
 				return ctx, err
 			}
 
-		} else {
-			for _, coin := range fee {
-
-				denom := coin.Denom
-
-				ratioDec, err := dfd.xatpKeeper.GetFeeInfoFromXATP(ctx, denom)
-				if err != nil {
-					return ctx, err
-				}
-
-				var xplaDecimal sdk.Dec
-				if denom != xplatypes.DefaultDenom {
-
-					minGasPrices, err := sdk.ParseDecCoins(dfd.MinGasPrices)
-					if err != nil {
-						return ctx, err
-					}
-
-					var decimal int64
-					for _, gp := range minGasPrices {
-
-						if gp.Denom == xplatypes.DefaultDenom {
-							decimal = int64(len(gp.Amount.RoundInt().String()))
-						}
-					}
-
-					xplaDecimal = sdk.NewDecFromBigInt(new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(decimal), nil)))
-
-					err = dfd.xatpKeeper.PayXATP(ctx, deductFeesFrom, denom, coin.Amount.String())
-					if err != nil {
-						return ctx, err
-					}
-				}
-
-				xatpPayer := dfd.xatpKeeper.GetPayer(ctx)
-				XatpPayerAcc, err := sdk.AccAddressFromBech32(xatpPayer)
-				if err != nil {
-					return ctx, err
-				}
-
-				accExists := dfd.ak.(authkeeper.AccountKeeper).HasAccount(ctx, XatpPayerAcc)
-				if !accExists {
-					return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "XATP payer account: %s not found", XatpPayerAcc)
-				}
-
-				deductFeesFromAcc0 := dfd.ak.GetAccount(ctx, XatpPayerAcc)
-
-				xplaValue := sdk.NewDecFromInt(coin.Amount).Quo(ratioDec)
-				xplaValue = xplaValue.Mul(xplaDecimal)
-				xplaFee := sdk.NewCoins(sdk.NewCoin(xplatypes.DefaultDenom, xplaValue.Ceil().RoundInt()))
-
-				err = DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc0, xplaFee)
-				if err != nil {
-					return ctx, err
-				}
+			ratioDec, err := dfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Denom)
+			if err != nil {
+				return ctx, err
 			}
 
+			feeAmount := sdk.NewDecFromIntWithPrec(fee.Amount, int64(xatp.Decimals))
+			defaultFeeAmountDec := feeAmount.Quo(ratioDec)
+			defaultFeeAmount := defaultFeeAmountDec.Mul(sdk.NewDecWithPrec(10, xplatypes.DefaultDenomPrecision)).Ceil().BigInt()
+			xatpFees = xatpFees.Add(sdk.NewCoin(xplatypes.DefaultDenom, sdk.NewIntFromBigInt(defaultFeeAmount)))
 		}
 
+		if !nativeFees.Empty() {
+			err = DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc, nativeFees)
+			if err != nil {
+				return ctx, err
+			}
+		}
+
+		if !xatpFees.Empty() {
+			xatpPayer := dfd.xatpKeeper.GetPayer(ctx)
+			xatpPayerAcc, err := sdk.AccAddressFromBech32(xatpPayer)
+			if err != nil {
+				return ctx, err
+			}
+
+			deductFeeAccount := dfd.ak.GetAccount(ctx, xatpPayerAcc)
+			err = DeductFees(dfd.bankKeeper, ctx, deductFeeAccount, xatpFees)
+			if err != nil {
+				return ctx, err
+			}
+		}
 	}
 
 	events := sdk.Events{sdk.NewEvent(sdk.EventTypeTx,

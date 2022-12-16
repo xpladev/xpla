@@ -84,7 +84,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
 		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
-		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.XATPKeeper, opts.MinGasPrices),
+		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.XATPKeeper),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		authante.NewSetPubKeyDecorator(opts.AccountKeeper),
 		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
