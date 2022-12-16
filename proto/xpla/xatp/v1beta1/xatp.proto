@@ -13,4 +13,5 @@ message XATP {
     string denom = 1;
     string token = 2;
     string pair = 3;
+    int32 decimals = 4;
 }

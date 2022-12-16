@@ -121,3 +121,35 @@ func TestGetAllXatp(t *testing.T) {
 		Pair:  pair2,
 	}, xatps[1])
 }
+
+func TestDeleteXatp(t *testing.T) {
+	xatpKeeper, ctx := createTestInput(t)
+
+	denom := "CTXT"
+	token := "token1"
+	pair := "pair1"
+
+	xatpKeeper.SetXatp(ctx, types.XATP{
+		Denom: denom,
+		Token: token,
+		Pair:  pair,
+	})
+
+	xatp, found := xatpKeeper.GetXatp(ctx, denom)
+	require.True(t, found)
+	require.Equal(t, types.XATP{
+		Denom: denom,
+		Token: token,
+		Pair:  pair,
+	}, xatp)
+
+	xatpKeeper.DeleteXatp(ctx, denom)
+	xatp, found = xatpKeeper.GetXatp(ctx, denom)
+	require.False(t, found)
+	require.Equal(t, types.XATP{
+		Denom: "",
+		Token: "",
+		Pair:  "",
+	}, xatp)
+
+}

@@ -23,6 +23,11 @@ func (k Keeper) SetXatp(ctx sdk.Context, xatp types.XATP) {
 	store.Set(types.GetXatpKey(xatp.Denom), bz)
 }
 
+func (k Keeper) DeleteXatp(ctx sdk.Context, denom string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetXatpKey(denom))
+}
+
 func (k Keeper) GetAllXatps(ctx sdk.Context) (xatps []types.XATP) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.XatpsKey)

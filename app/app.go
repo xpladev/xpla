@@ -125,6 +125,7 @@ import (
 	xatpupgrade "github.com/xpladev/xpla/app/upgrades/xatp"
 
 	xatp "github.com/xpladev/xpla/x/xatp"
+	xatpclient "github.com/xpladev/xpla/x/xatp/client"
 	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
 	xatptypes "github.com/xpladev/xpla/x/xatp/types"
 )
@@ -180,6 +181,8 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpgradeProposalHandler,
 	)
 
+	govProposalHandlers = append(govProposalHandlers, xatpclient.ProposalHandler...)
+
 	return govProposalHandlers
 }
 
@@ -230,6 +233,7 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		wasm.ModuleName:                {authtypes.Burner},
 		rewardtypes.ModuleName:         nil,
+		xatptypes.ModuleName:           nil,
 	}
 )
 
@@ -453,15 +457,6 @@ func NewXplaApp(
 		scopedIBCKeeper,
 	)
 
-	// register the proposal types
-	govRouter := govtypes.NewRouter()
-	govRouter.
-		AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
-		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
-
 	wasmDir := filepath.Join(homePath, "data")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
@@ -491,6 +486,25 @@ func NewXplaApp(
 		supportedFeatures,
 		wasmOpts...,
 	)
+
+	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(&app.wasmKeeper)
+	app.XATPKeeper = xatpkeeper.NewKeeper(
+		appCodec,
+		keys[xatptypes.StoreKey],
+		app.GetSubspace(xatptypes.ModuleName),
+		contractKeeper,
+		app.wasmKeeper,
+	)
+
+	// register the proposal types
+	govRouter := govtypes.NewRouter()
+	govRouter.
+		AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
+		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
+		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
+		AddRoute(xatptypes.RouterKey, xatpkeeper.NewXatpProposalHandler(app.XATPKeeper))
 
 	// register wasm gov proposal types
 	enabledProposals := GetEnabledProposals()
@@ -563,15 +577,6 @@ func NewXplaApp(
 		app.StakingKeeper,
 		app.DistrKeeper,
 		app.MintKeeper,
-	)
-
-	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(&app.wasmKeeper)
-	app.XATPKeeper = xatpkeeper.NewKeeper(
-		appCodec,
-		keys[xatptypes.StoreKey],
-		app.GetSubspace(xatptypes.ModuleName),
-		contractKeeper,
-		app.wasmKeeper,
 	)
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
