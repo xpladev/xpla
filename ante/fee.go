@@ -30,15 +30,13 @@ type MempoolFeeDecorator struct {
 	BypassMinFeeMsgTypes []string
 	ak                   authante.AccountKeeper
 	xatpKeeper           xatpkeeper.Keeper
-	smartQueryGasLimit   uint64
 }
 
-func NewMempoolFeeDecorator(bypassMsgTypes []string, ak authante.AccountKeeper, ck xatpkeeper.Keeper, sqgl uint64) MempoolFeeDecorator {
+func NewMempoolFeeDecorator(bypassMsgTypes []string, ak authante.AccountKeeper, ck xatpkeeper.Keeper) MempoolFeeDecorator {
 	return MempoolFeeDecorator{
 		BypassMinFeeMsgTypes: bypassMsgTypes,
 		ak:                   ak,
 		xatpKeeper:           ck,
-		smartQueryGasLimit:   sqgl,
 	}
 }
 
@@ -61,8 +59,6 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 
 		var decimal int64
 		var cw20Decimal *big.Int
-
-		ctx = ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(mfd.smartQueryGasLimit)))
 
 		if !minGasPrices.IsZero() {
 			var defaultGasPrice sdk.DecCoin
@@ -132,20 +128,18 @@ type DeductFeeDecorator struct {
 	bankKeeper     types.BankKeeper
 	feegrantKeeper authante.FeegrantKeeper
 
-	xatpKeeper         xatpkeeper.Keeper
-	MinGasPrices       string
-	smartQueryGasLimit uint64
+	xatpKeeper   xatpkeeper.Keeper
+	MinGasPrices string
 }
 
-func NewDeductFeeDecorator(ak authante.AccountKeeper, bk types.BankKeeper, fk authante.FeegrantKeeper, xk xatpkeeper.Keeper, minGasPrices string, sqgl uint64) DeductFeeDecorator {
+func NewDeductFeeDecorator(ak authante.AccountKeeper, bk types.BankKeeper, fk authante.FeegrantKeeper, xk xatpkeeper.Keeper, minGasPrices string) DeductFeeDecorator {
 	return DeductFeeDecorator{
 		ak:             ak,
 		bankKeeper:     bk,
 		feegrantKeeper: fk,
 
-		xatpKeeper:         xk,
-		MinGasPrices:       minGasPrices,
-		smartQueryGasLimit: sqgl,
+		xatpKeeper:   xk,
+		MinGasPrices: minGasPrices,
 	}
 }
 
@@ -205,8 +199,6 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 			}
 
 		} else {
-
-			ctx = ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(dfd.smartQueryGasLimit)))
 			for _, coin := range fee {
 
 				denom := coin.Denom

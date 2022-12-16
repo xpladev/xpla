@@ -18,7 +18,7 @@ func (s *IntegrationTestSuite) TestMempoolFeeDecorator() {
 		sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
 		sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
 		sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
-	}, s.app.AccountKeeper, s.app.XATPKeeper, 3_000_000)
+	}, s.app.AccountKeeper, s.app.XATPKeeper)
 	antehandler := sdk.ChainAnteDecorators(mfd)
 	priv1, _, addr1 := testdata.KeyTestPubAddr()
 
