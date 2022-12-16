@@ -103,14 +103,15 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
-		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper, opts.WasmConfig.SmartQueryGasLimit),
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper),
+
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
 		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
 		authante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper),
 		authante.NewSetPubKeyDecorator(opts.AccountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
-		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.XATPKeeper, opts.MinGasPrices, opts.WasmConfig.SmartQueryGasLimit),
+		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.XATPKeeper, opts.MinGasPrices),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		authante.NewSetPubKeyDecorator(opts.AccountKeeper),
 		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
@@ -124,8 +125,8 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 
 func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper), // outermost AnteDecorator. SetUpContext must be called first
-		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper, opts.WasmConfig.SmartQueryGasLimit), // Check eth effective gas price against the global MinGasPrice
+		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                                                                          // outermost AnteDecorator. SetUpContext must be called first
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
 		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
