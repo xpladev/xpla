@@ -66,23 +66,27 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 	// or equal to a constant, otherwise minimum fees are checked to prevent spam.
 	if ctx.IsCheckTx() && !simulate && !(mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
 		if !minGasPrices.IsZero() {
-			var defaultGasPrice sdk.DecCoin
-			for _, minGasPrice := range minGasPrices {
-				if minGasPrice.Denom == xplatypes.DefaultDenom {
-					defaultGasPrice = minGasPrice
-					break
-				}
-			}
-
-			for _, fee := range feeCoins {
-				xatp, found := mfd.xatpKeeper.GetXatp(ctx, fee.Denom)
-				if found {
-					ratioDec, err := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Denom)
-					if err != nil {
-						return ctx, err
+			payer := mfd.xatpKeeper.GetPayer(ctx)
+			if payer != "" {
+				var defaultGasPrice sdk.DecCoin
+				for _, minGasPrice := range minGasPrices {
+					if minGasPrice.Denom == xplatypes.DefaultDenom {
+						defaultGasPrice = minGasPrice
+						break
 					}
+				}
 
-					minGasPrices = minGasPrices.Add(sdk.NewDecCoinFromDec(xatp.Denom, defaultGasPrice.Amount.Mul(ratioDec)))
+				for _, fee := range feeCoins {
+
+					xatp, found := mfd.xatpKeeper.GetXatp(ctx, fee.Denom)
+					if found {
+						ratioDec, err := mfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Denom)
+						if err != nil {
+							return ctx, err
+						}
+
+						minGasPrices = minGasPrices.Add(sdk.NewDecCoinFromDec(xatp.Denom, defaultGasPrice.Amount.Mul(ratioDec)))
+					}
 				}
 			}
 
@@ -200,7 +204,13 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		nativeFees := sdk.Coins{}
 		xatpFees := sdk.Coins{}
 
+		xatpPayer := dfd.xatpKeeper.GetPayer(ctx)
+
 		for _, fee := range feeTx.GetFee() {
+			if xatpPayer == "" {
+				break
+			}
+
 			xatp, found := dfd.xatpKeeper.GetXatp(ctx, fee.Denom)
 			if !found {
 				nativeFees = nativeFees.Add(fee)
@@ -231,7 +241,6 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		}
 
 		if !xatpFees.Empty() {
-			xatpPayer := dfd.xatpKeeper.GetPayer(ctx)
 			xatpPayerAcc, err := sdk.AccAddressFromBech32(xatpPayer)
 			if err != nil {
 				return ctx, err
