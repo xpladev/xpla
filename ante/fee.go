@@ -91,8 +91,8 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 				if gp.Denom != xplatypes.DefaultDenom {
 					xatp, found := mfd.xatpKeeper.GetXatp(ctx, gp.Denom)
 					if found {
-						decimal := sdk.NewDecFromIntWithPrec(sdk.NewInt(10), int64(xatp.Decimals))
-						fee = fee.Ceil().Quo(decimal)
+						decimalDiff := sdk.NewDecWithPrec(1, sdk.Precision-int64(xatp.Decimals))
+						fee = fee.Ceil().Mul(decimalDiff)
 					}
 				}
 
@@ -205,8 +205,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 			feeAmount := sdk.NewDecFromIntWithPrec(fee.Amount, int64(xatp.Decimals))
 			defaultFeeAmountDec := feeAmount.Quo(ratioDec)
-			defaultFeeAmount := defaultFeeAmountDec.Mul(sdk.NewDecWithPrec(10, xplatypes.DefaultDenomPrecision)).Ceil().BigInt()
-			xatpFees = xatpFees.Add(sdk.NewCoin(xplatypes.DefaultDenom, sdk.NewIntFromBigInt(defaultFeeAmount)))
+			xatpFees = xatpFees.Add(sdk.NewCoin(xplatypes.DefaultDenom, defaultFeeAmountDec.TruncateInt()))
 		}
 
 		if !nativeFees.Empty() {
