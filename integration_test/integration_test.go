@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"os"
@@ -14,6 +15,7 @@ import (
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	banktype "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	// evmtypes "github.com/evmos/ethermint/x/evm/types"
@@ -39,28 +41,39 @@ func TestWasmContractAndTx(t *testing.T) {
 type WASMIntegrationTestSuite struct {
 	suite.Suite
 
-	TokenAddress string
+	FactoryAddress string
+	TokenAddress   string
+	PairAddress    string
+
+	ProposalId uint64
 
 	UserWallet1      *WalletInfo
 	UserWallet2      *WalletInfo
 	ValidatorWallet1 *WalletInfo
+	ValidatorWallet2 *WalletInfo
+	ValidatorWallet3 *WalletInfo
+	ValidatorWallet4 *WalletInfo
 }
 
 func (i *WASMIntegrationTestSuite) SetupSuite() {
 	desc = NewServiceDesc("127.0.0.1", 9090, 10, true)
 
-	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1 = walletSetup()
+	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1, i.ValidatorWallet2, i.ValidatorWallet3, i.ValidatorWallet4 = walletSetup()
 }
 
 func (i *WASMIntegrationTestSuite) SetupTest() {
-	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1 = walletSetup()
+	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1, i.ValidatorWallet2, i.ValidatorWallet3, i.ValidatorWallet4 = walletSetup()
 
 	i.UserWallet1.RefreshSequence()
 	i.UserWallet2.RefreshSequence()
 	i.ValidatorWallet1.RefreshSequence()
+
+	fmt.Println("======== Starting", i.T().Name(), "... ========")
 }
 
-func (i *WASMIntegrationTestSuite) TearDownTest() {}
+func (i *WASMIntegrationTestSuite) TearDownTest() {
+	fmt.Println("======== Finished", i.T().Name(), "... ========")
+}
 
 func (u *WASMIntegrationTestSuite) TearDownSuite() {
 	desc.CloseConnection()
@@ -73,6 +86,8 @@ func (u *WASMIntegrationTestSuite) TearDownSuite() {
 // 4. Contract execute
 
 func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
+	fmt.Println("Preparing delegation message")
+
 	amt := sdktypes.NewInt(100000000000000)
 	coin := &sdktypes.Coin{
 		Denom:  "axpla",
@@ -91,12 +106,19 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
-	assert.NoError(t.T(), err)
-	assert.NotNil(t.T(), txhash)
+	txhash, err := t.UserWallet1.SendTx(false, fee, xplaGeneralGasLimit, delegationMsg)
+	if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+		fmt.Println("Tx sent", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
 	err = txCheck(txhash)
-	assert.NoError(t.T(), err)
+	if assert.NoError(t.T(), err) {
+		fmt.Println("Tx applied", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
 	queryClient := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
@@ -121,10 +143,14 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 		),
 	}
 
-	assert.Equal(t.T(), expected, delegatedList)
+	if assert.Equal(t.T(), expected, delegatedList) {
+		fmt.Println("Delegation confirmed")
+	}
 }
 
 func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
+	fmt.Println("Preparing code storing message")
+
 	contractBytes, err := os.ReadFile(filepath.Join(".", "misc", "token.wasm"))
 	if err != nil {
 		panic(err)
@@ -142,13 +168,19 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, fee, xplaCodeGasLimit, false)
-
-	assert.NoError(t.T(), err)
-	assert.NotNil(t.T(), txhash)
+	txhash, err := t.UserWallet1.SendTx(false, fee, xplaCodeGasLimit, storeMsg)
+	if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+		fmt.Println("Tx sent", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
 	err = txCheck(txhash)
-	assert.NoError(t.T(), err)
+	if assert.NoError(t.T(), err) {
+		fmt.Println("Tx applied", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
 	queryClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
@@ -158,11 +190,14 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 
 	resp, err := queryClient.Code(context.Background(), queryCodeMsg)
 
-	assert.NoError(t.T(), err)
-	assert.NotNil(t.T(), resp)
+	if assert.NoError(t.T(), err) && assert.NotNil(t.T(), resp) {
+		fmt.Println("Code storage confirmed:", resp.CodeID)
+	}
 }
 
 func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
+	fmt.Println("Preparing code instantiating message")
+
 	initMsg := []byte(fmt.Sprintf(`
 		{
 			"name": "testtoken",
@@ -171,11 +206,15 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 			"initial_balances": [
 				{
 					"address": "%s",
-					"amount": "100000000"
+					"amount": "1000000000"
+				},
+				{
+					"address": "%s",
+					"amount": "1000000000"
 				}
 			]
 		}
-	`, t.UserWallet2.StringAddress))
+	`, t.UserWallet2.StringAddress, t.ValidatorWallet1.StringAddress))
 
 	instantiateMsg := &wasmtype.MsgInstantiateContract{
 		Sender: t.UserWallet2.StringAddress,
@@ -191,12 +230,19 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, fee, xplaGeneralGasLimit, false)
-	assert.NoError(t.T(), err)
-	assert.NotNil(t.T(), txhash)
+	txhash, err := t.UserWallet2.SendTx(false, fee, xplaGeneralGasLimit, instantiateMsg)
+	if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+		fmt.Println("Tx sent", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
 	err = txCheck(txhash)
-	assert.NoError(t.T(), err)
+	if assert.NoError(t.T(), err) {
+		fmt.Println("Tx applied", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
 	queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
 	resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
@@ -215,6 +261,10 @@ ATTR:
 		}
 	}
 
+	fmt.Println("Token is deployed as", t.TokenAddress)
+
+	fmt.Println("Checking the token balance")
+
 	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
 	queryStr := []byte(fmt.Sprintf(`{
@@ -237,17 +287,19 @@ ATTR:
 
 	amtResp := &AmtResp{}
 	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
-	assert.NoError(t.T(), err)
-
-	assert.Equal(t.T(), "100000000", amtResp.Balance)
+	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "1000000000", amtResp.Balance) {
+		fmt.Println("Token balance confirmed")
+	}
 }
 
 func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
+	fmt.Println("Preparing contract execution message")
+
 	transferMsg := []byte(fmt.Sprintf(`
 		{
 			"transfer": {
 				"recipient": "%s",
-				"amount": "50000000"
+				"amount": "500000000"
 			}
 		}
 	`, t.UserWallet1.StringAddress))
@@ -264,13 +316,23 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, fee, xplaGeneralGasLimit, false)
-	assert.NoError(t.T(), err)
-	assert.NotNil(t.T(), txhash)
+	txhash, err := t.UserWallet2.SendTx(false, fee, xplaGeneralGasLimit, contractExecMsg)
+	if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+		fmt.Println("Tx sent", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
 	err = txCheck(txhash)
-	assert.NoError(t.T(), err)
+	if assert.NoError(t.T(), err) {
+		fmt.Println("Tx applied", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
+	fmt.Println("Checking the token balance")
+
+	// Balance check after transfer
 	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
 	queryStr := []byte(fmt.Sprintf(`{
@@ -293,9 +355,325 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 
 	amtResp := &AmtResp{}
 	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
-	assert.NoError(t.T(), err)
 
-	assert.Equal(t.T(), "50000000", amtResp.Balance)
+	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "500000000", amtResp.Balance) {
+		fmt.Println("Token balance confirmed")
+	}
+}
+
+func (t *WASMIntegrationTestSuite) Test05_EnableSwap() {
+	// WASM code store
+	{
+		for _, filename := range []string{
+			"pair.wasm",    // Code: 2
+			"factory.wasm", // Code: 3
+		} {
+			fmt.Println("Preparing code storing message:", filename)
+
+			contractBytes, err := os.ReadFile(filepath.Join(".", "misc", filename))
+			if err != nil {
+				panic(err)
+			}
+
+			storeMsg := &wasmtype.MsgStoreCode{
+				Sender:       t.UserWallet1.StringAddress,
+				WASMByteCode: contractBytes,
+			}
+
+			feeAmt := sdktypes.NewDec(xplaPairInstantiateGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+
+			fee := sdktypes.Coin{
+				Denom:  "axpla",
+				Amount: feeAmt.Ceil().RoundInt(),
+			}
+
+			txhash, err := t.UserWallet1.SendTx(false, fee, xplaPairInstantiateGasLimit, storeMsg)
+
+			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+				fmt.Println("Tx sent", txhash)
+			} else {
+				fmt.Println(err)
+			}
+
+			err = txCheck(txhash)
+			if assert.NoError(t.T(), err) {
+				fmt.Println("Tx applied", txhash)
+			} else {
+				fmt.Println(err)
+			}
+		}
+	}
+
+	// factory instantiate
+	{
+		fmt.Println("Preparing factory code instantiate")
+
+		initMsg := []byte(`{
+			"pair_code_id": 2,
+			"token_code_id": 1
+		}`)
+
+		instantiateMsg := &wasmtype.MsgInstantiateContract{
+			Sender: t.UserWallet1.StringAddress,
+			Admin:  t.UserWallet1.StringAddress,
+			CodeID: 3,
+			Label:  "Integration test purpose",
+			Msg:    initMsg,
+		}
+
+		feeAmt := sdktypes.NewDec(xplaPairInstantiateGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.UserWallet1.SendTx(false, fee, xplaPairInstantiateGasLimit, instantiateMsg)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+			Hash: txhash,
+		})
+
+		assert.NoError(t.T(), err)
+
+	ATTR1:
+		for _, val := range resp.TxResponse.Events {
+			for _, attr := range val.Attributes {
+				if string(attr.Key) == "_contract_address" {
+					t.FactoryAddress = string(attr.Value)
+					break ATTR1
+				}
+			}
+		}
+
+		fmt.Println("Factory contract is instantiated as", t.FactoryAddress)
+	}
+
+	{
+		fmt.Println("Registering axpla")
+
+		registerMsg := []byte(`
+			{
+				"add_native_token_decimals": {
+				"denom": "axpla",
+				"decimals": 18
+				}
+			}
+		`)
+
+		contractExecMsg := &wasmtype.MsgExecuteContract{
+			Sender:   t.UserWallet1.StringAddress,
+			Contract: t.FactoryAddress,
+			Msg:      registerMsg,
+			Funds:    sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(1))),
+		}
+
+		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.UserWallet1.SendTx(false, fee, xplaGeneralGasLimit, contractExecMsg)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+	}
+
+	// create a pair from the factory
+	{
+		fmt.Println("Creating a pair using the factory contract")
+
+		createPairMsg := []byte(fmt.Sprintf(`
+			{
+				"create_pair": {
+					"asset_infos": [
+						{
+							"token": {
+								"contract_addr": "%s"
+							}
+						},
+						{
+							"native_token": {
+								"denom": "axpla"
+							}
+						}
+					]
+				}
+			}
+		`, t.TokenAddress))
+
+		contractExecMsg := &wasmtype.MsgExecuteContract{
+			Sender:   t.UserWallet1.StringAddress,
+			Contract: t.FactoryAddress,
+			Msg:      createPairMsg,
+		}
+
+		feeAmt := sdktypes.NewDec(xplaCreatePairGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.UserWallet1.SendTx(false, fee, xplaCreatePairGasLimit, contractExecMsg)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+			Hash: txhash,
+		})
+
+		assert.NoError(t.T(), err)
+
+	ATTR2:
+		for _, val := range resp.TxResponse.Events {
+			for _, attr := range val.Attributes {
+				if string(attr.Key) == "pair_contract_addr" {
+					t.PairAddress = string(attr.Value)
+					break ATTR2
+				}
+			}
+		}
+
+		fmt.Println("Pair contract is instantiated as", t.PairAddress)
+	}
+
+	// increase allowance
+	// provide initial liquidity
+	{
+		fmt.Println("Providing the token to the pair")
+
+		increaseAllowanceMsg := []byte(fmt.Sprintf(`
+			{
+				"increase_allowance": {
+					"spender": "%s",
+					"amount": "100000000",
+					"expires": {
+						"never": {}
+					}
+				}
+			}
+		`, t.PairAddress))
+
+		increaseAllowanceExecMsg := &wasmtype.MsgExecuteContract{
+			Sender:   t.UserWallet1.StringAddress,
+			Contract: t.TokenAddress,
+			Msg:      increaseAllowanceMsg,
+		}
+
+		provideMsg := []byte(fmt.Sprintf(`
+			{
+				"provide_liquidity": {
+					"assets": [
+						{
+							"info" : {
+								"token": {
+									"contract_addr": "%s"
+								}
+							},
+							"amount": "100000000"
+						},
+						{
+							"info" : {
+								"native_token": {
+									"denom": "axpla"
+								}
+							},
+							"amount": "10000000000000000000"
+						}
+					]
+				}
+		  	}
+		`, t.TokenAddress)) // 100 TKN : 10 XPLA
+
+		provideExecMsg := &wasmtype.MsgExecuteContract{
+			Sender:   t.UserWallet1.StringAddress,
+			Contract: t.PairAddress,
+			Msg:      provideMsg,
+			Funds:    sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.MustNewDecFromStr("10000000000000000000").RoundInt())),
+		}
+
+		feeAmt := sdktypes.NewDec(xplaPairGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.UserWallet1.SendTx(false, fee, xplaPairGasLimit, increaseAllowanceExecMsg, provideExecMsg)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+	}
+}
+
+func (t *WASMIntegrationTestSuite) Test07_NativeTransfer_PayByXPLA_LackOfFee_SimulationShouldFail() {
+	fmt.Println("Preparing transfer message")
+
+	trasnferMsg := banktype.NewMsgSend(
+		t.ValidatorWallet1.ByteAddress, t.ValidatorWallet2.ByteAddress,
+		sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(1_000000_000000_000000))),
+	)
+
+	fmt.Println("Pay very low fee. Should fail")
+	feeAmt := sdktypes.NewDec(xplaLowGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+	fee := sdktypes.Coin{
+		Denom:  "axpla", // ordinal native fee
+		Amount: feeAmt.Ceil().RoundInt(),
+	}
+
+	txhash, err := t.ValidatorWallet1.SendTx(false, fee, xplaPairGasLimit, trasnferMsg)
+	if assert.Error(t.T(), err, "should fail in the simulation step") && assert.Equal(t.T(), "", txhash) {
+		fmt.Println("Error successfully raised", err)
+	} else {
+		fmt.Println("Tx hash detected:", txhash)
+		fmt.Println("No error is detected on simulation phase. Test fail")
+	}
+
+	err = txCheck(txhash)
+	if assert.Error(t.T(), err) {
+		fmt.Println("Error confirmed after broadcasted:", err)
+	}
 }
 
 // Test strategy
@@ -491,7 +869,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 // 	assert.Equal(t.T(), new(big.Int).Add(amt, amt), resp)
 // }
 
-func walletSetup() (userWallet1, userWallet2, validatorWallet1 *WalletInfo) {
+func walletSetup() (userWallet1, userWallet2, validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4 *WalletInfo) {
 	var err error
 
 	user1Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "user1.mnemonics"))
@@ -520,6 +898,36 @@ func walletSetup() (userWallet1, userWallet2, validatorWallet1 *WalletInfo) {
 	}
 
 	validatorWallet1, err = NewWalletInfo(string(validator1Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator2Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator2.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet2, err = NewWalletInfo(string(validator2Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator3Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator3.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet3, err = NewWalletInfo(string(validator3Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator4Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator4.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet4, err = NewWalletInfo(string(validator4Mnemonics))
 	if err != nil {
 		panic(err)
 	}
@@ -565,12 +973,18 @@ func evmWalletSetup() (userWallet1, userWallet2, validatorWallet1 *EVMWalletInfo
 
 func txCheck(txHash string) error {
 	var err error
+	var resp *txtypes.GetTxResponse
+
+	txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
 
 	for i := 0; i < 20; i++ {
-		txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
-		_, err = txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txHash})
+		resp, err = txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txHash})
 
 		if err == nil {
+			if resp.TxResponse.Code != 0 {
+				return errors.New(resp.TxResponse.RawLog)
+			}
+
 			return nil
 		}
 
