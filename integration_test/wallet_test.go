@@ -97,13 +97,13 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 	return ret, nil
 }
 
-func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLimit int64) (string, error) {
+func (w *WalletInfo) SendTx(fee types.Coin, gasLimit int64, msg ...types.Msg) (string, error) {
 	w.Lock()
 	defer w.Unlock()
 
 	txBuilder := w.EncCfg.TxConfig.NewTxBuilder()
 
-	err := txBuilder.SetMsgs(msg)
+	err := txBuilder.SetMsgs(msg...)
 	if err != nil {
 		err = errors.Wrap(err, "SendTx, set msgs")
 		return "", err
@@ -128,7 +128,7 @@ func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLi
 	}
 
 	signerData := xauthsigning.SignerData{
-		ChainID:       chainId,
+		ChainID:       w.ChainId,
 		AccountNumber: w.AccountNumber,
 		Sequence:      w.Sequence,
 	}
