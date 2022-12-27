@@ -98,16 +98,25 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 	return ret, nil
 }
 
-func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLimit int64, isEVM bool) (string, error) {
+func (w *WalletInfo) SendTx(isEVM bool, fee types.Coin, gasLimit int64, msg ...types.Msg) (string, error) {
 	w.Lock()
 	defer w.Unlock()
 	var err error
 
 	txBuilder := w.EncCfg.TxConfig.NewTxBuilder()
+
+	err = txBuilder.SetMsgs(msg...)
+	if err != nil {
+		err = errors.Wrap(err, "SendTx, set msgs")
+		return "", err
+	}
+
+	txBuilder.SetGasLimit(uint64(gasLimit))
+	txBuilder.SetFeeAmount(types.NewCoins(fee))
 	txBuilder.SetMemo("")
 
 	if !isEVM {
-		err = txBuilder.SetMsgs(msg)
+		err = txBuilder.SetMsgs(msg...)
 		if err != nil {
 			err = errors.Wrap(err, "SendTx, set msgs")
 			return "", err
@@ -116,7 +125,11 @@ func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLi
 		txBuilder.SetGasLimit(uint64(gasLimit))
 		txBuilder.SetFeeAmount(types.NewCoins(fee))
 	} else {
-		convertedMsg := msg.(*evmtypes.MsgEthereumTx)
+		if len(msg) > 1 {
+			return "", errors.New("currently, 1 eth tx per 1 cosmwasm tx")
+		}
+
+		convertedMsg := msg[0].(*evmtypes.MsgEthereumTx)
 
 		_, err = convertedMsg.BuildTx(txBuilder, "axpla")
 		if err != nil {
@@ -141,7 +154,7 @@ func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLi
 	}
 
 	signerData := xauthsigning.SignerData{
-		ChainID:       chainId,
+		ChainID:       w.ChainId,
 		AccountNumber: w.AccountNumber,
 		Sequence:      w.Sequence,
 	}
