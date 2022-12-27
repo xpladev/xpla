@@ -726,6 +726,8 @@ func (t *EVMIntegrationTestSuite) TearDownSuite() {
 }
 
 func (t *EVMIntegrationTestSuite) SetupTest() {
+	fmt.Println("======== Starting", t.T().Name(), "... ========")
+
 	t.UserWallet1.GetNonce(t.EthClient)
 	t.UserWallet2.GetNonce(t.EthClient)
 	t.ValidatorWallet1.GetNonce(t.EthClient)
@@ -735,7 +737,9 @@ func (t *EVMIntegrationTestSuite) SetupTest() {
 	t.ValidatorWallet1.CosmosWalletInfo.RefreshSequence()
 }
 
-func (i *EVMIntegrationTestSuite) TeardownTest() {}
+func (i *EVMIntegrationTestSuite) TeardownTest() {
+	fmt.Println("======== Finished", i.T().Name(), "... ========")
+}
 
 func (t *EVMIntegrationTestSuite) Test01_CheckBalance() {
 	resp, err := t.EthClient.BalanceAt(context.Background(), t.UserWallet1.EthAddress, nil)
@@ -773,8 +777,11 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 
 	// Actual deploy
 	address, tx, _, err := abibind.DeployContract(auth, *parsedAbi, binbyte, t.EthClient, "Example Token", "XPLAERC")
-	assert.NoError(t.T(), err)
-	fmt.Println("Tx hash: ", tx.Hash().String())
+	if assert.NotNil(t.T(), tx.Hash()) && assert.NoError(t.T(), err) {
+		fmt.Println("Tx hash: ", tx.Hash().String())
+	} else {
+		fmt.Println("Err occurred: ", err)
+	}
 
 	time.Sleep(time.Second * 7)
 
@@ -803,17 +810,20 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 
 	// try to transfer
 	tx, err := store.Transfer(auth, t.UserWallet2.EthAddress, amt)
-	assert.NoError(t.T(), err)
-	fmt.Println("Sent as ", tx.Hash().String())
+	if assert.NotNil(t.T(), tx.Hash()) && assert.NoError(t.T(), err) {
+		fmt.Println("Tx hash: ", tx.Hash().String())
+	} else {
+		fmt.Println("Err occurred: ", err)
+	}
 
 	time.Sleep(time.Second * 7)
 
 	// query & assert
 	callOpt := &abibind.CallOpts{}
 	resp, err := store.BalanceOf(callOpt, t.UserWallet2.EthAddress)
-	assert.NoError(t.T(), err)
-
-	assert.Equal(t.T(), amt, resp)
+	if assert.NoError(t.T(), err) && assert.Equal(t.T(), amt, resp) {
+		fmt.Println("Balance validated!")
+	}
 }
 
 // Wrote and tried to test triggering EVM by MsgEthereumTx
