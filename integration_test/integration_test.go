@@ -18,12 +18,12 @@ import (
 	banktype "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	// evmtypes "github.com/evmos/ethermint/x/evm/types"
-
 	abibind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	web3 "github.com/ethereum/go-ethereum/ethclient"
+
+	proxyevmtypes "github.com/xpladev/xpla/x/proxyevm/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -687,9 +687,9 @@ func TestEVMContractAndTx(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	if os.Getenv("GITHUB_BASE_REF") != "hypercube" {
-		t.Skip("EVM is only available on hypercube!")
-	}
+	// if os.Getenv("GITHUB_BASE_REF") != "hypercube" {
+	// 	t.Skip("EVM is only available on hypercube!")
+	// }
 
 	testSuite := &EVMIntegrationTestSuite{}
 	suite.Run(t, testSuite)
@@ -706,6 +706,9 @@ type EVMIntegrationTestSuite struct {
 	UserWallet1      *EVMWalletInfo
 	UserWallet2      *EVMWalletInfo
 	ValidatorWallet1 *EVMWalletInfo
+	ValidatorWallet2 *EVMWalletInfo
+	ValidatorWallet3 *EVMWalletInfo
+	ValidatorWallet4 *EVMWalletInfo
 }
 
 func (t *EVMIntegrationTestSuite) SetupSuite() {
@@ -717,7 +720,7 @@ func (t *EVMIntegrationTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	t.UserWallet1, t.UserWallet2, t.ValidatorWallet1 = evmWalletSetup()
+	t.UserWallet1, t.UserWallet2, t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4 = evmWalletSetup()
 }
 
 func (t *EVMIntegrationTestSuite) TearDownSuite() {
@@ -812,6 +815,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	tx, err := store.Transfer(auth, t.UserWallet2.EthAddress, amt)
 	if assert.NotNil(t.T(), tx.Hash()) && assert.NoError(t.T(), err) {
 		fmt.Println("Tx hash: ", tx.Hash().String())
+		fmt.Println("Gas used:", tx.Gas())
 	} else {
 		fmt.Println("Err occurred: ", err)
 	}
@@ -826,58 +830,66 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	}
 }
 
-// Wrote and tried to test triggering EVM by MsgEthereumTx
-// But there is a collision between tx msg caching <> ethermint antehandler
-// MsgEthereumTx.From kept left <> ethermint antehandler checks and passes only MsgEthereumTx.From is empty
-// It resolves from ethermint v0.20
-// Before that, EVM can only be triggered by 8545
+func (t *EVMIntegrationTestSuite) Test04_ExecuteTokenContractByProxy() {
+	store, err := NewTokenInterface(t.TokenAddress, t.EthClient)
+	assert.NoError(t.T(), err)
 
-// func (t *EVMIntegrationTestSuite) Test04_ExecuteTokenContractAndQueryOnCosmos() {
-// 	store, err := NewTokenInterface(t.TokenAddress, t.EthClient)
-// 	assert.NoError(t.T(), err)
+	networkId, err := t.EthClient.NetworkID(context.Background())
+	assert.NoError(t.T(), err)
 
-// 	networkId, err := t.EthClient.NetworkID(context.Background())
-// 	assert.NoError(t.T(), err)
+	multiplier, _ := new(big.Int).SetString("1000000000000000000", 10)
+	amt := new(big.Int).Mul(big.NewInt(10), multiplier)
 
-// 	multiplier, _ := new(big.Int).SetString("1000000000000000000", 10)
-// 	amt := new(big.Int).Mul(big.NewInt(10), multiplier)
+	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+	assert.NoError(t.T(), err)
 
-// 	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
-// 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
-// 	assert.NoError(t.T(), err)
+	auth.NoSend = true
+	auth.GasLimit = uint64(xplaGeneralGasLimit)
+	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
 
-// 	auth.NoSend = true
-// 	auth.GasLimit = uint64(xplaGeneralGasLimit)
-// 	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
+	unsentTx, err := store.Transfer(auth, t.UserWallet2.EthAddress, amt)
+	assert.NoError(t.T(), err)
 
-// 	unsentTx, err := store.Transfer(auth, t.UserWallet2.EthAddress, amt)
-// 	assert.NoError(t.T(), err)
+	msg := &proxyevmtypes.MsgCallEVM{
+		Sender:   t.UserWallet1.CosmosWalletInfo.StringAddress,
+		Contract: t.TokenAddress.String(),
+		Data:     unsentTx.Data(),
+	}
 
-// 	msg := &evmtypes.MsgEthereumTx{}
-// 	err = msg.FromEthereumTx(unsentTx)
-// 	assert.NoError(t.T(), err)
+	feeAmt := sdktypes.NewDec(xplaEvmProxyGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+	fee := sdktypes.Coin{
+		Denom:  "axpla",
+		Amount: feeAmt.Ceil().RoundInt(),
+	}
 
-// 	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-// 	fee := sdktypes.Coin{
-// 		Denom:  "axpla",
-// 		Amount: feeAmt.Ceil().RoundInt(),
-// 	}
+	txhash, err := t.UserWallet1.CosmosWalletInfo.SendTx(false, fee, xplaEvmProxyGasLimit, msg)
+	if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+		fmt.Println("Tx sent", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
-// 	txHash, err := t.UserWallet1.CosmosWalletInfo.SendTx(ChainID, msg, fee, xplaGeneralGasLimit, true)
-// 	assert.NoError(t.T(), err)
+	err = txCheck(txhash)
+	if assert.NoError(t.T(), err) {
+		fmt.Println("Tx applied", txhash)
+	} else {
+		fmt.Println(err)
+	}
 
-// 	err = txCheck(txHash)
-// 	assert.NoError(t.T(), err)
+	// check
+	callOpt := &abibind.CallOpts{}
+	resp, err := store.BalanceOf(callOpt, t.UserWallet2.EthAddress)
+	assert.NoError(t.T(), err)
 
-// 	// check
-// 	callOpt := &abibind.CallOpts{}
-// 	resp, err := store.BalanceOf(callOpt, t.UserWallet2.EthAddress)
-// 	assert.NoError(t.T(), err)
+	fmt.Println(resp.String())
 
-// 	fmt.Println(resp.String())
-
-// 	assert.Equal(t.T(), new(big.Int).Add(amt, amt), resp)
-// }
+	if assert.Equal(t.T(), new(big.Int).Add(amt, amt), resp) {
+		fmt.Println("Balance validated!")
+	} else {
+		fmt.Println("Incorrect balance")
+	}
+}
 
 func walletSetup() (userWallet1, userWallet2, validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4 *WalletInfo) {
 	var err error
@@ -945,7 +957,7 @@ func walletSetup() (userWallet1, userWallet2, validatorWallet1, validatorWallet2
 	return
 }
 
-func evmWalletSetup() (userWallet1, userWallet2, validatorWallet1 *EVMWalletInfo) {
+func evmWalletSetup() (userWallet1, userWallet2, validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4 *EVMWalletInfo) {
 	var err error
 
 	user1Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "user1.mnemonics"))
@@ -978,6 +990,36 @@ func evmWalletSetup() (userWallet1, userWallet2, validatorWallet1 *EVMWalletInfo
 		panic(err)
 	}
 
+	validator2Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator2.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet2, err = NewEVMWalletInfo(string(validator2Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator3Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator3.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet3, err = NewEVMWalletInfo(string(validator3Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator4Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator4.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet4, err = NewEVMWalletInfo(string(validator4Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
 	return
 }
 
@@ -995,6 +1037,7 @@ func txCheck(txHash string) error {
 				return errors.New(resp.TxResponse.RawLog)
 			}
 
+			fmt.Println("gas used:", resp.TxResponse.GasUsed)
 			return nil
 		}
 

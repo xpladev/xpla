@@ -14,6 +14,7 @@ const (
 	xplaProposalGasLimit        int64 = 500000
 	xplaCreatePairGasLimit      int64 = 650000
 	xplaPairGasLimit            int64 = 800000
+	xplaEvmProxyGasLimit        int64 = 1200000
 	xplaCodeGasLimit            int64 = 5000000
 	xplaPairInstantiateGasLimit int64 = 8000000
 
