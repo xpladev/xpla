@@ -3,6 +3,7 @@ package keeper
 import (
 	context "context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/armon/go-metrics"
@@ -33,6 +34,8 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 
 	txIndex := k.evmKeeper.GetTxIndexTransient(ctx)
 
+	fmt.Println("keeper, GetTxIndexTransient", ctx.GasMeter().GasConsumed())
+
 	var labels []metrics.Label
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
@@ -52,7 +55,11 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 		labels = []metrics.Label{telemetry.NewLabel("execution", "create")}
 	}
 
+	fmt.Println("keeper, Address processing", ctx.GasMeter().GasConsumed())
+
 	evmParams := k.evmKeeper.GetParams(ctx)
+
+	fmt.Println("keeper, GetParams", ctx.GasMeter().GasConsumed())
 
 	fundAmount := sdk.ZeroInt()
 	for _, coin := range msg.Funds {
@@ -60,6 +67,8 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 			fundAmount = coin.Amount
 		}
 	}
+
+	fmt.Println("keeper, msg.Fund processing", ctx.GasMeter().GasConsumed())
 
 	res, gasLimit, err := k.callEVM(
 		ctx,
@@ -72,6 +81,8 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "failed to apply transaction")
 	}
+
+	fmt.Println("keeper, after evm execution", ctx.GasMeter().GasConsumed())
 
 	defer func() {
 		telemetry.IncrCounterWithLabels(
@@ -110,15 +121,21 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 		sdk.NewAttribute(evmtypes.AttributeKeyTxGasUsed, strconv.FormatUint(res.GasUsed, 10)),
 	}
 
+	fmt.Println("keeper, after add attr1", ctx.GasMeter().GasConsumed())
+
 	if len(ctx.TxBytes()) > 0 {
 		// add event for tendermint transaction hash format
 		hash := tmbytes.HexBytes(tmtypes.Tx(ctx.TxBytes()).Hash())
 		attrs = append(attrs, sdk.NewAttribute(evmtypes.AttributeKeyTxHash, hash.String()))
 	}
 
+	fmt.Println("keeper, after add attr2", ctx.GasMeter().GasConsumed())
+
 	if contract != nil {
 		attrs = append(attrs, sdk.NewAttribute(evmtypes.AttributeKeyRecipient, contract.Hex()))
 	}
+
+	fmt.Println("keeper, after add contract res", ctx.GasMeter().GasConsumed())
 
 	if res.Failed() {
 		attrs = append(attrs, sdk.NewAttribute(evmtypes.AttributeKeyEthereumTxFailed, res.VmError))
@@ -149,6 +166,8 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 			sdk.NewAttribute(sdk.AttributeKeySender, msg.Sender),
 		),
 	})
+
+	fmt.Println("keeper, after after event emission", ctx.GasMeter().GasConsumed())
 
 	return res, nil
 }

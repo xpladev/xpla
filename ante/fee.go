@@ -1,6 +1,8 @@
 package ante
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
@@ -72,4 +74,20 @@ func (mfd MempoolFeeDecorator) bypassMinFeeMsgs(msgs []sdk.Msg) bool {
 	}
 
 	return true
+}
+
+type GasfeeCheckDecorator struct {
+	ModuleName string
+}
+
+func NewGasfeeCheckDecorator(moduleName string) GasfeeCheckDecorator {
+	return GasfeeCheckDecorator{
+		ModuleName: moduleName,
+	}
+}
+
+func (gf GasfeeCheckDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	meter := ctx.GasMeter()
+	fmt.Println(gf.ModuleName, "consumed", meter.GasConsumed())
+	return next(ctx, tx, simulate)
 }

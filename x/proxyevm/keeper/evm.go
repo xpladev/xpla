@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -28,6 +29,8 @@ func (k Keeper) callEVM(
 		return nil, gasCap, err
 	}
 
+	fmt.Println("callEVM, head of call evm", ctx.GasMeter().GasConsumed())
+
 	from := common.BytesToAddress(sender.Bytes())
 
 	if commit {
@@ -40,6 +43,8 @@ func (k Keeper) callEVM(
 			return nil, gasCap, sdkerrors.Wrapf(sdkerrors.ErrJSONMarshal, "failed to marshal tx args: %s", err.Error())
 		}
 
+		fmt.Println("callEVM, in commit", ctx.GasMeter().GasConsumed())
+
 		gasRes, err := k.evmKeeper.EstimateGas(sdk.WrapSDKContext(ctx), &evmtypes.EthCallRequest{
 			Args:   args,
 			GasCap: config.DefaultGasCap,
@@ -48,6 +53,8 @@ func (k Keeper) callEVM(
 			return nil, gasCap, err
 		}
 		gasCap = gasRes.Gas
+
+		fmt.Println("callEVM, after gas estimation", ctx.GasMeter().GasConsumed())
 	}
 
 	msg := ethtypes.NewMessage(
@@ -72,6 +79,8 @@ func (k Keeper) callEVM(
 	if res.Failed() {
 		return nil, gasCap, sdkerrors.Wrap(evmtypes.ErrVMExecution, res.VmError)
 	}
+
+	fmt.Println("callEVM, after call evm", ctx.GasMeter().GasConsumed())
 
 	return res, gasCap, nil
 }

@@ -808,14 +808,23 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
 	assert.NoError(t.T(), err)
 
-	auth.GasLimit = uint64(300000)
+	auth.GasLimit = uint64(xplaGeneralGasLimit)
 	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
+
+	// capture balance before tx send
+	bankClient := banktype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	balanceBeforeResp, _ := bankClient.Balance(context.Background(), &banktype.QueryBalanceRequest{
+		Address: t.UserWallet1.CosmosWalletInfo.StringAddress,
+		Denom:   "axpla",
+	})
+
+	beforeBalance := balanceBeforeResp.Balance.Amount
 
 	// try to transfer
 	tx, err := store.Transfer(auth, t.UserWallet2.EthAddress, amt)
 	if assert.NotNil(t.T(), tx.Hash()) && assert.NoError(t.T(), err) {
 		fmt.Println("Tx hash: ", tx.Hash().String())
-		fmt.Println("Gas used:", tx.Gas())
 	} else {
 		fmt.Println("Err occurred: ", err)
 	}
@@ -828,6 +837,16 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	if assert.NoError(t.T(), err) && assert.Equal(t.T(), amt, resp) {
 		fmt.Println("Balance validated!")
 	}
+
+	// capture after before tx send
+	balanceAfterResp, _ := bankClient.Balance(context.Background(), &banktype.QueryBalanceRequest{
+		Address: t.UserWallet1.CosmosWalletInfo.StringAddress,
+		Denom:   "axpla",
+	})
+
+	afterBalance := balanceAfterResp.Balance.Amount
+
+	fmt.Println("Fee consumed:", beforeBalance.Sub(afterBalance).String())
 }
 
 func (t *EVMIntegrationTestSuite) Test04_ExecuteTokenContractByProxy() {
@@ -863,6 +882,16 @@ func (t *EVMIntegrationTestSuite) Test04_ExecuteTokenContractByProxy() {
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
+	// capture balance before tx send
+	bankClient := banktype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	balanceResp, _ := bankClient.Balance(context.Background(), &banktype.QueryBalanceRequest{
+		Address: t.UserWallet1.CosmosWalletInfo.StringAddress,
+		Denom:   "axpla",
+	})
+
+	beforeBalance := balanceResp.Balance.Amount
+
 	txhash, err := t.UserWallet1.CosmosWalletInfo.SendTx(false, fee, xplaEvmProxyGasLimit, msg)
 	if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 		fmt.Println("Tx sent", txhash)
@@ -889,6 +918,16 @@ func (t *EVMIntegrationTestSuite) Test04_ExecuteTokenContractByProxy() {
 	} else {
 		fmt.Println("Incorrect balance")
 	}
+
+	// capture after before tx send
+	balanceResp, _ = bankClient.Balance(context.Background(), &banktype.QueryBalanceRequest{
+		Address: t.UserWallet1.CosmosWalletInfo.StringAddress,
+		Denom:   "axpla",
+	})
+
+	afterBalance := balanceResp.Balance.Amount
+
+	fmt.Println("Fee consumed:", beforeBalance.Sub(afterBalance).String())
 }
 
 func walletSetup() (userWallet1, userWallet2, validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4 *WalletInfo) {
