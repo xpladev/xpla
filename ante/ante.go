@@ -100,7 +100,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
 		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
-		evmante.NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper),
+		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
