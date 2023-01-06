@@ -1,9 +1,13 @@
 package ante
 
 import (
+	"math/big"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
+
+	ethermintante "github.com/evmos/ethermint/app/ante"
 )
 
 const maxBypassMinFeeMsgGasUsage = uint64(200_000)
@@ -72,4 +76,62 @@ func (mfd MempoolFeeDecorator) bypassMinFeeMsgs(msgs []sdk.Msg) bool {
 	}
 
 	return true
+}
+
+// MinGasPriceDecorator will check if the transaction's fee is at least as large
+// as the MinGasPrices param. If fee is too low, decorator returns error and tx
+// is rejected. This applies for both CheckTx and DeliverTx
+// If fee is high enough, then call next AnteHandler
+// CONTRACT: Tx must implement FeeTx to use MinGasPriceDecorator
+type MinGasPriceDecorator struct {
+	feesKeeper ethermintante.FeeMarketKeeper
+	evmKeeper  ethermintante.EVMKeeper
+}
+
+func NewMinGasPriceDecorator(fk ethermintante.FeeMarketKeeper, ek ethermintante.EVMKeeper) MinGasPriceDecorator {
+	return MinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek}
+}
+
+func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	feeTx, ok := tx.(sdk.FeeTx)
+	if !ok {
+		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "Tx must be a FeeTx")
+	}
+
+	minGasPrice := mpd.feesKeeper.GetParams(ctx).MinGasPrice
+
+	// Short-circuit if min gas price is 0 or if simulating
+	if minGasPrice.IsZero() || simulate {
+		return next(ctx, tx, simulate)
+	}
+
+	evmDenom := mpd.evmKeeper.GetParams(ctx).EvmDenom
+	minGasPrices := sdk.DecCoins{
+		{
+			Denom:  evmDenom,
+			Amount: minGasPrice,
+		},
+	}
+
+	feeCoins := feeTx.GetFee()
+	gas := feeTx.GetGas()
+
+	requiredFees := make(sdk.Coins, 0)
+
+	// Determine the required fees by multiplying each required minimum gas
+	// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
+	gasLimit := sdk.NewDecFromBigInt(new(big.Int).SetUint64(gas))
+
+	for _, gp := range minGasPrices {
+		fee := gp.Amount.Mul(gasLimit).Ceil().RoundInt()
+		if fee.IsPositive() {
+			requiredFees = requiredFees.Add(sdk.Coin{Denom: gp.Denom, Amount: fee})
+		}
+	}
+
+	if !feeCoins.IsAnyGTE(requiredFees) {
+		return ctx, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "provided fee < minimum global fee (%s < %s). Please increase the gas price.", feeCoins, requiredFees)
+	}
+
+	return next(ctx, tx, simulate)
 }
