@@ -128,6 +128,8 @@ import (
 
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 
+	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
+
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
@@ -949,6 +951,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 		xplareward.CreateUpgradeHandler(app.mm, app.configurator, app.RewardKeeper),
 	)
 
+	// evm upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		evmupgrade.UpgradeName,
+		evmupgrade.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.FeeMarketKeeper),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -967,6 +975,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 	case xplareward.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: xplareward.AddModules,
+		}
+	case evmupgrade.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: evmupgrade.AddModules,
 		}
 	}
 
