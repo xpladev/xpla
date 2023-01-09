@@ -34,7 +34,11 @@ func (msg MsgCallEVM) GetSignBytes() []byte {
 }
 
 // ValidateBasic performs basic MsgCallEVM message validation.
-func (msg MsgCallEVM) ValidateBasic() error {
+func (msg *MsgCallEVM) ValidateBasic() error {
+	if msg == nil {
+		return sdkerrors.ErrInvalidRequest
+	}
+
 	if !msg.Funds.IsValid() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Funds.String())
 	}
@@ -42,7 +46,6 @@ func (msg MsgCallEVM) ValidateBasic() error {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Sender)
 	}
 
-	common.IsHexAddress(msg.Contract)
 	if !common.IsHexAddress(msg.Contract) {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Contract)
 	}

@@ -34,15 +34,12 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 	txIndex := k.evmKeeper.GetTxIndexTransient(ctx)
 
 	var labels []metrics.Label
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		return nil, err
-	}
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 
-	var contract *common.Address
+	var contract common.Address
 	if msg.Contract != "" {
 		addr := common.HexToAddress(msg.Contract)
-		contract = &addr
+		contract = addr
 
 		labels = []metrics.Label{
 			telemetry.NewLabel("execution", "call"),
@@ -64,7 +61,7 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 	res, gasLimit, err := k.callEVM(
 		ctx,
 		sender,
-		contract,
+		&contract,
 		msg.Data,
 		fundAmount,
 		true,
@@ -116,7 +113,7 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 		attrs = append(attrs, sdk.NewAttribute(evmtypes.AttributeKeyTxHash, hash.String()))
 	}
 
-	if contract != nil {
+	if len(contract.Bytes()) > 0 {
 		attrs = append(attrs, sdk.NewAttribute(evmtypes.AttributeKeyRecipient, contract.Hex()))
 	}
 
