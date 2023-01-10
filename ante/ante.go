@@ -14,25 +14,30 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	evmante "github.com/evmos/ethermint/app/ante"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 )
 
-// HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
+// HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
 // channel keeper.
 type HandlerOptions struct {
 	AccountKeeper   evmtypes.AccountKeeper
 	BankKeeper      evmtypes.BankKeeper
 	IBCKeeper       *ibckeeper.Keeper
+	EvmKeeper       evmante.EVMKeeper
 	FeegrantKeeper  authante.FeegrantKeeper
 	SignModeHandler authsigning.SignModeHandler
 	SigGasConsumer  authante.SignatureVerificationGasConsumer
+	FeeMarketKeeper evmtypes.FeeMarketKeeper
+	MaxTxGasWanted  uint64
 
 	BypassMinFeeMsgTypes []string
 	TxCounterStoreKey    sdk.StoreKey
 	WasmConfig           wasmTypes.WasmConfig
 }
 
+// NewAnteHandler returns an 'AnteHandler' that will run actions before a tx is sent to a module's handler.
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	if opts.AccountKeeper == nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "account keeper is required for AnteHandler")
@@ -50,6 +55,25 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		var anteHandler sdk.AnteHandler
 
 		defer Recover(ctx.Logger(), &err)
+
+		txWithExtensions, ok := tx.(authante.HasExtensionOptionsTx)
+		if ok {
+			eopts := txWithExtensions.GetExtensionOptions()
+			if len(eopts) > 0 {
+				switch typeURL := eopts[0].GetTypeUrl(); typeURL {
+				case "/ethermint.evm.v1.ExtensionOptionsEthereumTx":
+					// handle as *evmtypes.MsgEthereumTx
+					anteHandler = newEthAnteHandler(opts)
+				default:
+					return ctx, sdkerrors.Wrapf(
+						sdkerrors.ErrUnknownExtensionOptions,
+						"rejecting tx with unsupported extension option: %s", typeURL,
+					)
+				}
+
+				return anteHandler(ctx, tx, sim)
+			}
+		}
 
 		// handle as totally normal Cosmos SDK tx
 		switch tx.(type) {
@@ -70,27 +94,43 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	}
 
 	anteDecorators := []sdk.AnteDecorator{
-		authante.NewSetUpContextDecorator(),
+		evmante.RejectMessagesDecorator{},   // reject MsgEthereumTxs
+		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
 		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
-
+		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
 		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
 		authante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper),
-		// SetPubKeyDecorator must be called before all signature verification decorators
-		authante.NewSetPubKeyDecorator(opts.AccountKeeper),
+		authante.NewSetPubKeyDecorator(opts.AccountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
 		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
 		authante.NewSigGasConsumeDecorator(opts.AccountKeeper, sigGasConsumer),
 		authante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
-		authante.NewIncrementSequenceDecorator(opts.AccountKeeper),
+		authante.NewIncrementSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator
 		ibcante.NewAnteDecorator(opts.IBCKeeper),
+		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
 	}
-
 	return sdk.ChainAnteDecorators(anteDecorators...)
+}
+
+func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
+	return sdk.ChainAnteDecorators(
+		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                      // outermost AnteDecorator. SetUpContext must be called first
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),                        // Check eth effective gas price against minimal-gas-prices
+		evmante.NewEthMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
+		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
+		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
+		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
+		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
+		evmante.NewCanTransferDecorator(opts.EvmKeeper),
+		evmante.NewEthIncrementSenderSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator.
+		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
+		evmante.NewEthEmitEventDecorator(opts.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
+	)
 }
 
 func Recover(logger tmlog.Logger, err *error) {
