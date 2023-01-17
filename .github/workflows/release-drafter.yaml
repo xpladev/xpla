@@ -1,7 +1,7 @@
 name: Release Drafter
 on:
   push:
-    branches: [ "main", "cube", "hypercube", "tesseract" ]
+    branches: [ "main", "cube", "tesseract" ]
 
 jobs:
   update_release_draft:

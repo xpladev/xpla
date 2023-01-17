@@ -309,10 +309,6 @@ func TestEVMContractAndTx(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	if os.Getenv("GITHUB_BASE_REF") != "hypercube" {
-		t.Skip("EVM is only available on hypercube!")
-	}
-
 	testSuite := &EVMIntegrationTestSuite{}
 	suite.Run(t, testSuite)
 }
