@@ -2,7 +2,7 @@ name: Integration test
 
 on:
   push:
-    branches: [ "main", "cube", "hypercube", "tesseract", "release/*" ]
+    branches: [ "main", "cube", "tesseract", "release/*" ]
   pull_request:
     branches: [ "*" ]
 

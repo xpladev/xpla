@@ -1,7 +1,9 @@
 package types
 
 const (
+	// Default Denom
 	DefaultDenom = "axpla"
+  
 	// CoinType
 	CoinType = 60
 
