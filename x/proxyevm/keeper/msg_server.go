@@ -58,7 +58,7 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 		}
 	}
 
-	res, gasLimit, err := k.callEVM(
+	res, err := k.callEVM(
 		ctx,
 		sender,
 		&contract,
@@ -86,7 +86,7 @@ func (k msgServer) CallEVM(goCtx context.Context, msg *types.MsgCallEVM) (*evmty
 
 			// Observe which users define a gas limit >> gas used. Note, that
 			// gas_limit and gas_used are always > 0
-			gasRatio, err := sdk.NewDec(int64(gasLimit)).QuoInt64(int64(res.GasUsed)).Float64()
+			gasRatio, err := sdk.NewDec(int64(ctx.GasMeter().GasConsumed())).QuoInt64(int64(res.GasUsed)).Float64()
 			if err == nil {
 				telemetry.SetGaugeWithLabels(
 					[]string{"tx", "msg", "call_evm", "gas_limit", "per", "gas_used"},
