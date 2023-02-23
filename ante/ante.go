@@ -99,7 +99,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
-		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
+		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
@@ -117,8 +117,8 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 
 func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                      // outermost AnteDecorator. SetUpContext must be called first
-		evmante.NewEthMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
+		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),           // outermost AnteDecorator. SetUpContext must be called first
+		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
 		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
