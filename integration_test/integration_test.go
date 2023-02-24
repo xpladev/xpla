@@ -210,11 +210,11 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 			"initial_balances": [
 				{
 					"address": "%s",
-					"amount": "1000000000"
+					"amount": "10000000000"
 				},
 				{
 					"address": "%s",
-					"amount": "1000000000"
+					"amount": "10000000000"
 				}
 			]
 		}
@@ -291,7 +291,7 @@ ATTR:
 
 	amtResp := &AmtResp{}
 	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
-	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "1000000000", amtResp.Balance) {
+	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "10000000000", amtResp.Balance) {
 		fmt.Println("Token balance confirmed")
 	}
 }
@@ -303,7 +303,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 		{
 			"transfer": {
 				"recipient": "%s",
-				"amount": "500000000"
+				"amount": "5000000000"
 			}
 		}
 	`, t.UserWallet1.StringAddress))
@@ -360,7 +360,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 	amtResp := &AmtResp{}
 	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
 
-	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "500000000", amtResp.Balance) {
+	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "5000000000", amtResp.Balance) {
 		fmt.Println("Token balance confirmed")
 	}
 }
@@ -384,7 +384,7 @@ func (t *WASMIntegrationTestSuite) Test05_EnableSwap() {
 				WASMByteCode: contractBytes,
 			}
 
-			feeAmt := sdktypes.NewDec(xplaPairInstantiateGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+			feeAmt := sdktypes.NewDec(xplaCodeGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 
 			fee := sdktypes.Coin{
 				Denom:  "axpla",
@@ -583,7 +583,7 @@ func (t *WASMIntegrationTestSuite) Test05_EnableSwap() {
 			{
 				"increase_allowance": {
 					"spender": "%s",
-					"amount": "100000000",
+					"amount": "4000000000",
 					"expires": {
 						"never": {}
 					}
@@ -627,7 +627,7 @@ func (t *WASMIntegrationTestSuite) Test05_EnableSwap() {
 									"contract_addr": "%s"
 								}
 							},
-							"amount": "100000000"
+							"amount": "4000000000"
 						},
 						{
 							"info" : {
@@ -635,18 +635,18 @@ func (t *WASMIntegrationTestSuite) Test05_EnableSwap() {
 									"denom": "axpla"
 								}
 							},
-							"amount": "10000000000000000000"
+							"amount": "400000000000000000000"
 						}
 					]
 				}
 		  	}
-		`, t.TokenAddress)) // 100 TKN : 10 XPLA
+		`, t.TokenAddress)) // 4000 TKN : 400 XPLA
 
 		provideExecMsg := &wasmtype.MsgExecuteContract{
 			Sender:   t.UserWallet1.StringAddress,
 			Contract: t.PairAddress,
 			Msg:      provideMsg,
-			Funds:    sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.MustNewDecFromStr("10000000000000000000").RoundInt())),
+			Funds:    sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.MustNewDecFromStr("400000000000000000000").RoundInt())),
 		}
 
 		feeAmt = sdktypes.NewDec(xplaPairGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
@@ -676,7 +676,7 @@ func (t *WASMIntegrationTestSuite) Test06_EnableXATP() {
 	{
 		fmt.Println("Raising a proposal with depositing the token")
 
-		proposalContent := xatptype.NewRegisterXatpProposal("xatp test", "test desc", t.TokenAddress, t.PairAddress, "TKN", 6)
+		proposalContent := xatptype.NewRegisterXatpProposal("xatp test", "test desc", t.TokenAddress, t.PairAddress, "uTKN", 6)
 
 		proposalMsg, err := govtype.NewMsgSubmitProposal(
 			proposalContent,
@@ -692,7 +692,7 @@ func (t *WASMIntegrationTestSuite) Test06_EnableXATP() {
 			Amount: feeAmt.Ceil().RoundInt(),
 		}
 
-		txhash, err := t.UserWallet1.SendTx(fee, xplaProposalGasLimit, proposalMsg)
+		txhash, err := t.UserWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
 		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 			fmt.Println("Tx sent", txhash)
 		} else {
@@ -753,7 +753,7 @@ func (t *WASMIntegrationTestSuite) Test06_EnableXATP() {
 					Amount: feeAmt.Ceil().RoundInt(),
 				}
 
-				txhash, err := addr.SendTx(fee, xplaGeneralGasLimit, voteMsg)
+				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
 				if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 					fmt.Println(addr.StringAddress, "voted to the proposal", t.ProposalId, "as tx", txhash, "err:", err)
 				} else {
@@ -797,13 +797,13 @@ func (t *WASMIntegrationTestSuite) Test06_EnableXATP() {
 
 		client := xatptype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
-		resp, err := client.Xatp(context.Background(), &xatptype.QueryXatpRequest{Denom: "TKN"})
+		resp, err := client.Xatp(context.Background(), &xatptype.QueryXatpRequest{Denom: "uTKN"})
 
 		assert.NoError(t.T(), err)
 		assert.NotNil(t.T(), resp)
 
 		expectedXATP := xatptype.XATP{
-			Denom:    "TKN",
+			Denom:    "uTKN",
 			Token:    t.TokenAddress,
 			Pair:     t.PairAddress,
 			Decimals: 6,
@@ -811,6 +811,38 @@ func (t *WASMIntegrationTestSuite) Test06_EnableXATP() {
 
 		if assert.Equal(t.T(), expectedXATP, resp.GetXatp()) {
 			fmt.Println("XATP status check done")
+		}
+	}
+
+	// fund to XATP pool (100 XPLA)
+	{
+		fmt.Println("Fund to XATP pool")
+
+		xatpAmt, _ := sdktypes.NewIntFromString("100_000000_000000_000000")
+
+		fundingMsg := xatptype.NewMsgFundXatpPool(
+			sdktypes.NewCoins(sdktypes.NewCoin("axpla", xatpAmt)),
+			t.UserWallet1.ByteAddress.Bytes(),
+		)
+
+		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.UserWallet1.SendTx(ChainID, fundingMsg, fee, xplaGeneralGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
 		}
 	}
 }
@@ -830,17 +862,14 @@ func (t *WASMIntegrationTestSuite) Test07_NativeTransfer_PayByXPLA_LackOfFee_Sim
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.ValidatorWallet1.SendTx(ChainID, trasnferMsg, fee, xplaGeneralGasLimit, false)
-	if assert.Error(t.T(), err, "should fail in the simulation step") && assert.Equal(t.T(), "", txhash) {
-		fmt.Println("Error successfully raised", err)
-	} else {
-		fmt.Println("Tx hash detected:", txhash)
-		fmt.Println("No error is detected on simulation phase. Test fail")
-	}
+	txhash, _ := t.ValidatorWallet1.SendTx(ChainID, trasnferMsg, fee, xplaLowGasLimit, false)
 
-	err = txCheck(txhash)
+	err := txCheck(txhash)
 	if assert.Error(t.T(), err) {
 		fmt.Println("Error confirmed after broadcasted:", err)
+	} else {
+		fmt.Println("No error detected. Test fail")
+		t.T().Fail()
 	}
 }
 
@@ -855,21 +884,18 @@ func (t *WASMIntegrationTestSuite) Test08_TxFeePaidByCw20_NativeTransfer_LackOfF
 	fmt.Println("Pay very low fee. Should fail")
 	feeAmt := sdktypes.NewDec(xplaLowGasLimit).Mul(sdktypes.MustNewDecFromStr(tknGasPrice))
 	fee := sdktypes.Coin{
-		Denom:  "TKN", // use XATP
+		Denom:  "uTKN", // use XATP
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.ValidatorWallet1.SendTx(fee, xplaPairGasLimit, trasnferMsg)
-	if assert.Error(t.T(), err, "should fail in the simulation step") && assert.Equal(t.T(), "", txhash) {
-		fmt.Println("Error successfully raised", err)
-	} else {
-		fmt.Println("Tx hash detected:", txhash)
-		fmt.Println("No error is detected on simulation phase. Test fail")
-	}
+	txhash, _ := t.ValidatorWallet1.SendTx(ChainID, trasnferMsg, fee, xplaLowGasLimit, false)
 
-	err = txCheck(txhash)
+	err := txCheck(txhash)
 	if assert.Error(t.T(), err) {
 		fmt.Println("Error confirmed after broadcasted:", err)
+	} else {
+		fmt.Println("No error detected. Test fail")
+		t.T().Fail()
 	}
 }
 
@@ -881,14 +907,16 @@ func (t *WASMIntegrationTestSuite) Test09_TxFeePaidByCw20_NativeTransfer() {
 		sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(1_000000_000000_000000))),
 	)
 
-	fmt.Println("Pay fee as 0.068 TKN")
-	feeAmt := sdktypes.NewDec(xplaPairGasLimit).Mul(sdktypes.MustNewDecFromStr(tknGasPrice))
+	fmt.Println("Pay fee as 0.051 TKN (= 0.0051 XPLA) with tax")
+	feeAmt := sdktypes.NewDec(xplaXATPTransferGasLimit).
+		Mul(sdktypes.MustNewDecFromStr(tknGasPrice)).
+		Mul(sdktypes.MustNewDecFromStr("1.2")) // tax 20%
 	fee := sdktypes.Coin{
-		Denom:  "TKN",
+		Denom:  "uTKN",
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
-	txhash, err := t.ValidatorWallet1.SendTx(ChainID, trasnferMsg, fee, xplaGeneralGasLimit, false)
+	txhash, err := t.ValidatorWallet1.SendTx(ChainID, trasnferMsg, fee, xplaXATPTransferGasLimit, false)
 	if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 		fmt.Println("Tx sent", txhash)
 	} else {
@@ -921,10 +949,12 @@ func (t *WASMIntegrationTestSuite) Test10_TxFeePaidByCw20_Cw20Transfer() {
 		Msg:      transferMsg,
 	}
 
-	fmt.Println("Pay fee as 0.0765 TKN")
-	feeAmt := sdktypes.NewDec(xplaXATPTransferGasLimit).Mul(sdktypes.MustNewDecFromStr(tknGasPrice))
+	fmt.Println("Pay fee as 0.051 TKN (= 0.0051 XPLA) with tax")
+	feeAmt := sdktypes.NewDec(xplaXATPTransferGasLimit).
+		Mul(sdktypes.MustNewDecFromStr(tknGasPrice)).
+		Mul(sdktypes.MustNewDecFromStr("1.2")) // tax 20%
 	fee := sdktypes.Coin{
-		Denom:  "TKN",
+		Denom:  "uTKN",
 		Amount: feeAmt.Ceil().RoundInt(),
 	}
 
@@ -967,8 +997,45 @@ func (t *WASMIntegrationTestSuite) Test10_TxFeePaidByCw20_Cw20Transfer() {
 
 	amtXATPResp := &AmtResp{}
 	err = json.Unmarshal(tokenResp.Data.Bytes(), amtXATPResp)
-	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "500000000", amtXATPResp.Balance) {
+	if assert.NoError(t.T(), err) && assert.Equal(t.T(), "1100000000", amtXATPResp.Balance) {
 		fmt.Println("Token balance confirmed")
+	}
+}
+
+func (t *WASMIntegrationTestSuite) Test11_TxFeePaidByCw20_Cw20Transfer_withoutTax_ShouldFail() {
+	fmt.Println("Preparing contract execution message")
+
+	transferMsg := []byte(fmt.Sprintf(`
+		{
+			"transfer": {
+				"recipient": "%s",
+				"amount": "100000000"
+			}
+		}
+	`, t.UserWallet1.StringAddress))
+
+	contractExecMsg := &wasmtype.MsgExecuteContract{
+		Sender:   t.UserWallet2.StringAddress,
+		Contract: t.TokenAddress,
+		Msg:      transferMsg,
+	}
+
+	fmt.Println("Pay fee as 0.051 TKN (= 0.0051 XPLA) without tax. Should fail")
+	feeAmt := sdktypes.NewDec(xplaXATPTransferGasLimit).
+		Mul(sdktypes.MustNewDecFromStr(tknGasPrice))
+	fee := sdktypes.Coin{
+		Denom:  "uTKN",
+		Amount: feeAmt.Ceil().RoundInt(),
+	}
+
+	txhash, _ := t.UserWallet2.SendTx(ChainID, contractExecMsg, fee, xplaXATPTransferGasLimit, false)
+
+	err := txCheck(txhash)
+	if !assert.Error(t.T(), err) {
+		fmt.Println("Tx applied. Test fail")
+		t.T().Fail()
+	} else {
+		fmt.Println("Expected error occurs", err)
 	}
 }
 
@@ -1025,9 +1092,13 @@ func (t *EVMIntegrationTestSuite) SetupTest() {
 	t.UserWallet1.CosmosWalletInfo.RefreshSequence()
 	t.UserWallet2.CosmosWalletInfo.RefreshSequence()
 	t.ValidatorWallet1.CosmosWalletInfo.RefreshSequence()
+
+	fmt.Println("======== Starting", t.T().Name(), "... ========")
 }
 
-func (i *EVMIntegrationTestSuite) TeardownTest() {}
+func (i *EVMIntegrationTestSuite) TeardownTest() {
+	fmt.Println("======== Finished", i.T().Name(), "... ========")
+}
 
 func (t *EVMIntegrationTestSuite) Test01_CheckBalance() {
 	resp, err := t.EthClient.BalanceAt(context.Background(), t.UserWallet1.EthAddress, nil)
@@ -1036,6 +1107,8 @@ func (t *EVMIntegrationTestSuite) Test01_CheckBalance() {
 
 	expectedInt := new(big.Int)
 	expectedInt, _ = expectedInt.SetString("99000000000000000000", 10)
+	fmt.Println("Balance:", resp.String())
+
 	assert.GreaterOrEqual(t.T(), 1, resp.Cmp(expectedInt))
 
 	expectedInt, _ = expectedInt.SetString("100000000000000000000", 10)
@@ -1064,9 +1137,15 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	assert.NotNil(t.T(), parsedAbi)
 
 	// Actual deploy
+	fmt.Println("Deploying the token contract...")
+
 	address, tx, _, err := abibind.DeployContract(auth, *parsedAbi, binbyte, t.EthClient, "Example Token", "XPLAERC")
-	assert.NoError(t.T(), err)
-	fmt.Println("Tx hash: ", tx.Hash().String())
+	if assert.NoError(t.T(), err) {
+		fmt.Println("Tx hash: ", tx.Hash().String())
+	} else {
+		fmt.Println("Err in the contract deployment: ", err)
+		t.T().Fail()
+	}
 
 	time.Sleep(time.Second * 7)
 
@@ -1094,18 +1173,34 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
 
 	// try to transfer
+	fmt.Println("Transferring the token...")
+
 	tx, err := store.Transfer(auth, t.UserWallet2.EthAddress, amt)
-	assert.NoError(t.T(), err)
-	fmt.Println("Sent as ", tx.Hash().String())
+	if assert.NoError(t.T(), err) {
+		fmt.Println("Sent as ", tx.Hash().String())
+	} else {
+		fmt.Println("Err in the contract deployment: ", err)
+		t.T().Fail()
+	}
 
 	time.Sleep(time.Second * 7)
+
+	fmt.Println("Token transferred. Querying & assertion...")
 
 	// query & assert
 	callOpt := &abibind.CallOpts{}
 	resp, err := store.BalanceOf(callOpt, t.UserWallet2.EthAddress)
-	assert.NoError(t.T(), err)
+	if !assert.NoError(t.T(), err) {
+		fmt.Println("Err in the balance querying: ", err)
+		t.T().Fail()
+	}
 
-	assert.Equal(t.T(), amt, resp)
+	if !assert.Equal(t.T(), amt, resp) {
+		fmt.Println("Err in the balance assertion")
+		t.T().Fail()
+	} else {
+		fmt.Println("Querying & assertion check passed!")
+	}
 }
 
 // Wrote and tried to test triggering EVM by MsgEthereumTx

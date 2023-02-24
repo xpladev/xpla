@@ -3,7 +3,6 @@ package integrationtest
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -165,7 +164,7 @@ func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLi
 		return "", err
 	}
 
-	txHash, err := BroadcastTx(desc.ServiceConn, w.ChainId, txBytes, txtype.BroadcastMode_BROADCAST_MODE_ASYNC)
+	txHash, err := BroadcastTx(desc.ServiceConn, w.ChainId, txBytes, txtype.BroadcastMode_BROADCAST_MODE_SYNC)
 	if err != nil {
 		err = errors.Wrap(err, "SendTx, tx broadcast")
 		return "", err
@@ -251,19 +250,19 @@ func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode txt
 
 	client := txtype.NewServiceClient(desc.ServiceConn)
 
-	if currtestingenv := os.Getenv("GOLANG_TESTING"); currtestingenv != "true" {
-		res, err := client.BroadcastTx(context.Background(), &txtype.BroadcastTxRequest{
-			TxBytes: txBytes,
-			Mode:    mode,
-		})
+	// if currtestingenv := os.Getenv("GOLANG_TESTING"); currtestingenv != "true" {
+	res, err := client.BroadcastTx(context.Background(), &txtype.BroadcastTxRequest{
+		TxBytes: txBytes,
+		Mode:    mode,
+	})
 
-		if err != nil {
-			err = errors.Wrap(err, "broadcastTx")
-			return "", err
-		}
-
-		return res.TxResponse.TxHash, nil
+	if err != nil {
+		err = errors.Wrap(err, "broadcastTx")
+		return "", err
 	}
 
-	return "", nil
+	return res.TxResponse.TxHash, nil
+	// }
+
+	// return "", nil
 }

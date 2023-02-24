@@ -25,13 +25,13 @@ rm -f /genesis/*
 /usr/bin/xplad keys add xatp --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/xatp.mnemonics
 
 # 3. Add the genesis accounts
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator3 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator4 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show xatp -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator2 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator3 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator4 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user1 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user2 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show xatp -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
 
 # 4. Get the node keys and create gentxs
 for IDX in 1 2 3 4
@@ -68,6 +68,7 @@ sed -i 's/"no_base_fee": false,/"no_base_fee": true,/g' $XPLAHOME/config/genesis
 sed -i 's/"inflation": "0.130000000000000000",/"inflation": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_rate_change": "0.130000000000000000",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_min": "0.070000000000000000",/"inflation_min": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"min_gas_price": "0.000000000000000000",/"min_gas_price": "8500000000",/g' $XPLAHOME/config/genesis.json
 
 # gov params
 sed -i 's/"max_deposit_period": "172800s"/"max_deposit_period": "20s"/g' $XPLAHOME/config/genesis.json
@@ -75,9 +76,6 @@ sed -i 's/"voting_period": "172800s"/"voting_period": "20s"/g' $XPLAHOME/config/
 
 # max gas
 sed -i 's/"max_gas": "5000000",/"max_gas": "10000000",/g' $XPLAHOME/config/genesis.json
-
-# xatp module
-sed -i '500,$s/"payer": ""$/"payer": "xpla15wdvvke4munrlchecfhdphhkfdw4pzmrpdejnd"/g' $XPLAHOME/config/genesis.json
 
 /usr/bin/xplad validate-genesis --home $XPLAHOME
 

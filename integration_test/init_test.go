@@ -14,11 +14,11 @@ const (
 	xplaProposalGasLimit        int64 = 500000
 	xplaCreatePairGasLimit      int64 = 650000
 	xplaPairGasLimit            int64 = 800000
-	xplaCodeGasLimit            int64 = 5000000
+	xplaCodeGasLimit            int64 = 6000000
 	xplaPairInstantiateGasLimit int64 = 8000000
 
 	xplaGasPrice = "8500000000"
-	tknGasPrice  = "0.085" // unit gas setting: 8500000000axpla -> 000000 008500 000000 axpla -> 1 XPLA : 10 TKN -> 000000 085000 000000 TKN-> 0.000000 085 TKN -> 0.085 uTKN
+	tknGasPrice  = "0.085"
 )
 
 var (
