@@ -126,9 +126,9 @@ import (
 	xplaante "github.com/xpladev/xpla/ante"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 
-	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
-
+	aligngasprice "github.com/xpladev/xpla/app/upgrades/align_gas_price"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
+	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -957,6 +957,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 		evmupgrade.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.FeeMarketKeeper),
 	)
 
+	// align gas price upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		aligngasprice.UpgradeName,
+		aligngasprice.CreateUpgradeHandler(app.mm, app.configurator, app.FeeMarketKeeper),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -980,6 +986,8 @@ func (app *XplaApp) setUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: evmupgrade.AddModules,
 		}
+	case aligngasprice.UpgradeName:
+		// no store upgrade in align gas price
 	}
 
 	if storeUpgrades != nil {
