@@ -6,6 +6,11 @@ option go_package = "github.com/xpladev/xpla/x/xatp/types";
 import "gogoproto/gogo.proto";
 
 message Params {
+    string tax_rate  = 1 [
+        (gogoproto.moretags)   = "yaml:\"tax_rate\"",
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+        (gogoproto.nullable)   = false
+      ];
 }
 
 message XATP {

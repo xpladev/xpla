@@ -13,3 +13,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramSpace.SetParamSet(ctx, &params)
 }
+
+func (k Keeper) GetTaxRate(ctx sdk.Context) (taxRate sdk.Dec) {
+	return k.GetParams(ctx).TaxRate
+}
