@@ -748,7 +748,7 @@ func NewXplaApp(
 			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
 			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
 			IBCKeeper:            app.IBCKeeper,
-			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
+			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(strings.Join([]string{xplaappparams.CustomConfigTitle, xplaappparams.BypassMinFeeMsgTypesKey}, "."))),
 			TxCounterStoreKey:    keys[wasm.StoreKey],
 			WasmConfig:           wasmConfig,
 			MaxTxGasWanted:       evmMaxGasWanted,
