@@ -6,7 +6,6 @@ option go_package = "github.com/xpladev/xpla/x/xatp/types";
 import "gogoproto/gogo.proto";
 
 message Params {
-    string payer = 1;
 }
 
 message XATP {

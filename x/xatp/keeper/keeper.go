@@ -18,13 +18,14 @@ type Keeper struct {
 	cdc        codec.BinaryCodec
 	paramSpace paramtypes.Subspace
 
+	authKeeper     types.AccountKeeper
 	contractKeeper wasmTypes.ContractOpsKeeper
 	viewKeeper     wasmTypes.ViewKeeper
 }
 
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	ck wasmTypes.ContractOpsKeeper, vk wasmTypes.ViewKeeper,
+	ak types.AccountKeeper, ck wasmTypes.ContractOpsKeeper, vk wasmTypes.ViewKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -35,6 +36,7 @@ func NewKeeper(
 		storeKey:       key,
 		cdc:            cdc,
 		paramSpace:     paramSpace,
+		authKeeper:     ak,
 		contractKeeper: ck,
 		viewKeeper:     vk,
 	}
@@ -69,14 +71,14 @@ func (k Keeper) GetFeeInfoFromXATP(ctx sdk.Context, cw20 string) (sdk.Dec, error
 }
 
 func (k Keeper) PayXATP(ctx sdk.Context, deductFeesFrom sdk.AccAddress, denom string, amount string) error {
-	xatpPayer := k.GetPayer(ctx)
+	xatpPayer := k.GetXatpPayerAccount()
 
 	xatp, found := k.GetXatp(ctx, denom)
 	if !found {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "denom")
 	}
 
-	err := k.TransferCw20(ctx, deductFeesFrom, xatp.Token, amount, xatpPayer)
+	err := k.TransferCw20(ctx, deductFeesFrom, xatp.Token, amount, xatpPayer.String())
 	if err != nil {
 		return err
 	}

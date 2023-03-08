@@ -9,7 +9,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	params "github.com/cosmos/cosmos-sdk/x/params"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
@@ -57,15 +59,22 @@ func MakeEncodingConfig(_ *testing.T) simparams.EncodingConfig {
 
 // createTestInput Returns a simapp
 func createTestInput(t *testing.T) (xatpKeeper keeper.Keeper, ctx sdk.Context) {
+	keyAcc := sdk.NewKVStoreKey(authtypes.StoreKey)
 	keyParams := sdk.NewKVStoreKey(paramstypes.StoreKey)
 	keyXatp := sdk.NewKVStoreKey(types.StoreKey)
 	tKeyParams := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
+	ms.MountStoreWithDB(keyAcc, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyXatp, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyParams, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(tKeyParams, sdk.StoreTypeTransient, db)
+
+	maccPerms := map[string][]string{
+		authtypes.FeeCollectorName: nil,
+		types.ModuleName:           nil,
+	}
 
 	require.NoError(t, ms.LoadLatestVersion())
 
@@ -73,8 +82,9 @@ func createTestInput(t *testing.T) (xatpKeeper keeper.Keeper, ctx sdk.Context) {
 	appCodec, legacyAmino := encodingConfig.Marshaler, encodingConfig.Amino
 
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, keyParams, tKeyParams)
+	accountKeeper := authkeeper.NewAccountKeeper(appCodec, keyAcc, paramsKeeper.Subspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms)
 	_, wasmKeeper := wasmkeeper.CreateTestInput(t, false, "iterator,staking,stargate")
-	xatpKeeper = keeper.NewKeeper(appCodec, keyXatp, paramsKeeper.Subspace(types.ModuleName), wasmKeeper.ContractKeeper, wasmKeeper.WasmKeeper)
+	xatpKeeper = keeper.NewKeeper(appCodec, keyXatp, paramsKeeper.Subspace(types.ModuleName), accountKeeper, wasmKeeper.ContractKeeper, wasmKeeper.WasmKeeper)
 
 	ctx = sdk.NewContext(ms, tmproto.Header{Time: time.Now().UTC()}, false, log.NewNopLogger())
 	xatpKeeper.SetParams(ctx, types.DefaultParams())
