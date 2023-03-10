@@ -514,6 +514,8 @@ func NewXplaApp(
 		keys[xatptypes.StoreKey],
 		app.GetSubspace(xatptypes.ModuleName),
 		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper,
 		contractKeeper,
 		app.wasmKeeper,
 	)

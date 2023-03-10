@@ -202,7 +202,6 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		nativeFees := sdk.Coins{}
 		xatpFees := sdk.Coins{}
 
-		xatpPayer := dfd.xatpKeeper.GetXatpPayerAccount()
 		for _, fee := range feeTx.GetFee() {
 			xatp, found := dfd.xatpKeeper.GetXatp(ctx, fee.Denom)
 			if !found {
@@ -233,8 +232,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		}
 
 		if !xatpFees.Empty() {
-			deductFeeAccount := dfd.ak.GetAccount(ctx, xatpPayer)
-			err = DeductFees(dfd.bankKeeper, ctx, deductFeeAccount, xatpFees)
+			err = dfd.xatpKeeper.DeductAndDistiributeFees(ctx, xatpFees)
 			if err != nil {
 				return ctx, err
 			}

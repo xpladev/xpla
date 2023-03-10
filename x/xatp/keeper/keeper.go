@@ -19,13 +19,15 @@ type Keeper struct {
 	paramSpace paramtypes.Subspace
 
 	authKeeper     types.AccountKeeper
+	bankKeeper     types.BankKeeper
+	distKeeper     types.DistributionKeeper
 	contractKeeper wasmTypes.ContractOpsKeeper
 	viewKeeper     wasmTypes.ViewKeeper
 }
 
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	ak types.AccountKeeper, ck wasmTypes.ContractOpsKeeper, vk wasmTypes.ViewKeeper,
+	ak types.AccountKeeper, bk types.BankKeeper, dk types.DistributionKeeper, ck wasmTypes.ContractOpsKeeper, vk wasmTypes.ViewKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -37,6 +39,8 @@ func NewKeeper(
 		cdc:            cdc,
 		paramSpace:     paramSpace,
 		authKeeper:     ak,
+		bankKeeper:     bk,
+		distKeeper:     dk,
 		contractKeeper: ck,
 		viewKeeper:     vk,
 	}
