@@ -17,6 +17,8 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 			return queryXatps(ctx, req, k, legacyQuerierCdc)
 		case types.QueryXatp:
 			return queryXatp(ctx, req, k, legacyQuerierCdc)
+		case types.QueryXatpPool:
+			return queryXatpPool(ctx, req, k, legacyQuerierCdc)
 		default:
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown query path: %s", path[0])
 		}
@@ -64,4 +66,30 @@ func queryXatp(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCd
 	}
 
 	return res, nil
+}
+
+func queryXatpPool(ctx sdk.Context, _ abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	balances := k.bankKeeper.GetAllBalances(ctx, k.GetXatpPayerAccount())
+
+	xatps := k.GetAllXatps(ctx)
+	xatpAccount := k.GetXatpPayerAccount()
+	for _, xatp := range xatps {
+		balance := sdk.ZeroInt()
+		res, err := k.TokenBalance(ctx, xatp.Token, xatpAccount)
+		if err == nil {
+			var ok bool
+			balance, ok = sdk.NewIntFromString(res.Balance)
+			if !ok {
+				balance = sdk.ZeroInt()
+			}
+		}
+		balances = balances.Add(sdk.NewCoin(xatp.Denom, balance))
+	}
+
+	bz, err := legacyQuerierCdc.MarshalJSON(sdk.NewDecCoinsFromCoins(balances...))
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	}
+
+	return bz, nil
 }

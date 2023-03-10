@@ -72,3 +72,7 @@ func (p Pool) Amount() (nativeTokenAmount sdk.Int, tokenAmount sdk.Int, err erro
 
 	return sdk.ZeroInt(), sdk.ZeroInt(), errors.New("can't be xatp")
 }
+
+type Cw20Balance struct {
+	Balance string `json:"balance,omitempty"`
+}

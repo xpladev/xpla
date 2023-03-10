@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/gorilla/mux"
 	"github.com/xpladev/xpla/x/xatp/types"
@@ -25,6 +26,12 @@ func registerQueryRoutes(clientCtx client.Context, r *mux.Router) {
 	r.HandleFunc(
 		"/xatp/xatp/{denom}",
 		paramsHandlerFn(clientCtx),
+	).Methods(http.MethodGet)
+
+	// Get the amount held in the xatp pool
+	r.HandleFunc(
+		"/xatp/pool",
+		xatpPoolHandler(clientCtx),
 	).Methods(http.MethodGet)
 }
 
@@ -87,5 +94,27 @@ func xatpHandlerFn(clientCtx client.Context) http.HandlerFunc {
 
 		clientCtx = clientCtx.WithHeight(height)
 		rest.PostProcessResponse(w, clientCtx, res)
+	}
+}
+
+func xatpPoolHandler(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clientCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, clientCtx, r)
+		if !ok {
+			return
+		}
+
+		res, height, err := clientCtx.QueryWithData(fmt.Sprintf("custom/%s/xatp_pool", types.QuerierRoute), nil)
+		if rest.CheckInternalServerError(w, err) {
+			return
+		}
+
+		var result sdk.DecCoins
+		if rest.CheckInternalServerError(w, clientCtx.LegacyAmino.UnmarshalJSON(res, &result)) {
+			return
+		}
+
+		clientCtx = clientCtx.WithHeight(height)
+		rest.PostProcessResponse(w, clientCtx, result)
 	}
 }

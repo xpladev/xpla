@@ -24,6 +24,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryParams(),
 		GetCmdQueryXatps(),
 		GetCmdQueryXatp(),
+		GetCmdQueryXatpPool(),
 	)
 
 	return xatpQueryCmd
@@ -124,5 +125,40 @@ $ %s query xatp xatp CTXT
 
 	flags.AddQueryFlagsToCmd(cmd)
 
+	return cmd
+}
+
+// GetCmdQueryXatpPool returns the command for fetching xatp pool info.
+func GetCmdQueryXatpPool() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "pool",
+		Args:  cobra.NoArgs,
+		Short: "Query the amount of coins in the xatp pool",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query all coins in the xatp pool.
+
+Example:
+$ %s query xatp pool
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.XatpPool(cmd.Context(), &types.QueryXatpPoolRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }

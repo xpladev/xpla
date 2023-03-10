@@ -4,6 +4,7 @@ package xpla.xatp.v1beta1;
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "xpla/xatp/v1beta1/xatp.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/xpladev/xpla/x/xatp/types";
 
@@ -20,6 +21,11 @@ service Query {
 
     rpc Xatp(QueryXatpRequest) returns (QueryXatpResponse) {
       option (google.api.http).get = "/xpla/xatp/v1beta1/xatp/{denom}";
+    }
+
+    // XatpPool queries the Xatp pool coins.
+    rpc XatpPool(QueryXatpPoolRequest) returns (QueryXatpPoolResponse) {
+      option (google.api.http).get = "/xpla/xatp/v1beta1/xatp_pool";
     }
 }
 
@@ -44,4 +50,16 @@ message QueryXatpRequest {
 
 message QueryXatpResponse {
   XATP xatp = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryXatpPoolRequest is the request type for the Query/XatpPool RPC
+// method.
+message QueryXatpPoolRequest {}
+
+// QueryXatpPoolResponse is the response type for the Query/XatpPool
+// RPC method.
+message QueryXatpPoolResponse {
+  // pool defines community pool's coins.
+  repeated cosmos.base.v1beta1.DecCoin pool = 1
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins", (gogoproto.nullable) = false];
 }

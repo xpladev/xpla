@@ -49,3 +49,29 @@ func (k Querier) Xatp(c context.Context, req *types.QueryXatpRequest) (*types.Qu
 
 	return &types.QueryXatpResponse{Xatp: xatp}, nil
 }
+
+// XatpPool queries the xatp pool coins
+func (k Querier) XatpPool(c context.Context, req *types.QueryXatpPoolRequest) (*types.QueryXatpPoolResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+
+	xatpAccount := k.GetXatpPayerAccount()
+
+	balances := k.bankKeeper.GetAllBalances(ctx, xatpAccount)
+
+	xatps := k.GetAllXatps(ctx)
+	for _, xatp := range xatps {
+		balance := sdk.ZeroInt()
+		res, err := k.TokenBalance(ctx, xatp.Token, xatpAccount)
+		if err == nil {
+			var ok bool
+			balance, ok = sdk.NewIntFromString(res.Balance)
+			if !ok {
+				balance = sdk.ZeroInt()
+			}
+		}
+		balances = balances.Add(sdk.NewCoin(xatp.Denom, balance))
+	}
+	pool := sdk.NewDecCoinsFromCoins(balances...)
+
+	return &types.QueryXatpPoolResponse{Pool: pool}, nil
+}

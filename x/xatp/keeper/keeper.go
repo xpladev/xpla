@@ -89,3 +89,14 @@ func (k Keeper) PayXATP(ctx sdk.Context, deductFeesFrom sdk.AccAddress, denom st
 
 	return nil
 }
+
+// FundXatpPool allows an account to directly fund the xatp fund pool.
+// An error is returned if the amount cannot be sent to the
+// module account.
+func (k Keeper) FundXatpPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error {
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, amount); err != nil {
+		return err
+	}
+
+	return nil
+}

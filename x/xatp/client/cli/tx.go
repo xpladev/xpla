@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -13,6 +14,59 @@ import (
 	xplatypes "github.com/xpladev/xpla/types"
 	"github.com/xpladev/xpla/x/xatp/types"
 )
+
+// NewTxCmd returns a root CLI command handler for all x/xatp transaction commands.
+func NewTxCmd() *cobra.Command {
+	xatpTxCmd := &cobra.Command{
+		Use:                        types.ModuleName,
+		Short:                      "Xatp transactions subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	xatpTxCmd.AddCommand(
+		NewFundXatpPoolCmd(),
+	)
+
+	return xatpTxCmd
+}
+
+func NewFundXatpPoolCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "fund-xatp-pool [amount]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Funds the xatp pool with the specified amount",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Funds the xatp pool with the specified amount
+
+Example:
+$ %s tx distribution fund-xatp-pool 100%s --from mykey
+`,
+				version.AppName, xplatypes.DefaultDenom,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			depositorAddr := clientCtx.GetFromAddress()
+			amount, err := sdk.ParseCoinsNormalized(args[0])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgFundXatpPool(amount, depositorAddr)
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
 
 func GetSubmitProposalRegisterXatp() *cobra.Command {
 	bech32PrefixAccAddr := sdk.GetConfig().GetBech32AccountAddrPrefix()

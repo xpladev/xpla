@@ -17,9 +17,10 @@ const (
 		}
 	}`
 
-	queryPair      = `{"pair":{}}`
-	queryTokenInfo = `{"token_info":{}}`
-	queryPool      = `{"pool":{}}`
+	queryPair         = `{"pair":{}}`
+	queryTokenInfo    = `{"token_info":{}}`
+	queryPool         = `{"pool":{}}`
+	queryTokenBalance = `{"balance":{"address":"%s"}}`
 )
 
 func (k Keeper) Pair(ctx sdk.Context, pairContract string) (*types.Pair, error) {
@@ -103,4 +104,25 @@ func (k Keeper) TransferCw20(ctx sdk.Context, sender sdk.AccAddress, token strin
 	}
 
 	return nil
+}
+
+func (k Keeper) TokenBalance(ctx sdk.Context, tokenContract string, account sdk.AccAddress) (*types.Cw20Balance, error) {
+	tokenAddress, err := sdk.AccAddressFromBech32(tokenContract)
+	if err != nil {
+		return nil, err
+	}
+
+	params := fmt.Sprintf(queryTokenBalance, account.String())
+	res, err := k.viewKeeper.QuerySmart(ctx, tokenAddress, []byte(params))
+	if err != nil {
+		return nil, err
+	}
+
+	balance := &types.Cw20Balance{}
+	err = json.Unmarshal(res, balance)
+	if err != nil {
+		return nil, err
+	}
+
+	return balance, nil
 }

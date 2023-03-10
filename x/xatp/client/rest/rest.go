@@ -18,6 +18,7 @@ func RegisterHandlers(clientCtx client.Context, rtr *mux.Router) {
 	r := clientrest.WithHTTPDeprecationHeaders(rtr)
 
 	registerQueryRoutes(clientCtx, r)
+	registerTxHandlers(clientCtx, r)
 }
 
 func RegisterXatpProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
