@@ -2,7 +2,6 @@ package ante
 
 import (
 	"fmt"
-	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -64,7 +63,7 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 	// not contain operator configured bypass messages. If the tx does contain
 	// operator configured bypass messages only, it's total gas must be less than
 	// or equal to a constant, otherwise minimum fees are checked to prevent spam.
-	if ctx.IsCheckTx() && !simulate && !(mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
+	if ctx.IsCheckTx() && !(mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
 		if !minGasPrices.IsZero() {
 			var defaultGasPrice sdk.DecCoin
 			for _, minGasPrice := range minGasPrices {
@@ -108,21 +107,8 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 				requiredFees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())
 			}
 
-			feeCoins := feeTx.GetFee()
-
-			// Determine the required fees by multiplying each required minimum gas
-			// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-			gasLimit := sdk.NewDecFromBigInt(new(big.Int).SetUint64(gas))
-
-			for _, gp := range minGasPrices {
-				fee := gp.Amount.Mul(gasLimit).Ceil().RoundInt()
-				if fee.IsPositive() {
-					requiredFees = requiredFees.Add(sdk.Coin{Denom: gp.Denom, Amount: fee})
-				}
-			}
-
-			if !feeCoins.IsAnyGTE(requiredFees) {
-				return ctx, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "provided fee < minimum global fee (%s < %s). Please increase the gas price.", feeCoins, requiredFees)
+			if !simulate && !feeCoins.IsAnyGTE(requiredFees) {
+				return ctx, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "insufficient fees; got: %s required: %s", feeCoins, requiredFees)
 			}
 		}
 	}
@@ -198,7 +184,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	}
 
 	// deduct the fees
-	if !feeTx.GetFee().IsZero() {
+	if feeTx.GetFee().Len() > 0 {
 		nativeFees := sdk.Coins{}
 		xatpFees := sdk.Coins{}
 
@@ -209,9 +195,11 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 				continue
 			}
 
-			err := dfd.xatpKeeper.PayXATP(ctx, deductFeesFrom, xatp.Denom, fee.Amount.String())
-			if err != nil {
-				return ctx, err
+			if !simulate {
+				err := dfd.xatpKeeper.PayXATP(ctx, deductFeesFrom, xatp.Denom, fee.Amount.String())
+				if err != nil {
+					return ctx, err
+				}
 			}
 
 			ratioDec, err := dfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Denom)
@@ -221,7 +209,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 			feeAmount := sdk.NewDecFromIntWithPrec(fee.Amount, int64(xatp.Decimals))
 			defaultFeeAmountDec := feeAmount.Quo(ratioDec)
-			xatpFees = xatpFees.Add(sdk.NewCoin(xplatypes.DefaultDenom, defaultFeeAmountDec.TruncateInt()))
+			xatpFees = xatpFees.Add(sdk.NewCoin(xplatypes.DefaultDenom, defaultFeeAmountDec.MulInt(sdk.DefaultPowerReduction).TruncateInt()))
 		}
 
 		if !nativeFees.Empty() {
