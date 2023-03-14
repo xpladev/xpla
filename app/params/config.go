@@ -5,6 +5,8 @@ import (
 )
 
 var (
+	CustomConfigTitle = "custom"
+
 	// BypassMinFeeMsgTypesKey defines the configuration key for the
 	// BypassMinFeeMsgTypes value.
 	// nolint: gosec
@@ -16,6 +18,7 @@ var (
 ###############################################################################
 ###                        Custom Xpla Configuration                        ###
 ###############################################################################
+[custom]
 # bypass-min-fee-msg-types defines custom message types the operator may set that
 # will bypass minimum fee checks during CheckTx.
 #
