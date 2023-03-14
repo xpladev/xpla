@@ -127,7 +127,6 @@ import (
 	xplaante "github.com/xpladev/xpla/ante"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 
-	aligngasprice "github.com/xpladev/xpla/app/upgrades/align_gas_price"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 
@@ -1000,15 +999,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 		evmupgrade.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.FeeMarketKeeper),
 	)
 
-	// align gas price upgrade handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		aligngasprice.UpgradeName,
-		aligngasprice.CreateUpgradeHandler(app.mm, app.configurator, app.FeeMarketKeeper),
-	)
-
+	// xatp upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		xatpupgrade.UpgradeName,
-		xatpupgrade.CreateUpgradeHandler(app.mm, app.configurator, app.XATPKeeper),
+		xatpupgrade.CreateUpgradeHandler(app.mm, app.configurator, app.XATPKeeper, app.FeeMarketKeeper),
 	)
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
@@ -1033,13 +1027,9 @@ func (app *XplaApp) setUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: evmupgrade.AddModules,
 		}
-	case aligngasprice.UpgradeName:
-		// no store upgrade in align gas price
-
 	case xatpupgrade.UpgradeName:
-
 		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{xatptypes.ModuleName},
+			Added: xatpupgrade.AddModules,
 		}
 	}
 
