@@ -285,6 +285,7 @@ key-path = ""
 ###############################################################################
 ###                        Custom Xpla Configuration                        ###
 ###############################################################################
+[custom]
 # bypass-min-fee-msg-types defines custom message types the operator may set that
 # will bypass minimum fee checks during CheckTx.
 #
