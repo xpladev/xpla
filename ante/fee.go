@@ -62,6 +62,8 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 	// operator configured bypass messages only, it's total gas must be less than
 	// or equal to a constant, otherwise minimum fees are checked to prevent spam.
 	if ctx.IsCheckTx() && !(mfd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
+		mempoolCheckGas := ctx.GasMeter().GasConsumed()
+
 		if !minGasPrices.IsZero() {
 			var defaultGasPrice sdk.DecCoin
 			for _, minGasPrice := range minGasPrices {
@@ -109,6 +111,8 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 				return ctx, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "insufficient fees; got: %s required: %s", feeCoins, requiredFees)
 			}
 		}
+
+		ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed()-mempoolCheckGas, "refund mempool check")
 	}
 
 	return next(ctx, tx, simulate)
