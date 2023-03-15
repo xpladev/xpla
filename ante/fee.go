@@ -193,11 +193,14 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 				continue
 			}
 
-			if !simulate {
-				err := dfd.xatpKeeper.PayXATP(ctx, deductFeesFrom, xatp.Denom, fee.Amount.String())
-				if err != nil {
-					return ctx, err
-				}
+			if simulate {
+				// for simulate, add to minimum amount
+				fee.Amount = sdk.OneInt()
+			}
+
+			err := dfd.xatpKeeper.PayXATP(ctx, deductFeesFrom, xatp.Denom, fee.Amount.String())
+			if err != nil {
+				return ctx, err
 			}
 
 			ratioDec, err := dfd.xatpKeeper.GetFeeInfoFromXATP(ctx, xatp.Denom)
