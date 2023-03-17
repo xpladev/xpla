@@ -1,6 +1,8 @@
 package ante
 
 import (
+	"math/big"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -83,7 +85,8 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 						return ctx, err
 					}
 
-					minGasPrices = minGasPrices.Add(sdk.NewDecCoinFromDec(xatp.Denom, defaultGasPrice.Amount.Mul(ratioDec)))
+					decimalDiff := sdk.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(sdk.Precision-int64(xatp.Decimals)), nil))
+					minGasPrices = minGasPrices.Add(sdk.NewDecCoinFromDec(xatp.Denom, defaultGasPrice.Amount.Mul(ratioDec).QuoInt(decimalDiff)))
 				}
 			}
 
@@ -95,14 +98,6 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 			var fee sdk.Dec
 			for i, gp := range minGasPrices {
 				fee = gp.Amount.Mul(glDec)
-
-				if gp.Denom != xplatypes.DefaultDenom {
-					xatp, found := mfd.xatpKeeper.GetXatp(ctx, gp.Denom)
-					if found {
-						decimalDiff := sdk.NewDecWithPrec(1, sdk.Precision-int64(xatp.Decimals))
-						fee = fee.Ceil().Mul(decimalDiff)
-					}
-				}
 
 				requiredFees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())
 			}

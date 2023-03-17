@@ -26,10 +26,6 @@ func handlerRegisterXatpProposal(ctx sdk.Context, k Keeper, p *types.RegisterXat
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid token address")
 	}
 
-	if token.Symbol != p.Xatp.Denom {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token denom")
-	}
-
 	if token.Decimals != int(p.Xatp.Decimals) {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid token decimals")
 	}
