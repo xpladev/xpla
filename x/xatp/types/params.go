@@ -15,10 +15,10 @@ const (
 var (
 	DefaultTaxRate = sdk.NewDecWithPrec(20, 2) // 20%
 
-	DefaultRateFeePool       = sdk.NewDecWithPrec(8333, 4) // 83.33%
-	DefaultRateCommunityPool = sdk.NewDecWithPrec(1316, 4) // 13.16%
-	DefaultRateRewardPool    = sdk.NewDecWithPrec(333, 4)  // 3.33%
-	DefaultRateReserve       = sdk.NewDecWithPrec(0, 4)    // 0%
+	DefaultRateFeePool       = sdk.OneDec()               // 100%
+	DefaultRateCommunityPool = sdk.NewDecWithPrec(158, 3) // 15.8%
+	DefaultRateRewardPool    = sdk.NewDecWithPrec(4, 2)   // 4%
+	DefaultRateReserve       = sdk.NewDecWithPrec(0, 4)   // 0%
 )
 
 // Parameter keys
@@ -69,13 +69,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 func (p Params) ValidateBasic() error {
 	if p.ReserveAccount == "" && p.ReserveRate.GT(sdk.ZeroDec()) {
 		return fmt.Errorf("reserve account must be set up for reserve compensation")
-	}
-
-	totalRate := p.FeePoolRate.Add(p.CommunityPoolRate).Add(p.ReserveRate).Add(p.RewardPoolRate)
-	if totalRate.GT(sdk.OneDec()) {
-		return fmt.Errorf(
-			"sum of fee pool, community pool, reward pool and reserve cannot be greater than one: %s", totalRate,
-		)
 	}
 	return nil
 }

@@ -17,7 +17,7 @@ func (k Keeper) DeductAndDistiributeFees(ctx sdk.Context, coins sdk.Coins) error
 	totalRate := params.FeePoolRate.Add(params.CommunityPoolRate).Add(params.RewardPoolRate).Add(params.ReserveRate)
 
 	// fee pool
-	feePoolRate := params.FeePoolRate.Mul(totalRate)
+	feePoolRate := params.FeePoolRate.Quo(totalRate)
 	feePoolCoins := sdk.NewCoins()
 	for _, coin := range coins {
 		feePoolCoin := sdk.NewCoin(coin.Denom, feePoolRate.MulInt(coin.Amount).TruncateInt())
@@ -29,7 +29,7 @@ func (k Keeper) DeductAndDistiributeFees(ctx sdk.Context, coins sdk.Coins) error
 	}
 
 	// community pool
-	communityPoolRate := params.CommunityPoolRate.Mul(totalRate)
+	communityPoolRate := params.CommunityPoolRate.Quo(totalRate)
 	communityPoolCoins := sdk.NewCoins()
 	for _, coin := range coins {
 		communityPoolCoin := sdk.NewCoin(coin.Denom, communityPoolRate.MulInt(coin.Amount).TruncateInt())
@@ -43,7 +43,7 @@ func (k Keeper) DeductAndDistiributeFees(ctx sdk.Context, coins sdk.Coins) error
 	}
 
 	// reward pool
-	rewardPoolRate := params.RewardPoolRate.Mul(totalRate)
+	rewardPoolRate := params.RewardPoolRate.Quo(totalRate)
 	rewardPoolCoins := sdk.NewCoins()
 	for _, coin := range coins {
 		rewardPoolCoin := sdk.NewCoin(coin.Denom, rewardPoolRate.MulInt(coin.Amount).TruncateInt())
@@ -56,7 +56,7 @@ func (k Keeper) DeductAndDistiributeFees(ctx sdk.Context, coins sdk.Coins) error
 
 	// reserve
 	if params.ReserveAccount != "" {
-		reserveRate := params.ReserveRate.Mul(totalRate)
+		reserveRate := params.ReserveRate.Quo(totalRate)
 		reserveCoins := sdk.NewCoins()
 		for _, coin := range coins {
 			reserveCoin := sdk.NewCoin(coin.Denom, reserveRate.MulInt(coin.Amount).TruncateInt())
