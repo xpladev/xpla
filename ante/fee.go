@@ -188,8 +188,8 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 				continue
 			}
 
-			if simulate {
-				// for simulate, add to minimum amount
+			if simulate && feeTx.GetFee().IsZero() {
+				// for gas auto, add to minimum amount
 				fee.Amount = sdk.OneInt()
 			}
 
