@@ -25,16 +25,16 @@ const maxBypassMinFeeMsgGasUsage = uint64(200_000)
 type MempoolFeeDecorator struct {
 	BypassMinFeeMsgTypes []string
 
-	ak         authante.AccountKeeper
-	xatpKeeper xatpkeeper.Keeper
-	feesKeeper ethermintante.FeeMarketKeeper
-	evmKeeper  ethermintante.EVMKeeper
+	accountKeeper authante.AccountKeeper
+	xatpKeeper    xatpkeeper.Keeper
+	feesKeeper    ethermintante.FeeMarketKeeper
+	evmKeeper     ethermintante.EVMKeeper
 }
 
 func NewMempoolFeeDecorator(bypassMsgTypes []string, ak authante.AccountKeeper, ck xatpkeeper.Keeper, fk ethermintante.FeeMarketKeeper, ek ethermintante.EVMKeeper) MempoolFeeDecorator {
 	return MempoolFeeDecorator{
 		BypassMinFeeMsgTypes: bypassMsgTypes,
-		ak:                   ak,
+		accountKeeper:        ak,
 		xatpKeeper:           ck,
 		feesKeeper:           fk,
 		evmKeeper:            ek,
@@ -126,7 +126,7 @@ func (mfd MempoolFeeDecorator) bypassMinFeeMsgs(msgs []sdk.Msg) bool {
 }
 
 type DeductFeeDecorator struct {
-	ak             authante.AccountKeeper
+	accountKeeper  authante.AccountKeeper
 	bankKeeper     types.BankKeeper
 	feegrantKeeper authante.FeegrantKeeper
 
@@ -135,7 +135,7 @@ type DeductFeeDecorator struct {
 
 func NewDeductFeeDecorator(ak authante.AccountKeeper, bk types.BankKeeper, fk authante.FeegrantKeeper, xk xatpkeeper.Keeper) DeductFeeDecorator {
 	return DeductFeeDecorator{
-		ak:             ak,
+		accountKeeper:  ak,
 		bankKeeper:     bk,
 		feegrantKeeper: fk,
 
@@ -171,7 +171,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		deductFeesFrom = feeGranter
 	}
 
-	deductFeesFromAcc := dfd.ak.GetAccount(ctx, deductFeesFrom)
+	deductFeesFromAcc := dfd.accountKeeper.GetAccount(ctx, deductFeesFrom)
 	if deductFeesFromAcc == nil {
 		return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "fee payer address: %s does not exist", deductFeesFrom)
 	}
