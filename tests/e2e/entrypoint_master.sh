@@ -29,14 +29,17 @@ rm -f /genesis/*
 /usr/bin/xplad keys add volunteer_validator2 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/volunteer_validator2.mnemonics
 # xpla1unq7rvf4jkcpmqww09j0u8k37qkgjxm43llwx5 -- volunteer validator3
 /usr/bin/xplad keys add volunteer_validator3 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/volunteer_validator3.mnemonics
+# xpla15wdvvke4munrlchecfhdphhkfdw4pzmrpdejnd
+/usr/bin/xplad keys add xatp --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/xatp.mnemonics
 
 # 3. Add the genesis accounts
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator3 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator4 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator2 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator3 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator4 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user1 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user2 -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show xatp -a --keyring-backend test --home $XPLAHOME) 1000000000000000000000axpla --keyring-backend test --home $XPLAHOME
 
 /usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show volunteer_validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
 /usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show volunteer_validator2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
@@ -75,12 +78,13 @@ sed -i 's/"bond_denom": "stake"/"bond_denom": "axpla"/g' $XPLAHOME/config/genesi
 sed -i 's/"evm_denom": "aphoton",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom": "stake",/"denom": "axpla",/g' $XPLAHOME/config/genesis.json
-sed -i 's/"max_gas": "-1",/"max_gas": "5000000",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"max_gas": "-1",/"max_gas": "10000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"no_base_fee": false,/"no_base_fee": true,/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation": "0.[0-9]\+",/"inflation": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_rate_change": "0.[0-9]\+",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_min": "0.[0-9]\+",/"inflation_min": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"unbonding_time": "[0-9]\+s"/"unbonding_time": "4s"/' $XPLAHOME/config/genesis.json
+sed -i 's/"min_gas_price": "0.000000000000000000",/"min_gas_price": "8500000000",/g' $XPLAHOME/config/genesis.json
 
 # reduce blocktime around 2 sec
 sed -i 's/"blocks_per_year": "[0-9]\+"/"blocks_per_year": "19000000"/g' $XPLAHOME/config/genesis.json

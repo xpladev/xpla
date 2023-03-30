@@ -1,0 +1,29 @@
+syntax = "proto3";
+package xpla.xatp.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/xatp/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+// Msg defines the xatp Msg service.
+service Msg {
+  // FundXatpPool defines a method to allow an account to directly
+  // fund the xatp pool.
+  rpc FundXatpPool(MsgFundXatpPool) returns (MsgFundXatpPoolResponse);
+}
+
+// MsgFundXatpPool allows an account to directly
+// fund the xatp pool.
+message MsgFundXatpPool {
+    option (gogoproto.equal)           = false;
+    option (gogoproto.goproto_getters) = false;
+  
+    repeated cosmos.base.v1beta1.Coin amount = 1
+        [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+    string depositor = 2;
+  }
+  
+  // MsgFundXatpPoolResponse defines the Msg/FundXatpPool response type.
+  message MsgFundXatpPoolResponse {}
+  

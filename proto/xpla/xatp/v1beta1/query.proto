@@ -1,0 +1,65 @@
+syntax = "proto3";
+package xpla.xatp.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "xpla/xatp/v1beta1/xatp.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/xpladev/xpla/x/xatp/types";
+
+// Query defines the gRPC querier service for cw20 module.
+service Query {
+    // Params queries params of the cw20 module.
+    rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+        option (google.api.http).get = "/xpla/xatp/v1beta1/params";
+    }
+
+    rpc Xatps(QueryXatpsRequest) returns (QueryXatpsResponse) {
+      option (google.api.http).get = "/xpla/xatp/v1beta1/xatps";
+    }
+
+    rpc Xatp(QueryXatpRequest) returns (QueryXatpResponse) {
+      option (google.api.http).get = "/xpla/xatp/v1beta1/xatp/{denom}";
+    }
+
+    // XatpPool queries the Xatp pool coins.
+    rpc XatpPool(QueryXatpPoolRequest) returns (QueryXatpPoolResponse) {
+      option (google.api.http).get = "/xpla/xatp/v1beta1/xatp_pool";
+    }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryXatpsRequest {}
+
+message QueryXatpsResponse {
+  repeated XATP xatps = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryXatpRequest {
+  string denom = 1;
+}
+
+message QueryXatpResponse {
+  XATP xatp = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryXatpPoolRequest is the request type for the Query/XatpPool RPC
+// method.
+message QueryXatpPoolRequest {}
+
+// QueryXatpPoolResponse is the response type for the Query/XatpPool
+// RPC method.
+message QueryXatpPoolResponse {
+  // pool defines community pool's coins.
+  repeated cosmos.base.v1beta1.DecCoin pool = 1
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins", (gogoproto.nullable) = false];
+}

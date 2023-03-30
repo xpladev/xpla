@@ -14,10 +14,17 @@ const (
 	validatorActiveBlocks = 3
 	downtimeJailDuration  = 20
 
-	xplaGeneralGasLimit  int64 = 300000
-	xplaCodeGasLimit     int64 = 5000000
-	xplaProposalGasLimit int64 = 500000
-	xplaGasPrice               = "8500000000"
+	xplaLowGasLimit             int64 = 24
+	xplaGeneralGasLimit         int64 = 300000
+	xplaXATPTransferGasLimit    int64 = 600000
+	xplaProposalGasLimit        int64 = 500000
+	xplaCreatePairGasLimit      int64 = 700000
+	xplaPairGasLimit            int64 = 800000
+	xplaCodeGasLimit            int64 = 6000000
+	xplaPairInstantiateGasLimit int64 = 8000000
+
+	xplaGasPrice = "8500000000"
+	tknGasPrice  = "0.085"
 )
 
 var (

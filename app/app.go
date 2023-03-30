@@ -60,7 +60,9 @@ import (
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	"github.com/xpladev/xpla/app/upgrades/v1_4"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
+	xatpupgrade "github.com/xpladev/xpla/app/upgrades/xatp"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
+	xatpclient "github.com/xpladev/xpla/x/xatp/client"
 )
 
 var (
@@ -128,6 +130,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 	)
 
 	govProposalHandlers = append(govProposalHandlers, volunteerclient.ProposalHandler...)
+	govProposalHandlers = append(govProposalHandlers, xatpclient.ProposalHandler...)
 
 	return govProposalHandlers
 }
@@ -270,6 +273,7 @@ func NewXplaApp(
 			TxCounterStoreKey:    app.GetKey(wasm.StoreKey),
 			WasmConfig:           wasmConfig,
 			MaxTxGasWanted:       evmMaxGasWanted,
+			XATPKeeper:           app.XATPKeeper,
 		},
 	)
 	if err != nil {
@@ -429,6 +433,11 @@ func (app *XplaApp) setUpgradeHandlers() {
 		v1_4.CreateUpgradeHandler(app.mm, app.configurator, app.AppKeepers.AccountKeeper, &app.AppKeepers.StakingKeeper),
 	)
 
+	// xatp upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		xatpupgrade.UpgradeName,
+		xatpupgrade.CreateUpgradeHandler(app.mm, app.configurator, app.XATPKeeper, app.FeeMarketKeeper),
+	)
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -459,6 +468,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 	case v1_4.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{}
 
+	case xatpupgrade.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: xatpupgrade.AddModules,
+		}
 	}
 
 	if storeUpgrades != nil {

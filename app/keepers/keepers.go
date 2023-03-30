@@ -78,6 +78,8 @@ import (
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
+	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
+	xatptypes "github.com/xpladev/xpla/x/xatp/types"
 )
 
 type AppKeepers struct {
@@ -110,6 +112,7 @@ type AppKeepers struct {
 	RouterKeeper        *routerkeeper.Keeper
 	RewardKeeper        rewardkeeper.Keeper
 	VolunteerKeeper     volunteerkeeper.Keeper
+	XATPKeeper          xatpkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -327,6 +330,18 @@ func NewAppKeeper(
 		wasmOpts...,
 	)
 
+	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(&appKeepers.WasmKeeper)
+	appKeepers.XATPKeeper = xatpkeeper.NewKeeper(
+		appCodec,
+		appKeepers.keys[xatptypes.StoreKey],
+		appKeepers.GetSubspace(xatptypes.ModuleName),
+		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+		appKeepers.DistrKeeper,
+		contractKeeper,
+		appKeepers.WasmKeeper,
+	)
+
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
 	govRouter.
@@ -336,7 +351,8 @@ func NewAppKeeper(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(appKeepers.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(appKeepers.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&appKeepers.Erc20Keeper)).
-		AddRoute(volunteertypes.RouterKey, volunteerkeeper.NewVolunteerValidatorProposalHandler(appKeepers.VolunteerKeeper))
+		AddRoute(volunteertypes.RouterKey, volunteerkeeper.NewVolunteerValidatorProposalHandler(appKeepers.VolunteerKeeper)).
+		AddRoute(xatptypes.RouterKey, xatpkeeper.NewXatpProposalHandler(appKeepers.XATPKeeper))
 
 	// register wasm gov proposal types
 	if len(enabledProposals) != 0 {
@@ -525,8 +541,9 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(erc20types.ModuleName)
-	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
+	paramsKeeper.Subspace(rewardtypes.ModuleName)
 	paramsKeeper.Subspace(volunteertypes.ModuleName)
+	paramsKeeper.Subspace(xatptypes.ModuleName)
 
 	return paramsKeeper
 }

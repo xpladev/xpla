@@ -59,6 +59,8 @@ import (
 	xplastaking "github.com/xpladev/xpla/x/staking"
 	"github.com/xpladev/xpla/x/volunteer"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
+	"github.com/xpladev/xpla/x/xatp"
+	xatptypes "github.com/xpladev/xpla/x/xatp/types"
 )
 
 // module account permissions
@@ -76,6 +78,7 @@ var maccPerms = map[string][]string{
 	evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 	erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	rewardtypes.ModuleName:         nil,
+	xatptypes.ModuleName:           nil,
 }
 
 // ModuleBasics defines the module BasicManager is in charge of setting up basic,
@@ -111,6 +114,7 @@ var ModuleBasics = module.NewBasicManager(
 	feemarket.AppModuleBasic{},
 	reward.AppModuleBasic{},
 	volunteer.AppModuleBasic{},
+	xatp.AppModuleBasic{},
 )
 
 func appModules(
@@ -153,6 +157,7 @@ func appModules(
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
+		xatp.NewAppModule(appCodec, app.XATPKeeper),
 	}
 }
 
@@ -188,6 +193,7 @@ func orderBeginBlockers() []string {
 		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
+		xatptypes.ModuleName,
 	}
 }
 
@@ -220,6 +226,7 @@ func orderEndBlockers() []string {
 		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
+		xatptypes.ModuleName,
 	}
 }
 
@@ -255,5 +262,6 @@ func orderInitBlockers() []string {
 		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
+		xatptypes.ModuleName,
 	}
 }

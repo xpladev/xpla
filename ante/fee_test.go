@@ -6,9 +6,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	xatptypes "github.com/xpladev/xpla/x/xatp/types"
 
 	"github.com/xpladev/xpla/ante"
+	"github.com/xpladev/xpla/types"
 )
 
 func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
@@ -16,16 +19,15 @@ func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
 	s.txBuilder = s.clientCtx.TxConfig.NewTxBuilder()
 
 	s.app.FeeMarketKeeper.SetParams(s.ctx, feemarkettypes.NewParams(true, 8, 2, 0, 0, sdk.NewDec(200), sdk.MustNewDecFromStr("1.5")))
+	s.app.EvmKeeper.SetParams(s.ctx, evmtypes.NewParams(types.DefaultDenom, true, true, evmtypes.DefaultChainConfig()))
+	s.app.XATPKeeper.SetParams(s.ctx, xatptypes.DefaultParams())
 
-	mpd := ante.NewMinGasPriceDecorator(
-		s.app.FeeMarketKeeper,
-		s.app.EvmKeeper,
-		[]string{
-			sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
-			sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
-			sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
-		})
-	antehandler := sdk.ChainAnteDecorators(mpd)
+	mfd := ante.NewMempoolFeeDecorator([]string{
+		sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
+		sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
+		sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
+	}, s.app.AccountKeeper, s.app.XATPKeeper, s.app.FeeMarketKeeper, s.app.EvmKeeper)
+	antehandler := sdk.ChainAnteDecorators(mfd)
 	priv1, _, addr1 := testdata.KeyTestPubAddr()
 
 	msg := testdata.NewTestMsg(addr1)
@@ -40,7 +42,7 @@ func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
 	s.Require().NoError(err)
 
 	// Set high gas price so standard test fee fails
-	feeAmt := sdk.NewDecCoinFromDec("uatom", sdk.NewDec(200).Quo(sdk.NewDec(100000)))
+	feeAmt := sdk.NewDecCoinFromDec(types.DefaultDenom, sdk.NewDec(200).Quo(sdk.NewDec(100000)))
 	minGasPrice := []sdk.DecCoin{feeAmt}
 	s.ctx = s.ctx.WithMinGasPrices(minGasPrice).WithIsCheckTx(true)
 

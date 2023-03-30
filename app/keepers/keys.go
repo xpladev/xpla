@@ -28,6 +28,7 @@ import (
 	erc20types "github.com/evmos/evmos/v9/x/erc20/types"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
+	xatptypes "github.com/xpladev/xpla/x/xatp/types"
 )
 
 func (appKeepers *AppKeepers) GenerateKeys() {
@@ -39,7 +40,7 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey, ibcfeetypes.StoreKey, icacontrollertypes.StoreKey,
-		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, rewardtypes.StoreKey, volunteertypes.StoreKey,
+		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, rewardtypes.StoreKey, volunteertypes.StoreKey, xatptypes.StoreKey,
 	)
 
 	// Define transient store keys

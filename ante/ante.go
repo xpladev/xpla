@@ -20,6 +20,7 @@ import (
 	tmlog "github.com/tendermint/tendermint/libs/log"
 
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
+	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
@@ -39,6 +40,7 @@ type HandlerOptions struct {
 	BypassMinFeeMsgTypes []string
 	TxCounterStoreKey    sdk.StoreKey
 	WasmConfig           wasmTypes.WasmConfig
+	XATPKeeper           xatpkeeper.Keeper
 }
 
 // NewAnteHandler returns an 'AnteHandler' that will run actions before a tx is sent to a module's handler.
@@ -128,12 +130,12 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		authante.NewRejectExtensionOptionsDecorator(),
-		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes),
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
 		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
-		authante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper),
+		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.XATPKeeper),
 		authante.NewSetPubKeyDecorator(opts.AccountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
 		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
 		authante.NewSigGasConsumeDecorator(opts.AccountKeeper, sigGasConsumer),
@@ -167,8 +169,7 @@ func newCosmosAnteHandlerEip712(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewSetUpContextDecorator(),
 		// NOTE: extensions option decorator removed
 		// ante.NewRejectExtensionOptionsDecorator(),
-		authante.NewMempoolFeeDecorator(),
-		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes),
+		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes, opts.AccountKeeper, opts.XATPKeeper, opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
 		authante.NewValidateMemoDecorator(opts.AccountKeeper),
