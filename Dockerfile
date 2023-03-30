@@ -20,7 +20,7 @@ COPY . /localnet/
 
 ENV LIBWASMVM_VERSION=v1.0.0
 
-RUN git clone --depth 1 https://github.com/microsoft/mimalloc; cd mimalloc; mkdir build; cd build; cmake ..; make -j$(nproc); make install
+RUN git clone -b v2.0.9 --single-branch https://github.com/microsoft/mimalloc; cd mimalloc; mkdir build; cd build; cmake ..; make -j$(nproc); make install
 ENV MIMALLOC_RESERVE_HUGE_OS_PAGES=4
 
 # See https://github.com/CosmWasm/wasmvm/releases
