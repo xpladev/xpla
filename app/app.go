@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -126,12 +127,18 @@ import (
 	xplaante "github.com/xpladev/xpla/ante"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 
-	aligngasprice "github.com/xpladev/xpla/app/upgrades/align_gas_price"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+
+	xatpupgrade "github.com/xpladev/xpla/app/upgrades/xatp"
+
+	xatp "github.com/xpladev/xpla/x/xatp"
+	xatpclient "github.com/xpladev/xpla/x/xatp/client"
+	xatpkeeper "github.com/xpladev/xpla/x/xatp/keeper"
+	xatptypes "github.com/xpladev/xpla/x/xatp/types"
 )
 
 var (
@@ -185,6 +192,8 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpgradeProposalHandler,
 	)
 
+	govProposalHandlers = append(govProposalHandlers, xatpclient.ProposalHandler...)
+
 	return govProposalHandlers
 }
 
@@ -222,6 +231,7 @@ var (
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
 		reward.AppModuleBasic{},
+		xatp.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -237,6 +247,7 @@ var (
 		wasm.ModuleName:                {authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		rewardtypes.ModuleName:         nil,
+		xatptypes.ModuleName:           nil,
 	}
 )
 
@@ -300,6 +311,8 @@ type XplaApp struct { // nolint: golint
 	mm *module.Manager
 
 	configurator module.Configurator
+
+	XATPKeeper xatpkeeper.Keeper
 }
 
 func init() {
@@ -342,7 +355,7 @@ func NewXplaApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
-		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, rewardtypes.StoreKey,
+		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, rewardtypes.StoreKey, xatptypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -464,15 +477,6 @@ func NewXplaApp(
 		scopedIBCKeeper,
 	)
 
-	// register the proposal types
-	govRouter := govtypes.NewRouter()
-	govRouter.
-		AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
-		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
-
 	wasmDir := filepath.Join(homePath, "data")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
@@ -502,6 +506,28 @@ func NewXplaApp(
 		supportedFeatures,
 		wasmOpts...,
 	)
+
+	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(&app.wasmKeeper)
+	app.XATPKeeper = xatpkeeper.NewKeeper(
+		appCodec,
+		keys[xatptypes.StoreKey],
+		app.GetSubspace(xatptypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper,
+		contractKeeper,
+		app.wasmKeeper,
+	)
+
+	// register the proposal types
+	govRouter := govtypes.NewRouter()
+	govRouter.
+		AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
+		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
+		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
+		AddRoute(xatptypes.RouterKey, xatpkeeper.NewXatpProposalHandler(app.XATPKeeper))
 
 	// register wasm gov proposal types
 	enabledProposals := GetEnabledProposals()
@@ -630,6 +656,7 @@ func NewXplaApp(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
+		xatp.NewAppModule(appCodec, app.XATPKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -663,6 +690,7 @@ func NewXplaApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		rewardtypes.ModuleName,
+		xatptypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -689,6 +717,7 @@ func NewXplaApp(
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
+		xatptypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -725,6 +754,7 @@ func NewXplaApp(
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
+		xatptypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -752,6 +782,8 @@ func NewXplaApp(
 			TxCounterStoreKey:    keys[wasm.StoreKey],
 			WasmConfig:           wasmConfig,
 			MaxTxGasWanted:       evmMaxGasWanted,
+			XATPKeeper:           app.XATPKeeper,
+			MinGasPrices:         cast.ToString(appOpts.Get(server.FlagMinGasPrices)),
 		},
 	)
 	if err != nil {
@@ -763,6 +795,15 @@ func NewXplaApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.setUpgradeHandlers()
+
+	if manager := app.SnapshotManager(); manager != nil {
+		err := manager.RegisterExtensions(
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.wasmKeeper),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+		}
+	}
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
@@ -940,6 +981,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
+	paramsKeeper.Subspace(xatptypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -957,12 +999,11 @@ func (app *XplaApp) setUpgradeHandlers() {
 		evmupgrade.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.FeeMarketKeeper),
 	)
 
-	// align gas price upgrade handler
+	// xatp upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
-		aligngasprice.UpgradeName,
-		aligngasprice.CreateUpgradeHandler(app.mm, app.configurator, app.FeeMarketKeeper),
+		xatpupgrade.UpgradeName,
+		xatpupgrade.CreateUpgradeHandler(app.mm, app.configurator, app.XATPKeeper, app.FeeMarketKeeper),
 	)
-
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -986,8 +1027,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: evmupgrade.AddModules,
 		}
-	case aligngasprice.UpgradeName:
-		// no store upgrade in align gas price
+	case xatpupgrade.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: xatpupgrade.AddModules,
+		}
 	}
 
 	if storeUpgrades != nil {

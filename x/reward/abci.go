@@ -54,8 +54,8 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, 
 	communityPoolRewards := sdk.NewCoins()
 	reserveRewards := sdk.NewCoins()
 
-	feePoolRate := params.FeePoolRate.Mul(total)
-	communityPoolRate := params.CommunityPoolRate.Mul(total)
+	feePoolRate := params.FeePoolRate.Quo(total)
+	communityPoolRate := params.CommunityPoolRate.Quo(total)
 	for denom, totalReward := range totalRewards {
 		feePoolReward := sdk.NewCoin(denom, feePoolRate.MulInt(totalReward.Amount).RoundInt())
 		feePoolRewards = append(feePoolRewards, feePoolReward)

@@ -1,0 +1,15 @@
+syntax = "proto3";
+package xpla.xatp.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/xatp/types";
+
+import "gogoproto/gogo.proto";
+import "xpla/xatp/v1beta1/xatp.proto";
+
+// GenesisState defines the xatp module's genesis state.
+message GenesisState {
+// params defines all the paramaters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"params\""];
+
+  repeated XATP xatps = 2 [(gogoproto.nullable) = false];
+}
