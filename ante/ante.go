@@ -8,6 +8,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	ibcante "github.com/cosmos/ibc-go/v3/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 
@@ -94,7 +95,11 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	}
 
 	anteDecorators := []sdk.AnteDecorator{
-		evmante.RejectMessagesDecorator{},   // reject MsgEthereumTxs
+		evmante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
+			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
+			sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
+		),
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
