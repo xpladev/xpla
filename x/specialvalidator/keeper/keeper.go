@@ -13,14 +13,16 @@ type Keeper struct {
 	cdc      codec.BinaryCodec
 
 	stakingKeeper types.StakingKeeper
+	distKeeper    types.DistributionKeeper
 }
 
 // NewKeeper constructs a message authorization Keeper
-func NewKeeper(storeKey sdk.StoreKey, cdc codec.BinaryCodec, sk types.StakingKeeper) Keeper {
+func NewKeeper(storeKey sdk.StoreKey, cdc codec.BinaryCodec, sk types.StakingKeeper, dk types.DistributionKeeper) Keeper {
 	return Keeper{
 		storeKey:      storeKey,
 		cdc:           cdc,
 		stakingKeeper: sk,
+		distKeeper:    dk,
 	}
 }
 

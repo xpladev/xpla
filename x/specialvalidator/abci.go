@@ -11,6 +11,13 @@ import (
 	"github.com/xpladev/xpla/x/specialvalidator/types"
 )
 
+func BeginBlock(ctx sdk.Context, k keeper.Keeper) {
+	err := k.SpecialValidatorCommissionProcess(ctx)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Called every block, update validator set
 func EndBlocker(ctx sdk.Context, k keeper.Keeper) []abci.ValidatorUpdate {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)

@@ -27,3 +27,8 @@ type StakingKeeper interface {
 	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
 	PowerReduction(ctx sdk.Context) sdk.Int
 }
+
+type DistributionKeeper interface {
+	WithdrawValidatorCommission(ctx sdk.Context, valAddr sdk.ValAddress) (sdk.Coins, error)
+	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
+}
