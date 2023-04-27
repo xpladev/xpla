@@ -7,6 +7,29 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+func (k Keeper) SpecialValidatorCommissionProcess(ctx sdk.Context) error {
+	specialValidators := k.GetSpecialValidators(ctx)
+
+	for strValAddr, _ := range specialValidators {
+		valAddr, err := sdk.ValAddressFromBech32(strValAddr)
+		if err != nil {
+			return err
+		}
+
+		commissions, err := k.distKeeper.WithdrawValidatorCommission(ctx, valAddr)
+		if err != nil {
+			continue
+		}
+
+		err = k.distKeeper.FundCommunityPool(ctx, commissions, sdk.AccAddress(valAddr.Bytes()))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (k Keeper) SpecialValidatorUpdates(ctx sdk.Context) (updates []abci.ValidatorUpdate, err error) {
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
 	specialValidators := k.GetSpecialValidators(ctx)

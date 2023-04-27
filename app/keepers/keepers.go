@@ -237,6 +237,7 @@ func NewAppKeeper(
 		appKeepers.keys[specialvalidatortypes.StoreKey],
 		appCodec,
 		&appKeepers.StakingKeeper,
+		appKeepers.DistrKeeper,
 	)
 
 	// register the staking hooks
