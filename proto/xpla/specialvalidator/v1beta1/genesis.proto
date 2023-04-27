@@ -1,0 +1,12 @@
+syntax = "proto3";
+package xpla.specialvalidator.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/specialvalidator/types";
+
+import "gogoproto/gogo.proto";
+import "xpla/specialvalidator/v1beta1/specialvalidator.proto";
+
+// GenesisState defines the specialvalidator module's genesis state.
+message GenesisState {
+  repeated SpecialValidator special_validators = 1;
+}
