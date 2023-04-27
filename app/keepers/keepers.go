@@ -71,6 +71,8 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
+	specialvalidatorkeeper "github.com/xpladev/xpla/x/specialvalidator/keeper"
+	specialvalidatortypes "github.com/xpladev/xpla/x/specialvalidator/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -95,16 +97,17 @@ type AppKeepers struct {
 	UpgradeKeeper    upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	IBCKeeper           *ibckeeper.Keeper
-	IBCFeeKeeper        ibcfeekeeper.Keeper
-	ICAControllerKeeper icacontrollerkeeper.Keeper
-	ICAHostKeeper       icahostkeeper.Keeper
-	EvidenceKeeper      evidencekeeper.Keeper
-	TransferKeeper      ibctransferkeeper.Keeper
-	FeeGrantKeeper      feegrantkeeper.Keeper
-	AuthzKeeper         authzkeeper.Keeper
-	RouterKeeper        *routerkeeper.Keeper
-	RewardKeeper        rewardkeeper.Keeper
+	IBCKeeper              *ibckeeper.Keeper
+	IBCFeeKeeper           ibcfeekeeper.Keeper
+	ICAControllerKeeper    icacontrollerkeeper.Keeper
+	ICAHostKeeper          icahostkeeper.Keeper
+	EvidenceKeeper         evidencekeeper.Keeper
+	TransferKeeper         ibctransferkeeper.Keeper
+	FeeGrantKeeper         feegrantkeeper.Keeper
+	AuthzKeeper            authzkeeper.Keeper
+	RouterKeeper           *routerkeeper.Keeper
+	RewardKeeper           rewardkeeper.Keeper
+	SpecialValidatorKeeper specialvalidatorkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -237,10 +240,16 @@ func NewAppKeeper(
 		appKeepers.GetSubspace(slashingtypes.ModuleName),
 	)
 
+	appKeepers.SpecialValidatorKeeper = specialvalidatorkeeper.NewKeeper(
+		appKeepers.keys[specialvalidatortypes.StoreKey],
+		appCodec,
+		&appKeepers.StakingKeeper,
+	)
+
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	appKeepers.StakingKeeper = *stakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(appKeepers.DistrKeeper.Hooks(), appKeepers.SlashingKeeper.Hooks()),
+		stakingtypes.NewMultiStakingHooks(appKeepers.DistrKeeper.Hooks(), appKeepers.SlashingKeeper.Hooks(), appKeepers.SpecialValidatorKeeper.Hooks()),
 	)
 
 	appKeepers.UpgradeKeeper = upgradekeeper.NewKeeper(
@@ -314,7 +323,8 @@ func NewAppKeeper(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(appKeepers.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(appKeepers.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(appKeepers.UpgradeKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(appKeepers.IBCKeeper.ClientKeeper))
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(appKeepers.IBCKeeper.ClientKeeper)).
+		AddRoute(specialvalidatortypes.RouterKey, specialvalidatorkeeper.NewSpecialValidatorProposalHandler(appKeepers.SpecialValidatorKeeper))
 
 	// register wasm gov proposal types
 	if len(enabledProposals) != 0 {
@@ -492,6 +502,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
+	paramsKeeper.Subspace(specialvalidatortypes.ModuleName)
 
 	return paramsKeeper
 }

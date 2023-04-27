@@ -42,6 +42,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
+	specialvalidatorclient "github.com/xpladev/xpla/x/specialvalidator/client"
 
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 
@@ -122,6 +123,8 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
 	)
+
+	govProposalHandlers = append(govProposalHandlers, specialvalidatorclient.ProposalHandler...)
 
 	return govProposalHandlers
 }
