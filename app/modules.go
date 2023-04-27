@@ -51,6 +51,8 @@ import (
 	xplaparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
+	"github.com/xpladev/xpla/x/specialvalidator"
+	specialvalidatortypes "github.com/xpladev/xpla/x/specialvalidator/types"
 )
 
 // module account permissions
@@ -98,6 +100,7 @@ var ModuleBasics = module.NewBasicManager(
 	evm.AppModuleBasic{},
 	feemarket.AppModuleBasic{},
 	reward.AppModuleBasic{},
+	specialvalidator.AppModuleBasic{},
 )
 
 func appModules(
@@ -137,6 +140,7 @@ func appModules(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
+		specialvalidator.NewAppModule(appCodec, app.SpecialValidatorKeeper),
 	}
 }
 
@@ -169,6 +173,7 @@ func orderBeginBlockers() []string {
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		rewardtypes.ModuleName,
+		specialvalidatortypes.ModuleName,
 	}
 }
 
@@ -198,6 +203,7 @@ func orderEndBlockers() []string {
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
+		specialvalidatortypes.ModuleName,
 	}
 }
 
@@ -230,5 +236,6 @@ func orderInitBlockers() []string {
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
+		specialvalidatortypes.ModuleName,
 	}
 }
