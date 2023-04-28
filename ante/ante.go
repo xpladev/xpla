@@ -18,20 +18,23 @@ import (
 	evmante "github.com/evmos/ethermint/app/ante"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
+
+	specialvalidatorkeeper "github.com/xpladev/xpla/x/specialvalidator/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
 // channel keeper.
 type HandlerOptions struct {
-	AccountKeeper   evmtypes.AccountKeeper
-	BankKeeper      evmtypes.BankKeeper
-	IBCKeeper       *ibckeeper.Keeper
-	EvmKeeper       evmante.EVMKeeper
-	FeegrantKeeper  authante.FeegrantKeeper
-	SignModeHandler authsigning.SignModeHandler
-	SigGasConsumer  authante.SignatureVerificationGasConsumer
-	FeeMarketKeeper evmtypes.FeeMarketKeeper
-	MaxTxGasWanted  uint64
+	AccountKeeper          evmtypes.AccountKeeper
+	BankKeeper             evmtypes.BankKeeper
+	IBCKeeper              *ibckeeper.Keeper
+	EvmKeeper              evmante.EVMKeeper
+	FeegrantKeeper         authante.FeegrantKeeper
+	SpecialValidatorKeeper specialvalidatorkeeper.Keeper
+	SignModeHandler        authsigning.SignModeHandler
+	SigGasConsumer         authante.SignatureVerificationGasConsumer
+	FeeMarketKeeper        evmtypes.FeeMarketKeeper
+	MaxTxGasWanted         uint64
 
 	BypassMinFeeMsgTypes []string
 	TxCounterStoreKey    sdk.StoreKey
@@ -117,6 +120,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
 		),
+		NewRejectDelegateSpecialValidatorDecorator(opts.SpecialValidatorKeeper),
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),

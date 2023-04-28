@@ -254,18 +254,19 @@ func NewXplaApp(
 
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			AccountKeeper:        app.AccountKeeper,
-			BankKeeper:           app.BankKeeper,
-			EvmKeeper:            app.EvmKeeper,
-			FeeMarketKeeper:      app.FeeMarketKeeper,
-			FeegrantKeeper:       app.FeeGrantKeeper,
-			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
-			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
-			IBCKeeper:            app.IBCKeeper,
-			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
-			TxCounterStoreKey:    app.GetKey(wasm.StoreKey),
-			WasmConfig:           wasmConfig,
-			MaxTxGasWanted:       evmMaxGasWanted,
+			AccountKeeper:          app.AccountKeeper,
+			BankKeeper:             app.BankKeeper,
+			EvmKeeper:              app.EvmKeeper,
+			FeeMarketKeeper:        app.FeeMarketKeeper,
+			FeegrantKeeper:         app.FeeGrantKeeper,
+			SpecialValidatorKeeper: app.SpecialValidatorKeeper,
+			SignModeHandler:        encodingConfig.TxConfig.SignModeHandler(),
+			SigGasConsumer:         xplaante.SigVerificationGasConsumer,
+			IBCKeeper:              app.IBCKeeper,
+			BypassMinFeeMsgTypes:   cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
+			TxCounterStoreKey:      app.GetKey(wasm.StoreKey),
+			WasmConfig:             wasmConfig,
+			MaxTxGasWanted:         evmMaxGasWanted,
 		},
 	)
 	if err != nil {
