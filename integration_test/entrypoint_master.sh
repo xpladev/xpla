@@ -21,6 +21,10 @@ rm -f /genesis/*
 /usr/bin/xplad keys add user1 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/user1.mnemonics
 # xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826
 /usr/bin/xplad keys add user2 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/user2.mnemonics
+# xpla1ur90l8ecppc55gll7k57dk2tvs2w5m9jzptpcj -- voluntary validator
+/usr/bin/xplad keys add voluntary_validator --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/voluntary_validator.mnemonics
+# xpla14xprgqlnuep23kmvsk5utd9pw7w27yeyjlcmcz -- validator5_experimental
+/usr/bin/xplad keys add validator5_experimental --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/validator5_experimental.mnemonics
 
 # 3. Add the genesis accounts
 /usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
@@ -29,6 +33,9 @@ rm -f /genesis/*
 /usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator4 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
 /usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
 /usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+# -- experimentals
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show voluntary_validator -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator5_experimental -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
 
 # 4. Get the node keys and create gentxs
 for IDX in 1 2 3 4

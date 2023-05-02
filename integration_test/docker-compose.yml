@@ -93,6 +93,54 @@ services:
       vpcbr:
         ipv4_address: 192.167.100.4
 
+  node5:
+    container_name: xpla-localnet-validator5
+
+    volumes:
+      - ~/genesis:/genesis:ro
+
+    depends_on:
+      - node1
+
+    build:
+      context: ../.
+      target: runtime
+
+    ports:
+      - "8585:8585"
+      - "9130:9130"
+      - "26696:26696"
+    
+    entrypoint: sh -c "MONIKER=validator5_experimental XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    
+    networks:
+      vpcbr:
+        ipv4_address: 192.167.100.5
+
+  node-voluntary:
+    container_name: xpla-localnet-voluntary
+
+    volumes:
+      - ~/genesis:/genesis:ro
+
+    depends_on:
+      - node1
+
+    build:
+      context: ../.
+      target: runtime
+
+    ports:
+      - "8595:8595"
+      - "9140:9140"
+      - "26706:26706"
+    
+    entrypoint: sh -c "MONIKER=voluntary_validator XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    
+    networks:
+      vpcbr:
+        ipv4_address: 192.167.100.6
+
 networks:
   vpcbr:
     driver: bridge
