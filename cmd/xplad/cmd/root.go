@@ -100,12 +100,14 @@ func initAppConfig() (string, interface{}) {
 	srvCfg.StateSync.SnapshotInterval = 1000
 	srvCfg.StateSync.SnapshotKeepRecent = 10
 
-	return customAppTemplate + params.CustomConfigTemplate, params.CustomAppConfig{
+	return params.CustomConfigTemplate(customAppTemplate), params.CustomAppConfig{
 		Config: srvCfg,
 		BypassMinFeeMsgTypes: []string{
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
 			sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
+			sdk.MsgTypeURL(&ibcchanneltypes.MsgTimeout{}),
+			sdk.MsgTypeURL(&ibcchanneltypes.MsgTimeoutOnClose{}),
 		},
 	}
 }
@@ -145,6 +147,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+
+	// min-gas-price follows feemarket module
+	startCmd.Flags().Set(server.FlagMinGasPrices, sdk.ZeroInt().String()+xplatypes.DefaultDenom)
 }
 
 func queryCommand() *cobra.Command {
