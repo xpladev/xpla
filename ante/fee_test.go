@@ -6,20 +6,26 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/xpladev/xpla/ante"
 )
 
-func (s *IntegrationTestSuite) TestMempoolFeeDecorator() {
+func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
 	s.SetupTest()
 	s.txBuilder = s.clientCtx.TxConfig.NewTxBuilder()
 
-	mfd := ante.NewMempoolFeeDecorator([]string{
-		sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
-		sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
-		sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
-	})
-	antehandler := sdk.ChainAnteDecorators(mfd)
+	s.app.FeeMarketKeeper.SetParams(s.ctx, feemarkettypes.NewParams(true, 8, 2, 0, 0, sdk.NewDec(200), sdk.MustNewDecFromStr("1.5")))
+
+	mpd := ante.NewMinGasPriceDecorator(
+		s.app.FeeMarketKeeper,
+		s.app.EvmKeeper,
+		[]string{
+			sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
+			sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
+			sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
+		})
+	antehandler := sdk.ChainAnteDecorators(mpd)
 	priv1, _, addr1 := testdata.KeyTestPubAddr()
 
 	msg := testdata.NewTestMsg(addr1)
