@@ -8,13 +8,24 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
+	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	ed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	govtype "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	tmcrypto "github.com/tendermint/tendermint/crypto"
+	tmjson "github.com/tendermint/tendermint/libs/json"
+	tmtypes "github.com/tendermint/tendermint/types"
+
+	voluntaryValidatorType "github.com/xpladev/xpla/x/specialvalidator/types"
 
 	// evmtypes "github.com/evmos/ethermint/x/evm/types"
 
@@ -41,23 +52,63 @@ type WASMIntegrationTestSuite struct {
 
 	TokenAddress string
 
-	UserWallet1      *WalletInfo
-	UserWallet2      *WalletInfo
-	ValidatorWallet1 *WalletInfo
+	UserWallet1              *WalletInfo
+	UserWallet2              *WalletInfo
+	ValidatorWallet1         *WalletInfo
+	ValidatorWallet2         *WalletInfo
+	ValidatorWallet3         *WalletInfo
+	ValidatorWallet4         *WalletInfo
+	ValidatorWallet5         *WalletInfo
+	VoluntaryValidatorWallet *WalletInfo
+
+	VoluntaryValidatorPVKey *PVKey
+	Validator5PVKey         *PVKey
+
+	GeneralVoluntaryValidatorRegistrationProposalID uint64
 }
 
 func (i *WASMIntegrationTestSuite) SetupSuite() {
 	desc = NewServiceDesc("127.0.0.1", 9090, 10, true)
 
-	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1 = walletSetup()
+	i.UserWallet1,
+		i.UserWallet2,
+		i.ValidatorWallet1,
+		i.ValidatorWallet2,
+		i.ValidatorWallet3,
+		i.ValidatorWallet4,
+		i.ValidatorWallet5,
+		i.VoluntaryValidatorWallet = walletSetup()
 }
 
 func (i *WASMIntegrationTestSuite) SetupTest() {
-	i.UserWallet1, i.UserWallet2, i.ValidatorWallet1 = walletSetup()
+	i.UserWallet1,
+		i.UserWallet2,
+		i.ValidatorWallet1,
+		i.ValidatorWallet2,
+		i.ValidatorWallet3,
+		i.ValidatorWallet4,
+		i.ValidatorWallet5,
+		i.VoluntaryValidatorWallet = walletSetup()
 
 	i.UserWallet1.RefreshSequence()
 	i.UserWallet2.RefreshSequence()
 	i.ValidatorWallet1.RefreshSequence()
+	i.ValidatorWallet2.RefreshSequence()
+	i.ValidatorWallet3.RefreshSequence()
+	i.ValidatorWallet4.RefreshSequence()
+	i.ValidatorWallet5.RefreshSequence()
+	i.VoluntaryValidatorWallet.RefreshSequence()
+
+	var err error
+	i.VoluntaryValidatorPVKey, err = loadPrivValidator("voluntary_validator")
+	if err != nil {
+		i.Fail("PVKey load fail")
+	}
+
+	i.Validator5PVKey, err = loadPrivValidator("validator5_experimental")
+	if err != nil {
+		i.Fail("PVKey load fail")
+	}
 }
 
 func (i *WASMIntegrationTestSuite) TearDownTest() {}
@@ -298,6 +349,334 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 	assert.Equal(t.T(), "50000000", amtResp.Balance)
 }
 
+func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryAndUnregistry() {
+	amt := sdktypes.NewInt(1000000000000000000)
+
+	{
+		fmt.Println("Preparing proposal to add a voluntary validator")
+
+		proposalContent, err := voluntaryValidatorType.NewRegisterSpecialValidatorProposal(
+			"register_voluntary_validator",
+			"Test voluntary validator registary",
+			sdktypes.AccAddress(t.VoluntaryValidatorWallet.ByteAddress.Bytes()),
+			sdktypes.ValAddress(t.VoluntaryValidatorWallet.ByteAddress.Bytes()),
+			&ed25519.PubKey{Key: t.VoluntaryValidatorPVKey.PubKey.Bytes()},
+			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+			stakingtype.NewDescription("voluntary_validator", "", "", "", ""),
+		)
+
+		assert.NoError(t.T(), err)
+
+		proposalMsg, err := govtype.NewMsgSubmitProposal(
+			proposalContent,
+			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+			t.VoluntaryValidatorWallet.ByteAddress,
+		)
+
+		assert.NoError(t.T(), err)
+
+		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.VoluntaryValidatorWallet.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+			Hash: txhash,
+		})
+
+		assert.NoError(t.T(), err)
+
+	GENERAL_VOLUNTARY_VALIDATOR_REGISTERED:
+		for _, val := range resp.TxResponse.Events {
+			for _, attr := range val.Attributes {
+				if string(attr.Key) == "proposal_id" {
+					t.GeneralVoluntaryValidatorRegistrationProposalID, _ = strconv.ParseUint(string(attr.Value), 10, 64)
+					break GENERAL_VOLUNTARY_VALIDATOR_REGISTERED
+				}
+			}
+		}
+
+		fmt.Println("Proposal is applied as ID", t.GeneralVoluntaryValidatorRegistrationProposalID)
+	}
+
+	{
+		fmt.Println("Vote for the voluntary validator registration")
+
+		wg := sync.WaitGroup{}
+
+		errChan := make(chan error)
+		successChan := make(chan bool)
+
+		for _, addr := range []*WalletInfo{
+			t.ValidatorWallet1,
+			t.ValidatorWallet2,
+			t.ValidatorWallet3,
+			t.ValidatorWallet4,
+		} {
+			wg.Add(1)
+
+			go func(addr *WalletInfo) {
+				defer wg.Done()
+
+				voteMsg := govtype.NewMsgVote(addr.ByteAddress, t.GeneralVoluntaryValidatorRegistrationProposalID, govtype.OptionYes)
+				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+				fee := sdktypes.Coin{
+					Denom:  "axpla",
+					Amount: feeAmt.Ceil().RoundInt(),
+				}
+
+				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+				if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "voted to the proposal", t.GeneralVoluntaryValidatorRegistrationProposalID, "as tx", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+
+				err = txCheck(txhash)
+				if assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "vote tx applied", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+			}(addr)
+		}
+
+		go func() {
+			wg.Wait()
+			successChan <- true
+		}()
+
+	VOTE:
+		for {
+			select {
+			case chanErr := <-errChan:
+				fmt.Print(chanErr.Error())
+				t.T().Fail()
+
+				return
+			case <-successChan:
+				break VOTE
+			}
+		}
+	}
+
+	fmt.Println("Waiting 25sec for the proposal passing...")
+	time.Sleep(time.Second * 25)
+
+	{
+		fmt.Println("Validator status check")
+
+		client := tmservicetypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.GetLatestValidatorSet(context.Background(), &tmservicetypes.GetLatestValidatorSetRequest{})
+		assert.NoError(t.T(), err)
+
+		isFound := false
+		conAddress := sdktypes.ConsAddress(t.VoluntaryValidatorPVKey.Address).String()
+		for _, unitVal := range validatorStatus.Validators {
+			if conAddress == unitVal.GetAddress() {
+				fmt.Println("power:", unitVal.VotingPower)
+				isFound = true
+				break
+			}
+		}
+
+		if assert.True(t.T(), isFound) {
+			fmt.Println("Consensus address", conAddress, "found in validator set!")
+		} else {
+			fmt.Println(conAddress, "not found")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Delegator status check")
+
+		queryClient := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+		queryDelegatorMsg := &stakingtype.QueryDelegatorDelegationsRequest{
+			DelegatorAddr: t.VoluntaryValidatorWallet.StringAddress,
+		}
+
+		delegationResp, err := queryClient.DelegatorDelegations(context.Background(), queryDelegatorMsg)
+		assert.NoError(t.T(), err)
+
+		delegatedList := delegationResp.GetDelegationResponses()
+
+		expected := []stakingtype.DelegationResponse{
+			stakingtype.NewDelegationResp(
+				t.VoluntaryValidatorWallet.ByteAddress,
+				t.VoluntaryValidatorWallet.ByteAddress.Bytes(),
+				sdktypes.NewDecFromInt(amt),
+				sdktypes.Coin{
+					Denom:  "axpla",
+					Amount: amt,
+				},
+			),
+		}
+
+		if assert.Equal(t.T(), expected, delegatedList) {
+			fmt.Println("Only one delegator exists. Check OK")
+		} else {
+			fmt.Println("Something wrong in the module")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Preparing proposal to remove a voluntary validator")
+
+		proposalContent := voluntaryValidatorType.NewUnregisterSpecialValidatorProposal(
+			"unregister_voluntary_validator",
+			"Test voluntary validator unregistration",
+			sdktypes.ValAddress(t.VoluntaryValidatorWallet.ByteAddress.Bytes()),
+		)
+
+		proposalMsg, err := govtype.NewMsgSubmitProposal(
+			proposalContent,
+			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+			t.VoluntaryValidatorWallet.ByteAddress,
+		)
+
+		assert.NoError(t.T(), err)
+
+		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.VoluntaryValidatorWallet.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+			Hash: txhash,
+		})
+
+		assert.NoError(t.T(), err)
+
+	GENERAL_VOLUNTARY_VALIDATOR_UNREGISTERED:
+		for _, val := range resp.TxResponse.Events {
+			for _, attr := range val.Attributes {
+				if string(attr.Key) == "proposal_id" {
+					t.GeneralVoluntaryValidatorRegistrationProposalID, _ = strconv.ParseUint(string(attr.Value), 10, 64)
+					break GENERAL_VOLUNTARY_VALIDATOR_UNREGISTERED
+				}
+			}
+		}
+
+		fmt.Println("Proposal is applied as ID", t.GeneralVoluntaryValidatorRegistrationProposalID)
+	}
+
+	{
+		fmt.Println("Vote for the voluntary validator unregistration")
+
+		wg := sync.WaitGroup{}
+
+		errChan := make(chan error)
+		successChan := make(chan bool)
+
+		for _, addr := range []*WalletInfo{
+			t.ValidatorWallet1,
+			t.ValidatorWallet2,
+			t.ValidatorWallet3,
+			t.ValidatorWallet4,
+		} {
+			wg.Add(1)
+
+			go func(addr *WalletInfo) {
+				defer wg.Done()
+
+				voteMsg := govtype.NewMsgVote(addr.ByteAddress, t.GeneralVoluntaryValidatorRegistrationProposalID, govtype.OptionYes)
+				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+				fee := sdktypes.Coin{
+					Denom:  "axpla",
+					Amount: feeAmt.Ceil().RoundInt(),
+				}
+
+				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+				if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "voted to the proposal", t.GeneralVoluntaryValidatorRegistrationProposalID, "as tx", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+
+				err = txCheck(txhash)
+				if assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "vote tx applied", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+			}(addr)
+		}
+
+		go func() {
+			wg.Wait()
+			successChan <- true
+		}()
+
+	VOTE_UNREGISTER:
+		for {
+			select {
+			case chanErr := <-errChan:
+				fmt.Print(chanErr.Error())
+				t.T().Fail()
+
+				return
+			case <-successChan:
+				break VOTE_UNREGISTER
+			}
+		}
+	}
+
+	fmt.Println("Waiting 25sec for the proposal passing...")
+	time.Sleep(time.Second * 25)
+
+	{
+		fmt.Println("Check existence of the voluntary validator")
+
+		client := voluntaryValidatorType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.Specialvalidators(context.Background(), &voluntaryValidatorType.QuerySpecialValidatorsRequest{})
+		assert.NoError(t.T(), err)
+
+		thisVoluntaryValAddress := sdktypes.ValAddress(t.VoluntaryValidatorWallet.ByteAddress).String()
+
+		if assert.NotContains(t.T(), validatorStatus.GetSpecialValidators(), thisVoluntaryValAddress) {
+			fmt.Println(thisVoluntaryValAddress, "is successfully removed from validator set!")
+		} else {
+			fmt.Println(thisVoluntaryValAddress, "still found")
+			t.T().Fail()
+		}
+	}
+}
+
 // Test strategy
 // 1. Check balance
 // 2. Contract upload & initiate
@@ -487,7 +866,11 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 // 	assert.Equal(t.T(), new(big.Int).Add(amt, amt), resp)
 // }
 
-func walletSetup() (userWallet1, userWallet2, validatorWallet1 *WalletInfo) {
+func walletSetup() (
+	userWallet1, userWallet2,
+	validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4, validatorWallet5,
+	voluntaryValidatorWallet *WalletInfo,
+) {
 	var err error
 
 	user1Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "user1.mnemonics"))
@@ -516,6 +899,56 @@ func walletSetup() (userWallet1, userWallet2, validatorWallet1 *WalletInfo) {
 	}
 
 	validatorWallet1, err = NewWalletInfo(string(validator1Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator2Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator2.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet2, err = NewWalletInfo(string(validator2Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator3Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator3.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet3, err = NewWalletInfo(string(validator3Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator4Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator4.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet4, err = NewWalletInfo(string(validator4Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	validator5Mnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "validator5_experimental.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	validatorWallet5, err = NewWalletInfo(string(validator5Mnemonics))
+	if err != nil {
+		panic(err)
+	}
+
+	voluntaryValidatorMnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "voluntary_validator.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	voluntaryValidatorWallet, err = NewWalletInfo(string(voluntaryValidatorMnemonics))
 	if err != nil {
 		panic(err)
 	}
@@ -574,4 +1007,26 @@ func txCheck(txHash string) error {
 	}
 
 	return err
+}
+
+// copied from Tendermint type
+type PVKey struct {
+	Address tmtypes.Address  `json:"address"`
+	PubKey  tmcrypto.PubKey  `json:"pub_key"`
+	PrivKey tmcrypto.PrivKey `json:"priv_key"`
+}
+
+func loadPrivValidator(validatorName string) (*PVKey, error) {
+	valKeyBytes, err := os.ReadFile(filepath.Join(".", validatorName, "priv_validator_key.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	pvKey := PVKey{}
+	err = tmjson.Unmarshal(valKeyBytes, &pvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pvKey, nil
 }

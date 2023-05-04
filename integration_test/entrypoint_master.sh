@@ -73,6 +73,10 @@ sed -i 's/"inflation": "0.130000000000000000",/"inflation": "0.00000000000000000
 sed -i 's/"inflation_rate_change": "0.130000000000000000",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_min": "0.070000000000000000",/"inflation_min": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 
+# gov params
+sed -i 's/"max_deposit_period": "172800s"/"max_deposit_period": "20s"/g' $XPLAHOME/config/genesis.json
+sed -i 's/"voting_period": "172800s"/"voting_period": "20s"/g' $XPLAHOME/config/genesis.json
+
 /usr/bin/xplad validate-genesis --home $XPLAHOME
 
 # 7. Copy to the shared folder

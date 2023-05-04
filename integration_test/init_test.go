@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	xplaGeneralGasLimit int64 = 240000
-	xplaCodeGasLimit    int64 = 5000000
-	xplaGasPrice              = "8500000000"
+	xplaGeneralGasLimit  int64 = 240000
+	xplaCodeGasLimit     int64 = 5000000
+	xplaProposalGasLimit int64 = 500000
+	xplaGasPrice               = "8500000000"
 )
 
 var (
