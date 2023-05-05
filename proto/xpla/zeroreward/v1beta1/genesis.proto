@@ -1,0 +1,12 @@
+syntax = "proto3";
+package xpla.zeroreward.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/zeroreward/types";
+
+import "gogoproto/gogo.proto";
+import "xpla/zeroreward/v1beta1/zerorewardvalidator.proto";
+
+// GenesisState defines the zeroreward module's genesis state.
+message GenesisState {
+  repeated ZeroRewardValidator zero_reward_validators = 1;
+}

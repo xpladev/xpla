@@ -42,7 +42,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
-	specialvalidatorclient "github.com/xpladev/xpla/x/specialvalidator/client"
+	zerorewardclient "github.com/xpladev/xpla/x/zeroreward/client"
 
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 
@@ -124,7 +124,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpgradeProposalHandler,
 	)
 
-	govProposalHandlers = append(govProposalHandlers, specialvalidatorclient.ProposalHandler...)
+	govProposalHandlers = append(govProposalHandlers, zerorewardclient.ProposalHandler...)
 
 	return govProposalHandlers
 }
@@ -254,19 +254,19 @@ func NewXplaApp(
 
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			AccountKeeper:          app.AccountKeeper,
-			BankKeeper:             app.BankKeeper,
-			EvmKeeper:              app.EvmKeeper,
-			FeeMarketKeeper:        app.FeeMarketKeeper,
-			FeegrantKeeper:         app.FeeGrantKeeper,
-			SpecialValidatorKeeper: app.SpecialValidatorKeeper,
-			SignModeHandler:        encodingConfig.TxConfig.SignModeHandler(),
-			SigGasConsumer:         xplaante.SigVerificationGasConsumer,
-			IBCKeeper:              app.IBCKeeper,
-			BypassMinFeeMsgTypes:   cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
-			TxCounterStoreKey:      app.GetKey(wasm.StoreKey),
-			WasmConfig:             wasmConfig,
-			MaxTxGasWanted:         evmMaxGasWanted,
+			AccountKeeper:        app.AccountKeeper,
+			BankKeeper:           app.BankKeeper,
+			EvmKeeper:            app.EvmKeeper,
+			FeeMarketKeeper:      app.FeeMarketKeeper,
+			FeegrantKeeper:       app.FeeGrantKeeper,
+			ZeroRewardKeeper:     app.ZeroRewardKeeper,
+			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
+			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
+			IBCKeeper:            app.IBCKeeper,
+			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
+			TxCounterStoreKey:    app.GetKey(wasm.StoreKey),
+			WasmConfig:           wasmConfig,
+			MaxTxGasWanted:       evmMaxGasWanted,
 		},
 	)
 	if err != nil {

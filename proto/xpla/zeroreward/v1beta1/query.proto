@@ -1,0 +1,20 @@
+syntax = "proto3";
+package xpla.zeroreward.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/xpladev/xpla/x/zeroreward/types";
+
+// Query defines the gRPC querier service for zeroreward module.
+service Query {
+    rpc ZeroRewardValidators(QueryZeroRewardValidatorsRequest) returns (QueryZeroRewardValidatorsResponse) {
+      option (google.api.http).get = "/xpla/zeroreward/v1beta1/validators";
+    }
+}
+
+message QueryZeroRewardValidatorsRequest {}
+
+message QueryZeroRewardValidatorsResponse {
+  repeated string zero_reward_validators = 1;
+}
