@@ -87,6 +87,7 @@ cp $XPLAHOME/config/genesis.json /genesis
 
 # 1. Copy the node setting files to the node home dir
 cp -r /opt/integration_test/$MONIKER/* $XPLAHOME/config
+cp -r /opt/integration_test/common_configs/* $XPLAHOME/config
 
 # 2. Get genesis.json from the shared
 cp /genesis/genesis.json $XPLAHOME/config

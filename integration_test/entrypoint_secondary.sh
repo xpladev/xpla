@@ -6,6 +6,9 @@
 
 # 2. copy the node setting files to the node home dir
 cp -r /opt/integration_test/$MONIKER/* $XPLAHOME/config
+cp -r /opt/integration_test/common_configs/* $XPLAHOME/config
+
+sed -i "s/moniker = \"validator1\"/moniker = \"$MONIKER\"g" $XPLAHOME/config/config.toml
 
 # 3. register my validator & users keyfile
 /usr/bin/xplad keys add $MONIKER --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/$MONIKER.mnemonics

@@ -11,9 +11,9 @@ services:
       - ~/genesis:/genesis:rw
 
     ports:
-      - "8545:8545"
-      - "9090:9090"
-      - "26656:26656"
+      - "18545:8545"
+      - "19090:9090"
+      - "36656:26656"
     
     entrypoint: sh -c "MONIKER=validator1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_master.sh"
     
@@ -35,9 +35,9 @@ services:
       target: runtime
 
     ports:
-      - "8555:8555"
-      - "9100:9100"
-      - "26666:26666"
+      - "18555:8545"
+      - "19100:9090"
+      - "36666:26656"
     
     entrypoint: sh -c "MONIKER=validator2 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
@@ -59,9 +59,9 @@ services:
       target: runtime
 
     ports:
-      - "8565:8565"
-      - "9110:9110"
-      - "26676:26676"
+      - "18565:8545"
+      - "19110:9090"
+      - "36676:26656"
     
     entrypoint: sh -c "MONIKER=validator3 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
@@ -83,9 +83,9 @@ services:
       target: runtime
 
     ports:
-      - "8575:8575"
-      - "9120:9120"
-      - "26686:26686"
+      - "18575:8545"
+      - "19120:9090"
+      - "36686:26656"
     
     entrypoint: sh -c "MONIKER=validator4 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
@@ -107,9 +107,9 @@ services:
       target: runtime
 
     ports:
-      - "8585:8585"
-      - "9130:9130"
-      - "26696:26696"
+      - "18585:8545"
+      - "19130:9090"
+      - "36696:26656"
     
     entrypoint: sh -c "MONIKER=validator5_experimental XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
@@ -117,8 +117,8 @@ services:
       vpcbr:
         ipv4_address: 192.167.100.5
 
-  node-voluntary:
-    container_name: xpla-localnet-voluntary
+  node-zeroreward-1:
+    container_name: xpla-localnet-zeroreward-1
 
     volumes:
       - ~/genesis:/genesis:ro
@@ -131,11 +131,11 @@ services:
       target: runtime
 
     ports:
-      - "8595:8595"
-      - "9140:9140"
-      - "26706:26706"
+      - "18595:8545"
+      - "19140:9090"
+      - "36706:26656"
     
-    entrypoint: sh -c "MONIKER=voluntary_validator XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=zeroreward_validator-1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
     networks:
       vpcbr:

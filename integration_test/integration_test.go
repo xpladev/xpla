@@ -100,7 +100,7 @@ func (i *WASMIntegrationTestSuite) SetupTest() {
 	i.ZeroRewardValidatorWallet.RefreshSequence()
 
 	var err error
-	i.ZeroRewardValidatorPVKey, err = loadPrivValidator("voluntary_validator")
+	i.ZeroRewardValidatorPVKey, err = loadPrivValidator("zeroreward_validator1")
 	if err != nil {
 		i.Fail("PVKey load fail")
 	}
@@ -835,10 +835,10 @@ type EVMIntegrationTestSuite struct {
 }
 
 func (t *EVMIntegrationTestSuite) SetupSuite() {
-	desc = NewServiceDesc("127.0.0.1", 9090, 10, true)
+	desc = NewServiceDesc("127.0.0.1", 19090, 10, true)
 
 	var err error
-	t.EthClient, err = web3.Dial("http://localhost:8545")
+	t.EthClient, err = web3.Dial("http://localhost:18545")
 	if err != nil {
 		panic(err)
 	}
