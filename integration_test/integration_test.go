@@ -65,6 +65,7 @@ type WASMIntegrationTestSuite struct {
 	ZeroRewardValidatorWallet2 *WalletInfo
 	ZeroRewardValidatorWallet3 *WalletInfo
 
+	Validator1PVKey           *PVKey
 	ZeroRewardValidatorPVKey1 *PVKey
 	ZeroRewardValidatorPVKey2 *PVKey
 	ZeroRewardValidatorPVKey3 *PVKey
@@ -123,6 +124,11 @@ func (i *WASMIntegrationTestSuite) SetupTest() {
 	i.ZeroRewardValidatorPVKey3, err = loadPrivValidator("zeroreward_validator3")
 	if err != nil {
 		i.Fail("PVKey load fail - 3")
+	}
+
+	i.Validator1PVKey, err = loadPrivValidator("validator1")
+	if err != nil {
+		i.Fail("PVKey load fail - validator 1")
 	}
 
 	i.Validator5PVKey, err = loadPrivValidator("validator5_experimental")
@@ -1153,6 +1159,49 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 			fmt.Println(thisVoluntaryValAddress, "successfully removed from the validator set!")
 		} else {
 			fmt.Println(thisVoluntaryValAddress, "still exist!")
+			t.T().Fail()
+		}
+	}
+}
+
+func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToZeroRewardValidator_ShouldFail() {
+	amt := sdktypes.NewInt(1000000000000000000)
+
+	{
+		fmt.Println("Try registering as a zero reward validator from the general validator...")
+
+		proposalContent, err := zrValidatorType.NewRegisterZeroRewardValidatorProposal(
+			"register_zeroreward_validator_from_general_validator",
+			"Test zero reward validator registary",
+			sdktypes.AccAddress(t.ValidatorWallet1.ByteAddress.Bytes()),
+			sdktypes.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()),
+			&ed25519.PubKey{Key: t.Validator1PVKey.PubKey.Bytes()},
+			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+			stakingtype.NewDescription("zeroreward_validator", "", "", "", ""),
+		)
+
+		assert.NoError(t.T(), err)
+
+		proposalMsg, err := govtype.NewMsgSubmitProposal(
+			proposalContent,
+			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+			t.ValidatorWallet1.ByteAddress,
+		)
+
+		assert.NoError(t.T(), err)
+
+		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.ValidatorWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		if assert.Equal(t.T(), "", txhash) && assert.Error(t.T(), err) {
+			fmt.Println(err)
+			fmt.Println("Expected failure! Test succeeded!")
+		} else {
+			fmt.Println("Tx sent as", txhash, "Unexpected situation")
 			t.T().Fail()
 		}
 	}
