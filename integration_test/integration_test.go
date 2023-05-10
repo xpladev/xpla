@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	ed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -52,17 +54,21 @@ type WASMIntegrationTestSuite struct {
 
 	TokenAddress string
 
-	UserWallet1               *WalletInfo
-	UserWallet2               *WalletInfo
-	ValidatorWallet1          *WalletInfo
-	ValidatorWallet2          *WalletInfo
-	ValidatorWallet3          *WalletInfo
-	ValidatorWallet4          *WalletInfo
-	ValidatorWallet5          *WalletInfo
-	ZeroRewardValidatorWallet *WalletInfo
+	UserWallet1                *WalletInfo
+	UserWallet2                *WalletInfo
+	ValidatorWallet1           *WalletInfo
+	ValidatorWallet2           *WalletInfo
+	ValidatorWallet3           *WalletInfo
+	ValidatorWallet4           *WalletInfo
+	ValidatorWallet5           *WalletInfo
+	ZeroRewardValidatorWallet1 *WalletInfo
+	ZeroRewardValidatorWallet2 *WalletInfo
+	ZeroRewardValidatorWallet3 *WalletInfo
 
-	ZeroRewardValidatorPVKey *PVKey
-	Validator5PVKey          *PVKey
+	ZeroRewardValidatorPVKey1 *PVKey
+	ZeroRewardValidatorPVKey2 *PVKey
+	ZeroRewardValidatorPVKey3 *PVKey
+	Validator5PVKey           *PVKey
 
 	GeneralZeroRewardValidatorRegistrationProposalID uint64
 }
@@ -77,7 +83,9 @@ func (i *WASMIntegrationTestSuite) SetupSuite() {
 		i.ValidatorWallet3,
 		i.ValidatorWallet4,
 		i.ValidatorWallet5,
-		i.ZeroRewardValidatorWallet = walletSetup()
+		i.ZeroRewardValidatorWallet1,
+		i.ZeroRewardValidatorWallet2,
+		i.ZeroRewardValidatorWallet3 = walletSetup()
 }
 
 func (i *WASMIntegrationTestSuite) SetupTest() {
@@ -88,7 +96,9 @@ func (i *WASMIntegrationTestSuite) SetupTest() {
 		i.ValidatorWallet3,
 		i.ValidatorWallet4,
 		i.ValidatorWallet5,
-		i.ZeroRewardValidatorWallet = walletSetup()
+		i.ZeroRewardValidatorWallet1,
+		i.ZeroRewardValidatorWallet2,
+		i.ZeroRewardValidatorWallet3 = walletSetup()
 
 	i.UserWallet1.RefreshSequence()
 	i.UserWallet2.RefreshSequence()
@@ -97,12 +107,22 @@ func (i *WASMIntegrationTestSuite) SetupTest() {
 	i.ValidatorWallet3.RefreshSequence()
 	i.ValidatorWallet4.RefreshSequence()
 	i.ValidatorWallet5.RefreshSequence()
-	i.ZeroRewardValidatorWallet.RefreshSequence()
+	i.ZeroRewardValidatorWallet1.RefreshSequence()
 
 	var err error
-	i.ZeroRewardValidatorPVKey, err = loadPrivValidator("zeroreward_validator1")
+	i.ZeroRewardValidatorPVKey1, err = loadPrivValidator("zeroreward_validator1")
 	if err != nil {
-		i.Fail("PVKey load fail")
+		i.Fail("PVKey load fail - 1")
+	}
+
+	i.ZeroRewardValidatorPVKey2, err = loadPrivValidator("zeroreward_validator2")
+	if err != nil {
+		i.Fail("PVKey load fail - 2")
+	}
+
+	i.ZeroRewardValidatorPVKey3, err = loadPrivValidator("zeroreward_validator3")
+	if err != nil {
+		i.Fail("PVKey load fail - 3")
 	}
 
 	i.Validator5PVKey, err = loadPrivValidator("validator5_experimental")
@@ -358,9 +378,9 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 		proposalContent, err := zrValidatorType.NewRegisterZeroRewardValidatorProposal(
 			"register_zeroreward_validator",
 			"Test zero reward validator registary",
-			sdktypes.AccAddress(t.ZeroRewardValidatorWallet.ByteAddress.Bytes()),
-			sdktypes.ValAddress(t.ZeroRewardValidatorWallet.ByteAddress.Bytes()),
-			&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey.PubKey.Bytes()},
+			sdktypes.AccAddress(t.ZeroRewardValidatorWallet1.ByteAddress.Bytes()),
+			sdktypes.ValAddress(t.ZeroRewardValidatorWallet1.ByteAddress.Bytes()),
+			&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey1.PubKey.Bytes()},
 			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
 			stakingtype.NewDescription("zeroreward_validator", "", "", "", ""),
 		)
@@ -370,7 +390,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 		proposalMsg, err := govtype.NewMsgSubmitProposal(
 			proposalContent,
 			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
-			t.ZeroRewardValidatorWallet.ByteAddress,
+			t.ZeroRewardValidatorWallet1.ByteAddress,
 		)
 
 		assert.NoError(t.T(), err)
@@ -381,7 +401,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 			Amount: feeAmt.Ceil().RoundInt(),
 		}
 
-		txhash, err := t.ZeroRewardValidatorWallet.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		txhash, err := t.ZeroRewardValidatorWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
 		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 			fmt.Println("Tx sent", txhash)
 		} else {
@@ -402,12 +422,12 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 
 		assert.NoError(t.T(), err)
 
-	GENERAL_VOLUNTARY_VALIDATOR_REGISTERED:
+	GENERAL_ZEROREWARD_VALIDATOR_REGISTERED:
 		for _, val := range resp.TxResponse.Events {
 			for _, attr := range val.Attributes {
 				if string(attr.Key) == "proposal_id" {
 					t.GeneralZeroRewardValidatorRegistrationProposalID, _ = strconv.ParseUint(string(attr.Value), 10, 64)
-					break GENERAL_VOLUNTARY_VALIDATOR_REGISTERED
+					break GENERAL_ZEROREWARD_VALIDATOR_REGISTERED
 				}
 			}
 		}
@@ -416,7 +436,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 	}
 
 	{
-		fmt.Println("Vote for the voluntary validator registration")
+		fmt.Println("Vote for the zero reward validator registration")
 
 		wg := sync.WaitGroup{}
 
@@ -487,7 +507,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 		assert.NoError(t.T(), err)
 
 		isFound := false
-		conAddress := sdktypes.ConsAddress(t.ZeroRewardValidatorPVKey.Address).String()
+		conAddress := sdktypes.ConsAddress(t.ZeroRewardValidatorPVKey1.Address).String()
 		for _, unitVal := range validatorStatus.Validators {
 			if conAddress == unitVal.GetAddress() {
 				fmt.Println("power:", unitVal.VotingPower)
@@ -510,7 +530,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 		queryClient := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
 		queryDelegatorMsg := &stakingtype.QueryDelegatorDelegationsRequest{
-			DelegatorAddr: t.ZeroRewardValidatorWallet.StringAddress,
+			DelegatorAddr: t.ZeroRewardValidatorWallet1.StringAddress,
 		}
 
 		delegationResp, err := queryClient.DelegatorDelegations(context.Background(), queryDelegatorMsg)
@@ -520,8 +540,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 
 		expected := []stakingtype.DelegationResponse{
 			stakingtype.NewDelegationResp(
-				t.ZeroRewardValidatorWallet.ByteAddress,
-				t.ZeroRewardValidatorWallet.ByteAddress.Bytes(),
+				t.ZeroRewardValidatorWallet1.ByteAddress,
+				t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
 				sdktypes.NewDecFromInt(amt),
 				sdktypes.Coin{
 					Denom:  "axpla",
@@ -549,7 +569,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 
 		delegationMsg := stakingtype.NewMsgDelegate(
 			t.UserWallet1.ByteAddress,
-			t.ZeroRewardValidatorWallet.ByteAddress.Bytes(),
+			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
 			*coin,
 		)
 
@@ -582,7 +602,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 		redelegationMsg := stakingtype.NewMsgBeginRedelegate(
 			t.UserWallet1.ByteAddress,
 			t.ValidatorWallet1.ByteAddress.Bytes(),
-			t.ZeroRewardValidatorWallet.ByteAddress.Bytes(),
+			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
 			*coin,
 		)
 
@@ -610,8 +630,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 		}
 
 		redelegationMsg := stakingtype.NewMsgUndelegate(
-			t.ZeroRewardValidatorWallet.ByteAddress.Bytes(),
-			t.ZeroRewardValidatorWallet.ByteAddress.Bytes(),
+			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
+			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
 			*coin,
 		)
 
@@ -621,7 +641,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 			Amount: feeAmt.Ceil().RoundInt(),
 		}
 
-		txhash, err := t.ZeroRewardValidatorWallet.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+		txhash, err := t.ZeroRewardValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
 		if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
 			fmt.Println("Expected failure is occurred.")
 		} else {
@@ -631,18 +651,18 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 	}
 
 	{
-		fmt.Println("Preparing proposal to remove a voluntary validator")
+		fmt.Println("Preparing proposal to remove a zero reward validator")
 
 		proposalContent := zrValidatorType.NewUnregisterZeroRewardValidatorProposal(
-			"unregister_voluntary_validator",
-			"Test voluntary validator unregistration",
-			sdktypes.ValAddress(t.ZeroRewardValidatorWallet.ByteAddress.Bytes()),
+			"unregister_zero_reward_validator",
+			"Test zero reward validator unregistration",
+			sdktypes.ValAddress(t.ZeroRewardValidatorWallet1.ByteAddress.Bytes()),
 		)
 
 		proposalMsg, err := govtype.NewMsgSubmitProposal(
 			proposalContent,
 			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
-			t.ZeroRewardValidatorWallet.ByteAddress,
+			t.ZeroRewardValidatorWallet1.ByteAddress,
 		)
 
 		assert.NoError(t.T(), err)
@@ -653,7 +673,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 			Amount: feeAmt.Ceil().RoundInt(),
 		}
 
-		txhash, err := t.ZeroRewardValidatorWallet.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		txhash, err := t.ZeroRewardValidatorWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
 		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 			fmt.Println("Tx sent", txhash)
 		} else {
@@ -674,12 +694,12 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 
 		assert.NoError(t.T(), err)
 
-	GENERAL_VOLUNTARY_VALIDATOR_UNREGISTERED:
+	GENERAL_ZEROREWARD_VALIDATOR_UNREGISTERED:
 		for _, val := range resp.TxResponse.Events {
 			for _, attr := range val.Attributes {
 				if string(attr.Key) == "proposal_id" {
 					t.GeneralZeroRewardValidatorRegistrationProposalID, _ = strconv.ParseUint(string(attr.Value), 10, 64)
-					break GENERAL_VOLUNTARY_VALIDATOR_UNREGISTERED
+					break GENERAL_ZEROREWARD_VALIDATOR_UNREGISTERED
 				}
 			}
 		}
@@ -688,7 +708,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 	}
 
 	{
-		fmt.Println("Vote for the voluntary validator unregistration")
+		fmt.Println("Vote for the zero reward validator unregistration")
 
 		wg := sync.WaitGroup{}
 
@@ -752,13 +772,13 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 	time.Sleep(time.Second * 25)
 
 	{
-		fmt.Println("Check existence of the voluntary validator")
+		fmt.Println("Check existence of the zero reward validator")
 
 		client := zrValidatorType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 		validatorStatus, err := client.ZeroRewardValidators(context.Background(), &zrValidatorType.QueryZeroRewardValidatorsRequest{})
 		assert.NoError(t.T(), err)
 
-		thisVoluntaryValAddress := sdktypes.ValAddress(t.ZeroRewardValidatorWallet.ByteAddress).String()
+		thisVoluntaryValAddress := sdktypes.ValAddress(t.ZeroRewardValidatorWallet1.ByteAddress).String()
 
 		if assert.NotContains(t.T(), validatorStatus.GetZeroRewardValidators(), thisVoluntaryValAddress) {
 			fmt.Println(thisVoluntaryValAddress, "is successfully removed from validator set!")
@@ -772,8 +792,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 		fmt.Println("Try deregister a validator but it is not registered...")
 
 		proposalContent := zrValidatorType.NewUnregisterZeroRewardValidatorProposal(
-			"false_unregister_voluntary_validator",
-			"False voluntary validator unregistration",
+			"false_unregister_zero_reward_validator",
+			"False zero reward validator unregistration",
 			sdktypes.ValAddress(t.UserWallet1.ByteAddress.Bytes()),
 		)
 
@@ -791,7 +811,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 			Amount: feeAmt.Ceil().RoundInt(),
 		}
 
-		txhash, err := t.ZeroRewardValidatorWallet.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		txhash, err := t.ZeroRewardValidatorWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
 		if assert.Equal(t.T(), "", txhash) && assert.Error(t.T(), err) {
 			fmt.Println(err)
 			fmt.Println("Expected failure! Test succeeded!")
@@ -803,7 +823,339 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 }
 
 func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
+	amt := sdktypes.NewInt(1000000000000000000)
+	proposalIds := []uint64{}
 
+	{
+		fmt.Println("Preparing multiple proposals to add a zero reward validator")
+
+		var eg errgroup.Group
+
+		for i := 0; i < 2; i++ {
+			var proposalId uint64 = 0
+
+			eg.Go(func() error {
+				{
+					// apply proposal
+					proposalContent, err := zrValidatorType.NewRegisterZeroRewardValidatorProposal(
+						fmt.Sprintf("register_multiple_zeroreward_validator_%d", i),
+						fmt.Sprintf("Test zero reward validator registary_%d", i),
+						sdktypes.AccAddress(t.ZeroRewardValidatorWallet2.ByteAddress.Bytes()),
+						sdktypes.ValAddress(t.ZeroRewardValidatorWallet2.ByteAddress.Bytes()),
+						&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey2.PubKey.Bytes()},
+						sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+						stakingtype.NewDescription("zeroreward_validator", "", "", "", ""),
+					)
+
+					assert.NoError(t.T(), err)
+
+					proposalMsg, err := govtype.NewMsgSubmitProposal(
+						proposalContent,
+						sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+						t.ZeroRewardValidatorWallet2.ByteAddress,
+					)
+
+					assert.NoError(t.T(), err)
+
+					feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+					fee := sdktypes.Coin{
+						Denom:  "axpla",
+						Amount: feeAmt.Ceil().RoundInt(),
+					}
+
+					txhash, err := t.ZeroRewardValidatorWallet2.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+					if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+						fmt.Println("Tx sent", txhash)
+					} else {
+						fmt.Println(err)
+					}
+
+					err = txCheck(txhash)
+					if assert.NoError(t.T(), err) {
+						fmt.Println("Tx applied", txhash)
+					} else {
+						fmt.Println(err)
+					}
+
+					queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+					resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+						Hash: txhash,
+					})
+
+					assert.NoError(t.T(), err)
+
+				GENERAL_ZEROREWARD_VALIDATOR_REGISTERED:
+					for _, val := range resp.TxResponse.Events {
+						for _, attr := range val.Attributes {
+							if string(attr.Key) == "proposal_id" {
+								proposalId, _ = strconv.ParseUint(string(attr.Value), 10, 64)
+								break GENERAL_ZEROREWARD_VALIDATOR_REGISTERED
+							}
+						}
+					}
+
+					proposalIds = append(proposalIds, proposalId)
+
+					fmt.Println("Proposal is applied as ID", proposalId)
+				}
+
+				{
+					// vote to the proposal
+
+					wg := sync.WaitGroup{}
+
+					errChan := make(chan error)
+					successChan := make(chan bool)
+
+					for _, addr := range []*WalletInfo{
+						t.ValidatorWallet1,
+						t.ValidatorWallet2,
+						t.ValidatorWallet3,
+						t.ValidatorWallet4,
+					} {
+						wg.Add(1)
+
+						go func(addr *WalletInfo) {
+							defer wg.Done()
+
+							voteMsg := govtype.NewMsgVote(addr.ByteAddress, proposalId, govtype.OptionYes)
+							feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+							fee := sdktypes.Coin{
+								Denom:  "axpla",
+								Amount: feeAmt.Ceil().RoundInt(),
+							}
+
+							txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+							if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+								fmt.Println(addr.StringAddress, "voted to the proposal", proposalId, "as tx", txhash, "err:", err)
+							} else {
+								fmt.Println(err)
+							}
+
+							err = txCheck(txhash)
+							if assert.NoError(t.T(), err) {
+								fmt.Println(addr.StringAddress, "vote tx applied", txhash, "err:", err)
+							} else {
+								fmt.Println(err)
+							}
+						}(addr)
+					}
+
+					go func() {
+						wg.Wait()
+						successChan <- true
+					}()
+
+				VOTE:
+					for {
+						select {
+						case chanErr := <-errChan:
+							fmt.Print(chanErr.Error())
+							t.T().Fail()
+
+							return chanErr
+						case <-successChan:
+							break VOTE
+						}
+					}
+				}
+
+				return nil
+			})
+		}
+
+		err := eg.Wait()
+
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Proposal successfully applied!")
+		} else {
+			fmt.Println("Error detected on the proposal")
+			t.T().Fail()
+		}
+	}
+
+	fmt.Println("Waiting 30sec for the proposal passing...")
+	time.Sleep(time.Second * 30)
+
+	{
+		fmt.Println("Check existence of the voluntary validator")
+
+		client := zrValidatorType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.ZeroRewardValidators(context.Background(), &zrValidatorType.QueryZeroRewardValidatorsRequest{})
+		assert.NoError(t.T(), err)
+
+		thisVoluntaryValAddress := sdktypes.ValAddress(t.ZeroRewardValidatorWallet2.ByteAddress).String()
+
+		if len(validatorStatus.GetZeroRewardValidators()) == 1 &&
+			assert.Contains(t.T(), validatorStatus.GetZeroRewardValidators(), thisVoluntaryValAddress) {
+			fmt.Println(thisVoluntaryValAddress, "successfully get in the validator set!")
+		} else {
+			fmt.Println(thisVoluntaryValAddress, "does not exist")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Preparing multiple proposals to remove a zero reward validator")
+
+		var eg errgroup.Group
+
+		for i := 0; i < 2; i++ {
+			var proposalId uint64 = 0
+
+			eg.Go(func() error {
+				{
+					// apply proposal
+					proposalContent := zrValidatorType.NewUnregisterZeroRewardValidatorProposal(
+						fmt.Sprintf("unregister_multiple_zeroreward_validator_%d", i),
+						fmt.Sprintf("Test zero reward validator unregistary_%d", i),
+						sdktypes.ValAddress(t.ZeroRewardValidatorWallet2.ByteAddress.Bytes()),
+					)
+
+					proposalMsg, err := govtype.NewMsgSubmitProposal(
+						proposalContent,
+						sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+						t.ZeroRewardValidatorWallet2.ByteAddress,
+					)
+
+					assert.NoError(t.T(), err)
+
+					feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+					fee := sdktypes.Coin{
+						Denom:  "axpla",
+						Amount: feeAmt.Ceil().RoundInt(),
+					}
+
+					txhash, err := t.ZeroRewardValidatorWallet2.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+					if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+						fmt.Println("Tx sent", txhash)
+					} else {
+						fmt.Println(err)
+					}
+
+					err = txCheck(txhash)
+					if assert.NoError(t.T(), err) {
+						fmt.Println("Tx applied", txhash)
+					} else {
+						fmt.Println(err)
+					}
+
+					queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+					resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+						Hash: txhash,
+					})
+
+					assert.NoError(t.T(), err)
+
+				GENERAL_ZEROREWARD_VALIDATOR_UNREGISTERED:
+					for _, val := range resp.TxResponse.Events {
+						for _, attr := range val.Attributes {
+							if string(attr.Key) == "proposal_id" {
+								proposalId, _ = strconv.ParseUint(string(attr.Value), 10, 64)
+								break GENERAL_ZEROREWARD_VALIDATOR_UNREGISTERED
+							}
+						}
+					}
+
+					proposalIds = append(proposalIds, proposalId)
+
+					fmt.Println("Proposal is applied as ID", proposalId)
+				}
+
+				{
+					// vote to the proposal
+
+					wg := sync.WaitGroup{}
+
+					errChan := make(chan error)
+					successChan := make(chan bool)
+
+					for _, addr := range []*WalletInfo{
+						t.ValidatorWallet1,
+						t.ValidatorWallet2,
+						t.ValidatorWallet3,
+						t.ValidatorWallet4,
+					} {
+						wg.Add(1)
+
+						go func(addr *WalletInfo) {
+							defer wg.Done()
+
+							voteMsg := govtype.NewMsgVote(addr.ByteAddress, proposalId, govtype.OptionYes)
+							feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+							fee := sdktypes.Coin{
+								Denom:  "axpla",
+								Amount: feeAmt.Ceil().RoundInt(),
+							}
+
+							txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+							if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+								fmt.Println(addr.StringAddress, "voted to the proposal", proposalId, "as tx", txhash, "err:", err)
+							} else {
+								fmt.Println(err)
+							}
+
+							err = txCheck(txhash)
+							if assert.NoError(t.T(), err) {
+								fmt.Println(addr.StringAddress, "vote tx applied", txhash, "err:", err)
+							} else {
+								fmt.Println(err)
+							}
+						}(addr)
+					}
+
+					go func() {
+						wg.Wait()
+						successChan <- true
+					}()
+
+				VOTE:
+					for {
+						select {
+						case chanErr := <-errChan:
+							fmt.Print(chanErr.Error())
+							t.T().Fail()
+
+							return chanErr
+						case <-successChan:
+							break VOTE
+						}
+					}
+				}
+
+				return nil
+			})
+		}
+
+		err := eg.Wait()
+
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Proposal successfully applied!")
+		} else {
+			fmt.Println("Error detected on the proposal")
+			t.T().Fail()
+		}
+	}
+
+	fmt.Println("Waiting 30sec for the proposal passing...")
+	time.Sleep(time.Second * 30)
+
+	{
+		fmt.Println("Check existence of the voluntary validator")
+
+		client := zrValidatorType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.ZeroRewardValidators(context.Background(), &zrValidatorType.QueryZeroRewardValidatorsRequest{})
+		assert.NoError(t.T(), err)
+
+		thisVoluntaryValAddress := sdktypes.ValAddress(t.ZeroRewardValidatorWallet2.ByteAddress).String()
+
+		if assert.NotContains(t.T(), validatorStatus.GetZeroRewardValidators(), thisVoluntaryValAddress) {
+			fmt.Println(thisVoluntaryValAddress, "successfully removed from the validator set!")
+		} else {
+			fmt.Println(thisVoluntaryValAddress, "still exist!")
+			t.T().Fail()
+		}
+	}
 }
 
 // Test strategy
@@ -998,7 +1350,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 func walletSetup() (
 	userWallet1, userWallet2,
 	validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4, validatorWallet5,
-	ZeroRewardValidatorWallet *WalletInfo,
+	zeroRewardValidatorWallet1, zeroRewardValidatorWallet2, zeroRewardValidatorWallet3 *WalletInfo,
 ) {
 	var err error
 
@@ -1072,12 +1424,32 @@ func walletSetup() (
 		panic(err)
 	}
 
-	voluntaryValidatorMnemonics, err := os.ReadFile(filepath.Join(".", "test_keys", "voluntary_validator.mnemonics"))
+	zerorewardValidator1, err := os.ReadFile(filepath.Join(".", "test_keys", "zeroreward_validator1.mnemonics"))
 	if err != nil {
 		panic(err)
 	}
 
-	ZeroRewardValidatorWallet, err = NewWalletInfo(string(voluntaryValidatorMnemonics))
+	zeroRewardValidatorWallet1, err = NewWalletInfo(string(zerorewardValidator1))
+	if err != nil {
+		panic(err)
+	}
+
+	zerorewardValidator2, err := os.ReadFile(filepath.Join(".", "test_keys", "zeroreward_validator2.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	zeroRewardValidatorWallet2, err = NewWalletInfo(string(zerorewardValidator2))
+	if err != nil {
+		panic(err)
+	}
+
+	zerorewardValidator3, err := os.ReadFile(filepath.Join(".", "test_keys", "zeroreward_validator3.mnemonics"))
+	if err != nil {
+		panic(err)
+	}
+
+	zeroRewardValidatorWallet3, err = NewWalletInfo(string(zerorewardValidator3))
 	if err != nil {
 		panic(err)
 	}

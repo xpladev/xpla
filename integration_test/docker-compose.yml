@@ -118,7 +118,7 @@ services:
         ipv4_address: 192.167.100.5
 
   node-zeroreward-1:
-    container_name: xpla-localnet-zeroreward-1
+    container_name: xpla-localnet-zeroreward1
 
     volumes:
       - ~/genesis:/genesis:ro
@@ -135,11 +135,60 @@ services:
       - "19140:9090"
       - "36706:26656"
     
-    entrypoint: sh -c "MONIKER=zeroreward_validator-1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=zeroreward_validator1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
         ipv4_address: 192.167.100.6
+
+  node-zeroreward-2:
+    container_name: xpla-localnet-zeroreward2
+
+    volumes:
+      - ~/genesis:/genesis:ro
+
+    depends_on:
+      - node1
+
+    build:
+      context: ../.
+      target: runtime
+
+    ports:
+      - "18605:8545"
+      - "19150:9090"
+      - "36716:26656"
+    
+    entrypoint: sh -c "MONIKER=zeroreward_validator2 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    
+    networks:
+      vpcbr:
+        ipv4_address: 192.167.100.7
+
+  node-zeroreward-3:
+    container_name: xpla-localnet-zeroreward3
+
+    volumes:
+      - ~/genesis:/genesis:ro
+
+    depends_on:
+      - node1
+
+    build:
+      context: ../.
+      target: runtime
+
+    ports:
+      - "18615:8545"
+      - "19160:9090"
+      - "36726:26656"
+    
+    entrypoint: sh -c "MONIKER=zeroreward_validator3 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    
+    networks:
+      vpcbr:
+        ipv4_address: 192.167.100.8
+
 
 networks:
   vpcbr:
