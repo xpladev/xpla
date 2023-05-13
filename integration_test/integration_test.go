@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -21,6 +22,8 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	govtype "github.com/cosmos/cosmos-sdk/x/gov/types"
+	paramtype "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
@@ -388,7 +391,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 			sdktypes.ValAddress(t.ZeroRewardValidatorWallet1.ByteAddress.Bytes()),
 			&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey1.PubKey.Bytes()},
 			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
-			stakingtype.NewDescription("zeroreward_validator", "", "", "", ""),
+			stakingtype.NewDescription("zeroreward_validator_1", "", "", "", ""),
 		)
 
 		assert.NoError(t.T(), err)
@@ -850,7 +853,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 						sdktypes.ValAddress(t.ZeroRewardValidatorWallet2.ByteAddress.Bytes()),
 						&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey2.PubKey.Bytes()},
 						sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
-						stakingtype.NewDescription("zeroreward_validator", "", "", "", ""),
+						stakingtype.NewDescription("zeroreward_validator_2", "", "", "", ""),
 					)
 
 					assert.NoError(t.T(), err)
@@ -1147,7 +1150,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 	time.Sleep(time.Second * 30)
 
 	{
-		fmt.Println("Check existence of the voluntary validator")
+		fmt.Println("Check existence of the zero reward validator")
 
 		client := zrValidatorType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 		validatorStatus, err := client.ZeroRewardValidators(context.Background(), &zrValidatorType.QueryZeroRewardValidatorsRequest{})
@@ -1202,6 +1205,452 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToZeroRewar
 			fmt.Println("Expected failure! Test succeeded!")
 		} else {
 			fmt.Println("Tx sent as", txhash, "Unexpected situation")
+			t.T().Fail()
+		}
+	}
+}
+
+func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
+	amt := sdktypes.NewInt(1000000000000000000)
+	var proposalId uint64 = 0
+	var maxValidators uint32 = 5
+
+	expectedChange := []paramtype.ParamChange{
+		paramtype.NewParamChange("staking", "MaxValidators", fmt.Sprintf("%d", maxValidators)),
+		paramtype.NewParamChange("slashing", "SignedBlocksWindow", "\"5\""),
+		paramtype.NewParamChange("slashing", "DowntimeJailDuration", "\"20\""),
+	}
+
+	{
+		fmt.Println("Decrease the number of active set")
+		fmt.Println("Current # of validator: 5")
+
+		proposalContent := paramtype.NewParameterChangeProposal(
+			"decrease_validator_active_set",
+			"Decrease validator active set",
+			expectedChange,
+		)
+
+		proposalMsg, err := govtype.NewMsgSubmitProposal(
+			proposalContent,
+			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+			t.ValidatorWallet2.ByteAddress,
+		)
+
+		assert.NoError(t.T(), err)
+
+		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.ValidatorWallet2.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+			Hash: txhash,
+		})
+
+		assert.NoError(t.T(), err)
+
+	PARAM_CHANGE_PROPOSAL:
+		for _, val := range resp.TxResponse.Events {
+			for _, attr := range val.Attributes {
+				if string(attr.Key) == "proposal_id" {
+					proposalId, _ = strconv.ParseUint(string(attr.Value), 10, 64)
+					break PARAM_CHANGE_PROPOSAL
+				}
+			}
+		}
+	}
+
+	{
+		fmt.Println("Voting...")
+
+		wg := sync.WaitGroup{}
+
+		errChan := make(chan error)
+		successChan := make(chan bool)
+
+		for _, addr := range []*WalletInfo{
+			t.ValidatorWallet1,
+			t.ValidatorWallet2,
+			t.ValidatorWallet3,
+			t.ValidatorWallet4,
+		} {
+			wg.Add(1)
+
+			go func(addr *WalletInfo) {
+				defer wg.Done()
+
+				voteMsg := govtype.NewMsgVote(addr.ByteAddress, proposalId, govtype.OptionYes)
+				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+				fee := sdktypes.Coin{
+					Denom:  "axpla",
+					Amount: feeAmt.Ceil().RoundInt(),
+				}
+
+				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+				if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "voted to the proposal", proposalId, "as tx", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+
+				err = txCheck(txhash)
+				if assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "vote tx applied", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+			}(addr)
+		}
+
+		go func() {
+			wg.Wait()
+			successChan <- true
+		}()
+
+	VOTE:
+		for {
+			select {
+			case chanErr := <-errChan:
+				fmt.Print(chanErr.Error())
+				t.T().Fail()
+
+				return
+			case <-successChan:
+				break VOTE
+			}
+		}
+	}
+
+	fmt.Println("Waiting 25sec for the proposal passing...")
+	time.Sleep(time.Second * 25)
+
+	{
+		fmt.Println("Parameter change check")
+
+		err := paramtype.ValidateChanges(expectedChange)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Parameters are successfully applied")
+		} else {
+			fmt.Println("Trouble in parameter change")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Add one more zero reward validator")
+		proposalContent, err := zrValidatorType.NewRegisterZeroRewardValidatorProposal(
+			"register_zeroreward_validator_3",
+			"Test zero reward validator registry3 ",
+			sdktypes.AccAddress(t.ZeroRewardValidatorWallet3.ByteAddress.Bytes()),
+			sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress.Bytes()),
+			&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey3.PubKey.Bytes()},
+			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+			stakingtype.NewDescription("zeroreward_validator_3", "", "", "", ""),
+		)
+
+		assert.NoError(t.T(), err)
+
+		proposalMsg, err := govtype.NewMsgSubmitProposal(
+			proposalContent,
+			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+			t.ZeroRewardValidatorWallet3.ByteAddress,
+		)
+
+		assert.NoError(t.T(), err)
+
+		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.ZeroRewardValidatorWallet3.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+			Hash: txhash,
+		})
+
+		assert.NoError(t.T(), err)
+
+	GENERAL_ZEROREWARD_VALIDATOR_REGISTERED:
+		for _, val := range resp.TxResponse.Events {
+			for _, attr := range val.Attributes {
+				if string(attr.Key) == "proposal_id" {
+					proposalId, _ = strconv.ParseUint(string(attr.Value), 10, 64)
+					break GENERAL_ZEROREWARD_VALIDATOR_REGISTERED
+				}
+			}
+		}
+
+		fmt.Println("Proposal is applied as ID", proposalId)
+	}
+
+	{
+		fmt.Println("Vote for the zero reward validator registration")
+
+		wg := sync.WaitGroup{}
+
+		errChan := make(chan error)
+		successChan := make(chan bool)
+
+		for _, addr := range []*WalletInfo{
+			t.ValidatorWallet1,
+			t.ValidatorWallet2,
+			t.ValidatorWallet3,
+			t.ValidatorWallet4,
+		} {
+			wg.Add(1)
+
+			go func(addr *WalletInfo) {
+				defer wg.Done()
+
+				voteMsg := govtype.NewMsgVote(addr.ByteAddress, proposalId, govtype.OptionYes)
+				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+				fee := sdktypes.Coin{
+					Denom:  "axpla",
+					Amount: feeAmt.Ceil().RoundInt(),
+				}
+
+				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+				if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "voted to the proposal", proposalId, "as tx", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+
+				err = txCheck(txhash)
+				if assert.NoError(t.T(), err) {
+					fmt.Println(addr.StringAddress, "vote tx applied", txhash, "err:", err)
+				} else {
+					fmt.Println(err)
+				}
+			}(addr)
+		}
+
+		go func() {
+			wg.Wait()
+			successChan <- true
+		}()
+
+	VOTE_ZERO_REWARD_PROPOSAL:
+		for {
+			select {
+			case chanErr := <-errChan:
+				fmt.Print(chanErr.Error())
+				t.T().Fail()
+
+				return
+			case <-successChan:
+				break VOTE_ZERO_REWARD_PROPOSAL
+			}
+		}
+	}
+
+	fmt.Println("Waiting 25sec for the proposal passing...")
+	time.Sleep(time.Second * 25)
+
+	{
+		fmt.Println("Parameter change check")
+		fmt.Println("max_validators should be", maxValidators, "+ 1 =", maxValidators+1)
+
+		client := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := client.Params(context.Background(), &stakingtype.QueryParamsRequest{})
+		assert.NoError(t.T(), err)
+
+		if assert.Equal(t.T(), maxValidators+1, resp.Params.MaxValidators) {
+			fmt.Println("max_validators is increased to", maxValidators+1)
+		} else {
+			fmt.Println("max_validators is still", maxValidators, "Test fail")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Check existence of the zero reward validator")
+
+		client := zrValidatorType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.ZeroRewardValidators(context.Background(), &zrValidatorType.QueryZeroRewardValidatorsRequest{})
+		assert.NoError(t.T(), err)
+
+		thisVoluntaryValAddress := sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress).String()
+
+		if assert.Contains(t.T(), validatorStatus.GetZeroRewardValidators(), thisVoluntaryValAddress) {
+			fmt.Println(thisVoluntaryValAddress, "successfully participated in the validator set!")
+		} else {
+			fmt.Println(thisVoluntaryValAddress, "is not found")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Add normal validator")
+
+		// more than zero reward validator but less than other validator
+		delegationAmt := sdktypes.NewCoin("axpla", sdktypes.NewInt(1500000000000000000))
+
+		createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
+			sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()),
+			&ed25519.PubKey{Key: t.Validator5PVKey.PubKey.Bytes()},
+			delegationAmt,
+			stakingtype.NewDescription("validator5", "", "", "", ""),
+			stakingtype.NewCommissionRates(
+				sdktypes.MustNewDecFromStr("0.1"),
+				sdktypes.MustNewDecFromStr("0.2"),
+				sdktypes.MustNewDecFromStr("0.01"),
+			),
+			sdktypes.NewInt(1),
+		)
+
+		assert.NoError(t.T(), err)
+
+		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+	}
+
+	fmt.Println("Waiting 7sec for the validator status refresh...")
+	time.Sleep(time.Second * 7)
+
+	{
+		fmt.Println("Check the status of the validator set")
+
+		client := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := client.Validators(context.Background(), &stakingtype.QueryValidatorsRequest{Status: stakingtype.BondStatusBonded})
+		assert.NoError(t.T(), err)
+
+		valList := getValidatorList(resp.GetValidators())
+		if assert.NotContains(t.T(), valList, sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress).String()) {
+			fmt.Println("General validator is not in the active state. Successful!")
+		} else {
+			fmt.Println("General validator is in the active state. Failure")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Try to turn off the zero reward validator")
+
+		cmd := exec.Command("docker", "stop", "xpla-localnet-zeroreward3")
+		err := cmd.Run()
+		assert.NoError(t.T(), err)
+
+		fmt.Println("Zero reward validator down. Wait 35sec to be jailed")
+		time.Sleep(time.Second * 35)
+
+		client := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := client.Validators(context.Background(), &stakingtype.QueryValidatorsRequest{Status: stakingtype.BondStatusBonded})
+		assert.NoError(t.T(), err)
+
+		valList := getValidatorList(resp.GetValidators())
+		if assert.NotContains(t.T(), valList, sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress).String()) {
+			fmt.Println("Zero reward validator is out from the active state. Successful!")
+		} else {
+			fmt.Println("Zero reward validator still exists in the active state. Failure")
+			t.T().Fail()
+		}
+
+		if assert.Contains(t.T(), valList, sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress).String()) {
+			fmt.Println("General validator is now in the active state. Successful!")
+		} else {
+			fmt.Println("General validator is still not found in the active state. Failure")
+			t.T().Fail()
+		}
+	}
+
+	{
+		fmt.Println("Turn on the zero reward validator and unjailing")
+
+		cmd := exec.Command("docker", "start", "xpla-localnet-zeroreward3")
+		err := cmd.Run()
+		assert.NoError(t.T(), err)
+
+		fmt.Println("Wait enough time(25sec) to replay the blocks...")
+		time.Sleep(time.Second * 25)
+
+		unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress))
+
+		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.Coin{
+			Denom:  "axpla",
+			Amount: feeAmt.Ceil().RoundInt(),
+		}
+
+		txhash, err := t.ZeroRewardValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		client := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		resp, err := client.Validators(context.Background(), &stakingtype.QueryValidatorsRequest{Status: stakingtype.BondStatusBonded})
+		assert.NoError(t.T(), err)
+
+		valList := getValidatorList(resp.GetValidators())
+		if assert.Contains(t.T(), valList, sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress).String()) {
+			fmt.Println("Zero reward validator is back to the active state. Successful!")
+		} else {
+			fmt.Println("Zero reward validator is still not in the active state. Failure")
+			t.T().Fail()
+		}
+
+		if assert.NotContains(t.T(), valList, sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress).String()) {
+			fmt.Println("General validator is now kicked out from the active state. Successful!")
+		} else {
+			fmt.Println("General validator is still found in the active state. Failure")
 			t.T().Fail()
 		}
 	}
@@ -1579,4 +2028,13 @@ func loadPrivValidator(validatorName string) (*PVKey, error) {
 	}
 
 	return &pvKey, nil
+}
+
+func getValidatorList(in []stakingtype.Validator) []string {
+	ret := []string{}
+	for _, unit := range in {
+		ret = append(ret, unit.OperatorAddress)
+	}
+
+	return ret
 }
