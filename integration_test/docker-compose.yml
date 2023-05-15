@@ -14,6 +14,7 @@ services:
       - "18545:8545"
       - "19090:9090"
       - "36656:26656"
+      - "36657:26657"
     
     entrypoint: sh -c "MONIKER=validator1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_master.sh"
     

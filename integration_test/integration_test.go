@@ -28,6 +28,7 @@ import (
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmjson "github.com/tendermint/tendermint/libs/json"
+	tmhttp "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	zrValidatorType "github.com/xpladev/xpla/x/zeroreward/types"
@@ -1168,7 +1169,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 }
 
 func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToZeroRewardValidator_ShouldFail() {
-	amt := sdktypes.NewInt(1000000000000000000)
+	amt := sdktypes.NewInt(1_000000_000000_000000)
 
 	{
 		fmt.Println("Try registering as a zero reward validator from the general validator...")
@@ -1211,9 +1212,9 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToZeroRewar
 }
 
 func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
-	amt := sdktypes.NewInt(1000000000000000000)
+	amt := sdktypes.NewInt(1_200000_000000_000000)
 	var proposalId uint64 = 0
-	var maxValidators uint32 = 5
+	var maxValidators uint32 = 7
 
 	expectedChange := []paramtype.ParamChange{
 		paramtype.NewParamChange("staking", "MaxValidators", fmt.Sprintf("%d", maxValidators)),
@@ -1223,7 +1224,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 	{
 		fmt.Println("Decrease the number of active set")
-		fmt.Println("Current # of validator: 5")
+		fmt.Println("Current # of validator:", maxValidators)
 
 		proposalContent := paramtype.NewParameterChangeProposal(
 			"decrease_validator_active_set",
@@ -1340,18 +1341,6 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 	fmt.Println("Waiting 25sec for the proposal passing...")
 	time.Sleep(time.Second * 25)
-
-	{
-		fmt.Println("Parameter change check")
-
-		err := paramtype.ValidateChanges(expectedChange)
-		if assert.NoError(t.T(), err) {
-			fmt.Println("Parameters are successfully applied")
-		} else {
-			fmt.Println("Trouble in parameter change")
-			t.T().Fail()
-		}
-	}
 
 	{
 		fmt.Println("Add one more zero reward validator")
@@ -1480,23 +1469,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	time.Sleep(time.Second * 25)
 
 	{
-		fmt.Println("Parameter change check")
-		fmt.Println("max_validators should be", maxValidators, "+ 1 =", maxValidators+1)
-
-		client := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
-		resp, err := client.Params(context.Background(), &stakingtype.QueryParamsRequest{})
-		assert.NoError(t.T(), err)
-
-		if assert.Equal(t.T(), maxValidators+1, resp.Params.MaxValidators) {
-			fmt.Println("max_validators is increased to", maxValidators+1)
-		} else {
-			fmt.Println("max_validators is still", maxValidators, "Test fail")
-			t.T().Fail()
-		}
-	}
-
-	{
-		fmt.Println("Check existence of the zero reward validator")
+		fmt.Println("Check existence & status of the zero reward validator")
 
 		client := zrValidatorType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 		validatorStatus, err := client.ZeroRewardValidators(context.Background(), &zrValidatorType.QueryZeroRewardValidatorsRequest{})
@@ -1516,7 +1489,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		fmt.Println("Add normal validator")
 
 		// more than zero reward validator but less than other validator
-		delegationAmt := sdktypes.NewCoin("axpla", sdktypes.NewInt(1500000000000000000))
+		delegationAmt := sdktypes.NewCoin("axpla", sdktypes.NewInt(1_500000_000000_000000))
 
 		createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
 			sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()),
@@ -1571,6 +1544,16 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("General validator is in the active state. Failure")
 			t.T().Fail()
 		}
+
+		prevoteCnt, err := getMaxPrevoterCounts()
+		assert.NoError(t.T(), err)
+
+		if assert.Equal(t.T(), maxValidators+1, prevoteCnt) {
+			fmt.Println("Prevote reaches to the right number:", prevoteCnt)
+		} else {
+			fmt.Println("Lack of the # of prevotes:", prevoteCnt)
+			t.T().Fail()
+		}
 	}
 
 	{
@@ -1588,17 +1571,20 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		assert.NoError(t.T(), err)
 
 		valList := getValidatorList(resp.GetValidators())
-		if assert.NotContains(t.T(), valList, sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress).String()) {
-			fmt.Println("Zero reward validator is out from the active state. Successful!")
-		} else {
-			fmt.Println("Zero reward validator still exists in the active state. Failure")
-			t.T().Fail()
-		}
-
 		if assert.Contains(t.T(), valList, sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress).String()) {
 			fmt.Println("General validator is now in the active state. Successful!")
 		} else {
 			fmt.Println("General validator is still not found in the active state. Failure")
+			t.T().Fail()
+		}
+
+		prevoteCnt, err := getMaxPrevoterCounts()
+		assert.NoError(t.T(), err)
+
+		if assert.Equal(t.T(), maxValidators, prevoteCnt) {
+			fmt.Println("Prevote reaches to the right number:", prevoteCnt)
+		} else {
+			fmt.Println("Lack of the # of prevotes:", prevoteCnt)
 			t.T().Fail()
 		}
 	}
@@ -1635,6 +1621,14 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println(err)
 		}
 
+	}
+
+	fmt.Println("Waiting 13sec for the validator status refresh...")
+	time.Sleep(time.Second * 13)
+
+	{
+		fmt.Println("Checking the list of the validators...")
+
 		client := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 		resp, err := client.Validators(context.Background(), &stakingtype.QueryValidatorsRequest{Status: stakingtype.BondStatusBonded})
 		assert.NoError(t.T(), err)
@@ -1651,6 +1645,16 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("General validator is now kicked out from the active state. Successful!")
 		} else {
 			fmt.Println("General validator is still found in the active state. Failure")
+			t.T().Fail()
+		}
+
+		prevoteCnt, err := getMaxPrevoterCounts()
+		assert.NoError(t.T(), err)
+
+		if assert.Equal(t.T(), maxValidators+1, prevoteCnt) {
+			fmt.Println("Prevote reaches to the right number:", prevoteCnt)
+		} else {
+			fmt.Println("Lack of the # of prevotes:", prevoteCnt)
 			t.T().Fail()
 		}
 	}
@@ -2037,4 +2041,27 @@ func getValidatorList(in []stakingtype.Validator) []string {
 	}
 
 	return ret
+}
+
+func getMaxPrevoterCounts() (uint32, error) {
+	client, err := tmhttp.New("tcp://127.0.0.1:36657", "/websocket")
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := client.ConsensusState(context.Background())
+	if err != nil {
+		return 0, err
+	}
+
+	msg := map[string]interface{}{}
+
+	err = json.Unmarshal(resp.RoundState, &msg)
+	if err != nil {
+		return 0, err
+	}
+
+	prevotes := msg["height_vote_set"].([]interface{})[0].(map[string]interface{})["prevotes"].([]interface{})
+
+	return uint32(len(prevotes)), nil
 }
