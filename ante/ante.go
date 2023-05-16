@@ -49,6 +49,23 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	if opts.SignModeHandler == nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
 	}
+	if opts.IBCKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "IBC keeper is required for AnteHandler")
+	}
+	if opts.EvmKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "EVM keeper is required for AnteHandler")
+	}
+	if opts.FeegrantKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "Feegrant keeper is required for AnteHandler")
+	}
+	if opts.FeeMarketKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "Feemarket keeper is required for AnteHandler")
+	}
+
+	sigGasConsumer := opts.SigGasConsumer
+	if sigGasConsumer == nil {
+		sigGasConsumer = authante.DefaultSigVerificationGasConsumer
+	}
 
 	return func(
 		ctx sdk.Context, tx sdk.Tx, sim bool,
