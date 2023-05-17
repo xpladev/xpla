@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -12,6 +13,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
+	"github.com/xpladev/xpla/app"
 	xplaapp "github.com/xpladev/xpla/app"
 )
 
@@ -68,7 +70,7 @@ func Setup(t *testing.T, chainId string, isCheckTx bool, invCheckPeriod uint) *x
 
 func setup(withGenesis bool, invCheckPeriod uint) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 	db := dbm.NewMemDB()
-	encCdc := xplaapp.MakeEncodingConfig()
+	encCdc := xplaapp.MakeTestEncodingConfig()
 	app := xplaapp.NewXplaApp(
 		log.NewNopLogger(),
 		db,
@@ -78,7 +80,9 @@ func setup(withGenesis bool, invCheckPeriod uint) (*xplaapp.XplaApp, xplaapp.Gen
 		xplaapp.DefaultNodeHome,
 		invCheckPeriod,
 		encCdc,
+		app.GetEnabledProposals(),
 		EmptyAppOptions{},
+		[]wasm.Option{},
 	)
 	if withGenesis {
 		return app, xplaapp.NewDefaultGenesisState()
