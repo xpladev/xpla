@@ -47,7 +47,7 @@ func NewFundFeeCollectorCmd() *cobra.Command {
 			fmt.Sprintf(`Funds the fee collector with the specified amount
 
 Example:
-$ %s tx reward fund-fee-collector 100uaxpla --from mykey
+$ %s tx reward fund-fee-collector 100axpla --from mykey
 `,
 				version.AppName,
 			),
