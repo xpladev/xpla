@@ -28,8 +28,9 @@ type ZeroRewardValidator struct {
 	// address is the address of the validator.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// power defines the power of the validator.
-	Power      int64 `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
-	IsDeleting bool  `protobuf:"varint,3,opt,name=is_deleting,json=isDeleting,proto3" json:"is_deleting,omitempty"`
+	Power int64 `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
+	// used when unregistering, reserved for delete
+	IsDeleting bool `protobuf:"varint,3,opt,name=is_deleting,json=isDeleting,proto3" json:"is_deleting,omitempty"`
 }
 
 func (m *ZeroRewardValidator) Reset()         { *m = ZeroRewardValidator{} }

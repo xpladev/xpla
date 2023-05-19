@@ -40,12 +40,6 @@ func (k Keeper) ZeroRewardValidatorUpdates(ctx sdk.Context) (updates []abci.Vali
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "validator address (%s)", valAddr)
 		}
 
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, addr)
-
-		if power > 0 {
-			continue
-		}
-
 		validator, found := k.stakingKeeper.GetValidator(ctx, addr)
 		if !found {
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "validator (%s)", addr.String())
@@ -93,16 +87,28 @@ func (k Keeper) ZeroRewardValidatorUpdates(ctx sdk.Context) (updates []abci.Vali
 			continue
 		}
 
-		newPower := validator.PotentialConsensusPower(powerReduction)
-		if zeroRewardValidator.Power != newPower {
-			if zeroRewardValidator.Power == 0 {
-				k.bondValidator(ctx, validator)
+		// when the zero-validator leaves the active set boundary
+		if !validator.IsBonded() {
+			_, err = k.bondValidator(ctx, validator)
+			if err != nil {
+				return nil, err
 			}
 
-			updates = append(updates, abci.ValidatorUpdate{
-				PubKey: tmProtoPk,
-				Power:  newPower,
-			})
+			zeroRewardValidator.Power = 0
+			k.SetZeroRewardValidator(ctx, addr, zeroRewardValidator)
+			continue
+		}
+
+		if zeroRewardValidator.Power == 0 {
+			prevPower := k.stakingKeeper.GetLastValidatorPower(ctx, addr)
+			newPower := validator.GetConsensusPower(powerReduction)
+
+			if prevPower != newPower {
+				updates = append(updates, abci.ValidatorUpdate{
+					PubKey: tmProtoPk,
+					Power:  newPower,
+				})
+			}
 
 			zeroRewardValidator.Power = newPower
 			k.SetZeroRewardValidator(ctx, addr, zeroRewardValidator)
