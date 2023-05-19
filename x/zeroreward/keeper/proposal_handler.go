@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/xpladev/xpla/x/zeroreward/types"
 )
 
@@ -26,16 +27,17 @@ func handlerRegisterZeroRewardValidatorProposal(ctx sdk.Context, k Keeper, p *ty
 		return err
 	}
 
+	if _, found := k.stakingKeeper.GetValidator(ctx, valAddress); found {
+		return stakingtypes.ErrValidatorOwnerExists
+	}
+
+	k.SetZeroRewardValidator(ctx, valAddress, types.NewZeroRewardValidator(valAddress, 0))
+
 	createValidatorMsg := p.ToCreateValidator()
 	if err := k.CreateValidator(ctx, createValidatorMsg); err != nil {
 		return err
 	}
 
-	k.SetZeroRewardValidator(ctx, valAddress, types.ZeroRewardValidator{
-		Address:    valAddress.String(),
-		Power:      0,
-		IsDeleting: false,
-	})
 	return nil
 }
 
@@ -52,7 +54,7 @@ func handlerUnregisterZeroRewardValidatorProposal(ctx sdk.Context, k Keeper, p *
 
 	if validator, found := k.stakingKeeper.GetValidator(ctx, valAddress); found {
 		if !validator.IsJailed() && zeroRewardValidator.Power != 0 {
-			zeroRewardValidator.IsDeleting = true
+			zeroRewardValidator.Delete()
 			k.SetZeroRewardValidator(ctx, valAddress, zeroRewardValidator)
 		} else {
 			k.DeleteZeroRewardValidator(ctx, valAddress)
