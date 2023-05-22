@@ -52,15 +52,18 @@ func (k Keeper) ZeroRewardValidatorUpdates(ctx sdk.Context) (updates []abci.Vali
 
 		// unregister validator
 		if zeroRewardValidator.IsDeleting {
-			_, err := k.stakingKeeper.Undelegate(ctx, sdk.AccAddress(addr), addr, validator.DelegatorShares)
-			if err != nil {
-				return nil, err
+			if validator.IsBonded() && validator.Tokens.Equal(sdk.ZeroInt()) {
+				_, err = k.beginUnbondingValidator(ctx, validator)
+				if err != nil {
+					return nil, err
+				}
+
+				updates = append(updates, abci.ValidatorUpdate{
+					PubKey: tmProtoPk,
+					Power:  0,
+				})
 			}
 
-			updates = append(updates, abci.ValidatorUpdate{
-				PubKey: tmProtoPk,
-				Power:  0,
-			})
 			k.DeleteZeroRewardValidator(ctx, addr)
 			continue
 		}

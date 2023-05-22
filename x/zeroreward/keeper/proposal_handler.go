@@ -53,6 +53,11 @@ func handlerUnregisterZeroRewardValidatorProposal(ctx sdk.Context, k Keeper, p *
 	}
 
 	if validator, found := k.stakingKeeper.GetValidator(ctx, valAddress); found {
+		_, err := k.stakingKeeper.Undelegate(ctx, sdk.AccAddress(valAddress), valAddress, validator.DelegatorShares)
+		if err != nil {
+			return err
+		}
+
 		if !validator.IsJailed() && zeroRewardValidator.Power != 0 {
 			zeroRewardValidator.Delete()
 			k.SetZeroRewardValidator(ctx, valAddress, zeroRewardValidator)
