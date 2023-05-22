@@ -72,7 +72,7 @@ func (k Keeper) ZeroRewardValidatorUpdates(ctx sdk.Context) (updates []abci.Vali
 		if validator.IsJailed() {
 
 			// when only zero reward validator, must be unbonding
-			if zeroRewardValidator.Power != 0 {
+			if validator.IsBonded() && zeroRewardValidator.Power != 0 {
 				_, err = k.beginUnbondingValidator(ctx, validator)
 				if err != nil {
 					return nil, err
