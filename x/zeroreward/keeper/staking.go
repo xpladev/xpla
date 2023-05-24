@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -162,4 +163,23 @@ func (k Keeper) beginUnbondingValidator(ctx sdk.Context, validator stakingtypes.
 	k.stakingKeeper.AfterValidatorBeginUnbonding(ctx, consAddr, validator.GetOperator())
 
 	return validator, nil
+}
+
+func (k Keeper) getValidatorInfo(ctx sdk.Context, strValAddress string) (sdk.ValAddress, stakingtypes.Validator, tmprotocrypto.PublicKey, error) {
+	valAddress, err := sdk.ValAddressFromBech32(strValAddress)
+	if err != nil {
+		return nil, stakingtypes.Validator{}, tmprotocrypto.PublicKey{}, sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "validator address (%s)", strValAddress)
+	}
+
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if !found {
+		return nil, stakingtypes.Validator{}, tmprotocrypto.PublicKey{}, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "validator (%s)", valAddress.String())
+	}
+
+	tmProtoPk, err := validator.TmConsPublicKey()
+	if err != nil {
+		return nil, stakingtypes.Validator{}, tmprotocrypto.PublicKey{}, sdkerrors.Wrapf(sdkerrors.ErrInvalidPubKey, "validator (%s)", valAddress.String())
+	}
+
+	return valAddress, validator, tmProtoPk, nil
 }
