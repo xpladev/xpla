@@ -4,7 +4,9 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	"github.com/xpladev/xpla/x/zeroreward/types"
 )
 
 func (k Keeper) ZeroRewardValidatorCommissionProcess(ctx sdk.Context) error {
@@ -35,89 +37,93 @@ func (k Keeper) ZeroRewardValidatorUpdates(ctx sdk.Context) (updates []abci.Vali
 	zeroRewardValidators := k.GetZeroRewardValidators(ctx)
 
 	for valAddr, zeroRewardValidator := range zeroRewardValidators {
-		addr, err := sdk.ValAddressFromBech32(valAddr)
+
+		valAddress, validator, tmProtoPk, err := k.getValidatorInfo(ctx, valAddr)
 		if err != nil {
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "validator address (%s)", valAddr)
+			return nil, err
 		}
 
-		validator, found := k.stakingKeeper.GetValidator(ctx, addr)
-		if !found {
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "validator (%s)", addr.String())
-		}
-
-		tmProtoPk, err := validator.TmConsPublicKey()
-		if err != nil {
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidPubKey, "validator (%s)", addr.String())
-		}
-
-		// unregister validator
-		if zeroRewardValidator.IsDeleting {
-			if validator.IsBonded() && validator.Tokens.Equal(sdk.ZeroInt()) {
-				_, err = k.beginUnbondingValidator(ctx, validator)
-				if err != nil {
-					return nil, err
-				}
-
-				updates = append(updates, abci.ValidatorUpdate{
-					PubKey: tmProtoPk,
-					Power:  0,
-				})
-			}
-
-			k.DeleteZeroRewardValidator(ctx, addr)
-			continue
-		}
-
-		// jailed
-		if validator.IsJailed() {
-
-			// when only zero reward validator, must be unbonding
-			if validator.IsBonded() && zeroRewardValidator.Power != 0 {
-				_, err = k.beginUnbondingValidator(ctx, validator)
-				if err != nil {
-					return nil, err
-				}
-
-				zeroRewardValidator.Power = 0
-				updates = append(updates, abci.ValidatorUpdate{
-					PubKey: tmProtoPk,
-					Power:  zeroRewardValidator.Power,
-				})
-
-				k.SetZeroRewardValidator(ctx, addr, zeroRewardValidator)
-			}
-
-			continue
-		}
-
-		// when the zero-validator leaves the active set boundary
-		if !validator.IsBonded() {
-			_, err = k.bondValidator(ctx, validator)
-			if err != nil {
+		if zeroRewardValidator.IsDeleting { // unregister validator
+			if err = k.deleteUnregisterZeroRewardValidator(ctx, &updates, valAddress, validator, tmProtoPk); err != nil {
 				return nil, err
 			}
-
-			zeroRewardValidator.Power = 0
-			k.SetZeroRewardValidator(ctx, addr, zeroRewardValidator)
-			continue
-		}
-
-		if zeroRewardValidator.Power == 0 {
-			prevPower := k.stakingKeeper.GetLastValidatorPower(ctx, addr)
-			newPower := validator.GetConsensusPower(powerReduction)
-
-			if prevPower != newPower {
-				updates = append(updates, abci.ValidatorUpdate{
-					PubKey: tmProtoPk,
-					Power:  newPower,
-				})
+		} else if validator.IsJailed() { // jailed
+			if err = k.updateJailedZeroRewardValidator(ctx, &updates, zeroRewardValidator, valAddress, validator, tmProtoPk); err != nil {
+				return nil, err
 			}
-
-			zeroRewardValidator.Power = newPower
-			k.SetZeroRewardValidator(ctx, addr, zeroRewardValidator)
+		} else if !validator.IsBonded() { // if no unregister and jailed status, it must always be bonded
+			if err = k.bondZeroRewardValidator(ctx, zeroRewardValidator, valAddress, validator); err != nil {
+				return nil, err
+			}
+		} else if zeroRewardValidator.Power == 0 {
+			k.updateZeroRewardValidatorPower(ctx, &updates, zeroRewardValidator, valAddress, validator, tmProtoPk, powerReduction)
 		}
 
 	}
 
 	return updates, nil
+}
+
+func (k Keeper) deleteUnregisterZeroRewardValidator(ctx sdk.Context, updates *[]abci.ValidatorUpdate, valAddress sdk.ValAddress, validator stakingtypes.Validator, tmProtoPk tmprotocrypto.PublicKey) error {
+
+	// when the zero reward validator is not included in the active set
+	if validator.IsBonded() && validator.Tokens.Equal(sdk.ZeroInt()) {
+		if _, err := k.beginUnbondingValidator(ctx, validator); err != nil {
+			return err
+		}
+
+		*updates = append(*updates, abci.ValidatorUpdate{
+			PubKey: tmProtoPk,
+			Power:  0,
+		})
+	}
+
+	k.DeleteZeroRewardValidator(ctx, valAddress)
+
+	return nil
+}
+
+func (k Keeper) updateJailedZeroRewardValidator(ctx sdk.Context, updates *[]abci.ValidatorUpdate, zeroRewardValidator types.ZeroRewardValidator, valAddress sdk.ValAddress, validator stakingtypes.Validator, tmProtoPk tmprotocrypto.PublicKey) error {
+	// when the zero reward validator is not included in the active set
+	if validator.IsBonded() && zeroRewardValidator.Power != 0 {
+		if _, err := k.beginUnbondingValidator(ctx, validator); err != nil {
+			return err
+		}
+
+		zeroRewardValidator.Power = 0
+		*updates = append(*updates, abci.ValidatorUpdate{
+			PubKey: tmProtoPk,
+			Power:  zeroRewardValidator.Power,
+		})
+
+		k.SetZeroRewardValidator(ctx, valAddress, zeroRewardValidator)
+	}
+
+	return nil
+}
+
+func (k Keeper) bondZeroRewardValidator(ctx sdk.Context, zeroRewardValidator types.ZeroRewardValidator, valAddress sdk.ValAddress, validator stakingtypes.Validator) error {
+	if _, err := k.bondValidator(ctx, validator); err != nil {
+		return err
+	}
+
+	zeroRewardValidator.Power = 0
+	k.SetZeroRewardValidator(ctx, valAddress, zeroRewardValidator)
+
+	return nil
+}
+
+func (k Keeper) updateZeroRewardValidatorPower(ctx sdk.Context, updates *[]abci.ValidatorUpdate, zeroRewardValidator types.ZeroRewardValidator, valAddress sdk.ValAddress, validator stakingtypes.Validator, tmProtoPk tmprotocrypto.PublicKey, powerReduction sdk.Int) {
+	prevPower := k.stakingKeeper.GetLastValidatorPower(ctx, valAddress)
+	newPower := validator.GetConsensusPower(powerReduction)
+
+	if prevPower != newPower {
+		*updates = append(*updates, abci.ValidatorUpdate{
+			PubKey: tmProtoPk,
+			Power:  newPower,
+		})
+	}
+
+	zeroRewardValidator.Power = newPower
+	k.SetZeroRewardValidator(ctx, valAddress, zeroRewardValidator)
 }
