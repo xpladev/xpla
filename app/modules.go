@@ -53,8 +53,8 @@ import (
 	xplaparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
-	"github.com/xpladev/xpla/x/zeroreward"
-	zerorewardtypes "github.com/xpladev/xpla/x/zeroreward/types"
+	"github.com/xpladev/xpla/x/volunteer"
+	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
 // module account permissions
@@ -104,7 +104,7 @@ var ModuleBasics = module.NewBasicManager(
 	evm.AppModuleBasic{},
 	feemarket.AppModuleBasic{},
 	reward.AppModuleBasic{},
-	zeroreward.AppModuleBasic{},
+	volunteer.AppModuleBasic{},
 )
 
 func appModules(
@@ -145,7 +145,7 @@ func appModules(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
-		zeroreward.NewAppModule(appCodec, app.ZeroRewardKeeper),
+		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 	}
 }
 
@@ -179,7 +179,7 @@ func orderBeginBlockers() []string {
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		rewardtypes.ModuleName,
-		zerorewardtypes.ModuleName,
+		volunteertypes.ModuleName,
 	}
 }
 
@@ -210,7 +210,7 @@ func orderEndBlockers() []string {
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
-		zerorewardtypes.ModuleName,
+		volunteertypes.ModuleName,
 	}
 }
 
@@ -244,6 +244,6 @@ func orderInitBlockers() []string {
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
-		zerorewardtypes.ModuleName,
+		volunteertypes.ModuleName,
 	}
 }
