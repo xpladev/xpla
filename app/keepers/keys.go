@@ -24,7 +24,7 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v3/router/types"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
-	zerorewardtypes "github.com/xpladev/xpla/x/zeroreward/types"
+	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
 func (appKeepers *AppKeepers) GenerateKeys() {
@@ -36,7 +36,7 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
-		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, rewardtypes.StoreKey, zerorewardtypes.StoreKey,
+		wasm.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey, rewardtypes.StoreKey, volunteertypes.StoreKey,
 	)
 
 	// Define transient store keys

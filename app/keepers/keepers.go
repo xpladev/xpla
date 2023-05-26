@@ -64,8 +64,8 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
-	zerorewardkeeper "github.com/xpladev/xpla/x/zeroreward/keeper"
-	zerorewardtypes "github.com/xpladev/xpla/x/zeroreward/types"
+	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
+	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -90,15 +90,15 @@ type AppKeepers struct {
 	UpgradeKeeper    upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	IBCKeeper        *ibckeeper.Keeper
-	ICAHostKeeper    icahostkeeper.Keeper
-	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
-	FeeGrantKeeper   feegrantkeeper.Keeper
-	AuthzKeeper      authzkeeper.Keeper
-	RouterKeeper     *routerkeeper.Keeper
-	RewardKeeper     rewardkeeper.Keeper
-	ZeroRewardKeeper zerorewardkeeper.Keeper
+	IBCKeeper       *ibckeeper.Keeper
+	ICAHostKeeper   icahostkeeper.Keeper
+	EvidenceKeeper  evidencekeeper.Keeper
+	TransferKeeper  ibctransferkeeper.Keeper
+	FeeGrantKeeper  feegrantkeeper.Keeper
+	AuthzKeeper     authzkeeper.Keeper
+	RouterKeeper    *routerkeeper.Keeper
+	RewardKeeper    rewardkeeper.Keeper
+	VolunteerKeeper volunteerkeeper.Keeper
 
 	// Modules
 	ICAModule      ica.AppModule
@@ -233,8 +233,8 @@ func NewAppKeeper(
 		appKeepers.GetSubspace(slashingtypes.ModuleName),
 	)
 
-	appKeepers.ZeroRewardKeeper = zerorewardkeeper.NewKeeper(
-		appKeepers.keys[zerorewardtypes.StoreKey],
+	appKeepers.VolunteerKeeper = volunteerkeeper.NewKeeper(
+		appKeepers.keys[volunteertypes.StoreKey],
 		appCodec,
 		&appKeepers.StakingKeeper,
 		appKeepers.DistrKeeper,
@@ -302,7 +302,7 @@ func NewAppKeeper(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(appKeepers.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(appKeepers.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(appKeepers.IBCKeeper.ClientKeeper)).
-		AddRoute(zerorewardtypes.RouterKey, zerorewardkeeper.NewZeroRewardValidatorProposalHandler(appKeepers.ZeroRewardKeeper))
+		AddRoute(volunteertypes.RouterKey, volunteerkeeper.NewVolunteerValidatorProposalHandler(appKeepers.VolunteerKeeper))
 
 	// register wasm gov proposal types
 	if len(enabledProposals) != 0 {
@@ -447,7 +447,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
-	paramsKeeper.Subspace(zerorewardtypes.ModuleName)
+	paramsKeeper.Subspace(volunteertypes.ModuleName)
 
 	return paramsKeeper
 }

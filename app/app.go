@@ -42,7 +42,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
-	zerorewardclient "github.com/xpladev/xpla/x/zeroreward/client"
+	volunteerclient "github.com/xpladev/xpla/x/volunteer/client"
 
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 
@@ -123,7 +123,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpgradeProposalHandler,
 	)
 
-	govProposalHandlers = append(govProposalHandlers, zerorewardclient.ProposalHandler...)
+	govProposalHandlers = append(govProposalHandlers, volunteerclient.ProposalHandler...)
 
 	return govProposalHandlers
 }
@@ -258,7 +258,7 @@ func NewXplaApp(
 			EvmKeeper:            app.EvmKeeper,
 			FeeMarketKeeper:      app.FeeMarketKeeper,
 			FeegrantKeeper:       app.FeeGrantKeeper,
-			ZeroRewardKeeper:     app.ZeroRewardKeeper,
+			VolunteerKeeper:      app.VolunteerKeeper,
 			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
 			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
 			IBCKeeper:            app.IBCKeeper,
