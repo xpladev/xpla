@@ -24,6 +24,7 @@ import (
 	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	xplatypes "github.com/xpladev/xpla/types"
 	zrValidatorType "github.com/xpladev/xpla/x/zeroreward/types"
 
 	// evmtypes "github.com/evmos/ethermint/x/evm/types"
@@ -148,22 +149,16 @@ func (u *WASMIntegrationTestSuite) TearDownSuite() {
 
 func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 	amt := sdktypes.NewInt(100000000000000)
-	coin := &sdktypes.Coin{
-		Denom:  "axpla",
-		Amount: amt,
-	}
+	coin := sdktypes.NewCoin(xplatypes.DefaultDenom, amt)
 
 	delegationMsg := stakingtype.NewMsgDelegate(
 		t.UserWallet1.ByteAddress,
 		t.ValidatorWallet1.ByteAddress.Bytes(),
-		*coin,
+		coin,
 	)
 
 	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-	fee := sdktypes.Coin{
-		Denom:  "axpla",
-		Amount: feeAmt.Ceil().RoundInt(),
-	}
+	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
 	assert.NoError(t.T(), err)
@@ -188,10 +183,7 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 			t.UserWallet1.ByteAddress,
 			t.ValidatorWallet1.ByteAddress.Bytes(),
 			sdktypes.NewDecFromInt(amt),
-			sdktypes.Coin{
-				Denom:  "axpla",
-				Amount: amt,
-			},
+			sdktypes.NewCoin(xplatypes.DefaultDenom, amt),
 		),
 	}
 
@@ -210,12 +202,7 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 	}
 
 	feeAmt := sdktypes.NewDec(xplaCodeGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-
-	fee := sdktypes.Coin{
-		Denom:  "axpla",
-		Amount: feeAmt.Ceil().RoundInt(),
-	}
-
+	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, fee, xplaCodeGasLimit, false)
 
 	assert.NoError(t.T(), err)
@@ -260,10 +247,7 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 	}
 
 	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-	fee := sdktypes.Coin{
-		Denom:  "axpla",
-		Amount: feeAmt.Ceil().RoundInt(),
-	}
+	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, fee, xplaGeneralGasLimit, false)
 	assert.NoError(t.T(), err)
@@ -333,10 +317,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 	}
 
 	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-	fee := sdktypes.Coin{
-		Denom:  "axpla",
-		Amount: feeAmt.Ceil().RoundInt(),
-	}
+	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, fee, xplaGeneralGasLimit, false)
 	assert.NoError(t.T(), err)
@@ -384,7 +365,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 			sdktypes.AccAddress(t.ZeroRewardValidatorWallet1.ByteAddress.Bytes()),
 			sdktypes.ValAddress(t.ZeroRewardValidatorWallet1.ByteAddress.Bytes()),
 			&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey1.PubKey.Bytes()},
-			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+			sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
 			stakingtype.NewDescription("zeroreward_validator_1", "", "", "", ""),
 		)
 
@@ -444,10 +425,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 				t.ZeroRewardValidatorWallet1.ByteAddress,
 				t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
 				sdktypes.NewDecFromInt(amt),
-				sdktypes.Coin{
-					Denom:  "axpla",
-					Amount: amt,
-				},
+				sdktypes.NewCoin(xplatypes.DefaultDenom, amt),
 			),
 		}
 
@@ -463,22 +441,16 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 	{
 		fmt.Println("Try delegation and should fail...")
 
-		coin := &sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: delegationAmt,
-		}
+		coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 		delegationMsg := stakingtype.NewMsgDelegate(
 			t.UserWallet1.ByteAddress,
 			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
-			*coin,
+			coin,
 		)
 
 		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: feeAmt.Ceil().RoundInt(),
-		}
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
 		if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
@@ -492,23 +464,17 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 	{
 		fmt.Println("Try redelegation and should fail...")
 
-		coin := &sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: delegationAmt,
-		}
+		coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 		redelegationMsg := stakingtype.NewMsgBeginRedelegate(
 			t.UserWallet1.ByteAddress,
 			t.ValidatorWallet1.ByteAddress.Bytes(),
 			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
-			*coin,
+			coin,
 		)
 
 		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: feeAmt.Ceil().RoundInt(),
-		}
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := t.UserWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
 		if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
@@ -522,22 +488,16 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 	{
 		fmt.Println("Try undelegation and should fail...")
 
-		coin := &sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: delegationAmt,
-		}
+		coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 		redelegationMsg := stakingtype.NewMsgUndelegate(
 			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
 			t.ZeroRewardValidatorWallet1.ByteAddress.Bytes(),
-			*coin,
+			coin,
 		)
 
 		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: feeAmt.Ceil().RoundInt(),
-		}
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := t.ZeroRewardValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
 		if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
@@ -595,17 +555,14 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralZeroRewardValidatorRegistryUnre
 
 		proposalMsg, err := govtype.NewMsgSubmitProposal(
 			proposalContent,
-			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+			sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
 			t.UserWallet1.ByteAddress,
 		)
 
 		assert.NoError(t.T(), err)
 
 		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: feeAmt.Ceil().RoundInt(),
-		}
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := t.UserWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
 		if assert.Equal(t.T(), "", txhash) && assert.Error(t.T(), err) {
@@ -635,7 +592,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 					sdktypes.AccAddress(t.ZeroRewardValidatorWallet2.ByteAddress.Bytes()),
 					sdktypes.ValAddress(t.ZeroRewardValidatorWallet2.ByteAddress.Bytes()),
 					&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey2.PubKey.Bytes()},
-					sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+					sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
 					stakingtype.NewDescription("zeroreward_validator_2", "", "", "", ""),
 				)
 
@@ -761,7 +718,7 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToZeroRewar
 			sdktypes.AccAddress(t.ValidatorWallet1.ByteAddress.Bytes()),
 			sdktypes.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()),
 			&ed25519.PubKey{Key: t.Validator1PVKey.PubKey.Bytes()},
-			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+			sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
 			stakingtype.NewDescription("zeroreward_validator", "", "", "", ""),
 		)
 
@@ -789,9 +746,9 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	var maxValidators uint32 = 5
 
 	expectedChange := []paramtype.ParamChange{
-		paramtype.NewParamChange("staking", "MaxValidators", fmt.Sprintf("%d", maxValidators)),
-		paramtype.NewParamChange("slashing", "SignedBlocksWindow", "\"5\""),
-		paramtype.NewParamChange("slashing", "DowntimeJailDuration", "\"20\""),
+		paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
+		paramtype.NewParamChange(slashingtype.ModuleName, string(slashingtype.KeySignedBlocksWindow), "\"5\""),
+		paramtype.NewParamChange(slashingtype.ModuleName, string(slashingtype.KeyDowntimeJailDuration), "\"20\""),
 	}
 
 	{
@@ -822,7 +779,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			sdktypes.AccAddress(t.ZeroRewardValidatorWallet3.ByteAddress.Bytes()),
 			sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress.Bytes()),
 			&ed25519.PubKey{Key: t.ZeroRewardValidatorPVKey3.PubKey.Bytes()},
-			sdktypes.NewCoin("axpla", amt), // smaller amount than other basic validators
+			sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
 			stakingtype.NewDescription("zeroreward_validator_3", "", "", "", ""),
 		)
 
@@ -859,7 +816,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		fmt.Println("Add normal validator")
 
 		// more than zero reward validator but less than other validator
-		delegationAmt := sdktypes.NewCoin("axpla", sdktypes.NewInt(1_500000_000000_000000))
+		delegationAmt := sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(1_500000_000000_000000))
 
 		createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
 			sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()),
@@ -877,10 +834,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		assert.NoError(t.T(), err)
 
 		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: feeAmt.Ceil().RoundInt(),
-		}
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
 		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
@@ -948,10 +902,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.ZeroRewardValidatorWallet3.ByteAddress))
 
 		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: feeAmt.Ceil().RoundInt(),
-		}
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := t.ZeroRewardValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
 		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
@@ -1155,10 +1106,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 // 	assert.NoError(t.T(), err)
 
 // 	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-// 	fee := sdktypes.Coin{
-// 		Denom:  "axpla",
-// 		Amount: feeAmt.Ceil().RoundInt(),
-// 	}
+// 	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 // 	txHash, err := t.UserWallet1.CosmosWalletInfo.SendTx(ChainID, msg, fee, xplaGeneralGasLimit, true)
 // 	assert.NoError(t.T(), err)
