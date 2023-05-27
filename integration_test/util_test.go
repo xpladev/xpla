@@ -2,7 +2,6 @@ package integrationtest
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,12 +11,13 @@ import (
 
 	"google.golang.org/grpc"
 
+	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	govtype "github.com/cosmos/cosmos-sdk/x/gov/types"
-	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/libs/bytes"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmhttp "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -328,34 +328,48 @@ func loadPrivValidator(validatorName string) (*PVKey, error) {
 	return &pvKey, nil
 }
 
-func getValidatorList(in []stakingtype.Validator) []string {
-	ret := []string{}
-	for _, unit := range in {
-		ret = append(ret, unit.OperatorAddress)
+func getValidatorListOfLatestBlock(conn *grpc.ClientConn) ([]bytes.HexBytes, error) {
+	client := tmservicetypes.NewServiceClient(conn)
+	resp, err := client.GetLatestBlock(context.Background(), &tmservicetypes.GetLatestBlockRequest{})
+	if err != nil {
+		return nil, err
 	}
 
-	return ret
+	latestBlockHeight := resp.Block.GetHeader().Height
+	fmt.Println("Height:", latestBlockHeight)
+
+	tmclient, err := tmhttp.New("tcp://127.0.0.1:36657", "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
+	blkresp, err := tmclient.Block(context.Background(), &latestBlockHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := []bytes.HexBytes{}
+	for _, unitSign := range blkresp.Block.LastCommit.Signatures {
+		ret = append(ret, unitSign.ValidatorAddress)
+	}
+
+	return ret, nil
 }
 
-func getMaxPrevoterCounts() (uint32, error) {
-	client, err := tmhttp.New("tcp://127.0.0.1:36657", "/websocket")
+func checkValidatorVoted(conn *grpc.ClientConn, validatorAddress bytes.HexBytes) (bool, error) {
+	addrList, err := getValidatorListOfLatestBlock(conn)
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 
-	resp, err := client.ConsensusState(context.Background())
-	if err != nil {
-		return 0, err
+	fmt.Println("Given val address:", validatorAddress.String())
+
+	for _, unitVal := range addrList {
+		fmt.Println(unitVal.String())
+		if validatorAddress.String() == unitVal.String() {
+			return true, nil
+		}
 	}
 
-	msg := map[string]interface{}{}
-
-	err = json.Unmarshal(resp.RoundState, &msg)
-	if err != nil {
-		return 0, err
-	}
-
-	prevotes := msg["height_vote_set"].([]interface{})[0].(map[string]interface{})["prevotes"].([]interface{})
-
-	return uint32(len(prevotes)), nil
+	return false, nil
 }

@@ -673,6 +673,9 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 
 				return nil
 			})
+
+			// slight delay for avoiding sequence mismatch
+			time.Sleep(time.Second / 2)
 		}
 
 		err := eg.Wait()
@@ -851,20 +854,34 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		}
 	}
 
-	fmt.Println("Waiting 13sec (> 2 block time) for the validator status refresh...")
-	time.Sleep(time.Second * 13)
+	fmt.Println("Waiting 19sec (> 3 block time) for the validator status refresh...")
+	time.Sleep(time.Second * 19)
 
 	{
-		fmt.Println("Check the # of the validator set")
+		fmt.Println("Check the voluntary validator voted & general validator doesn't")
 
-		prevoteCnt, err := getMaxPrevoterCounts()
+		didVoluntaryValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.ZeroRewardValidatorPVKey3.Address,
+		)
 		assert.NoError(t.T(), err)
 
-		if assert.Equal(t.T(), maxValidators+1, prevoteCnt) {
-			fmt.Println("Prevote reaches to the right number:", prevoteCnt)
+		if assert.True(t.T(), didVoluntaryValVote) {
+			fmt.Println("Voluntary validator voted. Succeeded")
 		} else {
-			fmt.Println("Lack of the # of prevotes. Expect:", maxValidators+1, "Actual:", prevoteCnt)
-			t.T().Fail()
+			fmt.Println("Voluntary validator did not vote. Test fail")
+		}
+
+		didGeneralValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.Validator5PVKey.Address,
+		)
+		assert.NoError(t.T(), err)
+
+		if assert.False(t.T(), didGeneralValVote) {
+			fmt.Println("General validator did not vote. Succeeded")
+		} else {
+			fmt.Println("General validator voted. Test fail")
 		}
 	}
 
@@ -875,17 +892,31 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
-		fmt.Println("Zero reward validator down. Wait 35sec to be jailed")
-		time.Sleep(time.Second * 35)
+		fmt.Println("Zero reward validator down. Wait 40sec to be jailed")
+		time.Sleep(time.Second * 40)
 
-		prevoteCnt, err := getMaxPrevoterCounts()
+		didVoluntaryValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.ZeroRewardValidatorPVKey3.Address,
+		)
 		assert.NoError(t.T(), err)
 
-		if assert.Equal(t.T(), maxValidators, prevoteCnt) {
-			fmt.Println("Prevote reaches to the right number:", prevoteCnt)
+		if assert.False(t.T(), didVoluntaryValVote) {
+			fmt.Println("Voluntary validator did not vote. Succeeded")
 		} else {
-			fmt.Println("Lack of the # of prevotes. Expect:", maxValidators, "Actual:", prevoteCnt)
-			t.T().Fail()
+			fmt.Println("Voluntary validator voted. Test fail")
+		}
+
+		didGeneralValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.Validator5PVKey.Address,
+		)
+		assert.NoError(t.T(), err)
+
+		if assert.True(t.T(), didGeneralValVote) {
+			fmt.Println("General validator voted. Succeeded")
+		} else {
+			fmt.Println("General validator did not vote. Test fail")
 		}
 	}
 
@@ -920,20 +951,34 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 	}
 
-	fmt.Println("Waiting 13sec (> 2 block time) for the validator status refresh...")
+	fmt.Println("Waiting 19sec (> 3 block time) for the validator status refresh...")
 	time.Sleep(time.Second * 13)
 
 	{
 		fmt.Println("Checking the # of the validators...")
 
-		prevoteCnt, err := getMaxPrevoterCounts()
+		didVoluntaryValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.ZeroRewardValidatorPVKey3.Address,
+		)
 		assert.NoError(t.T(), err)
 
-		if assert.Equal(t.T(), maxValidators+1, prevoteCnt) {
-			fmt.Println("Prevote reaches to the right number:", prevoteCnt)
+		if assert.True(t.T(), didVoluntaryValVote) {
+			fmt.Println("Voluntary validator voted. Succeeded")
 		} else {
-			fmt.Println("Lack of the # of prevotes. Expect:", maxValidators+1, "Actual:", prevoteCnt)
-			t.T().Fail()
+			fmt.Println("Voluntary validator did not vote. Test fail")
+		}
+
+		didGeneralValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.Validator5PVKey.Address,
+		)
+		assert.NoError(t.T(), err)
+
+		if assert.False(t.T(), didGeneralValVote) {
+			fmt.Println("General validator did not vote. Succeeded")
+		} else {
+			fmt.Println("General validator voted. Test fail")
 		}
 	}
 }
