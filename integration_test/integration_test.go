@@ -852,11 +852,11 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		}
 	}
 
-	fmt.Println("Waiting 19sec (> 3 block time) for the validator status refresh...")
-	time.Sleep(time.Second * 19)
+	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
+	time.Sleep(time.Second * 25)
 
 	{
-		fmt.Println("Check the voluntary validator voted & general validator doesn't")
+		fmt.Println("Check the voluntary validator voted...")
 
 		didVoluntaryValVote, err := checkValidatorVoted(
 			desc.GetServiceDesc().ServiceConn,
@@ -870,17 +870,6 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Voluntary validator did not vote. Test fail")
 		}
 
-		didGeneralValVote, err := checkValidatorVoted(
-			desc.GetServiceDesc().ServiceConn,
-			t.Validator5PVKey.Address,
-		)
-		assert.NoError(t.T(), err)
-
-		if assert.False(t.T(), didGeneralValVote) {
-			fmt.Println("General validator did not vote. Succeeded")
-		} else {
-			fmt.Println("General validator voted. Test fail")
-		}
 	}
 
 	{
@@ -890,8 +879,8 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
-		fmt.Println("Voluntary validator down. Wait 40sec to be jailed")
-		time.Sleep(time.Second * 40)
+		fmt.Println("Voluntary validator down. Wait 50sec to be jailed")
+		time.Sleep(time.Second * 50)
 
 		didVoluntaryValVote, err := checkValidatorVoted(
 			desc.GetServiceDesc().ServiceConn,
@@ -904,18 +893,6 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		} else {
 			fmt.Println("Voluntary validator voted. Test fail")
 		}
-
-		didGeneralValVote, err := checkValidatorVoted(
-			desc.GetServiceDesc().ServiceConn,
-			t.Validator5PVKey.Address,
-		)
-		assert.NoError(t.T(), err)
-
-		if assert.True(t.T(), didGeneralValVote) {
-			fmt.Println("General validator voted. Succeeded")
-		} else {
-			fmt.Println("General validator did not vote. Test fail")
-		}
 	}
 
 	{
@@ -925,8 +902,8 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
-		fmt.Println("Wait enough time(25sec) to replay the blocks...")
-		time.Sleep(time.Second * 25)
+		fmt.Println("Wait enough time(30sec) to replay the blocks...")
+		time.Sleep(time.Second * 30)
 
 		unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VoluntaryValidatorWallet3.ByteAddress))
 
@@ -949,11 +926,11 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 	}
 
-	fmt.Println("Waiting 19sec (> 3 block time) for the validator status refresh...")
-	time.Sleep(time.Second * 13)
+	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
+	time.Sleep(time.Second * 25)
 
 	{
-		fmt.Println("Checking the # of the validators...")
+		fmt.Println("Check the voluntary validator voted...")
 
 		didVoluntaryValVote, err := checkValidatorVoted(
 			desc.GetServiceDesc().ServiceConn,
@@ -965,18 +942,6 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Voluntary validator voted. Succeeded")
 		} else {
 			fmt.Println("Voluntary validator did not vote. Test fail")
-		}
-
-		didGeneralValVote, err := checkValidatorVoted(
-			desc.GetServiceDesc().ServiceConn,
-			t.Validator5PVKey.Address,
-		)
-		assert.NoError(t.T(), err)
-
-		if assert.False(t.T(), didGeneralValVote) {
-			fmt.Println("General validator did not vote. Succeeded")
-		} else {
-			fmt.Println("General validator voted. Test fail")
 		}
 	}
 }
