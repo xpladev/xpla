@@ -34,7 +34,7 @@ type PVKey struct {
 func walletSetup() (
 	userWallet1, userWallet2,
 	validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4, validatorWallet5,
-	voluntaryValidatorWallet1, voluntaryValidatorWallet2, voluntaryValidatorWallet3 *WalletInfo,
+	volunteerValidatorWallet1, volunteerValidatorWallet2, volunteerValidatorWallet3 *WalletInfo,
 ) {
 	var err error
 
@@ -108,32 +108,32 @@ func walletSetup() (
 		panic(err)
 	}
 
-	voluntaryValidator1, err := os.ReadFile(filepath.Join(".", "test_keys", "voluntary_validator1.mnemonics"))
+	volunteerValidator1, err := os.ReadFile(filepath.Join(".", "test_keys", "volunteer_validator1.mnemonics"))
 	if err != nil {
 		panic(err)
 	}
 
-	voluntaryValidatorWallet1, err = NewWalletInfo(string(voluntaryValidator1))
+	volunteerValidatorWallet1, err = NewWalletInfo(string(volunteerValidator1))
 	if err != nil {
 		panic(err)
 	}
 
-	voluntaryValidator2, err := os.ReadFile(filepath.Join(".", "test_keys", "voluntary_validator2.mnemonics"))
+	volunteerValidator2, err := os.ReadFile(filepath.Join(".", "test_keys", "volunteer_validator2.mnemonics"))
 	if err != nil {
 		panic(err)
 	}
 
-	voluntaryValidatorWallet2, err = NewWalletInfo(string(voluntaryValidator2))
+	volunteerValidatorWallet2, err = NewWalletInfo(string(volunteerValidator2))
 	if err != nil {
 		panic(err)
 	}
 
-	voluntaryValidator3, err := os.ReadFile(filepath.Join(".", "test_keys", "voluntary_validator3.mnemonics"))
+	volunteerValidator3, err := os.ReadFile(filepath.Join(".", "test_keys", "volunteer_validator3.mnemonics"))
 	if err != nil {
 		panic(err)
 	}
 
-	voluntaryValidatorWallet3, err = NewWalletInfo(string(voluntaryValidator3))
+	volunteerValidatorWallet3, err = NewWalletInfo(string(volunteerValidator3))
 	if err != nil {
 		panic(err)
 	}

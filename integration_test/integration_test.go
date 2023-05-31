@@ -25,7 +25,7 @@ import (
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
-	voluntaryValType "github.com/xpladev/xpla/x/volunteer/types"
+	volunteerValType "github.com/xpladev/xpla/x/volunteer/types"
 
 	// evmtypes "github.com/evmos/ethermint/x/evm/types"
 
@@ -59,14 +59,14 @@ type WASMIntegrationTestSuite struct {
 	ValidatorWallet3          *WalletInfo
 	ValidatorWallet4          *WalletInfo
 	ValidatorWallet5          *WalletInfo
-	VoluntaryValidatorWallet1 *WalletInfo
-	VoluntaryValidatorWallet2 *WalletInfo
-	VoluntaryValidatorWallet3 *WalletInfo
+	VolunteerValidatorWallet1 *WalletInfo
+	VolunteerValidatorWallet2 *WalletInfo
+	VolunteerValidatorWallet3 *WalletInfo
 
 	Validator1PVKey          *PVKey
-	VoluntaryValidatorPVKey1 *PVKey
-	VoluntaryValidatorPVKey2 *PVKey
-	VoluntaryValidatorPVKey3 *PVKey
+	VolunteerValidatorPVKey1 *PVKey
+	VolunteerValidatorPVKey2 *PVKey
+	VolunteerValidatorPVKey3 *PVKey
 	Validator5PVKey          *PVKey
 }
 
@@ -80,9 +80,9 @@ func (i *WASMIntegrationTestSuite) SetupSuite() {
 		i.ValidatorWallet3,
 		i.ValidatorWallet4,
 		i.ValidatorWallet5,
-		i.VoluntaryValidatorWallet1,
-		i.VoluntaryValidatorWallet2,
-		i.VoluntaryValidatorWallet3 = walletSetup()
+		i.VolunteerValidatorWallet1,
+		i.VolunteerValidatorWallet2,
+		i.VolunteerValidatorWallet3 = walletSetup()
 }
 
 func (i *WASMIntegrationTestSuite) SetupTest() {
@@ -93,9 +93,9 @@ func (i *WASMIntegrationTestSuite) SetupTest() {
 		i.ValidatorWallet3,
 		i.ValidatorWallet4,
 		i.ValidatorWallet5,
-		i.VoluntaryValidatorWallet1,
-		i.VoluntaryValidatorWallet2,
-		i.VoluntaryValidatorWallet3 = walletSetup()
+		i.VolunteerValidatorWallet1,
+		i.VolunteerValidatorWallet2,
+		i.VolunteerValidatorWallet3 = walletSetup()
 
 	i.UserWallet1.RefreshSequence()
 	i.UserWallet2.RefreshSequence()
@@ -104,20 +104,20 @@ func (i *WASMIntegrationTestSuite) SetupTest() {
 	i.ValidatorWallet3.RefreshSequence()
 	i.ValidatorWallet4.RefreshSequence()
 	i.ValidatorWallet5.RefreshSequence()
-	i.VoluntaryValidatorWallet1.RefreshSequence()
+	i.VolunteerValidatorWallet1.RefreshSequence()
 
 	var err error
-	i.VoluntaryValidatorPVKey1, err = loadPrivValidator("voluntary_validator1")
+	i.VolunteerValidatorPVKey1, err = loadPrivValidator("volunteer_validator1")
 	if err != nil {
 		i.Fail("PVKey load fail - 1")
 	}
 
-	i.VoluntaryValidatorPVKey2, err = loadPrivValidator("voluntary_validator2")
+	i.VolunteerValidatorPVKey2, err = loadPrivValidator("volunteer_validator2")
 	if err != nil {
 		i.Fail("PVKey load fail - 2")
 	}
 
-	i.VoluntaryValidatorPVKey3, err = loadPrivValidator("voluntary_validator3")
+	i.VolunteerValidatorPVKey3, err = loadPrivValidator("volunteer_validator3")
 	if err != nil {
 		i.Fail("PVKey load fail - 3")
 	}
@@ -351,20 +351,20 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 	assert.Equal(t.T(), "50000000", amtResp.Balance)
 }
 
-func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnregistryDelegation() {
+func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnregistryDelegation() {
 	amt := sdktypes.NewInt(1000000000000000000)
 
 	{
-		fmt.Println("Preparing proposal to add a voluntary validator")
+		fmt.Println("Preparing proposal to add a volunteer validator")
 
-		proposalContent, err := voluntaryValType.NewRegisterVolunteerValidatorProposal(
-			"register_voluntary_validator",
-			"Test voluntary validator registary",
-			sdktypes.AccAddress(t.VoluntaryValidatorWallet1.ByteAddress.Bytes()),
-			sdktypes.ValAddress(t.VoluntaryValidatorWallet1.ByteAddress.Bytes()),
-			&ed25519.PubKey{Key: t.VoluntaryValidatorPVKey1.PubKey.Bytes()},
+		proposalContent, err := volunteerValType.NewRegisterVolunteerValidatorProposal(
+			"register_volunteer_validator",
+			"Test volunteer validator registary",
+			sdktypes.AccAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()),
+			sdktypes.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()),
+			&ed25519.PubKey{Key: t.VolunteerValidatorPVKey1.PubKey.Bytes()},
 			sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
-			stakingtype.NewDescription("voluntary_validator_1", "", "", "", ""),
+			stakingtype.NewDescription("volunteer_validator_1", "", "", "", ""),
 		)
 
 		assert.NoError(t.T(), err)
@@ -372,7 +372,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 		err = applyVoteTallyingProposal(
 			desc.GetConnectionWithContext(context.Background()),
 			proposalContent,
-			t.VoluntaryValidatorWallet1,
+			t.VolunteerValidatorWallet1,
 			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
 		)
 
@@ -387,7 +387,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 		assert.NoError(t.T(), err)
 
 		isFound := false
-		conAddress := sdktypes.ConsAddress(t.VoluntaryValidatorPVKey1.Address).String()
+		conAddress := sdktypes.ConsAddress(t.VolunteerValidatorPVKey1.Address).String()
 		for _, unitVal := range validatorStatus.Validators {
 			if conAddress == unitVal.GetAddress() {
 				fmt.Println("power:", unitVal.VotingPower)
@@ -410,7 +410,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 		queryClient := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
 
 		queryDelegatorMsg := &stakingtype.QueryDelegatorDelegationsRequest{
-			DelegatorAddr: t.VoluntaryValidatorWallet1.StringAddress,
+			DelegatorAddr: t.VolunteerValidatorWallet1.StringAddress,
 		}
 
 		delegationResp, err := queryClient.DelegatorDelegations(context.Background(), queryDelegatorMsg)
@@ -420,8 +420,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 
 		expected := []stakingtype.DelegationResponse{
 			stakingtype.NewDelegationResp(
-				t.VoluntaryValidatorWallet1.ByteAddress,
-				t.VoluntaryValidatorWallet1.ByteAddress.Bytes(),
+				t.VolunteerValidatorWallet1.ByteAddress,
+				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
 				sdktypes.NewDecFromInt(amt),
 				sdktypes.NewCoin(xplatypes.DefaultDenom, amt),
 			),
@@ -443,7 +443,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 
 		delegationMsg := stakingtype.NewMsgDelegate(
 			t.UserWallet1.ByteAddress,
-			t.VoluntaryValidatorWallet1.ByteAddress.Bytes(),
+			t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
 			coin,
 		)
 
@@ -467,7 +467,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 		redelegationMsg := stakingtype.NewMsgBeginRedelegate(
 			t.UserWallet1.ByteAddress,
 			t.ValidatorWallet1.ByteAddress.Bytes(),
-			t.VoluntaryValidatorWallet1.ByteAddress.Bytes(),
+			t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
 			coin,
 		)
 
@@ -489,15 +489,15 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 		coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 		redelegationMsg := stakingtype.NewMsgUndelegate(
-			t.VoluntaryValidatorWallet1.ByteAddress.Bytes(),
-			t.VoluntaryValidatorWallet1.ByteAddress.Bytes(),
+			t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+			t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
 			coin,
 		)
 
 		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
-		txhash, err := t.VoluntaryValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+		txhash, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
 		if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
 			fmt.Println("Expected failure is occurred.")
 		} else {
@@ -507,18 +507,18 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 	}
 
 	{
-		fmt.Println("Preparing proposal to remove a voluntary validator")
+		fmt.Println("Preparing proposal to remove a volunteer validator")
 
-		proposalContent := voluntaryValType.NewUnregisterVolunteerValidatorProposal(
-			"unregister_voluntary_validator",
-			"Test voluntary validator unregistration",
-			sdktypes.ValAddress(t.VoluntaryValidatorWallet1.ByteAddress.Bytes()),
+		proposalContent := volunteerValType.NewUnregisterVolunteerValidatorProposal(
+			"unregister_volunteer_validator",
+			"Test volunteer validator unregistration",
+			sdktypes.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()),
 		)
 
 		err := applyVoteTallyingProposal(
 			desc.GetConnectionWithContext(context.Background()),
 			proposalContent,
-			t.VoluntaryValidatorWallet1,
+			t.VolunteerValidatorWallet1,
 			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
 		)
 
@@ -526,18 +526,18 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 	}
 
 	{
-		fmt.Println("Check existence of the voluntary validator")
+		fmt.Println("Check existence of the volunteer validator")
 
-		client := voluntaryValType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
-		validatorStatus, err := client.VolunteerValidators(context.Background(), &voluntaryValType.QueryVolunteerValidatorsRequest{})
+		client := volunteerValType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.VolunteerValidators(context.Background(), &volunteerValType.QueryVolunteerValidatorsRequest{})
 		assert.NoError(t.T(), err)
 
-		thisVoluntaryValAddress := sdktypes.ValAddress(t.VoluntaryValidatorWallet1.ByteAddress).String()
+		thisVolunteerValAddress := sdktypes.ValAddress(t.VolunteerValidatorWallet1.ByteAddress).String()
 
-		if assert.NotContains(t.T(), validatorStatus.GetVolunteerValidators(), thisVoluntaryValAddress) {
-			fmt.Println(thisVoluntaryValAddress, "is successfully removed from validator set!")
+		if assert.NotContains(t.T(), validatorStatus.GetVolunteerValidators(), thisVolunteerValAddress) {
+			fmt.Println(thisVolunteerValAddress, "is successfully removed from validator set!")
 		} else {
-			fmt.Println(thisVoluntaryValAddress, "still found")
+			fmt.Println(thisVolunteerValAddress, "still found")
 			t.T().Fail()
 		}
 	}
@@ -545,9 +545,9 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVoluntaryValidatorRegistryUnreg
 	{
 		fmt.Println("Try deregister a validator but it is not registered...")
 
-		proposalContent := voluntaryValType.NewUnregisterVolunteerValidatorProposal(
-			"false_unregister_voluntary_validator",
-			"False voluntary validator unregistration",
+		proposalContent := volunteerValType.NewUnregisterVolunteerValidatorProposal(
+			"false_unregister_volunteer_validator",
+			"False volunteer validator unregistration",
 			sdktypes.ValAddress(t.UserWallet1.ByteAddress.Bytes()),
 		)
 
@@ -577,21 +577,21 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 	amt := sdktypes.NewInt(1000000000000000000)
 
 	{
-		fmt.Println("Preparing multiple proposals to add a voluntary validator")
+		fmt.Println("Preparing multiple proposals to add a volunteer validator")
 
 		var eg errgroup.Group
 
 		for i := 0; i < 2; i++ {
 			eg.Go(func() error {
 				// apply proposal
-				proposalContent, err := voluntaryValType.NewRegisterVolunteerValidatorProposal(
-					fmt.Sprintf("register_multiple_voluntary_validator_%d", i),
-					fmt.Sprintf("Test voluntary validator registary_%d", i),
-					sdktypes.AccAddress(t.VoluntaryValidatorWallet2.ByteAddress.Bytes()),
-					sdktypes.ValAddress(t.VoluntaryValidatorWallet2.ByteAddress.Bytes()),
-					&ed25519.PubKey{Key: t.VoluntaryValidatorPVKey2.PubKey.Bytes()},
+				proposalContent, err := volunteerValType.NewRegisterVolunteerValidatorProposal(
+					fmt.Sprintf("register_multiple_volunteer_validator_%d", i),
+					fmt.Sprintf("Test volunteer validator registary_%d", i),
+					sdktypes.AccAddress(t.VolunteerValidatorWallet2.ByteAddress.Bytes()),
+					sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress.Bytes()),
+					&ed25519.PubKey{Key: t.VolunteerValidatorPVKey2.PubKey.Bytes()},
 					sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
-					stakingtype.NewDescription("voluntary_validator_2", "", "", "", ""),
+					stakingtype.NewDescription("volunteer_validator_2", "", "", "", ""),
 				)
 
 				if err != nil {
@@ -601,7 +601,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 				err = applyVoteTallyingProposal(
 					desc.GetConnectionWithContext(context.Background()),
 					proposalContent,
-					t.VoluntaryValidatorWallet2,
+					t.VolunteerValidatorWallet2,
 					[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
 				)
 
@@ -627,41 +627,41 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 	time.Sleep(time.Second * 30)
 
 	{
-		fmt.Println("Check existence of the voluntary validator")
+		fmt.Println("Check existence of the volunteer validator")
 
-		client := voluntaryValType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
-		validatorStatus, err := client.VolunteerValidators(context.Background(), &voluntaryValType.QueryVolunteerValidatorsRequest{})
+		client := volunteerValType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.VolunteerValidators(context.Background(), &volunteerValType.QueryVolunteerValidatorsRequest{})
 		assert.NoError(t.T(), err)
 
-		thisVoluntaryValAddress := sdktypes.ValAddress(t.VoluntaryValidatorWallet2.ByteAddress).String()
+		thisVolunteerValAddress := sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress).String()
 
 		if len(validatorStatus.GetVolunteerValidators()) == 1 &&
-			assert.Contains(t.T(), validatorStatus.GetVolunteerValidators(), thisVoluntaryValAddress) {
-			fmt.Println(thisVoluntaryValAddress, "successfully get in the validator set!")
+			assert.Contains(t.T(), validatorStatus.GetVolunteerValidators(), thisVolunteerValAddress) {
+			fmt.Println(thisVolunteerValAddress, "successfully get in the validator set!")
 		} else {
-			fmt.Println(thisVoluntaryValAddress, "does not exist")
+			fmt.Println(thisVolunteerValAddress, "does not exist")
 			t.T().Fail()
 		}
 	}
 
 	{
-		fmt.Println("Preparing multiple proposals to remove a voluntary validator")
+		fmt.Println("Preparing multiple proposals to remove a volunteer validator")
 
 		var eg errgroup.Group
 
 		for i := 0; i < 2; i++ {
 			eg.Go(func() error {
 				// apply proposal
-				proposalContent := voluntaryValType.NewUnregisterVolunteerValidatorProposal(
-					fmt.Sprintf("unregister_multiple_voluntary_validator_%d", i),
-					fmt.Sprintf("Test voluntary validator unregistary_%d", i),
-					sdktypes.ValAddress(t.VoluntaryValidatorWallet2.ByteAddress.Bytes()),
+				proposalContent := volunteerValType.NewUnregisterVolunteerValidatorProposal(
+					fmt.Sprintf("unregister_multiple_volunteer_validator_%d", i),
+					fmt.Sprintf("Test volunteer validator unregistary_%d", i),
+					sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress.Bytes()),
 				)
 
 				err := applyVoteTallyingProposal(
 					desc.GetConnectionWithContext(context.Background()),
 					proposalContent,
-					t.VoluntaryValidatorWallet2,
+					t.VolunteerValidatorWallet2,
 					[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
 				)
 
@@ -690,37 +690,37 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 	time.Sleep(time.Second * 30)
 
 	{
-		fmt.Println("Check existence of the voluntary validator")
+		fmt.Println("Check existence of the volunteer validator")
 
-		client := voluntaryValType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
-		validatorStatus, err := client.VolunteerValidators(context.Background(), &voluntaryValType.QueryVolunteerValidatorsRequest{})
+		client := volunteerValType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+		validatorStatus, err := client.VolunteerValidators(context.Background(), &volunteerValType.QueryVolunteerValidatorsRequest{})
 		assert.NoError(t.T(), err)
 
-		thisVoluntaryValAddress := sdktypes.ValAddress(t.VoluntaryValidatorWallet2.ByteAddress).String()
+		thisVolunteerValAddress := sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress).String()
 
-		if assert.NotContains(t.T(), validatorStatus.GetVolunteerValidators(), thisVoluntaryValAddress) {
-			fmt.Println(thisVoluntaryValAddress, "successfully removed from the validator set!")
+		if assert.NotContains(t.T(), validatorStatus.GetVolunteerValidators(), thisVolunteerValAddress) {
+			fmt.Println(thisVolunteerValAddress, "successfully removed from the validator set!")
 		} else {
-			fmt.Println(thisVoluntaryValAddress, "still exist!")
+			fmt.Println(thisVolunteerValAddress, "still exist!")
 			t.T().Fail()
 		}
 	}
 }
 
-func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVoluntaryValidator_ShouldFail() {
+func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVolunteerValidator_ShouldFail() {
 	amt := sdktypes.NewInt(1_000000_000000_000000)
 
 	{
-		fmt.Println("Try registering as a voluntary validator from the general validator...")
+		fmt.Println("Try registering as a volunteer validator from the general validator...")
 
-		proposalContent, err := voluntaryValType.NewRegisterVolunteerValidatorProposal(
-			"register_voluntary_validator_from_general_validator",
-			"Test voluntary validator registary",
+		proposalContent, err := volunteerValType.NewRegisterVolunteerValidatorProposal(
+			"register_volunteer_validator_from_general_validator",
+			"Test volunteer validator registary",
 			sdktypes.AccAddress(t.ValidatorWallet1.ByteAddress.Bytes()),
 			sdktypes.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()),
 			&ed25519.PubKey{Key: t.Validator1PVKey.PubKey.Bytes()},
 			sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
-			stakingtype.NewDescription("voluntary_validator", "", "", "", ""),
+			stakingtype.NewDescription("volunteer_validator", "", "", "", ""),
 		)
 
 		assert.NoError(t.T(), err)
@@ -728,7 +728,7 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVoluntary
 		err = applyVoteTallyingProposal(
 			desc.GetConnectionWithContext(context.Background()),
 			proposalContent,
-			t.VoluntaryValidatorWallet2,
+			t.VolunteerValidatorWallet2,
 			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
 		)
 
@@ -773,15 +773,15 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	}
 
 	{
-		fmt.Println("Add one more voluntary validator")
-		proposalContent, err := voluntaryValType.NewRegisterVolunteerValidatorProposal(
-			"register_voluntary_validator_3",
-			"Test voluntary validator registry3 ",
-			sdktypes.AccAddress(t.VoluntaryValidatorWallet3.ByteAddress.Bytes()),
-			sdktypes.ValAddress(t.VoluntaryValidatorWallet3.ByteAddress.Bytes()),
-			&ed25519.PubKey{Key: t.VoluntaryValidatorPVKey3.PubKey.Bytes()},
+		fmt.Println("Add one more volunteer validator")
+		proposalContent, err := volunteerValType.NewRegisterVolunteerValidatorProposal(
+			"register_volunteer_validator_3",
+			"Test volunteer validator registry3 ",
+			sdktypes.AccAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()),
+			sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()),
+			&ed25519.PubKey{Key: t.VolunteerValidatorPVKey3.PubKey.Bytes()},
 			sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
-			stakingtype.NewDescription("voluntary_validator_3", "", "", "", ""),
+			stakingtype.NewDescription("volunteer_validator_3", "", "", "", ""),
 		)
 
 		assert.NoError(t.T(), err)
@@ -789,7 +789,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		err = applyVoteTallyingProposal(
 			desc.GetConnectionWithContext(context.Background()),
 			proposalContent,
-			t.VoluntaryValidatorWallet3,
+			t.VolunteerValidatorWallet3,
 			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
 		)
 
@@ -797,7 +797,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	}
 
 	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
-	fmt.Println("Expected situation: 4 normal validators + 1 voluntary validator = 5 validators")
+	fmt.Println("Expected situation: 4 normal validators + 1 volunteer validator = 5 validators")
 	time.Sleep(time.Second * 25)
 
 	{
@@ -814,7 +814,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	{
 		fmt.Println("Add normal validator")
 
-		// more than voluntary validator but less than other validator
+		// more than volunteer validator but less than other validator
 		delegationAmt := sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(1_500000_000000_000000))
 
 		createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
@@ -851,7 +851,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	}
 
 	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
-	fmt.Println("Expected situation: 5 normal validators + 1 voluntary validator = 6 validators")
+	fmt.Println("Expected situation: 5 normal validators + 1 volunteer validator = 6 validators")
 	time.Sleep(time.Second * 25)
 
 	{
@@ -864,62 +864,62 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
 		}
 
-		fmt.Println("Check the voluntary validator voted...")
+		fmt.Println("Check the volunteer validator voted...")
 
 		found := false
 		for _, unitVal := range valList {
 			fmt.Println(unitVal.String())
-			if t.VoluntaryValidatorPVKey3.Address.String() == unitVal.String() {
+			if t.VolunteerValidatorPVKey3.Address.String() == unitVal.String() {
 				found = true
 			}
 		}
 
 		if assert.True(t.T(), found) {
-			fmt.Println("Voluntary validator voted. Succeeded")
+			fmt.Println("Volunteer validator voted. Succeeded")
 		} else {
-			fmt.Println("Voluntary validator did not vote. Test fail")
+			fmt.Println("Volunteer validator did not vote. Test fail")
 		}
 	}
 
 	{
-		fmt.Println("Try to turn off the voluntary validator")
+		fmt.Println("Try to turn off the volunteer validator")
 
-		cmd := exec.Command("docker", "stop", "xpla-localnet-voluntary3")
+		cmd := exec.Command("docker", "stop", "xpla-localnet-volunteer3")
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
-		fmt.Println("Voluntary validator down. Wait 50sec to be jailed")
+		fmt.Println("Volunteer validator down. Wait 50sec to be jailed")
 		time.Sleep(time.Second * 50)
 
-		didVoluntaryValVote, err := checkValidatorVoted(
+		didVolunteerValVote, err := checkValidatorVoted(
 			desc.GetServiceDesc().ServiceConn,
-			t.VoluntaryValidatorPVKey3.Address,
+			t.VolunteerValidatorPVKey3.Address,
 		)
 		assert.NoError(t.T(), err)
 
-		if assert.False(t.T(), didVoluntaryValVote) {
-			fmt.Println("Voluntary validator did not vote. Succeeded")
+		if assert.False(t.T(), didVolunteerValVote) {
+			fmt.Println("Volunteer validator did not vote. Succeeded")
 		} else {
-			fmt.Println("Voluntary validator voted. Test fail")
+			fmt.Println("Volunteer validator voted. Test fail")
 		}
 	}
 
 	{
-		fmt.Println("Turn on the voluntary validator and unjailing")
+		fmt.Println("Turn on the volunteer validator and unjailing")
 
-		cmd := exec.Command("docker", "start", "xpla-localnet-voluntary3")
+		cmd := exec.Command("docker", "start", "xpla-localnet-volunteer3")
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
 		fmt.Println("Wait enough time(30sec) to replay the blocks...")
 		time.Sleep(time.Second * 30)
 
-		unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VoluntaryValidatorWallet3.ByteAddress))
+		unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
 
 		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
-		txhash, err := t.VoluntaryValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
+		txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
 		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 			fmt.Println("Tx sent", txhash)
 		} else {
@@ -948,20 +948,20 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
 		}
 
-		fmt.Println("Check the voluntary validator voted...")
+		fmt.Println("Check the volunteer validator voted...")
 
 		found := false
 		for _, unitVal := range valList {
 			fmt.Println(unitVal.String())
-			if t.VoluntaryValidatorPVKey3.Address.String() == unitVal.String() {
+			if t.VolunteerValidatorPVKey3.Address.String() == unitVal.String() {
 				found = true
 			}
 		}
 
 		if assert.True(t.T(), found) {
-			fmt.Println("Voluntary validator voted. Succeeded")
+			fmt.Println("Volunteer validator voted. Succeeded")
 		} else {
-			fmt.Println("Voluntary validator did not vote. Test fail")
+			fmt.Println("Volunteer validator did not vote. Test fail")
 		}
 	}
 }
