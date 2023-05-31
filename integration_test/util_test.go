@@ -21,6 +21,8 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmhttp "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	xplatypes "github.com/xpladev/xpla/types"
 )
 
 // copied from Tendermint type
@@ -201,7 +203,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 
 		proposalMsg, err := govtype.NewMsgSubmitProposal(
 			proposalContent,
-			sdktypes.NewCoins(sdktypes.NewCoin("axpla", sdktypes.NewInt(10000000))),
+			sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
 			proposerWallet.ByteAddress,
 		)
 
@@ -210,10 +212,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 		}
 
 		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.Coin{
-			Denom:  "axpla",
-			Amount: feeAmt.Ceil().RoundInt(),
-		}
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := proposerWallet.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
 		if txhash != "" && err == nil {
@@ -267,10 +266,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 
 				voteMsg := govtype.NewMsgVote(addr.ByteAddress, proposalId, govtype.OptionYes)
 				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-				fee := sdktypes.Coin{
-					Denom:  "axpla",
-					Amount: feeAmt.Ceil().RoundInt(),
-				}
+				fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
 				if txhash != "" && err == nil {
