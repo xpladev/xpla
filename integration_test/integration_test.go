@@ -796,20 +796,18 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		assert.NoError(t.T(), err)
 	}
 
-	{
-		fmt.Println("Check existence & status of the voluntary validator")
+	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
+	fmt.Println("Expected situation: 4 normal validators + 1 voluntary validator = 5 validators")
+	time.Sleep(time.Second * 25)
 
-		client := voluntaryValType.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
-		validatorStatus, err := client.VolunteerValidators(context.Background(), &voluntaryValType.QueryVolunteerValidatorsRequest{})
+	{
+		valList, err := getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
 		assert.NoError(t.T(), err)
 
-		thisVoluntaryValAddress := sdktypes.ValAddress(t.VoluntaryValidatorWallet3.ByteAddress).String()
-
-		if assert.Contains(t.T(), validatorStatus.GetVolunteerValidators(), thisVoluntaryValAddress) {
-			fmt.Println(thisVoluntaryValAddress, "successfully participated in the validator set!")
+		if assert.Equal(t.T(), int(maxValidators), len(valList)) {
+			fmt.Println("Matched expectation!")
 		} else {
-			fmt.Println(thisVoluntaryValAddress, "is not found")
-			t.T().Fail()
+			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
 		}
 	}
 
@@ -853,23 +851,34 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	}
 
 	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
+	fmt.Println("Expected situation: 5 normal validators + 1 voluntary validator = 6 validators")
 	time.Sleep(time.Second * 25)
 
 	{
-		fmt.Println("Check the voluntary validator voted...")
-
-		didVoluntaryValVote, err := checkValidatorVoted(
-			desc.GetServiceDesc().ServiceConn,
-			t.VoluntaryValidatorPVKey3.Address,
-		)
+		valList, err := getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
 		assert.NoError(t.T(), err)
 
-		if assert.True(t.T(), didVoluntaryValVote) {
+		if assert.Equal(t.T(), int(maxValidators+1), len(valList)) {
+			fmt.Println("Matched expectation!")
+		} else {
+			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
+		}
+
+		fmt.Println("Check the voluntary validator voted...")
+
+		found := false
+		for _, unitVal := range valList {
+			fmt.Println(unitVal.String())
+			if t.VoluntaryValidatorPVKey3.Address.String() == unitVal.String() {
+				found = true
+			}
+		}
+
+		if assert.True(t.T(), found) {
 			fmt.Println("Voluntary validator voted. Succeeded")
 		} else {
 			fmt.Println("Voluntary validator did not vote. Test fail")
 		}
-
 	}
 
 	{
@@ -930,15 +939,26 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	time.Sleep(time.Second * 25)
 
 	{
-		fmt.Println("Check the voluntary validator voted...")
-
-		didVoluntaryValVote, err := checkValidatorVoted(
-			desc.GetServiceDesc().ServiceConn,
-			t.VoluntaryValidatorPVKey3.Address,
-		)
+		valList, err := getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
 		assert.NoError(t.T(), err)
 
-		if assert.True(t.T(), didVoluntaryValVote) {
+		if assert.Equal(t.T(), int(maxValidators+1), len(valList)) {
+			fmt.Println("Matched expectation!")
+		} else {
+			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
+		}
+
+		fmt.Println("Check the voluntary validator voted...")
+
+		found := false
+		for _, unitVal := range valList {
+			fmt.Println(unitVal.String())
+			if t.VoluntaryValidatorPVKey3.Address.String() == unitVal.String() {
+				found = true
+			}
+		}
+
+		if assert.True(t.T(), found) {
 			fmt.Println("Voluntary validator voted. Succeeded")
 		} else {
 			fmt.Println("Voluntary validator did not vote. Test fail")
