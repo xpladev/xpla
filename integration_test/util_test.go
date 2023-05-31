@@ -11,7 +11,6 @@ import (
 
 	"google.golang.org/grpc"
 
-	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	govtype "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -325,21 +324,13 @@ func loadPrivValidator(validatorName string) (*PVKey, error) {
 }
 
 func getValidatorListOfLatestBlock(conn *grpc.ClientConn) ([]bytes.HexBytes, error) {
-	client := tmservicetypes.NewServiceClient(conn)
-	resp, err := client.GetLatestBlock(context.Background(), &tmservicetypes.GetLatestBlockRequest{})
+	client, err := tmhttp.New("tcp://127.0.0.1:36657", "/websocket")
 	if err != nil {
 		return nil, err
 	}
 
-	latestBlockHeight := resp.Block.GetHeader().Height
-	fmt.Println("Height:", latestBlockHeight)
-
-	tmclient, err := tmhttp.New("tcp://127.0.0.1:36657", "/websocket")
-	if err != nil {
-		return nil, err
-	}
-
-	blkresp, err := tmclient.Block(context.Background(), &latestBlockHeight)
+	// nil: the latest block
+	blkresp, err := client.Block(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
