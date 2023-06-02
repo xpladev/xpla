@@ -12,6 +12,6 @@ func NewVolunteerValidator(valAddress sdk.ValAddress, power int64) VolunteerVali
 	}
 }
 
-func (zv *VolunteerValidator) Delete() {
-	zv.IsDeleting = true
+func (vv *VolunteerValidator) Delete() {
+	vv.IsDeleting = true
 }
