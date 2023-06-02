@@ -53,7 +53,7 @@ do
     cp /opt/integration_test/validator$IDX/priv_validator_key.json $XPLAHOME/config
 
     # 2) Execute a gentx
-    /usr/bin/xplad gentx validator$IDX 2000000000000000000axpla  \
+    /usr/bin/xplad gentx validator$IDX 9000000000000000000axpla  \
         --chain-id="localtest_1-1" \
         --pubkey=$(xplad tendermint show-validator --home $XPLAHOME) \
         --min-self-delegation=1 \
@@ -77,13 +77,16 @@ sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/gene
 sed -i 's/"denom": "stake",/"denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"max_gas": "-1",/"max_gas": "5000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"no_base_fee": false,/"no_base_fee": true,/g' $XPLAHOME/config/genesis.json
-sed -i 's/"inflation": "0.130000000000000000",/"inflation": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
-sed -i 's/"inflation_rate_change": "0.130000000000000000",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
-sed -i 's/"inflation_min": "0.070000000000000000",/"inflation_min": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"inflation": "0.[0-9]\+",/"inflation": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"inflation_rate_change": "0.[0-9]\+",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"inflation_min": "0.[0-9]\+",/"inflation_min": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
+
+# reduce blocktime around 2 sec
+sed -i 's/"blocks_per_year": "[0-9]\+"/"blocks_per_year": "19000000"/g' $XPLAHOME/config/genesis.json
 
 # gov params
-sed -i 's/"max_deposit_period": "172800s"/"max_deposit_period": "20s"/g' $XPLAHOME/config/genesis.json
-sed -i 's/"voting_period": "172800s"/"voting_period": "20s"/g' $XPLAHOME/config/genesis.json
+sed -i 's/"max_deposit_period": "[0-9]\+s"/"max_deposit_period": "8s"/' $XPLAHOME/config/genesis.json
+sed -i 's/"voting_period": "[0-9]\+s"/"voting_period": "8s"/' $XPLAHOME/config/genesis.json
 
 /usr/bin/xplad validate-genesis --home $XPLAHOME
 

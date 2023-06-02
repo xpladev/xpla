@@ -188,7 +188,7 @@ func txCheck(txHash string) error {
 			return nil
 		}
 
-		time.Sleep(time.Second / 2)
+		time.Sleep(time.Second / 5)
 	}
 
 	return err
@@ -301,8 +301,8 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 		}
 	}
 
-	fmt.Println("Waiting 25sec for the proposal passing...")
-	time.Sleep(time.Second * 25)
+	fmt.Println("Waiting 4 blocktime for the proposal passing...")
+	time.Sleep(time.Second*blocktime*proposalBlocks + 1)
 	fmt.Println("Proposal tallied!")
 
 	return nil

@@ -15,7 +15,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
-	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	ed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
@@ -379,28 +378,22 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		assert.NoError(t.T(), err)
 	}
 
+	fmt.Println("Waiting for validator committing...")
+	time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
+
 	{
 		fmt.Println("Validator status check")
 
-		client := tmservicetypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
-		validatorStatus, err := client.GetLatestValidatorSet(context.Background(), &tmservicetypes.GetLatestValidatorSetRequest{})
+		didVolunteerValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.VolunteerValidatorPVKey1.Address,
+		)
 		assert.NoError(t.T(), err)
 
-		isFound := false
-		conAddress := sdktypes.ConsAddress(t.VolunteerValidatorPVKey1.Address).String()
-		for _, unitVal := range validatorStatus.Validators {
-			if conAddress == unitVal.GetAddress() {
-				fmt.Println("power:", unitVal.VotingPower)
-				isFound = true
-				break
-			}
-		}
-
-		if assert.True(t.T(), isFound) {
-			fmt.Println("Consensus address", conAddress, "found in validator set!")
+		if assert.True(t.T(), didVolunteerValVote) {
+			fmt.Println("Volunteer validator voted. Succeeded")
 		} else {
-			fmt.Println(conAddress, "not found")
-			t.T().Fail()
+			fmt.Println("Volunteer validator did not vote. Test fail")
 		}
 	}
 
@@ -525,6 +518,9 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		assert.NoError(t.T(), err)
 	}
 
+	fmt.Println("Waiting some blocks for the proposal passing...")
+	time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
+
 	{
 		fmt.Println("Check existence of the volunteer validator")
 
@@ -623,8 +619,8 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 		}
 	}
 
-	fmt.Println("Waiting 30sec for the proposal passing...")
-	time.Sleep(time.Second * 30)
+	fmt.Println("Waiting some blocks for the proposal passing...")
+	time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
 
 	{
 		fmt.Println("Check existence of the volunteer validator")
@@ -673,7 +669,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 			})
 
 			// slight delay for avoiding sequence mismatch
-			time.Sleep(time.Second / 2)
+			time.Sleep(time.Second / 5)
 		}
 
 		err := eg.Wait()
@@ -686,8 +682,8 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 		}
 	}
 
-	fmt.Println("Waiting 30sec for the proposal passing...")
-	time.Sleep(time.Second * 30)
+	fmt.Println("Waiting some blocks for the proposal passing...")
+	time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
 
 	{
 		fmt.Println("Check existence of the volunteer validator")
@@ -749,7 +745,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	expectedChange := []paramtype.ParamChange{
 		paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
 		paramtype.NewParamChange(slashingtype.ModuleName, string(slashingtype.KeySignedBlocksWindow), "\"5\""),
-		paramtype.NewParamChange(slashingtype.ModuleName, string(slashingtype.KeyDowntimeJailDuration), "\"20\""),
+		paramtype.NewParamChange(slashingtype.ModuleName, string(slashingtype.KeyDowntimeJailDuration), "\"10\""),
 	}
 
 	{
@@ -796,21 +792,6 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		assert.NoError(t.T(), err)
 	}
 
-	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
-	fmt.Println("Expected situation: 4 normal validators + 1 volunteer validator = 5 validators")
-	time.Sleep(time.Second * 25)
-
-	{
-		valList, err := getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
-		assert.NoError(t.T(), err)
-
-		if assert.Equal(t.T(), int(maxValidators), len(valList)) {
-			fmt.Println("Matched expectation!")
-		} else {
-			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
-		}
-	}
-
 	{
 		fmt.Println("Add normal validator")
 
@@ -850,9 +831,9 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		}
 	}
 
-	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
+	fmt.Println("Waiting some blocks for the validator status refresh...")
 	fmt.Println("Expected situation: 5 normal validators + 1 volunteer validator = 6 validators")
-	time.Sleep(time.Second * 25)
+	time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
 
 	{
 		valList, err := getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
@@ -879,6 +860,48 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		} else {
 			fmt.Println("Volunteer validator did not vote. Test fail")
 		}
+
+		// validator 5 bonded?
+	}
+
+	{
+		fmt.Println("Add one more normal validator. But its power is smaller than the volunteer validator.")
+		fmt.Println("Expected unbonded state")
+
+		// // more than volunteer validator but less than other validator
+		// delegationAmt := sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(1_500000_000000_000000))
+
+		// createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
+		// 	sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()),
+		// 	&ed25519.PubKey{Key: t.Validator5PVKey.PubKey.Bytes()},
+		// 	delegationAmt,
+		// 	stakingtype.NewDescription("validator5", "", "", "", ""),
+		// 	stakingtype.NewCommissionRates(
+		// 		sdktypes.MustNewDecFromStr("0.1"),
+		// 		sdktypes.MustNewDecFromStr("0.2"),
+		// 		sdktypes.MustNewDecFromStr("0.01"),
+		// 	),
+		// 	sdktypes.NewInt(1),
+		// )
+
+		// assert.NoError(t.T(), err)
+
+		// feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		// fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+
+		// txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
+		// if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+		// 	fmt.Println("Tx sent", txhash)
+		// } else {
+		// 	fmt.Println(err)
+		// }
+
+		// err = txCheck(txhash)
+		// if assert.NoError(t.T(), err) {
+		// 	fmt.Println("Tx applied", txhash)
+		// } else {
+		// 	fmt.Println(err)
+		// }
 	}
 
 	{
@@ -888,8 +911,10 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
-		fmt.Println("Volunteer validator down. Wait 50sec to be jailed")
-		time.Sleep(time.Second * 50)
+		fmt.Println("Volunteer validator down. Wait 5 blocktime to be jailed")
+		time.Sleep(time.Second*blocktime*jailBlocks + 1)
+		fmt.Println("Wait for validator list reorg..")
+		time.Sleep(time.Second*blocktime*4 + 1)
 
 		didVolunteerValVote, err := checkValidatorVoted(
 			desc.GetServiceDesc().ServiceConn,
@@ -935,8 +960,8 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 	}
 
-	fmt.Println("Waiting 25sec (> 4 block time) for the validator status refresh...")
-	time.Sleep(time.Second * 25)
+	fmt.Println("Waiting some block time for the validator status refresh...")
+	time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
 
 	{
 		valList, err := getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
@@ -1062,7 +1087,7 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	assert.NoError(t.T(), err)
 	fmt.Println("Tx hash: ", tx.Hash().String())
 
-	time.Sleep(time.Second * 7)
+	time.Sleep(time.Second*blocktime + 1)
 
 	fmt.Println("Token address: ", address.String())
 	t.TokenAddress = address
@@ -1092,7 +1117,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	assert.NoError(t.T(), err)
 	fmt.Println("Sent as ", tx.Hash().String())
 
-	time.Sleep(time.Second * 7)
+	time.Sleep(time.Second*blocktime + 1)
 
 	// query & assert
 	callOpt := &abibind.CallOpts{}
