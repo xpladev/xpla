@@ -11,7 +11,7 @@ const (
 	blocktime             = 2
 	proposalBlocks        = 5
 	jailBlocks            = 6
-	validatorActiveBlocks = 4
+	validatorActiveBlocks = 10
 
 	xplaGeneralGasLimit  int64 = 240000
 	xplaCodeGasLimit     int64 = 5000000

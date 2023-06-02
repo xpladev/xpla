@@ -14,6 +14,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	govtype "github.com/cosmos/cosmos-sdk/x/gov/types"
+	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -359,4 +360,19 @@ func checkValidatorVoted(conn *grpc.ClientConn, validatorAddress bytes.HexBytes)
 	}
 
 	return false, nil
+}
+
+func getValidatorBondingState(conn *grpc.ClientConn, addr sdktypes.ValAddress) (stakingtype.BondStatus, error) {
+	client := stakingtype.NewQueryClient(conn)
+
+	resp, err := client.Validator(
+		context.Background(),
+		&stakingtype.QueryValidatorRequest{ValidatorAddr: addr.String()},
+	)
+
+	if err != nil {
+		return stakingtype.Unspecified, err
+	}
+
+	return resp.Validator.Status, nil
 }

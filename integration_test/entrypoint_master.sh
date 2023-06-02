@@ -70,7 +70,7 @@ done
 # 5. Do collect gentxs
 /usr/bin/xplad collect-gentxs --home $XPLAHOME
 
-# 6. Replace staking denom
+# 6. Replace params
 sed -i 's/"bond_denom": "stake"/"bond_denom": "axpla"/g' $XPLAHOME/config/genesis.json
 sed -i 's/"evm_denom": "aphoton",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/genesis.json
@@ -80,9 +80,14 @@ sed -i 's/"no_base_fee": false,/"no_base_fee": true,/g' $XPLAHOME/config/genesis
 sed -i 's/"inflation": "0.[0-9]\+",/"inflation": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_rate_change": "0.[0-9]\+",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_min": "0.[0-9]\+",/"inflation_min": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"unbonding_time": "[0-9]\+s"/"unbonding_time": "8s"/' $XPLAHOME/config/genesis.json
 
 # reduce blocktime around 2 sec
 sed -i 's/"blocks_per_year": "[0-9]\+"/"blocks_per_year": "19000000"/g' $XPLAHOME/config/genesis.json
+
+# slashing params
+sed -i 's/"downtime_jail_duration": "[0-9]\+s"/"downtime_jail_duration": "10s"/g' $XPLAHOME/config/genesis.json
+sed -i 's/"signed_blocks_window": "[0-9]\+"/"signed_blocks_window": "5"/g' $XPLAHOME/config/genesis.json
 
 # gov params
 sed -i 's/"max_deposit_period": "[0-9]\+s"/"max_deposit_period": "8s"/' $XPLAHOME/config/genesis.json
