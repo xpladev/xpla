@@ -86,8 +86,10 @@ sed -i 's/"unbonding_time": "[0-9]\+s"/"unbonding_time": "8s"/' $XPLAHOME/config
 sed -i 's/"blocks_per_year": "[0-9]\+"/"blocks_per_year": "19000000"/g' $XPLAHOME/config/genesis.json
 
 # slashing params
-sed -i 's/"downtime_jail_duration": "[0-9]\+s"/"downtime_jail_duration": "10s"/g' $XPLAHOME/config/genesis.json
-sed -i 's/"signed_blocks_window": "[0-9]\+"/"signed_blocks_window": "5"/g' $XPLAHOME/config/genesis.json
+# downtime_jail_duration should be over 60s, by the restriction of Cosmos SDK
+sed -i 's/"downtime_jail_duration": "[0-9]\+s"/"downtime_jail_duration": "60s"/g' $XPLAHOME/config/genesis.json
+# signed_blocks_window should be over 10, by the restriction of Cosmos SDK
+sed -i 's/"signed_blocks_window": "[0-9]\+"/"signed_blocks_window": "10"/g' $XPLAHOME/config/genesis.json
 
 # gov params
 sed -i 's/"max_deposit_period": "[0-9]\+s"/"max_deposit_period": "8s"/' $XPLAHOME/config/genesis.json

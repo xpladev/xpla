@@ -739,8 +739,8 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVolunteer
 }
 
 func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
-	volunteerValDelegationAmt := sdktypes.NewInt(3_000000_000000_000000)
-	generalValUpperDelegationAmt := sdktypes.NewInt(4_000000_000000_000000)
+	volunteerValDelegationAmt := sdktypes.NewInt(5_000000_000000_000000)
+	generalValUpperDelegationAmt := sdktypes.NewInt(8_000000_000000_000000)
 	generalValLowerDelegationAmt := sdktypes.NewInt(2_000000_000000_000000)
 	var maxValidators uint32 = 5
 
@@ -965,7 +965,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
-		fmt.Println("Volunteer validator down. Wait 5 blocktime to be jailed")
+		fmt.Println("Volunteer validator down. Wait 11 blocktime to be jailed")
 		time.Sleep(time.Second*blocktime*jailBlocks + 1)
 		fmt.Println("Wait for validator list reorg..")
 		time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
@@ -1014,8 +1014,8 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		err := cmd.Run()
 		assert.NoError(t.T(), err)
 
-		fmt.Println("Wait enough time(30sec) to replay the blocks...")
-		time.Sleep(time.Second * 30)
+		fmt.Println("Wait enough time(70sec) to replay the blocks and spend downtime_jail_duration...")
+		time.Sleep(time.Second * 70)
 
 		unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
 

@@ -10,7 +10,7 @@ import (
 const (
 	blocktime             = 2
 	proposalBlocks        = 5
-	jailBlocks            = 6
+	jailBlocks            = 11
 	validatorActiveBlocks = 10
 
 	xplaGeneralGasLimit  int64 = 240000
