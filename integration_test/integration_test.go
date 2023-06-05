@@ -1078,18 +1078,185 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 	}
 
 	{
-		fmt.Println("Try to unregister a volunteer validator when the volunteer validator is within MaxValidator")
-		fmt.Println("Volunteer validator should be removed and the lower-powered validator should be in the active set")
+		fmt.Println("Try to jail / unjail when the volunteer validator is out of active set.")
+		maxValidators = 4
+		expectedChange = []paramtype.ParamChange{
+			paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
+		}
 
-		proposalContent := volunteerValType.NewUnregisterVolunteerValidatorProposal(
-			"unregister_volunteer_validator",
-			"Test volunteer validator unregistration",
-			sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()),
+		fmt.Println("Decrease the number of active set")
+		fmt.Println("Current # of validator:", maxValidators)
+
+		proposalContent := paramtype.NewParameterChangeProposal(
+			"decrease_validator_active_set",
+			"Decrease validator active set",
+			expectedChange,
 		)
 
 		err := applyVoteTallyingProposal(
 			desc.GetConnectionWithContext(context.Background()),
 			proposalContent,
+			t.ValidatorWallet2,
+			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
+		)
+
+		assert.NoError(t.T(), err)
+
+		fmt.Println("Waiting some block time for the validator status refresh...")
+		time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
+
+		valList, err := getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
+		assert.NoError(t.T(), err)
+
+		if assert.Equal(t.T(), int(maxValidators+1), len(valList)) {
+			fmt.Println("Matched expectation!")
+		} else {
+			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
+		}
+
+		fmt.Println("Check the volunteer validator voted...")
+
+		volunteerValfound := false
+		for _, unitVal := range valList {
+			fmt.Println(unitVal.String())
+			if t.VolunteerValidatorPVKey3.Address.String() == unitVal.String() {
+				volunteerValfound = true
+			}
+		}
+
+		if assert.True(t.T(), volunteerValfound) {
+			fmt.Println("Volunteer validator voted. Succeeded")
+		} else {
+			fmt.Println("Volunteer validator did not vote. Test fail")
+		}
+
+		fmt.Println("Try to turn off the volunteer validator")
+
+		cmd := exec.Command("docker", "stop", "xpla-localnet-volunteer3")
+		err = cmd.Run()
+		assert.NoError(t.T(), err)
+
+		fmt.Println("Volunteer validator down. Wait 11 blocktime to be jailed")
+		time.Sleep(time.Second*blocktime*jailBlocks + 1)
+		fmt.Println("Wait for validator list reorg..")
+		time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
+
+		didVolunteerValVote, err := checkValidatorVoted(
+			desc.GetServiceDesc().ServiceConn,
+			t.VolunteerValidatorPVKey3.Address,
+		)
+		assert.NoError(t.T(), err)
+
+		if assert.False(t.T(), didVolunteerValVote) {
+			fmt.Println("Volunteer validator did not vote. Succeeded")
+		} else {
+			fmt.Println("Volunteer validator voted. Test fail")
+		}
+
+		valList, err = getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
+		assert.NoError(t.T(), err)
+
+		if assert.Equal(t.T(), int(maxValidators), len(valList)) {
+			fmt.Println("Matched expectation!")
+		} else {
+			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
+		}
+
+		fmt.Println("Turn on the volunteer validator and unjailing")
+
+		cmd = exec.Command("docker", "start", "xpla-localnet-volunteer3")
+		err = cmd.Run()
+		assert.NoError(t.T(), err)
+
+		fmt.Println("Wait enough time(70sec) to replay the blocks and spend downtime_jail_duration...")
+		time.Sleep(time.Second * 70)
+
+		unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
+
+		feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+
+		txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
+		if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
+			fmt.Println("Tx sent", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		err = txCheck(txhash)
+		if assert.NoError(t.T(), err) {
+			fmt.Println("Tx applied", txhash)
+		} else {
+			fmt.Println(err)
+		}
+
+		fmt.Println("Wait for validator list reorg..")
+		time.Sleep(time.Second*blocktime*validatorActiveBlocks + 1)
+
+		valList, err = getValidatorListOfLatestBlock(desc.GetServiceDesc().ServiceConn)
+		assert.NoError(t.T(), err)
+
+		if assert.Equal(t.T(), int(maxValidators+1), len(valList)) {
+			fmt.Println("Matched expectation!")
+		} else {
+			fmt.Println("Not matched expectation. Test fail! Expected:", maxValidators, "Actual:", len(valList))
+		}
+
+		fmt.Println("Check the volunteer validator voted...")
+
+		volunteerValfound = false
+		for _, unitVal := range valList {
+			fmt.Println(unitVal.String())
+			if t.VolunteerValidatorPVKey3.Address.String() == unitVal.String() {
+				volunteerValfound = true
+			}
+		}
+
+		if assert.True(t.T(), volunteerValfound) {
+			fmt.Println("Volunteer validator voted. Succeeded")
+		} else {
+			fmt.Println("Volunteer validator did not vote. Test fail")
+		}
+	}
+
+	{
+		fmt.Println("Try to unregister a volunteer validator when the volunteer validator is within MaxValidator")
+		fmt.Println("Volunteer validator should be removed and the lower-powered validator should be in the active set")
+
+		fmt.Println("Rolling back, MaxValidators to 6...")
+
+		maxValidators = 6
+		expectedChange = []paramtype.ParamChange{
+			paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
+		}
+
+		fmt.Println("Decrease the number of active set")
+		fmt.Println("Current # of validator:", maxValidators)
+
+		paramChangeProposalContent := paramtype.NewParameterChangeProposal(
+			"decrease_validator_active_set",
+			"Decrease validator active set",
+			expectedChange,
+		)
+
+		err := applyVoteTallyingProposal(
+			desc.GetConnectionWithContext(context.Background()),
+			paramChangeProposalContent,
+			t.ValidatorWallet2,
+			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
+		)
+
+		assert.NoError(t.T(), err)
+
+		unregisterProposalContent := volunteerValType.NewUnregisterVolunteerValidatorProposal(
+			"unregister_volunteer_validator",
+			"Test volunteer validator unregistration",
+			sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()),
+		)
+
+		err = applyVoteTallyingProposal(
+			desc.GetConnectionWithContext(context.Background()),
+			unregisterProposalContent,
 			t.VolunteerValidatorWallet3,
 			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
 		)
@@ -1122,7 +1289,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		if assert.True(t.T(), lowerGeneralValfound) {
 			fmt.Println("Lower-powered validator voted. Succeeded")
 		} else {
-			fmt.Println("Volunteer validator did not vote. Test fail")
+			fmt.Println("Lower-powered validator did not vote. Test fail")
 		}
 	}
 }
