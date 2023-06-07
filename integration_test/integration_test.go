@@ -649,6 +649,8 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 		var eg errgroup.Group
 
 		for i := 0; i < 2; i++ {
+			i := i
+
 			eg.Go(func() error {
 				// apply proposal
 				proposalContent, err := volunteerValType.NewRegisterVolunteerValidatorProposal(
@@ -717,6 +719,8 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 		var eg errgroup.Group
 
 		for i := 0; i < 2; i++ {
+			i := i
+
 			eg.Go(func() error {
 				// apply proposal
 				proposalContent := volunteerValType.NewUnregisterVolunteerValidatorProposal(

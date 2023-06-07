@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"sync"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
@@ -253,17 +253,12 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 	{
 		fmt.Println("Voting...")
 
-		wg := sync.WaitGroup{}
-
-		errChan := make(chan error)
-		successChan := make(chan bool)
+		var eg errgroup.Group
 
 		for _, addr := range voters {
-			wg.Add(1)
+			addr := addr
 
-			go func(addr *WalletInfo) {
-				defer wg.Done()
-
+			eg.Go(func() error {
 				voteMsg := govtype.NewMsgVote(addr.ByteAddress, proposalId, govtype.OptionYes)
 				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 				fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
@@ -272,33 +267,22 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 				if txhash != "" && err == nil {
 					fmt.Println(addr.StringAddress, "voted to the proposal", proposalId, "as tx", txhash, "err:", err)
 				} else {
-					errChan <- err
-					return
+					return err
 				}
 
 				err = txCheck(txhash)
 				if err == nil {
 					fmt.Println(addr.StringAddress, "vote tx applied", txhash, "err:", err)
 				} else {
-					errChan <- err
-					return
+					return err
 				}
-			}(addr)
+
+				return nil
+			})
 		}
 
-		go func() {
-			wg.Wait()
-			successChan <- true
-		}()
-
-	VOTE:
-		for {
-			select {
-			case chanErr := <-errChan:
-				return chanErr
-			case <-successChan:
-				break VOTE
-			}
+		if err := eg.Wait(); err != nil {
+			return err
 		}
 	}
 
