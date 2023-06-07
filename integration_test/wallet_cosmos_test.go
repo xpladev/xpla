@@ -14,7 +14,6 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	"github.com/cosmos/cosmos-sdk/types"
 	sdktype "github.com/cosmos/cosmos-sdk/types"
 	txtype "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -22,6 +21,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	ethhd "github.com/evmos/ethermint/crypto/hd"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
+
+	xplatypes "github.com/xpladev/xpla/types"
 )
 
 const (
@@ -50,7 +51,7 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 
 	var privKey cryptotypes.PrivKey
 	var pubKey cryptotypes.PubKey
-	var byteAddress types.AccAddress
+	var byteAddress sdktype.AccAddress
 	var stringAddress string
 
 	devFunc := ethhd.EthSecp256k1.Derive()
@@ -68,8 +69,8 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 	}
 	pubKey = privKey.PubKey()
 
-	byteAddress = types.AccAddress(pubKey.Address())
-	stringAddress, err = types.Bech32ifyAddressBytes(Prefix, pubKey.Address())
+	byteAddress = sdktype.AccAddress(pubKey.Address())
+	stringAddress, err = sdktype.Bech32ifyAddressBytes(Prefix, pubKey.Address())
 	if err != nil {
 		err = errors.Wrap(err, "NewWalletInfo, create bech32 address from byte")
 		return nil, err
@@ -98,7 +99,7 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 	return ret, nil
 }
 
-func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLimit int64, isEVM bool) (string, error) {
+func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, gasLimit int64, isEVM bool) (string, error) {
 	w.Lock()
 	defer w.Unlock()
 	var err error
@@ -114,11 +115,11 @@ func (w *WalletInfo) SendTx(chainId string, msg types.Msg, fee types.Coin, gasLi
 		}
 
 		txBuilder.SetGasLimit(uint64(gasLimit))
-		txBuilder.SetFeeAmount(types.NewCoins(fee))
+		txBuilder.SetFeeAmount(sdktype.NewCoins(fee))
 	} else {
 		convertedMsg := msg.(*evmtypes.MsgEthereumTx)
 
-		_, err = convertedMsg.BuildTx(txBuilder, "axpla")
+		_, err = convertedMsg.BuildTx(txBuilder, xplatypes.DefaultDenom)
 		if err != nil {
 			err = errors.Wrap(err, "SendTx, build evm tx")
 			return "", err
