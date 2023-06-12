@@ -33,7 +33,7 @@ import (
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ibcclientclient "github.com/cosmos/ibc-go/v3/modules/core/02-client/client"
+	ibcclientclient "github.com/cosmos/ibc-go/v4/modules/core/02-client/client"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -56,6 +56,7 @@ import (
 
 	aligngasprice "github.com/xpladev/xpla/app/upgrades/align_gas_price"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
+	"github.com/xpladev/xpla/app/upgrades/v1_3"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 )
 
@@ -425,6 +426,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 		aligngasprice.CreateUpgradeHandler(app.mm, app.configurator, app.FeeMarketKeeper),
 	)
 
+	// v1_3 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v1_3.UpgradeName,
+		v1_3.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -450,6 +457,8 @@ func (app *XplaApp) setUpgradeHandlers() {
 		}
 	case aligngasprice.UpgradeName:
 		// no store upgrade in align gas price
+	case v1_3.UpgradeName:
+		// no store upgrade in v1_3
 	}
 
 	if storeUpgrades != nil {

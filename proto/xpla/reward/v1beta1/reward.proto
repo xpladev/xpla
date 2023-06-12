@@ -7,23 +7,23 @@ import "gogoproto/gogo.proto";
 
 // Params defines the set of params for the reward module.
 message Params {
-    option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.goproto_stringer) = false;
 
-    string fee_pool_rate  = 1 [
-        (gogoproto.moretags)   = "yaml:\"fee_pool_rate\"",
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-        (gogoproto.nullable)   = false
-      ];
-    string community_pool_rate = 2 [
-        (gogoproto.moretags)   = "yaml:\"community_pool_rate\"",
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-        (gogoproto.nullable)   = false
-    ];
-    string reserve_rate = 3 [
-        (gogoproto.moretags)   = "yaml:\"reserve_rate\"",
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-        (gogoproto.nullable)   = false
-    ];
-    string reserve_account = 4;
-    string reward_distribute_account = 5;
+  string fee_pool_rate = 1 [
+    (gogoproto.moretags) = "yaml:\"fee_pool_rate\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string community_pool_rate = 2 [
+    (gogoproto.moretags) = "yaml:\"community_pool_rate\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string reserve_rate = 3 [
+    (gogoproto.moretags) = "yaml:\"reserve_rate\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string reserve_account = 4;
+  string reward_distribute_account = 5;
 }

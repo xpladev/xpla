@@ -8,7 +8,7 @@ import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
-	_ "github.com/gogo/protobuf/gogoproto"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
@@ -251,6 +251,7 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Params queries params of the reward module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// Pool queries the reward module pool coins.
 	Pool(ctx context.Context, in *QueryPoolRequest, opts ...grpc.CallOption) (*QueryPoolResponse, error)
 }
 
@@ -284,6 +285,7 @@ func (c *queryClient) Pool(ctx context.Context, in *QueryPoolRequest, opts ...gr
 type QueryServer interface {
 	// Params queries params of the reward module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// Pool queries the reward module pool coins.
 	Pool(context.Context, *QueryPoolRequest) (*QueryPoolResponse, error)
 }
 
