@@ -8,6 +8,9 @@ import "xpla/reward/v1beta1/reward.proto";
 
 // GenesisState defines the reward module's genesis state.
 message GenesisState {
-// params defines all the paramaters of the module.
-  Params params = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"params\""];
+  // params defines all the paramaters of the module.
+  Params params = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "yaml:\"params\""
+  ];
 }

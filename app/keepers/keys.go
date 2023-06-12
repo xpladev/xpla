@@ -17,12 +17,12 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	icahosttypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	icahosttypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v3/router/types"
+	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v4/router/types"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 )
 

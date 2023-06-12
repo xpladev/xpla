@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -41,26 +42,27 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ica "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts"
-	icahost "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host"
-	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
-	icahosttypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/types"
-	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	ibcclient "github.com/cosmos/ibc-go/v3/modules/core/02-client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	ica "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts"
+	icahost "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host"
+	icahostkeeper "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/keeper"
+	icahosttypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/types"
+	"github.com/cosmos/ibc-go/v4/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v4/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ibcclient "github.com/cosmos/ibc-go/v4/modules/core/02-client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
 	etherminttypes "github.com/evmos/ethermint/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-	"github.com/strangelove-ventures/packet-forward-middleware/v3/router"
-	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/v3/router/keeper"
-	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v3/router/types"
+	"github.com/strangelove-ventures/packet-forward-middleware/v4/router"
+	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/v4/router/keeper"
+	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v4/router/types"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
@@ -263,7 +265,23 @@ func NewAppKeeper(
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	supportedFeatures := "iterator,staking,stargate"
+	supportedFeatures := "iterator,staking,stargate,cosmwasm_1_1"
+
+	// Stargate Queries
+	accepted := wasmkeeper.AcceptedStargateQueries{
+		// ibc
+		"/ibc.core.client.v1.Query/ClientState":    &ibcclienttypes.QueryClientStateResponse{},
+		"/ibc.core.client.v1.Query/ConsensusState": &ibcclienttypes.QueryConsensusStateResponse{},
+		"/ibc.core.connection.v1.Query/Connection": &ibcconnectiontypes.QueryConnectionResponse{},
+
+		// governance
+		"/cosmos.gov.v1beta1.Query/Vote": &govtypes.QueryVoteResponse{},
+	}
+	querierOpts := wasmkeeper.WithQueryPlugins(
+		&wasmkeeper.QueryPlugins{
+			Stargate: wasmkeeper.AcceptListStargateQuerier(accepted, bApp.GRPCQueryRouter(), appCodec),
+		})
+	wasmOpts = append(wasmOpts, querierOpts)
 	appKeepers.WasmKeeper = wasm.NewKeeper(
 		appCodec,
 		appKeepers.keys[wasm.StoreKey],
@@ -336,7 +354,6 @@ func NewAppKeeper(
 		appKeepers.IBCKeeper.ChannelKeeper,
 		appKeepers.DistrKeeper,
 		appKeepers.BankKeeper,
-		&appKeepers.IBCKeeper.PortKeeper,
 		appKeepers.IBCKeeper.ChannelKeeper,
 	)
 
@@ -380,10 +397,13 @@ func NewAppKeeper(
 		routerkeeper.DefaultRefundTransferPacketTimeoutTimestamp,
 	)
 
+	var wasmStack porttypes.IBCModule
+	wasmStack = wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)
+
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper)).
+		AddRoute(wasm.ModuleName, wasmStack).
 		AddRoute(ibctransfertypes.ModuleName, ibcStack)
 
 	appKeepers.IBCKeeper.SetRouter(ibcRouter)
