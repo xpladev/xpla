@@ -37,7 +37,6 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
@@ -71,6 +70,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
+	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 
@@ -88,7 +88,7 @@ type AppKeepers struct {
 	AccountKeeper    authkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper *capabilitykeeper.Keeper
-	StakingKeeper    stakingkeeper.Keeper
+	StakingKeeper    xplastakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
 	MintKeeper       mintkeeper.Keeper
 	DistrKeeper      distrkeeper.Keeper
@@ -207,18 +207,19 @@ func NewAppKeeper(
 		appKeepers.keys[feegrant.StoreKey],
 		appKeepers.AccountKeeper,
 	)
-	stakingKeeper := stakingkeeper.NewKeeper(
+	stakingKeeper := xplastakingkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[stakingtypes.StoreKey],
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.GetSubspace(stakingtypes.ModuleName),
+		&appKeepers.VolunteerKeeper,
 	)
 	appKeepers.MintKeeper = mintkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[minttypes.StoreKey],
 		appKeepers.GetSubspace(minttypes.ModuleName),
-		&stakingKeeper,
+		&appKeepers.StakingKeeper,
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		authtypes.FeeCollectorName,
@@ -229,14 +230,14 @@ func NewAppKeeper(
 		appKeepers.GetSubspace(distrtypes.ModuleName),
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
-		&stakingKeeper,
+		&appKeepers.StakingKeeper,
 		authtypes.FeeCollectorName,
 		modAccAddrs,
 	)
 	appKeepers.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[slashingtypes.StoreKey],
-		&stakingKeeper,
+		&appKeepers.StakingKeeper,
 		appKeepers.GetSubspace(slashingtypes.ModuleName),
 	)
 
@@ -249,7 +250,8 @@ func NewAppKeeper(
 
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
-	appKeepers.StakingKeeper = *stakingKeeper.SetHooks(
+	appKeepers.StakingKeeper = stakingKeeper
+	appKeepers.StakingKeeper.Keeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(appKeepers.DistrKeeper.Hooks(), appKeepers.SlashingKeeper.Hooks()),
 	)
 

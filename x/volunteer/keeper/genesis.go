@@ -22,9 +22,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	state := []*types.VolunteerValidator{}
 	for valAddress, validator := range volunteerValidators {
 		state = append(state, &types.VolunteerValidator{
-			Address:    valAddress,
-			Power:      validator.Power,
-			IsDeleting: validator.IsDeleting,
+			Address: valAddress,
+			Power:   validator.Power,
 		})
 	}
 

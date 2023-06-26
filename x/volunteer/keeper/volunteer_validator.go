@@ -2,7 +2,6 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/xpladev/xpla/x/volunteer/types"
 )
 
@@ -37,12 +36,11 @@ func (k Keeper) GetVolunteerValidators(ctx sdk.Context) (volunteerValidators map
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		valAddress := sdk.ValAddress(stakingtypes.AddressFromValidatorsKey(iterator.Key()))
 		bz := iterator.Value()
 		validator := types.VolunteerValidator{}
 		k.cdc.MustUnmarshal(bz, &validator)
 
-		volunteerValidators[valAddress.String()] = validator
+		volunteerValidators[validator.Address] = validator
 	}
 
 	return volunteerValidators

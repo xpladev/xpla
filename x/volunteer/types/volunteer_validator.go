@@ -6,12 +6,7 @@ import (
 
 func NewVolunteerValidator(valAddress sdk.ValAddress, power int64) VolunteerValidator {
 	return VolunteerValidator{
-		Address:    valAddress.String(),
-		Power:      power,
-		IsDeleting: false,
+		Address: valAddress.String(),
+		Power:   power,
 	}
-}
-
-func (vv *VolunteerValidator) Delete() {
-	vv.IsDeleting = true
 }

@@ -1,10 +1,7 @@
 package keeper
 
 import (
-	"fmt"
-
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -104,82 +101,4 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 
 	return nil
 
-}
-
-// perform all the store operations for when a validator status becomes bonded
-func (k Keeper) bondValidator(ctx sdk.Context, validator stakingtypes.Validator) (stakingtypes.Validator, error) {
-	// delete the validator by power index, as the key will change
-	k.stakingKeeper.DeleteValidatorByPowerIndex(ctx, validator)
-
-	validator = validator.UpdateStatus(stakingtypes.Bonded)
-
-	// save the now bonded validator record to the two referenced stores
-	k.stakingKeeper.SetValidator(ctx, validator)
-	k.stakingKeeper.SetValidatorByPowerIndex(ctx, validator)
-
-	// delete from queue if present
-	k.stakingKeeper.DeleteValidatorQueue(ctx, validator)
-
-	// trigger hook
-	consAddr, err := validator.GetConsAddr()
-	if err != nil {
-		return validator, err
-	}
-	k.stakingKeeper.AfterValidatorBonded(ctx, consAddr, validator.GetOperator())
-
-	return validator, err
-}
-
-// perform all the store operations for when a validator begins unbonding
-func (k Keeper) beginUnbondingValidator(ctx sdk.Context, validator stakingtypes.Validator) (stakingtypes.Validator, error) {
-	params := k.stakingKeeper.GetParams(ctx)
-
-	// delete the validator by power index, as the key will change
-	k.stakingKeeper.DeleteValidatorByPowerIndex(ctx, validator)
-
-	// sanity check
-	if validator.Status != stakingtypes.Bonded {
-		panic(fmt.Sprintf("should not already be unbonded or unbonding, validator: %v\n", validator))
-	}
-
-	validator = validator.UpdateStatus(stakingtypes.Unbonding)
-
-	// set the unbonding completion time and completion height appropriately
-	validator.UnbondingTime = ctx.BlockHeader().Time.Add(params.UnbondingTime)
-	validator.UnbondingHeight = ctx.BlockHeader().Height
-
-	// save the now unbonded validator record and power index
-	k.stakingKeeper.SetValidator(ctx, validator)
-	k.stakingKeeper.SetValidatorByPowerIndex(ctx, validator)
-
-	// Adds to unbonding validator queue
-	k.stakingKeeper.InsertUnbondingValidatorQueue(ctx, validator)
-
-	// trigger hook
-	consAddr, err := validator.GetConsAddr()
-	if err != nil {
-		return validator, err
-	}
-	k.stakingKeeper.AfterValidatorBeginUnbonding(ctx, consAddr, validator.GetOperator())
-
-	return validator, nil
-}
-
-func (k Keeper) getValidatorInfo(ctx sdk.Context, strValAddress string) (sdk.ValAddress, stakingtypes.Validator, tmprotocrypto.PublicKey, error) {
-	valAddress, err := sdk.ValAddressFromBech32(strValAddress)
-	if err != nil {
-		return nil, stakingtypes.Validator{}, tmprotocrypto.PublicKey{}, sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "validator address (%s)", strValAddress)
-	}
-
-	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
-	if !found {
-		return nil, stakingtypes.Validator{}, tmprotocrypto.PublicKey{}, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "validator (%s)", valAddress.String())
-	}
-
-	tmProtoPk, err := validator.TmConsPublicKey()
-	if err != nil {
-		return nil, stakingtypes.Validator{}, tmprotocrypto.PublicKey{}, sdkerrors.Wrapf(sdkerrors.ErrInvalidPubKey, "validator (%s)", valAddress.String())
-	}
-
-	return valAddress, validator, tmProtoPk, nil
 }

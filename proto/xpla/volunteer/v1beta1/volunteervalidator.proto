@@ -15,7 +15,4 @@ message VolunteerValidator {
 
     // power defines the power of the validator.
     int64 power = 2;
-
-    // used when unregistering, reserved for delete
-    bool is_deleting = 3;
 }

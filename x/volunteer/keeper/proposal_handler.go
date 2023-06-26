@@ -47,7 +47,7 @@ func handlerUnregisterVolunteerValidatorProposal(ctx sdk.Context, k Keeper, p *t
 		return err
 	}
 
-	volunteerValidator, found := k.GetVolunteerValidator(ctx, valAddress)
+	_, found := k.GetVolunteerValidator(ctx, valAddress)
 	if !found {
 		return sdkerrors.Wrapf(sdkerrors.ErrNotFound, `volunteer validator (%s)`, valAddress.String())
 	}
@@ -58,12 +58,7 @@ func handlerUnregisterVolunteerValidatorProposal(ctx sdk.Context, k Keeper, p *t
 			return err
 		}
 
-		if !validator.IsJailed() && volunteerValidator.Power != 0 {
-			volunteerValidator.Delete()
-			k.SetVolunteerValidator(ctx, valAddress, volunteerValidator)
-		} else {
-			k.DeleteVolunteerValidator(ctx, valAddress)
-		}
+		k.DeleteVolunteerValidator(ctx, valAddress)
 	}
 
 	return nil
