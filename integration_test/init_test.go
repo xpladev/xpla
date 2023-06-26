@@ -9,9 +9,10 @@ import (
 
 const (
 	blocktime             = 2
-	proposalBlocks        = 5
-	jailBlocks            = 11
-	validatorActiveBlocks = 10
+	proposalBlocks        = 2
+	jailBlocks            = 5
+	validatorActiveBlocks = 3
+	downtimeJailDuration  = 20
 
 	xplaGeneralGasLimit  int64 = 240000
 	xplaCodeGasLimit     int64 = 5000000

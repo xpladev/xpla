@@ -1172,8 +1172,8 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			err := cmd.Run()
 			assert.NoError(t.T(), err)
 
-			fmt.Println("Wait enough time(70sec) to replay the blocks and spend downtime_jail_duration...")
-			time.Sleep(time.Second * 70)
+			fmt.Println("Wait enough time(20sec) to replay the blocks and spend downtime_jail_duration...")
+			time.Sleep(time.Second * downtimeJailDuration)
 
 			unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
 
@@ -1386,8 +1386,8 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			err := cmd.Run()
 			assert.NoError(t.T(), err)
 
-			fmt.Println("Wait enough time(70sec) to replay the blocks and spend downtime_jail_duration...")
-			time.Sleep(time.Second * 70)
+			fmt.Println("Wait enough time(20sec) to replay the blocks and spend downtime_jail_duration...")
+			time.Sleep(time.Second * downtimeJailDuration)
 
 			unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
 
