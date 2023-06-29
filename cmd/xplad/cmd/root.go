@@ -24,6 +24,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/prometheus/client_golang/prometheus"
@@ -110,6 +111,7 @@ func initAppConfig() (string, interface{}) {
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
 			sdk.MsgTypeURL(&ibcclienttypes.MsgUpdateClient{}),
+			sdk.MsgTypeURL(&ibctransfertypes.MsgTransfer{}),
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgTimeout{}),
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgTimeoutOnClose{}),
 		},
