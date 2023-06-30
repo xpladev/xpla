@@ -18,6 +18,8 @@ import (
 	evmante "github.com/evmos/ethermint/app/ante"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
+
+	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
@@ -28,6 +30,7 @@ type HandlerOptions struct {
 	IBCKeeper       *ibckeeper.Keeper
 	EvmKeeper       evmante.EVMKeeper
 	FeegrantKeeper  authante.FeegrantKeeper
+	VolunteerKeeper volunteerkeeper.Keeper
 	SignModeHandler authsigning.SignModeHandler
 	SigGasConsumer  authante.SignatureVerificationGasConsumer
 	FeeMarketKeeper evmtypes.FeeMarketKeeper
@@ -117,6 +120,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
 		),
+		NewRejectDelegateVolunteerValidatorDecorator(opts.VolunteerKeeper),
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),

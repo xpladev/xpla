@@ -26,7 +26,7 @@ func registerQueryRoutes(clientCtx client.Context, r *mux.Router) {
 	).Methods(http.MethodGet)
 }
 
-// HTTP request handler to query the distribution params values
+// HTTP request handler to query the reward params values
 func paramsHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clientCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, clientCtx, r)

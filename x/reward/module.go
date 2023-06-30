@@ -83,7 +83,7 @@ func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
-// AppModule implements an application module for the distribution module.
+// AppModule implements an application module for the reward module.
 type AppModule struct {
 	AppModuleBasic
 

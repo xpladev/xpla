@@ -42,6 +42,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
+	volunteerclient "github.com/xpladev/xpla/x/volunteer/client"
 
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 
@@ -56,7 +57,7 @@ import (
 
 	aligngasprice "github.com/xpladev/xpla/app/upgrades/align_gas_price"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
-	"github.com/xpladev/xpla/app/upgrades/v1_3"
+	"github.com/xpladev/xpla/app/upgrades/volunteer"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 )
 
@@ -122,6 +123,8 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
 	)
+
+	govProposalHandlers = append(govProposalHandlers, volunteerclient.ProposalHandler...)
 
 	return govProposalHandlers
 }
@@ -256,6 +259,7 @@ func NewXplaApp(
 			EvmKeeper:            app.EvmKeeper,
 			FeeMarketKeeper:      app.FeeMarketKeeper,
 			FeegrantKeeper:       app.FeeGrantKeeper,
+			VolunteerKeeper:      app.VolunteerKeeper,
 			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
 			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
 			IBCKeeper:            app.IBCKeeper,
@@ -426,10 +430,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 		aligngasprice.CreateUpgradeHandler(app.mm, app.configurator, app.FeeMarketKeeper),
 	)
 
-	// v1_3 upgrade handler
+	// Volunteer upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
-		v1_3.UpgradeName,
-		v1_3.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
+		volunteer.UpgradeName,
+		volunteer.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
 	)
 
 	// When a planned update height is reached, the old binary will panic
@@ -457,8 +461,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 		}
 	case aligngasprice.UpgradeName:
 		// no store upgrade in align gas price
-	case v1_3.UpgradeName:
-		// no store upgrade in v1_3
+	case volunteer.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: volunteer.AddModules,
+		}
 	}
 
 	if storeUpgrades != nil {

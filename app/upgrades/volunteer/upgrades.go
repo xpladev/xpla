@@ -1,4 +1,4 @@
-package v1_3
+package volunteer
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"

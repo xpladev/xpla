@@ -19,7 +19,7 @@ jobs:
         mkdir ~/genesis
         cd integration_test && docker-compose up -d
         docker ps
-        sleep 10
+        sleep 20
 
     - name: Set up Go
       uses: actions/setup-go@v3

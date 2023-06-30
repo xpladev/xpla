@@ -54,6 +54,9 @@ import (
 	xplaevm "github.com/xpladev/xpla/x/evm"
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
+	xplastaking "github.com/xpladev/xpla/x/staking"
+	"github.com/xpladev/xpla/x/volunteer"
+	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
 // module account permissions
@@ -103,6 +106,7 @@ var ModuleBasics = module.NewBasicManager(
 	evm.AppModuleBasic{},
 	feemarket.AppModuleBasic{},
 	reward.AppModuleBasic{},
+	volunteer.AppModuleBasic{},
 )
 
 func appModules(
@@ -128,7 +132,7 @@ func appModules(
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		xplastaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		upgrade.NewAppModule(app.UpgradeKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
@@ -143,6 +147,7 @@ func appModules(
 		xplaevm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
+		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 	}
 }
 
@@ -176,6 +181,7 @@ func orderBeginBlockers() []string {
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		rewardtypes.ModuleName,
+		volunteertypes.ModuleName,
 	}
 }
 
@@ -206,6 +212,7 @@ func orderEndBlockers() []string {
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
+		volunteertypes.ModuleName,
 	}
 }
 
@@ -239,5 +246,6 @@ func orderInitBlockers() []string {
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
 		rewardtypes.ModuleName,
+		volunteertypes.ModuleName,
 	}
 }

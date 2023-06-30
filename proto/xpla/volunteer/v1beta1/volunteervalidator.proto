@@ -1,0 +1,18 @@
+syntax = "proto3";
+package xpla.volunteer.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/volunteer/types";
+
+import "gogoproto/gogo.proto";
+
+// VolunteerValidator required for validator set update logic.
+message VolunteerValidator {
+    option (gogoproto.equal)           = false;
+    option (gogoproto.goproto_getters) = false;
+  
+    // address is the address of the validator.
+    string address = 1;
+
+    // power defines the power of the validator.
+    int64 power = 2;
+}

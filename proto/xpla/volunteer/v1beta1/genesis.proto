@@ -1,0 +1,12 @@
+syntax = "proto3";
+package xpla.volunteer.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/volunteer/types";
+
+import "gogoproto/gogo.proto";
+import "xpla/volunteer/v1beta1/volunteervalidator.proto";
+
+// GenesisState defines the volunteer module's genesis state.
+message GenesisState {
+  repeated VolunteerValidator volunteer_validators = 1;
+}
