@@ -55,7 +55,6 @@ import (
 	"github.com/xpladev/xpla/app/keepers"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 
-	aligngasprice "github.com/xpladev/xpla/app/upgrades/align_gas_price"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
@@ -424,12 +423,6 @@ func (app *XplaApp) setUpgradeHandlers() {
 		evmupgrade.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.FeeMarketKeeper),
 	)
 
-	// align gas price upgrade handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		aligngasprice.UpgradeName,
-		aligngasprice.CreateUpgradeHandler(app.mm, app.configurator, app.FeeMarketKeeper),
-	)
-
 	// Volunteer upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		volunteer.UpgradeName,
@@ -459,8 +452,6 @@ func (app *XplaApp) setUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: evmupgrade.AddModules,
 		}
-	case aligngasprice.UpgradeName:
-		// no store upgrade in align gas price
 	case volunteer.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: volunteer.AddModules,
