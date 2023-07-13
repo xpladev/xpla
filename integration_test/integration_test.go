@@ -452,15 +452,36 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 	///   - Big enough max validator
 	///   - 4 general validators, 1 volunteer validator
 	/// Test
-	///   - Try delegate
-	///   - Try redelegate
-	///   - Try undelegate
+	///   - Try operator wallet delegate
+	///	  - Try other wallet delegate
+	///   - Try operator wallet redelegate
+	///   - Try other wallet redelegate
+	///   - Try operator wallet undelegate
 	/// Assertion
 	///   - All trials should fail
 
 	{
 		{
-			fmt.Println("Try delegation and should fail...")
+			fmt.Println("Try operator wallet delegation and should success...")
+
+			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
+
+			delegationMsg := stakingtype.NewMsgDelegate(
+				t.VolunteerValidatorWallet1.ByteAddress,
+				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+				coin,
+			)
+
+			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
+			assert.NoError(t.T(), err)
+
+		}
+
+		{
+			fmt.Println("Try other wallet delegation and should fail...")
 
 			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
@@ -483,7 +504,26 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		}
 
 		{
-			fmt.Println("Try redelegation and should fail...")
+			fmt.Println("Try operator wallet redelegation and should success...")
+
+			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
+
+			redelegationMsg := stakingtype.NewMsgBeginRedelegate(
+				t.VolunteerValidatorWallet1.ByteAddress,
+				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+				t.ValidatorWallet1.ByteAddress.Bytes(),
+				coin,
+			)
+
+			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
+			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			assert.NoError(t.T(), err)
+		}
+
+		{
+			fmt.Println("Try other wallet redelegation and should fail...")
 
 			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
@@ -507,7 +547,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		}
 
 		{
-			fmt.Println("Try undelegation and should fail...")
+			fmt.Println("Try operator wallet undelegation and should success...")
 
 			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
@@ -520,13 +560,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
-			txhash, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
-			if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
-				fmt.Println("Expected failure is occurred.")
-			} else {
-				fmt.Println("Tx sent. Test fail")
-				t.T().Fail()
-			}
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			assert.NoError(t.T(), err)
 		}
 	}
 
