@@ -24,6 +24,24 @@
   
     - [Msg](#xpla.reward.v1beta1.Msg)
   
+- [xpla/volunteer/v1beta1/volunteervalidator.proto](#xpla/volunteer/v1beta1/volunteervalidator.proto)
+    - [VolunteerValidator](#xpla.volunteer.v1beta1.VolunteerValidator)
+  
+- [xpla/volunteer/v1beta1/genesis.proto](#xpla/volunteer/v1beta1/genesis.proto)
+    - [GenesisState](#xpla.volunteer.v1beta1.GenesisState)
+  
+- [xpla/volunteer/v1beta1/proposal.proto](#xpla/volunteer/v1beta1/proposal.proto)
+    - [RegisterVolunteerValidatorProposal](#xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposal)
+    - [RegisterVolunteerValidatorProposalWithDeposit](#xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposalWithDeposit)
+    - [UnregisterVolunteerValidatorProposal](#xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposal)
+    - [UnregisterVolunteerValidatorProposalWithDeposit](#xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposalWithDeposit)
+  
+- [xpla/volunteer/v1beta1/query.proto](#xpla/volunteer/v1beta1/query.proto)
+    - [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest)
+    - [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse)
+  
+    - [Query](#xpla.volunteer.v1beta1.Query)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -221,6 +239,214 @@ Msg defines the reawrd Msg service.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `FundFeeCollector` | [MsgFundFeeCollector](#xpla.reward.v1beta1.MsgFundFeeCollector) | [MsgFundFeeCollectorResponse](#xpla.reward.v1beta1.MsgFundFeeCollectorResponse) | FundFeeCollector defines a method to allow an account to directly fund the fee collector. | |
+
+ <!-- end services -->
+
+
+
+<a name="xpla/volunteer/v1beta1/volunteervalidator.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/volunteer/v1beta1/volunteervalidator.proto
+
+
+
+<a name="xpla.volunteer.v1beta1.VolunteerValidator"></a>
+
+### VolunteerValidator
+VolunteerValidator required for validator set update logic.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `address` | [string](#string) |  | address is the address of the validator. |
+| `power` | [int64](#int64) |  | power defines the power of the validator. |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/volunteer/v1beta1/genesis.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/volunteer/v1beta1/genesis.proto
+
+
+
+<a name="xpla.volunteer.v1beta1.GenesisState"></a>
+
+### GenesisState
+GenesisState defines the volunteer module's genesis state.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `volunteer_validators` | [VolunteerValidator](#xpla.volunteer.v1beta1.VolunteerValidator) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/volunteer/v1beta1/proposal.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/volunteer/v1beta1/proposal.proto
+
+
+
+<a name="xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposal"></a>
+
+### RegisterVolunteerValidatorProposal
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
+| `delegator_address` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposalWithDeposit"></a>
+
+### RegisterVolunteerValidatorProposalWithDeposit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
+| `delegator_address` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `deposit` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposal"></a>
+
+### UnregisterVolunteerValidatorProposal
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposalWithDeposit"></a>
+
+### UnregisterVolunteerValidatorProposalWithDeposit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `deposit` | [string](#string) |  |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/volunteer/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/volunteer/v1beta1/query.proto
+
+
+
+<a name="xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest"></a>
+
+### QueryVolunteerValidatorsRequest
+
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse"></a>
+
+### QueryVolunteerValidatorsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `volunteer_validators` | [string](#string) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="xpla.volunteer.v1beta1.Query"></a>
+
+### Query
+Query defines the gRPC querier service for volunteer module.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `VolunteerValidators` | [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest) | [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse) |  | GET|/xpla/volun/v1beta1/validators|
 
  <!-- end services -->
 
