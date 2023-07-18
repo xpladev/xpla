@@ -19,6 +19,9 @@ func NewRejectDelegateVolunteerValidatorDecorator(vk volunteerkeeper.Keeper) Rej
 }
 
 func (rdvvd RejectDelegateVolunteerValidatorDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	if ctx.GasMeter().Limit() == 0 && simulate {
+		return next(ctx, tx, simulate)
+	}
 
 	for _, msg := range tx.GetMsgs() {
 		switch msg := msg.(type) {
