@@ -120,7 +120,7 @@ proto-format:
 	find ./ -name *.proto -exec clang-format -i {} \;
 
 proto-swagger-gen:
-	@./scripts/protoc-swagger-gen.sh
+	@./scripts/protoc-swagger-openapi-gen.sh
 
 proto-lint:
 	@$(DOCKER_BUF) lint --error-format=json
