@@ -495,7 +495,14 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
-			if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
+			assert.NoError(t.T(), err)
+
+			queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+			_, err = queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+				Hash: txhash,
+			})
+
+			if assert.Error(t.T(), err) {
 				fmt.Println("Expected failure is occurred.")
 			} else {
 				fmt.Println("Tx sent. Test fail")
