@@ -9,7 +9,7 @@ option go_package = "github.com/xpladev/xpla/x/volunteer/types";
 // Query defines the gRPC querier service for volunteer module.
 service Query {
     rpc VolunteerValidators(QueryVolunteerValidatorsRequest) returns (QueryVolunteerValidatorsResponse) {
-      option (google.api.http).get = "/xpla/volun/v1beta1/validators";
+      option (google.api.http).get = "/xpla/volunteer/v1beta1/validators";
     }
 }
 
