@@ -66,6 +66,9 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	"github.com/evmos/evmos/v9/x/erc20"
+	erc20keeper "github.com/evmos/evmos/v9/x/erc20/keeper"
+	erc20types "github.com/evmos/evmos/v9/x/erc20/types"
 	"github.com/strangelove-ventures/packet-forward-middleware/v4/router"
 	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/v4/router/keeper"
 	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v4/router/types"
@@ -120,6 +123,7 @@ type AppKeepers struct {
 
 	EvmKeeper       *evmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
+	Erc20Keeper     erc20keeper.Keeper
 }
 
 var (
@@ -331,6 +335,7 @@ func NewAppKeeper(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(appKeepers.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(appKeepers.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(appKeepers.IBCKeeper.ClientKeeper)).
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&appKeepers.Erc20Keeper)).
 		AddRoute(volunteertypes.RouterKey, volunteerkeeper.NewVolunteerValidatorProposalHandler(appKeepers.VolunteerKeeper))
 
 	// register wasm gov proposal types
@@ -366,6 +371,17 @@ func NewAppKeeper(
 		&stakingKeeper,
 		appKeepers.FeeMarketKeeper,
 		evmTrace,
+	)
+
+	appKeepers.Erc20Keeper = erc20keeper.NewKeeper(
+		appKeepers.keys[erc20types.StoreKey], appCodec, appKeepers.GetSubspace(erc20types.ModuleName),
+		appKeepers.AccountKeeper, appKeepers.BankKeeper, appKeepers.EvmKeeper,
+	)
+
+	appKeepers.EvmKeeper = appKeepers.EvmKeeper.SetHooks(
+		evmkeeper.NewMultiEvmHooks(
+			appKeepers.Erc20Keeper.Hooks(),
+		),
 	)
 
 	// RouterKeeper must be created before TransferKeeper
@@ -508,6 +524,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(evmtypes.ModuleName)
+	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(volunteertypes.ModuleName)
 

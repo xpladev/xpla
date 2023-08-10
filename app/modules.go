@@ -48,6 +48,8 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/evmos/ethermint/x/feemarket"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	"github.com/evmos/evmos/v9/x/erc20"
+	erc20types "github.com/evmos/evmos/v9/x/erc20/types"
 	"github.com/strangelove-ventures/packet-forward-middleware/v4/router"
 	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v4/router/types"
 	xplaparams "github.com/xpladev/xpla/app/params"
@@ -72,6 +74,7 @@ var maccPerms = map[string][]string{
 	ibcfeetypes.ModuleName:         nil,
 	wasm.ModuleName:                {authtypes.Burner},
 	evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
+	erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	rewardtypes.ModuleName:         nil,
 }
 
@@ -102,6 +105,7 @@ var ModuleBasics = module.NewBasicManager(
 	vesting.AppModuleBasic{},
 	router.AppModuleBasic{},
 	ica.AppModuleBasic{},
+	erc20.AppModuleBasic{},
 	wasm.AppModuleBasic{},
 	evm.AppModuleBasic{},
 	feemarket.AppModuleBasic{},
@@ -146,6 +150,7 @@ func appModules(
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		xplaevm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
+		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 	}
@@ -180,6 +185,7 @@ func orderBeginBlockers() []string {
 		wasm.ModuleName,
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
+		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
@@ -211,6 +217,7 @@ func orderEndBlockers() []string {
 		wasm.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
+		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
@@ -245,6 +252,7 @@ func orderInitBlockers() []string {
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		wasm.ModuleName,
+		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}

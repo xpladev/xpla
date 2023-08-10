@@ -49,12 +49,15 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/prometheus/client_golang/prometheus"
 
+	erc20client "github.com/evmos/evmos/v9/x/erc20/client"
+
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/docs"
 
+	erc20upgrade "github.com/xpladev/xpla/app/upgrades/erc20"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
@@ -121,6 +124,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		upgradeclient.CancelProposalHandler,
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
+		erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler, erc20client.ToggleTokenConversionProposalHandler,
 	)
 
 	govProposalHandlers = append(govProposalHandlers, volunteerclient.ProposalHandler...)
@@ -419,6 +423,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 		volunteer.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
 	)
 
+	// ERC20 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		erc20upgrade.UpgradeName,
+		erc20upgrade.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -445,6 +455,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 	case volunteer.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: volunteer.AddModules,
+		}
+	case erc20upgrade.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: erc20upgrade.AddModules,
 		}
 	}
 
