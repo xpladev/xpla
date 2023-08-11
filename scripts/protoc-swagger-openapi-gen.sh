@@ -100,6 +100,9 @@ swagger-merger -i ./docs/_tmp_swagger.yaml -o ./docs/swagger.yaml
 # Derive openapi from swagger docs
 swagger2openapi --patch ./docs/swagger.yaml --outfile ./docs/static/openapi.yml --yaml  
 
+# Sort
+yaml-sort --input ./docs/static/openapi.yml
+
 # clean swagger tmp files
 rm ./docs/_tmp_swagger.yaml
 rm -rf ./tmp-swagger-gen

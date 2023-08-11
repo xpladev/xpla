@@ -49,23 +49,11 @@ for file in os.listdir(all_dir):
 
     for key in data["paths"]:
         output["paths"][key] = data["paths"][key]
+        for index in output["paths"][key]:
+            output["paths"][key][index]["tags"][0] = '/'.join(key.split('/')[1:4])
 
     for key in data["definitions"]:
         output["definitions"][key] = data["definitions"][key]
-
-
-# loop through all paths, then alter any keys which are "operationId" to be a random string of 20 characters
-# this is done to avoid duplicate keys in the final output (which opens 2 tabs in swagger-ui)
-# current-random
-for path in output["paths"]:
-    for method in output["paths"][path]:
-        if "operationId" in output["paths"][path][method]:
-            output["paths"][path][method][
-                "operationId"
-            ] = f'{output["paths"][path][method]["operationId"]}_' + "".join(
-                random.choices(string.ascii_uppercase + string.digits, k=5)
-            )
-
 
 # save output into 1 big json file
 with open(

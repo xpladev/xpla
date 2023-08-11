@@ -12,7 +12,7 @@ paths:
       summary: >-
         DelegatorDelegations queries all delegations of a given delegator
         address.
-      operationId: DelegatorDelegations_N7E5J
+      operationId: DelegatorDelegations
       responses:
         '200':
           description: A successful response.
@@ -348,11 +348,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations:
     get:
       summary: Redelegations queries redelegations of given address.
-      operationId: Redelegations_NGKJC
+      operationId: Redelegations
       responses:
         '200':
           description: A successful response.
@@ -760,7 +760,7 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations:
     get:
       summary: >-
@@ -768,7 +768,7 @@ paths:
         given
 
         delegator address.
-      operationId: DelegatorUnbondingDelegations_ZNJMX
+      operationId: DelegatorUnbondingDelegations
       responses:
         '200':
           description: A successful response.
@@ -1104,13 +1104,13 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/delegators/{delegator_addr}/validators:
     get:
       summary: |-
         DelegatorValidators queries all validators info for given delegator
         address.
-      operationId: DelegatorValidators_AYPOX
+      operationId: DelegatorValidators
       responses:
         '200':
           description: A successful response.
@@ -1709,13 +1709,13 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}:
     get:
       summary: |-
         DelegatorValidator queries validator info for given delegator validator
         pair.
-      operationId: DelegatorValidator_ZM10P
+      operationId: DelegatorValidator
       responses:
         '200':
           description: A successful response.
@@ -2239,11 +2239,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/historical_info/{height}:
     get:
       summary: HistoricalInfo queries the historical info for given height.
-      operationId: HistoricalInfo_ALVV6
+      operationId: HistoricalInfo
       responses:
         '200':
           description: A successful response.
@@ -2853,11 +2853,11 @@ paths:
           type: string
           format: int64
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/params:
     get:
       summary: Parameters queries the staking parameters.
-      operationId: Params_S4J9C
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -3086,11 +3086,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/pool:
     get:
       summary: Pool queries the pool info.
-      operationId: Pool_HNMUF
+      operationId: Pool
       responses:
         '200':
           description: A successful response.
@@ -3299,11 +3299,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/validators:
     get:
       summary: Validators queries all validators that match the given status.
-      operationId: Validators_82H7R
+      operationId: Validators
       responses:
         '200':
           description: A successful response.
@@ -3902,11 +3902,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/validators/{validator_addr}:
     get:
       summary: Validator queries validator info for given validator address.
-      operationId: Validator_WEB96
+      operationId: Validator
       responses:
         '200':
           description: A successful response.
@@ -4425,11 +4425,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/validators/{validator_addr}/delegations:
     get:
       summary: ValidatorDelegations queries delegate info for given validator.
-      operationId: ValidatorDelegations_E6SYE
+      operationId: ValidatorDelegations
       responses:
         '200':
           description: A successful response.
@@ -4762,11 +4762,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}:
     get:
       summary: Delegation queries delegate info for given validator delegator pair.
-      operationId: Delegation_507XL
+      operationId: Delegation
       responses:
         '200':
           description: A successful response.
@@ -5028,13 +5028,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation:
     get:
       summary: |-
         UnbondingDelegation queries unbonding info for given validator delegator
         pair.
-      operationId: UnbondingDelegation_I1YV3
+      operationId: UnbondingDelegation
       responses:
         '200':
           description: A successful response.
@@ -5297,13 +5297,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations:
     get:
       summary: >-
         ValidatorUnbondingDelegations queries unbonding delegations of a
         validator.
-      operationId: ValidatorUnbondingDelegations_8F05K
+      operationId: ValidatorUnbondingDelegations
       responses:
         '200':
           description: A successful response.
@@ -5639,11 +5639,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/staking/v1beta1
   /cosmos/authz/v1beta1/grants:
     get:
       summary: Returns list of `Authorization`, granted to the grantee by the granter.
-      operationId: Grants_4LUG3
+      operationId: Grants
       responses:
         '200':
           description: A successful response.
@@ -6130,12 +6130,12 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/authz/v1beta1
   /cosmos/authz/v1beta1/grants/grantee/{grantee}:
     get:
       summary: GranteeGrants returns a list of `GrantAuthorization` by grantee.
       description: 'Since: cosmos-sdk 0.45.2'
-      operationId: GranteeGrants_VJU67
+      operationId: GranteeGrants
       responses:
         '200':
           description: A successful response.
@@ -6616,12 +6616,12 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/authz/v1beta1
   /cosmos/authz/v1beta1/grants/granter/{granter}:
     get:
       summary: GranterGrants returns list of `GrantAuthorization`, granted by granter.
       description: 'Since: cosmos-sdk 0.45.2'
-      operationId: GranterGrants_QXYVY
+      operationId: GranterGrants
       responses:
         '200':
           description: A successful response.
@@ -7102,12 +7102,12 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/authz/v1beta1
   /cosmos/auth/v1beta1/accounts:
     get:
       summary: Accounts returns all the existing accounts
       description: 'Since: cosmos-sdk 0.43'
-      operationId: Accounts_AG885
+      operationId: Accounts
       responses:
         '200':
           description: A successful response.
@@ -7569,11 +7569,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/auth/v1beta1
   /cosmos/auth/v1beta1/accounts/{address}:
     get:
       summary: Account returns account details based on address.
-      operationId: Account_N0DGU
+      operationId: Account
       responses:
         '200':
           description: A successful response.
@@ -7956,11 +7956,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/auth/v1beta1
   /cosmos/auth/v1beta1/module_accounts/{name}:
     get:
       summary: ModuleAccountByName returns the module account info by module name
-      operationId: ModuleAccountByName_SQ4O1
+      operationId: ModuleAccountByName
       responses:
         '200':
           description: A successful response.
@@ -8342,11 +8342,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/auth/v1beta1
   /cosmos/auth/v1beta1/params:
     get:
       summary: Params queries all parameters.
-      operationId: Params_HKACB
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -8568,11 +8568,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/auth/v1beta1
   /ibc/apps/interchain_accounts/host/v1/params:
     get:
       summary: Params queries all parameters of the ICA host submodule.
-      operationId: Params_M5Z6L
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -8789,11 +8789,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ibc/apps/interchain_accounts
   /ibc/core/channel/v1/channels:
     get:
       summary: Channels queries all the IBC channels of a chain.
-      operationId: Channels_T9V6B
+      operationId: Channels
       responses:
         '200':
           description: A successful response.
@@ -9190,11 +9190,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}:
     get:
       summary: Channel queries an IBC Channel.
-      operationId: Channel_FVQSK
+      operationId: Channel
       responses:
         '200':
           description: A successful response.
@@ -9520,7 +9520,7 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state:
     get:
       summary: >-
@@ -9528,7 +9528,7 @@ paths:
         associated
 
         with the provided channel identifiers.
-      operationId: ChannelClientState_6ELZU
+      operationId: ChannelClientState
       responses:
         '200':
           description: A successful response.
@@ -9966,13 +9966,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}:
     get:
       summary: |-
         ChannelConsensusState queries for the consensus state for the channel
         associated with the provided channel identifiers.
-      operationId: ChannelConsensusState_HUOJR
+      operationId: ChannelConsensusState
       responses:
         '200':
           description: A successful response.
@@ -10409,13 +10409,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence:
     get:
       summary: >-
         NextSequenceReceive returns the next receive sequence for a given
         channel.
-      operationId: NextSequenceReceive_HDL1W
+      operationId: NextSequenceReceive
       responses:
         '200':
           description: A successful response.
@@ -10666,7 +10666,7 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements:
     get:
       summary: >-
@@ -10674,7 +10674,7 @@ paths:
         associated
 
         with a channel.
-      operationId: PacketAcknowledgements_ZO4XM
+      operationId: PacketAcknowledgements
       responses:
         '200':
           description: A successful response.
@@ -11039,11 +11039,11 @@ paths:
             format: uint64
           collectionFormat: multi
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}:
     get:
       summary: PacketAcknowledgement queries a stored packet acknowledgement hash.
-      operationId: PacketAcknowledgement_2W4BW
+      operationId: PacketAcknowledgement
       responses:
         '200':
           description: A successful response.
@@ -11304,13 +11304,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments:
     get:
       summary: |-
         PacketCommitments returns all the packet commitments hashes associated
         with a channel.
-      operationId: PacketCommitments_RRPWQ
+      operationId: PacketCommitments
       responses:
         '200':
           description: A successful response.
@@ -11666,7 +11666,7 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks:
     get:
       summary: >-
@@ -11674,7 +11674,7 @@ paths:
         associated
 
         with a channel and sequences.
-      operationId: UnreceivedAcks_06VMH
+      operationId: UnreceivedAcks
       responses:
         '200':
           description: A successful response.
@@ -11933,7 +11933,7 @@ paths:
           collectionFormat: csv
           minItems: 1
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets:
     get:
       summary: >-
@@ -11941,7 +11941,7 @@ paths:
         a
 
         channel and sequences.
-      operationId: UnreceivedPackets_7YZ1K
+      operationId: UnreceivedPackets
       responses:
         '200':
           description: A successful response.
@@ -12200,11 +12200,11 @@ paths:
           collectionFormat: csv
           minItems: 1
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}:
     get:
       summary: PacketCommitment queries a stored packet commitment hash.
-      operationId: PacketCommitment_1TQ3B
+      operationId: PacketCommitment
       responses:
         '200':
           description: A successful response.
@@ -12466,7 +12466,7 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}:
     get:
       summary: >-
@@ -12474,7 +12474,7 @@ paths:
         the
 
         queried chain
-      operationId: PacketReceipt_VPKUL
+      operationId: PacketReceipt
       responses:
         '200':
           description: A successful response.
@@ -12735,13 +12735,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/core/channel/v1/connections/{connection}/channels:
     get:
       summary: |-
         ConnectionChannels queries all the channels associated with a connection
         end.
-      operationId: ConnectionChannels_JWYLX
+      operationId: ConnectionChannels
       responses:
         '200':
           description: A successful response.
@@ -13143,11 +13143,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/channel
   /ibc/client/v1/params:
     get:
       summary: ClientParams queries all parameters of the ibc client.
-      operationId: ClientParams_0CHKD
+      operationId: ClientParams
       responses:
         '200':
           description: A successful response.
@@ -13363,11 +13363,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ibc/client/v1
   /ibc/core/client/v1/client_states:
     get:
       summary: ClientStates queries all the IBC light clients of a chain.
-      operationId: ClientStates_FJQX9
+      operationId: ClientStates
       responses:
         '200':
           description: A successful response.
@@ -13852,11 +13852,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/core/client/v1/client_states/{client_id}:
     get:
       summary: ClientState queries an IBC light client.
-      operationId: ClientState_MCWB7
+      operationId: ClientState
       responses:
         '200':
           description: A successful response.
@@ -14278,11 +14278,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/core/client/v1/client_status/{client_id}:
     get:
       summary: Status queries the status of an IBC client.
-      operationId: ClientStatus_DJPP3
+      operationId: ClientStatus
       responses:
         '200':
           description: A successful response.
@@ -14495,13 +14495,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/core/client/v1/consensus_states/{client_id}:
     get:
       summary: |-
         ConsensusStates queries all the consensus state associated with a given
         client.
-      operationId: ConsensusStates_67ZKA
+      operationId: ConsensusStates
       responses:
         '200':
           description: A successful response.
@@ -15015,13 +15015,13 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/core/client/v1/consensus_states/{client_id}/heights:
     get:
       summary: >-
         ConsensusStateHeights queries the height of every consensus states
         associated with a given client.
-      operationId: ConsensusStateHeights_L1XW4
+      operationId: ConsensusStateHeights
       responses:
         '200':
           description: A successful response.
@@ -15352,7 +15352,7 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}:
     get:
       summary: >-
@@ -15360,7 +15360,7 @@ paths:
         at
 
         a given height.
-      operationId: ConsensusState_EJ1ZM
+      operationId: ConsensusState
       responses:
         '200':
           description: A successful response.
@@ -15808,11 +15808,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/core/client/v1/upgraded_client_states:
     get:
       summary: UpgradedClientState queries an Upgraded IBC light client.
-      operationId: UpgradedClientState_67TFZ
+      operationId: UpgradedClientState
       responses:
         '200':
           description: A successful response.
@@ -16190,11 +16190,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/core/client/v1/upgraded_consensus_states:
     get:
       summary: UpgradedConsensusState queries an Upgraded IBC consensus state.
-      operationId: UpgradedConsensusState_EOVZK
+      operationId: UpgradedConsensusState
       responses:
         '200':
           description: A successful response.
@@ -16572,13 +16572,13 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ibc/core/client
   /ibc/apps/interchain_accounts/controller/v1/owners/{owner}/connections/{connection_id}:
     get:
       summary: >-
         InterchainAccount returns the interchain account address for a given
         owner address on a given connection
-      operationId: InterchainAccount_F8GKP
+      operationId: InterchainAccount
       responses:
         '200':
           description: A successful response.
@@ -16792,11 +16792,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/apps/interchain_accounts
   /ibc/apps/interchain_accounts/controller/v1/params:
     get:
       summary: Params queries all parameters of the ICA controller submodule.
-      operationId: Params_AY2BM
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -17008,11 +17008,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ibc/apps/interchain_accounts
   /cosmos/evidence/v1beta1/evidence:
     get:
       summary: AllEvidence queries all evidence.
-      operationId: AllEvidence_VFSZG
+      operationId: AllEvidence
       responses:
         '200':
           description: A successful response.
@@ -17473,11 +17473,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/evidence/v1beta1
   /cosmos/evidence/v1beta1/evidence/{evidence_hash}:
     get:
       summary: Evidence queries evidence based on evidence hash.
-      operationId: Evidence_E3MOW
+      operationId: Evidence
       responses:
         '200':
           description: A successful response.
@@ -17861,13 +17861,13 @@ paths:
           type: string
           format: byte
       tags:
-        - gRPC Gateway API
+        - cosmos/evidence/v1beta1
   /cosmos/params/v1beta1/params:
     get:
       summary: |-
         Params queries a specific parameter of a module, given its subspace and
         key.
-      operationId: Params_1HK7X
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -18091,11 +18091,11 @@ paths:
           required: false
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/params/v1beta1
   /cosmos/tx/v1beta1/simulate:
     post:
       summary: Simulate simulates executing a transaction for estimating gas usage.
-      operationId: Simulate_HN1P1
+      operationId: Simulate
       responses:
         '200':
           description: A successful response.
@@ -19404,11 +19404,11 @@ paths:
               SimulateRequest is the request type for the Service.Simulate
               RPC method.
       tags:
-        - gRPC Gateway API
+        - cosmos/tx/v1beta1
   /cosmos/tx/v1beta1/txs:
     get:
       summary: GetTxsEvent fetches txs by event.
-      operationId: GetTxsEvent_3M0WP
+      operationId: GetTxsEvent
       responses:
         '200':
           description: A successful response.
@@ -21071,10 +21071,10 @@ paths:
             - ORDER_BY_DESC
           default: ORDER_BY_UNSPECIFIED
       tags:
-        - gRPC Gateway API
+        - cosmos/tx/v1beta1
     post:
       summary: BroadcastTx broadcast transaction.
-      operationId: BroadcastTx_0EQ7W
+      operationId: BroadcastTx
       responses:
         '200':
           description: A successful response.
@@ -21637,12 +21637,12 @@ paths:
 
               RPC method.
       tags:
-        - gRPC Gateway API
+        - cosmos/tx/v1beta1
   /cosmos/tx/v1beta1/txs/block/{height}:
     get:
       summary: GetBlockWithTxs fetches a block with decoded txs.
       description: 'Since: cosmos-sdk 0.45.2'
-      operationId: GetBlockWithTxs_RIUY7
+      operationId: GetBlockWithTxs
       responses:
         '200':
           description: A successful response.
@@ -23515,11 +23515,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/tx/v1beta1
   /cosmos/tx/v1beta1/txs/{hash}:
     get:
       summary: GetTx fetches a tx by hash.
-      operationId: GetTx_4M2JM
+      operationId: GetTx
       responses:
         '200':
           description: A successful response.
@@ -25070,10 +25070,10 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/tx/v1beta1
   /xpla/volunteer/v1beta1/validators:
     get:
-      operationId: VolunteerValidators_UMZA1
+      operationId: VolunteerValidators
       responses:
         '200':
           description: A successful response.
@@ -25277,11 +25277,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - xpla/volunteer/v1beta1
   /cosmos/mint/v1beta1/annual_provisions:
     get:
       summary: AnnualProvisions current minting annual provisions value.
-      operationId: AnnualProvisions_NQJVF
+      operationId: AnnualProvisions
       responses:
         '200':
           description: A successful response.
@@ -25490,11 +25490,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/mint/v1beta1
   /cosmos/mint/v1beta1/inflation:
     get:
       summary: Inflation returns the current minting inflation value.
-      operationId: Inflation_FFQDX
+      operationId: Inflation
       responses:
         '200':
           description: A successful response.
@@ -25703,11 +25703,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/mint/v1beta1
   /cosmos/mint/v1beta1/params:
     get:
       summary: Params returns the total set of minting parameters.
-      operationId: Params_CXXI5
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -25933,11 +25933,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/mint/v1beta1
   /cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}:
     get:
       summary: Allowance returns fee granted to the grantee by the granter.
-      operationId: Allowance_T9PVR
+      operationId: Allowance
       responses:
         '200':
           description: A successful response.
@@ -26350,11 +26350,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/feegrant/v1beta1
   /cosmos/feegrant/v1beta1/allowances/{grantee}:
     get:
       summary: Allowances returns all the grants for address.
-      operationId: Allowances_N2A84
+      operationId: Allowances
       responses:
         '200':
           description: A successful response.
@@ -26835,13 +26835,13 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/feegrant/v1beta1
   /cosmos/feegrant/v1beta1/issued/{granter}:
     get:
       summary: |-
         AllowancesByGranter returns all the grants given by an address
         Since v0.46
-      operationId: AllowancesByGranter_FKEH1
+      operationId: AllowancesByGranter
       responses:
         '200':
           description: A successful response.
@@ -27322,11 +27322,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/feegrant/v1beta1
   /xpla/reward/v1beta1/params:
     get:
       summary: Params queries params of the reward module.
-      operationId: Params_SZMY5
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -27543,11 +27543,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - xpla/reward/v1beta1
   /xpla/reward/v1beta1/pool:
     get:
       summary: Pool queries the reward module pool coins.
-      operationId: Pool_6RRYE
+      operationId: Pool
       responses:
         '200':
           description: A successful response.
@@ -27768,11 +27768,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - xpla/reward/v1beta1
   /cosmos/upgrade/v1beta1/applied_plan/{name}:
     get:
       summary: AppliedPlan queries a previously applied upgrade plan by its name.
-      operationId: AppliedPlan_SUUSE
+      operationId: AppliedPlan
       responses:
         '200':
           description: A successful response.
@@ -27987,11 +27987,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/upgrade/v1beta1
   /cosmos/upgrade/v1beta1/current_plan:
     get:
       summary: CurrentPlan queries the current upgrade plan.
-      operationId: CurrentPlan_KOLOA
+      operationId: CurrentPlan
       responses:
         '200':
           description: A successful response.
@@ -28424,12 +28424,12 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/upgrade/v1beta1
   /cosmos/upgrade/v1beta1/module_versions:
     get:
       summary: ModuleVersions queries the list of module versions from state.
       description: 'Since: cosmos-sdk 0.43'
-      operationId: ModuleVersions_Y8MWF
+      operationId: ModuleVersions
       responses:
         '200':
           description: A successful response.
@@ -28665,7 +28665,7 @@ paths:
           required: false
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/upgrade/v1beta1
   /cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}:
     get:
       summary: >-
@@ -28680,7 +28680,7 @@ paths:
         This rpc is deprecated now that IBC has its own replacement
 
         (https://github.com/cosmos/ibc-go/blob/2c880a22e9f9cc75f62b527ca94aa75ce1106001/proto/ibc/core/client/v1/query.proto#L54)
-      operationId: UpgradedConsensusState_1BWCX
+      operationId: UpgradedConsensusState
       responses:
         '200':
           description: A successful response.
@@ -28898,11 +28898,11 @@ paths:
           type: string
           format: int64
       tags:
-        - gRPC Gateway API
+        - cosmos/upgrade/v1beta1
   /cosmos/gov/v1beta1/params/{params_type}:
     get:
       summary: Params queries all parameters of the gov module.
-      operationId: Params_EVEGZ
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -29174,11 +29174,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/gov/v1beta1/proposals:
     get:
       summary: Proposals queries all proposals based on given status.
-      operationId: Proposals_YLBGE
+      operationId: Proposals
       responses:
         '200':
           description: A successful response.
@@ -29754,11 +29754,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/gov/v1beta1/proposals/{proposal_id}:
     get:
       summary: Proposal queries proposal details based on ProposalID.
-      operationId: Proposal_VBVO7
+      operationId: Proposal
       responses:
         '200':
           description: A successful response.
@@ -30223,11 +30223,11 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/gov/v1beta1/proposals/{proposal_id}/deposits:
     get:
       summary: Deposits queries all deposits of a single proposal.
-      operationId: Deposits_HWLPL
+      operationId: Deposits
       responses:
         '200':
           description: A successful response.
@@ -30544,13 +30544,13 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}:
     get:
       summary: >-
         Deposit queries single deposit information based proposalID,
         depositAddr.
-      operationId: Deposit_3ITMN
+      operationId: Deposit
       responses:
         '200':
           description: A successful response.
@@ -30795,11 +30795,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/gov/v1beta1/proposals/{proposal_id}/tally:
     get:
       summary: TallyResult queries the tally of a proposal vote.
-      operationId: TallyResult_TUPVD
+      operationId: TallyResult
       responses:
         '200':
           description: A successful response.
@@ -31023,11 +31023,11 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/gov/v1beta1/proposals/{proposal_id}/votes:
     get:
       summary: Votes queries votes of a given proposal.
-      operationId: Votes_6307L
+      operationId: Votes
       responses:
         '200':
           description: A successful response.
@@ -31377,11 +31377,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}:
     get:
       summary: Vote queries voted information based on proposalID, voterAddr.
-      operationId: Vote_V4O6W
+      operationId: Vote
       responses:
         '200':
           description: A successful response.
@@ -31659,11 +31659,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/gov/v1beta1
   /cosmos/base/node/v1beta1/config:
     get:
       summary: Config queries for the operator configuration.
-      operationId: Config_PLT5D
+      operationId: Config
       responses:
         '200':
           description: A successful response.
@@ -31868,11 +31868,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/base/node
   /ibc/apps/router/v1/params:
     get:
       summary: Params queries all parameters of the router module.
-      operationId: Params_DNXTB
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -32081,13 +32081,13 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ibc/apps/router
   /inter-tx/interchain_account/owner/{owner}/connection/{connection_id}:
     get:
       summary: >-
         QueryInterchainAccount returns the interchain account for given owner
         address on a given connection pair
-      operationId: InterchainAccount_L0UID
+      operationId: InterchainAccount
       responses:
         '200':
           description: A successful response.
@@ -32301,11 +32301,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - inter-tx/interchain_account/owner
   /cosmos/base/tendermint/v1beta1/blocks/latest:
     get:
       summary: GetLatestBlock returns the latest block.
-      operationId: GetLatestBlock_OO549
+      operationId: GetLatestBlock
       responses:
         '200':
           description: A successful response.
@@ -33062,11 +33062,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/base/tendermint
   /cosmos/base/tendermint/v1beta1/blocks/{height}:
     get:
       summary: GetBlockByHeight queries block for given height.
-      operationId: GetBlockByHeight_A6SRE
+      operationId: GetBlockByHeight
       responses:
         '200':
           description: A successful response.
@@ -33829,11 +33829,11 @@ paths:
           type: string
           format: int64
       tags:
-        - gRPC Gateway API
+        - cosmos/base/tendermint
   /cosmos/base/tendermint/v1beta1/node_info:
     get:
       summary: GetNodeInfo queries the current node info.
-      operationId: GetNodeInfo_ABBAR
+      operationId: GetNodeInfo
       responses:
         '200':
           description: A successful response.
@@ -34105,11 +34105,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/base/tendermint
   /cosmos/base/tendermint/v1beta1/syncing:
     get:
       summary: GetSyncing queries node syncing.
-      operationId: GetSyncing_VZE96
+      operationId: GetSyncing
       responses:
         '200':
           description: A successful response.
@@ -34314,11 +34314,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/base/tendermint
   /cosmos/base/tendermint/v1beta1/validatorsets/latest:
     get:
       summary: GetLatestValidatorSet queries latest validator-set.
-      operationId: GetLatestValidatorSet_J07QO
+      operationId: GetLatestValidatorSet
       responses:
         '200':
           description: A successful response.
@@ -34793,11 +34793,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/base/tendermint
   /cosmos/base/tendermint/v1beta1/validatorsets/{height}:
     get:
       summary: GetValidatorSetByHeight queries validator-set at a given height.
-      operationId: GetValidatorSetByHeight_H0ME1
+      operationId: GetValidatorSetByHeight
       responses:
         '200':
           description: A successful response.
@@ -35277,11 +35277,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/base/tendermint
   /cosmwasm/wasm/v1/code:
     get:
       summary: Codes gets the metadata for all stored wasm codes
-      operationId: Codes_DMA8J
+      operationId: Codes
       responses:
         '200':
           description: A successful response.
@@ -35604,11 +35604,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/code/{code_id}:
     get:
       summary: Code gets the binary code and metadata for a singe wasm code
-      operationId: Code_RCNLO
+      operationId: Code
       responses:
         '200':
           description: A successful response.
@@ -35863,11 +35863,11 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/code/{code_id}/contracts:
     get:
       summary: ContractsByCode lists all smart contracts for a code id
-      operationId: ContractsByCode_KAU1N
+      operationId: ContractsByCode
       responses:
         '200':
           description: A successful response.
@@ -36155,11 +36155,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/codes/params:
     get:
       summary: Params gets the module params
-      operationId: Params_T28JN
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -36415,11 +36415,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/codes/pinned:
     get:
       summary: PinnedCodes gets the pinned code ids
-      operationId: PinnedCodes_5ZHWG
+      operationId: PinnedCodes
       responses:
         '200':
           description: A successful response.
@@ -36702,11 +36702,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/contract/{address}:
     get:
       summary: ContractInfo gets the contract meta data
-      operationId: ContractInfo_I4DLJ
+      operationId: ContractInfo
       responses:
         '200':
           description: A successful response.
@@ -37135,11 +37135,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/contract/{address}/history:
     get:
       summary: ContractHistory gets the contract code history
-      operationId: ContractHistory_EJ8OI
+      operationId: ContractHistory
       responses:
         '200':
           description: A successful response.
@@ -37469,11 +37469,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/contract/{address}/raw/{query_data}:
     get:
       summary: RawContractState gets single key from the raw store data of a contract
-      operationId: RawContractState_3SOD7
+      operationId: RawContractState
       responses:
         '200':
           description: A successful response.
@@ -37691,11 +37691,11 @@ paths:
           type: string
           format: byte
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/contract/{address}/smart/{query_data}:
     get:
       summary: SmartContractState get smart query result from the contract
-      operationId: SmartContractState_55DHB
+      operationId: SmartContractState
       responses:
         '200':
           description: A successful response.
@@ -37914,11 +37914,11 @@ paths:
           type: string
           format: byte
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/contract/{address}/state:
     get:
       summary: AllContractState gets all raw store data for a single contract
-      operationId: AllContractState_WQRAV
+      operationId: AllContractState
       responses:
         '200':
           description: A successful response.
@@ -38215,11 +38215,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/contracts/creator/{creator_address}:
     get:
       summary: ContractsByCreator gets the contracts by creator
-      operationId: ContractsByCreator_5VO1C
+      operationId: ContractsByCreator
       responses:
         '200':
           description: A successful response.
@@ -38507,11 +38507,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmwasm/wasm/v1
   /ethermint/evm/v1/account/{address}:
     get:
       summary: Account queries an Ethereum account.
-      operationId: Account_6VXJO
+      operationId: Account
       responses:
         '200':
           description: A successful response.
@@ -38730,13 +38730,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/balances/{address}:
     get:
       summary: |-
         Balance queries the balance of a the EVM denomination for a single
         EthAccount.
-      operationId: Balance_UQF5V
+      operationId: Balance
       responses:
         '200':
           description: A successful response.
@@ -38948,7 +38948,7 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/base_fee:
     get:
       summary: >-
@@ -38956,7 +38956,7 @@ paths:
 
         it's similar to feemarket module's method, but also checks london
         hardfork status.
-      operationId: BaseFee_T9M7P
+      operationId: BaseFee
       responses:
         '200':
           description: A successful response.
@@ -39159,11 +39159,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/codes/{address}:
     get:
       summary: Code queries the balance of all coins for a single account.
-      operationId: Code_CJYPN
+      operationId: Code
       responses:
         '200':
           description: A successful response.
@@ -39376,11 +39376,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/cosmos_account/{address}:
     get:
       summary: CosmosAccount queries an Ethereum account's Cosmos Address.
-      operationId: CosmosAccount_BMS3K
+      operationId: CosmosAccount
       responses:
         '200':
           description: A successful response.
@@ -39602,11 +39602,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/estimate_gas:
     get:
       summary: EstimateGas implements the `eth_estimateGas` rpc api
-      operationId: EstimateGas_1U0PI
+      operationId: EstimateGas
       responses:
         '200':
           description: A successful response.
@@ -39824,11 +39824,11 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/eth_call:
     get:
       summary: EthCall implements the `eth_call` rpc api
-      operationId: EthCall_5J22G
+      operationId: EthCall
       responses:
         '200':
           description: A successful response.
@@ -40125,11 +40125,11 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/params:
     get:
       summary: Params queries the parameters of x/evm module.
-      operationId: Params_6N19V
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -40457,11 +40457,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/storage/{address}/{key}:
     get:
       summary: Storage queries the balance of all coins for a single account.
-      operationId: Storage_GA6GI
+      operationId: Storage
       responses:
         '200':
           description: A successful response.
@@ -40684,13 +40684,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/trace_block:
     get:
       summary: >-
         TraceBlock implements the `debug_traceBlockByNumber` and
         `debug_traceBlockByHash` rpc api
-      operationId: TraceBlock_7TCW4
+      operationId: TraceBlock
       responses:
         '200':
           description: A successful response.
@@ -41060,11 +41060,11 @@ paths:
           type: string
           format: date-time
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/trace_tx:
     get:
       summary: TraceTx implements the `debug_traceTransaction` rpc api
-      operationId: TraceTx_PXUSA
+      operationId: TraceTx
       responses:
         '200':
           description: A successful response.
@@ -41514,7 +41514,7 @@ paths:
           type: string
           format: date-time
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ethermint/evm/v1/validator_account/{cons_address}:
     get:
       summary: >-
@@ -41522,7 +41522,7 @@ paths:
         consensus
 
         Address.
-      operationId: ValidatorAccount_D7EGG
+      operationId: ValidatorAccount
       responses:
         '200':
           description: A successful response.
@@ -41744,13 +41744,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ethermint/evm/v1
   /ibc/apps/fee/v1/channels/{channel_id}/ports/{port_id}/fee_enabled:
     get:
       summary: >-
         FeeEnabledChannel returns true if the provided port and channel
         identifiers belong to a fee enabled channel
-      operationId: FeeEnabledChannel_2D6Q8
+      operationId: FeeEnabledChannel
       responses:
         '200':
           description: A successful response.
@@ -41967,11 +41967,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/channels/{channel_id}/ports/{port_id}/incentivized_packets:
     get:
       summary: Gets all incentivized packets for a specific channel
-      operationId: IncentivizedPacketsForChannel_BJ4BV
+      operationId: IncentivizedPacketsForChannel
       responses:
         '200':
           description: A successful response.
@@ -42352,13 +42352,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/channels/{channel_id}/relayers/{relayer}/counterparty_payee:
     get:
       summary: >-
         CounterpartyPayee returns the registered counterparty payee for forward
         relaying
-      operationId: CounterpartyPayee_3XQ9G
+      operationId: CounterpartyPayee
       responses:
         '200':
           description: A successful response.
@@ -42577,13 +42577,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/channels/{channel_id}/relayers/{relayer}/payee:
     get:
       summary: >-
         Payee returns the registered payee address for a specific channel given
         the relayer address
-      operationId: Payee_YWJ3Q
+      operationId: Payee
       responses:
         '200':
           description: A successful response.
@@ -42798,13 +42798,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/incentivized_packet:
     get:
       summary: >-
         IncentivizedPacket returns all packet fees for a packet given its
         identifier
-      operationId: IncentivizedPacket_337TS
+      operationId: IncentivizedPacket
       responses:
         '200':
           description: A successful response.
@@ -43132,13 +43132,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/total_ack_fees:
     get:
       summary: >-
         TotalAckFees returns the total acknowledgement fees for a packet given
         its identifier
-      operationId: TotalAckFees_O5DIO
+      operationId: TotalAckFees
       responses:
         '200':
           description: A successful response.
@@ -43376,13 +43376,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/total_recv_fees:
     get:
       summary: >-
         TotalRecvFees returns the total receive fees for a packet given its
         identifier
-      operationId: TotalRecvFees_PVZL7
+      operationId: TotalRecvFees
       responses:
         '200':
           description: A successful response.
@@ -43620,13 +43620,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/{packet_id.sequence}/total_timeout_fees:
     get:
       summary: >-
         TotalTimeoutFees returns the total timeout fees for a packet given its
         identifier
-      operationId: TotalTimeoutFees_EMIPV
+      operationId: TotalTimeoutFees
       responses:
         '200':
           description: A successful response.
@@ -43864,11 +43864,11 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/fee_enabled:
     get:
       summary: FeeEnabledChannels returns a list of all fee enabled channels
-      operationId: FeeEnabledChannels_YPJ51
+      operationId: FeeEnabledChannels
       responses:
         '200':
           description: A successful response.
@@ -44149,13 +44149,13 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /ibc/apps/fee/v1/incentivized_packets:
     get:
       summary: >-
         IncentivizedPackets returns all incentivized packets and their
         associated fees
-      operationId: IncentivizedPackets_RTEG6
+      operationId: IncentivizedPackets
       responses:
         '200':
           description: A successful response.
@@ -44528,11 +44528,11 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/apps/fee
   /cosmos/distribution/v1beta1/community_pool:
     get:
       summary: CommunityPool queries the community pool coins.
-      operationId: CommunityPool_43IMV
+      operationId: CommunityPool
       responses:
         '200':
           description: A successful response.
@@ -44756,13 +44756,13 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards:
     get:
       summary: |-
         DelegationTotalRewards queries the total rewards accrued by a each
         validator.
-      operationId: DelegationTotalRewards_GJPP6
+      operationId: DelegationTotalRewards
       responses:
         '200':
           description: A successful response.
@@ -45019,11 +45019,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}:
     get:
       summary: DelegationRewards queries the total rewards accrued by a delegation.
-      operationId: DelegationRewards_KTFFN
+      operationId: DelegationRewards
       responses:
         '200':
           description: A successful response.
@@ -45256,11 +45256,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/delegators/{delegator_address}/validators:
     get:
       summary: DelegatorValidators queries the validators of a delegator.
-      operationId: DelegatorValidators_SOWKZ
+      operationId: DelegatorValidators
       responses:
         '200':
           description: A successful response.
@@ -45476,11 +45476,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address:
     get:
       summary: DelegatorWithdrawAddress queries withdraw address of a delegator.
-      operationId: DelegatorWithdrawAddress_XZFIF
+      operationId: DelegatorWithdrawAddress
       responses:
         '200':
           description: A successful response.
@@ -45692,11 +45692,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/params:
     get:
       summary: Params queries params of the distribution module.
-      operationId: Params_28Z19
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -45911,11 +45911,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/validators/{validator_address}/commission:
     get:
       summary: ValidatorCommission queries accumulated commission for a validator.
-      operationId: ValidatorCommission_8GWNX
+      operationId: ValidatorCommission
       responses:
         '200':
           description: A successful response.
@@ -46146,11 +46146,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards:
     get:
       summary: ValidatorOutstandingRewards queries rewards of a validator address.
-      operationId: ValidatorOutstandingRewards_FCZHR
+      operationId: ValidatorOutstandingRewards
       responses:
         '200':
           description: A successful response.
@@ -46388,11 +46388,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/validators/{validator_address}/slashes:
     get:
       summary: ValidatorSlashes queries slash events of a validator.
-      operationId: ValidatorSlashes_7FFYC
+      operationId: ValidatorSlashes
       responses:
         '200':
           description: A successful response.
@@ -46712,11 +46712,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/distribution/v1beta1
   /cosmos/bank/v1beta1/balances/{address}:
     get:
       summary: AllBalances queries the balance of all coins for a single account.
-      operationId: AllBalances_MXP6H
+      operationId: AllBalances
       responses:
         '200':
           description: A successful response.
@@ -47019,11 +47019,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /cosmos/bank/v1beta1/balances/{address}/by_denom:
     get:
       summary: Balance queries the balance of a single coin for a single account.
-      operationId: Balance_ZG3TL
+      operationId: Balance
       responses:
         '200':
           description: A successful response.
@@ -47252,13 +47252,13 @@ paths:
           required: false
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /cosmos/bank/v1beta1/denoms_metadata:
     get:
       summary: >-
         DenomsMetadata queries the client metadata for all registered coin
         denominations.
-      operationId: DenomsMetadata_SURNF
+      operationId: DenomsMetadata
       responses:
         '200':
           description: A successful response.
@@ -47614,11 +47614,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /cosmos/bank/v1beta1/denoms_metadata/{denom}:
     get:
       summary: DenomsMetadata queries the client metadata of a given coin denomination.
-      operationId: DenomMetadata_7N7H2
+      operationId: DenomMetadata
       responses:
         '200':
           description: A successful response.
@@ -47900,11 +47900,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /cosmos/bank/v1beta1/params:
     get:
       summary: Params queries the parameters of x/bank module.
-      operationId: Params_S5P50
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -48127,13 +48127,13 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /cosmos/bank/v1beta1/spendable_balances/{address}:
     get:
       summary: |-
         SpendableBalances queries the spenable balance of all coins for a single
         account.
-      operationId: SpendableBalances_0PWZ1
+      operationId: SpendableBalances
       responses:
         '200':
           description: A successful response.
@@ -48436,11 +48436,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /cosmos/bank/v1beta1/supply:
     get:
       summary: TotalSupply queries the total supply of all coins.
-      operationId: TotalSupply_ZSFFV
+      operationId: TotalSupply
       responses:
         '200':
           description: A successful response.
@@ -48741,11 +48741,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /cosmos/bank/v1beta1/supply/{denom}:
     get:
       summary: SupplyOf queries the supply of a single coin.
-      operationId: SupplyOf_B9K58
+      operationId: SupplyOf
       responses:
         '200':
           description: A successful response.
@@ -48969,13 +48969,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/bank/v1beta1
   /ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address:
     get:
       summary: >-
         EscrowAddress returns the escrow address for a particular port and
         channel id.
-      operationId: EscrowAddress_CBMJM
+      operationId: EscrowAddress
       responses:
         '200':
           description: A successful response.
@@ -49192,11 +49192,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/apps/transfer
   /ibc/apps/transfer/v1/denom_hashes/{trace}:
     get:
       summary: DenomHash queries a denomination hash information.
-      operationId: DenomHash_6IOGX
+      operationId: DenomHash
       responses:
         '200':
           description: A successful response.
@@ -49410,11 +49410,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/apps/transfer
   /ibc/apps/transfer/v1/denom_traces:
     get:
       summary: DenomTraces queries all denomination traces.
-      operationId: DenomTraces_49KTZ
+      operationId: DenomTraces
       responses:
         '200':
           description: A successful response.
@@ -49715,11 +49715,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/apps/transfer
   /ibc/apps/transfer/v1/denom_traces/{hash}:
     get:
       summary: DenomTrace queries a denomination trace information.
-      operationId: DenomTrace_HD28U
+      operationId: DenomTrace
       responses:
         '200':
           description: A successful response.
@@ -49950,11 +49950,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/apps/transfer
   /ibc/apps/transfer/v1/params:
     get:
       summary: Params queries all parameters of the ibc-transfer module.
-      operationId: Params_EO33W
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -50175,11 +50175,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ibc/apps/transfer
   /ethermint/feemarket/v1/base_fee:
     get:
       summary: BaseFee queries the base fee of the parent block of the current block.
-      operationId: BaseFee_6J0L8
+      operationId: BaseFee
       responses:
         '200':
           description: A successful response.
@@ -50382,11 +50382,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ethermint/feemarket/v1
   /ethermint/feemarket/v1/block_gas:
     get:
       summary: BlockGas queries the gas used at a given block height
-      operationId: BlockGas_0NBJK
+      operationId: BlockGas
       responses:
         '200':
           description: A successful response.
@@ -50590,11 +50590,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ethermint/feemarket/v1
   /ethermint/feemarket/v1/params:
     get:
       summary: Params queries the parameters of x/feemarket module.
-      operationId: Params_99RPC
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -50842,11 +50842,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - ethermint/feemarket/v1
   /cosmos/slashing/v1beta1/params:
     get:
       summary: Params queries the parameters of slashing module
-      operationId: Params_6TOLU
+      operationId: Params
       responses:
         '200':
           description: A successful response.
@@ -51069,11 +51069,11 @@ paths:
                           "value": "1.212s"
                         }
       tags:
-        - gRPC Gateway API
+        - cosmos/slashing/v1beta1
   /cosmos/slashing/v1beta1/signing_infos:
     get:
       summary: SigningInfos queries signing info of all validators
-      operationId: SigningInfos_8KJWJ
+      operationId: SigningInfos
       responses:
         '200':
           description: A successful response.
@@ -51415,11 +51415,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - cosmos/slashing/v1beta1
   /cosmos/slashing/v1beta1/signing_infos/{cons_address}:
     get:
       summary: SigningInfo queries the signing info of given cons address
-      operationId: SigningInfo_CBSOQ
+      operationId: SigningInfo
       responses:
         '200':
           description: A successful response.
@@ -51683,13 +51683,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - cosmos/slashing/v1beta1
   /ibc/core/connection/v1/client_connections/{client_id}:
     get:
       summary: |-
         ClientConnections queries the connection paths associated with a client
         state.
-      operationId: ClientConnections_5YIQG
+      operationId: ClientConnections
       responses:
         '200':
           description: A successful response.
@@ -51942,11 +51942,11 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/connection
   /ibc/core/connection/v1/connections:
     get:
       summary: Connections queries all the IBC connections of a chain.
-      operationId: Connections_XKL19
+      operationId: Connections
       responses:
         '200':
           description: A successful response.
@@ -52358,11 +52358,11 @@ paths:
           required: false
           type: boolean
       tags:
-        - gRPC Gateway API
+        - ibc/core/connection
   /ibc/core/connection/v1/connections/{connection_id}:
     get:
       summary: Connection queries an IBC connection end.
-      operationId: Connection_NGQ6J
+      operationId: Connection
       responses:
         '200':
           description: A successful response.
@@ -52708,13 +52708,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/connection
   /ibc/core/connection/v1/connections/{connection_id}/client_state:
     get:
       summary: |-
         ConnectionClientState queries the client state associated with the
         connection.
-      operationId: ConnectionClientState_IKJKR
+      operationId: ConnectionClientState
       responses:
         '200':
           description: A successful response.
@@ -53153,13 +53153,13 @@ paths:
           required: true
           type: string
       tags:
-        - gRPC Gateway API
+        - ibc/core/connection
   /ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}:
     get:
       summary: |-
         ConnectionConsensusState queries the consensus state associated with the
         connection.
-      operationId: ConnectionConsensusState_85J1V
+      operationId: ConnectionConsensusState
       responses:
         '200':
           description: A successful response.
@@ -53595,7 +53595,7 @@ paths:
           type: string
           format: uint64
       tags:
-        - gRPC Gateway API
+        - ibc/core/connection
 definitions:
   cosmos.base.query.v1beta1.PageRequest:
     type: object
