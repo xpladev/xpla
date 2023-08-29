@@ -4,7 +4,7 @@
 # This module represents the "proto" root found in
 # the previous configuration.
 version: v1
-name: buf.build/cosmwasm/wasmd
+name: buf.build/xplad/xpla
 deps:
   - buf.build/cosmos/cosmos-proto
   - buf.build/cosmos/cosmos-sdk:8cb30a2c4de74dc9bd8d260b1e75e176 #v0.46.x

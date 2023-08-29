@@ -5,12 +5,12 @@ package types
 
 import (
 	fmt "fmt"
+	_ "github.com/cosmos/cosmos-proto"
 	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	types2 "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/x/staking/types"
-	_ "github.com/gogo/protobuf/gogoproto"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
-	_ "github.com/regen-network/cosmos-proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	io "io"
 	math "math"

@@ -73,9 +73,6 @@ import (
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
-
-	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
 
 type AppKeepers struct {
