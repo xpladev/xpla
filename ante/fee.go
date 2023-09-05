@@ -38,17 +38,17 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	gas := feeTx.GetGas()
 	msgs := feeTx.GetMsgs()
 
-	// Short-circuit if min gas price is 0 or if simulating
-	if minGasPrice.IsZero() || simulate || (mpd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
-		return next(ctx, tx, simulate)
-	}
-
 	evmDenom := mpd.evmKeeper.GetParams(ctx).EvmDenom
 	minGasPrices := sdk.DecCoins{
 		{
 			Denom:  evmDenom,
 			Amount: minGasPrice,
 		},
+	}
+
+	// Short-circuit if min gas price is 0 or if simulating
+	if minGasPrice.IsZero() || simulate || (mpd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
+		return next(ctx, tx, simulate)
 	}
 
 	feeCoins := feeTx.GetFee()
