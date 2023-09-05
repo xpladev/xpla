@@ -10,7 +10,7 @@ import (
 	ethermintante "github.com/evmos/ethermint/app/ante"
 )
 
-const maxBypassMinFeeMsgGasUsage = uint64(200_000)
+const maxBypassMinFeeMsgGasUsage = uint64(1_000_000)
 
 // MinGasPriceDecorator will check if the transaction's fee is at least as large
 // as the MinGasPrices param. If fee is too low, decorator returns error and tx
