@@ -10,7 +10,7 @@ import (
 	ethermintante "github.com/evmos/ethermint/app/ante"
 )
 
-const maxBypassMinFeeMsgGasUsage = uint64(200_000)
+const maxBypassMinFeeMsgGasUsage = uint64(1_000_000)
 
 // MinGasPriceDecorator will check if the transaction's fee is at least as large
 // as the MinGasPrices param. If fee is too low, decorator returns error and tx
@@ -38,17 +38,17 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	gas := feeTx.GetGas()
 	msgs := feeTx.GetMsgs()
 
-	// Short-circuit if min gas price is 0 or if simulating
-	if minGasPrice.IsZero() || simulate || (mpd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
-		return next(ctx, tx, simulate)
-	}
-
 	evmDenom := mpd.evmKeeper.GetParams(ctx).EvmDenom
 	minGasPrices := sdk.DecCoins{
 		{
 			Denom:  evmDenom,
 			Amount: minGasPrice,
 		},
+	}
+
+	// Short-circuit if min gas price is 0 or if simulating
+	if minGasPrice.IsZero() || simulate || (mpd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
+		return next(ctx, tx, simulate)
 	}
 
 	feeCoins := feeTx.GetFee()
