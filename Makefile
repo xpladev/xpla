@@ -15,7 +15,7 @@ endif
 NAME := xpla
 APPNAME := xplad
 LEDGER_ENABLED ?= true
-TM_VERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::') # grab everything after the space in "github.com/tendermint/tendermint v0.34.7"
+TM_VERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::') # grab everything after the space in "github.com/cometbft/cometbft v0.34.7"
 
 # for dockerized protobuf tools
 DOCKER := $(shell which docker)
@@ -68,7 +68,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
 	  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 	  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
-	  -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TM_VERSION)
+	  -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(TM_VERSION)
 
 ifeq (cleveldb,$(findstring cleveldb,$(CUSTOM_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
@@ -104,8 +104,9 @@ go.sum: go.mod
 ###############################################################################
 ###                                Protobuf                                 ###
 ###############################################################################
-PROTO_BUILDER_IMAGE=tendermintdev/sdk-proto-gen:v0.7
-PROTO_FORMATTER_IMAGE=tendermintdev/docker-build-proto@sha256:aabcfe2fc19c31c0f198d4cd26393f5e5ca9502d7ea3feafbfe972448fee7cae
+PROTO_VERSION=0.11.5
+PROTO_BUILDER_IMAGE=ghcr.io/cosmos/proto-builder:$(PROTO_VERSION)
+PROTO_FORMATTER_IMAGE=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE)
 
 proto-all: proto-format proto-lint proto-gen
 

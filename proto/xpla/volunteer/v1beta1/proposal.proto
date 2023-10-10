@@ -7,10 +7,12 @@ import "google/api/annotations.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/staking/v1beta1/staking.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/xpladev/xpla/x/volunteer/types";
 
 message RegisterVolunteerValidatorProposal {
+    option (amino.name) = "xpladev/RegisterVolunteerValidatorProposal";
     option (gogoproto.equal)            = false;
     option (gogoproto.goproto_getters)  = false;
     option (gogoproto.goproto_stringer) = false;
@@ -25,6 +27,7 @@ message RegisterVolunteerValidatorProposal {
 }
 
 message RegisterVolunteerValidatorProposalWithDeposit {
+    option (amino.name) = "xpladev/RegisterVolunteerValidatorProposalWithDeposit";
     option (gogoproto.equal)            = false;
     option (gogoproto.goproto_getters)  = false;
     option (gogoproto.goproto_stringer) = true;
@@ -40,6 +43,7 @@ message RegisterVolunteerValidatorProposalWithDeposit {
 }
 
 message UnregisterVolunteerValidatorProposal {
+    option (amino.name) = "xpladev/UnregisterVolunteerValidatorProposal";
     option (gogoproto.equal)            = false;
     option (gogoproto.goproto_getters)  = false;
     option (gogoproto.goproto_stringer) = false;
@@ -50,6 +54,7 @@ message UnregisterVolunteerValidatorProposal {
 }
 
 message UnregisterVolunteerValidatorProposalWithDeposit {
+    option (amino.name) = "xpladev/UnregisterVolunteerValidatorProposalWithDeposit";
     option (gogoproto.equal)            = false;
     option (gogoproto.goproto_getters)  = false;
     option (gogoproto.goproto_stringer) = true;

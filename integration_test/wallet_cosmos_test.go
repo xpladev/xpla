@@ -12,22 +12,21 @@ import (
 	cosmwasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdktype "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	txtype "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	ethhd "github.com/evmos/ethermint/crypto/hd"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	ethhd "github.com/evmos/evmos/v14/crypto/hd"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
 )
 
 const (
 	Prefix  = "xpla"
-	ChainID = "localtest_1-1"
+	ChainID = "localtest_9001-1"
 )
 
 type WalletInfo struct {
@@ -42,7 +41,7 @@ type WalletInfo struct {
 	PubKey        cryptotypes.PubKey
 	AccountNumber uint64
 	Sequence      uint64
-	EncCfg        simappparams.EncodingConfig
+	EncCfg        moduletestutil.TestEncodingConfig
 }
 
 func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
@@ -76,7 +75,7 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 		return nil, err
 	}
 
-	encCfg := simapp.MakeTestEncodingConfig()
+	encCfg := moduletestutil.MakeTestEncodingConfig()
 
 	accountNumber, seq, err := GetAccountNumber(desc.ServiceConn, ChainID, stringAddress)
 	if err != nil {

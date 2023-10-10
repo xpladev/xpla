@@ -1,8 +1,8 @@
 package evm
 
 import (
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 )
 
 type EvmUpgradeParams struct {

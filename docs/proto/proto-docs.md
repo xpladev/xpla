@@ -4,50 +4,45 @@
 
 ## Table of Contents
 
-- [xpla/reward/v1beta1/reward.proto](#xpla/reward/v1beta1/reward.proto)
-    - [Params](#xpla.reward.v1beta1.Params)
+- [xpla/volunteer/v1beta1/volunteervalidator.proto](#xpla/volunteer/v1beta1/volunteervalidator.proto)
+    - [VolunteerValidator](#xpla.volunteer.v1beta1.VolunteerValidator)
   
-- [xpla/reward/v1beta1/genesis.proto](#xpla/reward/v1beta1/genesis.proto)
-    - [GenesisState](#xpla.reward.v1beta1.GenesisState)
+- [xpla/volunteer/v1beta1/genesis.proto](#xpla/volunteer/v1beta1/genesis.proto)
+    - [GenesisState](#xpla.volunteer.v1beta1.GenesisState)
   
-- [xpla/reward/v1beta1/query.proto](#xpla/reward/v1beta1/query.proto)
-    - [QueryParamsRequest](#xpla.reward.v1beta1.QueryParamsRequest)
-    - [QueryParamsResponse](#xpla.reward.v1beta1.QueryParamsResponse)
-    - [QueryPoolRequest](#xpla.reward.v1beta1.QueryPoolRequest)
-    - [QueryPoolResponse](#xpla.reward.v1beta1.QueryPoolResponse)
+- [xpla/volunteer/v1beta1/proposal.proto](#xpla/volunteer/v1beta1/proposal.proto)
+    - [RegisterVolunteerValidatorProposal](#xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposal)
+    - [RegisterVolunteerValidatorProposalWithDeposit](#xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposalWithDeposit)
+    - [UnregisterVolunteerValidatorProposal](#xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposal)
+    - [UnregisterVolunteerValidatorProposalWithDeposit](#xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposalWithDeposit)
   
-    - [Query](#xpla.reward.v1beta1.Query)
+- [xpla/volunteer/v1beta1/query.proto](#xpla/volunteer/v1beta1/query.proto)
+    - [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest)
+    - [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse)
   
-- [xpla/reward/v1beta1/tx.proto](#xpla/reward/v1beta1/tx.proto)
-    - [MsgFundFeeCollector](#xpla.reward.v1beta1.MsgFundFeeCollector)
-    - [MsgFundFeeCollectorResponse](#xpla.reward.v1beta1.MsgFundFeeCollectorResponse)
-  
-    - [Msg](#xpla.reward.v1beta1.Msg)
+    - [Query](#xpla.volunteer.v1beta1.Query)
   
 - [Scalar Value Types](#scalar-value-types)
 
 
 
-<a name="xpla/reward/v1beta1/reward.proto"></a>
+<a name="xpla/volunteer/v1beta1/volunteervalidator.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## xpla/reward/v1beta1/reward.proto
+## xpla/volunteer/v1beta1/volunteervalidator.proto
 
 
 
-<a name="xpla.reward.v1beta1.Params"></a>
+<a name="xpla.volunteer.v1beta1.VolunteerValidator"></a>
 
-### Params
-Params defines the set of params for the reward module.
+### VolunteerValidator
+VolunteerValidator required for validator set update logic.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `fee_pool_rate` | [string](#string) |  |  |
-| `community_pool_rate` | [string](#string) |  |  |
-| `reserve_rate` | [string](#string) |  |  |
-| `reserve_account` | [string](#string) |  |  |
-| `reward_distribute_account` | [string](#string) |  |  |
+| `address` | [string](#string) |  | address is the address of the validator. |
+| `power` | [int64](#int64) |  | power defines the power of the validator. |
 
 
 
@@ -63,22 +58,22 @@ Params defines the set of params for the reward module.
 
 
 
-<a name="xpla/reward/v1beta1/genesis.proto"></a>
+<a name="xpla/volunteer/v1beta1/genesis.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## xpla/reward/v1beta1/genesis.proto
+## xpla/volunteer/v1beta1/genesis.proto
 
 
 
-<a name="xpla.reward.v1beta1.GenesisState"></a>
+<a name="xpla.volunteer.v1beta1.GenesisState"></a>
 
 ### GenesisState
-GenesisState defines the reward module's genesis state.
+GenesisState defines the volunteer module's genesis state.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `params` | [Params](#xpla.reward.v1beta1.Params) |  | params defines all the paramaters of the module. |
+| `volunteer_validators` | [VolunteerValidator](#xpla.volunteer.v1beta1.VolunteerValidator) | repeated |  |
 
 
 
@@ -94,59 +89,126 @@ GenesisState defines the reward module's genesis state.
 
 
 
-<a name="xpla/reward/v1beta1/query.proto"></a>
+<a name="xpla/volunteer/v1beta1/proposal.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## xpla/reward/v1beta1/query.proto
+## xpla/volunteer/v1beta1/proposal.proto
 
 
 
-<a name="xpla.reward.v1beta1.QueryParamsRequest"></a>
+<a name="xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposal"></a>
 
-### QueryParamsRequest
-QueryParamsRequest is the request type for the Query/Params RPC method.
+### RegisterVolunteerValidatorProposal
 
-
-
-
-
-
-<a name="xpla.reward.v1beta1.QueryParamsResponse"></a>
-
-### QueryParamsResponse
-QueryParamsResponse is the response type for the Query/Params RPC method.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `params` | [Params](#xpla.reward.v1beta1.Params) |  | params defines the parameters of the module. |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
+| `delegator_address` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
 
 
 
 
 
 
-<a name="xpla.reward.v1beta1.QueryPoolRequest"></a>
+<a name="xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposalWithDeposit"></a>
 
-### QueryPoolRequest
-QueryPoolRequest is the request type for the Query/Pool RPC
-method.
+### RegisterVolunteerValidatorProposalWithDeposit
 
-
-
-
-
-
-<a name="xpla.reward.v1beta1.QueryPoolResponse"></a>
-
-### QueryPoolResponse
-QueryPoolResponse is the response type for the Query/Pool
-RPC method.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `pool` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated | pool defines reward pool's coins. |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
+| `delegator_address` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `deposit` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposal"></a>
+
+### UnregisterVolunteerValidatorProposal
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposalWithDeposit"></a>
+
+### UnregisterVolunteerValidatorProposalWithDeposit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  |  |
+| `description` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `deposit` | [string](#string) |  |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/volunteer/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/volunteer/v1beta1/query.proto
+
+
+
+<a name="xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest"></a>
+
+### QueryVolunteerValidatorsRequest
+
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse"></a>
+
+### QueryVolunteerValidatorsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `volunteer_validators` | [string](#string) | repeated |  |
 
 
 
@@ -159,68 +221,14 @@ RPC method.
  <!-- end HasExtensions -->
 
 
-<a name="xpla.reward.v1beta1.Query"></a>
+<a name="xpla.volunteer.v1beta1.Query"></a>
 
 ### Query
-Query defines the gRPC querier service for reward module.
+Query defines the gRPC querier service for volunteer module.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `Params` | [QueryParamsRequest](#xpla.reward.v1beta1.QueryParamsRequest) | [QueryParamsResponse](#xpla.reward.v1beta1.QueryParamsResponse) | Params queries params of the reward module. | GET|/xpla/reward/v1beta1/params|
-| `Pool` | [QueryPoolRequest](#xpla.reward.v1beta1.QueryPoolRequest) | [QueryPoolResponse](#xpla.reward.v1beta1.QueryPoolResponse) | Pool queries the reward module pool coins. | GET|/xpla/reward/v1beta1/pool|
-
- <!-- end services -->
-
-
-
-<a name="xpla/reward/v1beta1/tx.proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## xpla/reward/v1beta1/tx.proto
-
-
-
-<a name="xpla.reward.v1beta1.MsgFundFeeCollector"></a>
-
-### MsgFundFeeCollector
-MsgFundFeeCollector allows an account to directly
-fund the fee collector.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated |  |
-| `depositor` | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="xpla.reward.v1beta1.MsgFundFeeCollectorResponse"></a>
-
-### MsgFundFeeCollectorResponse
-MsgFundFeeCollectorResponse defines the Msg/FundFeeCollector response type.
-
-
-
-
-
- <!-- end messages -->
-
- <!-- end enums -->
-
- <!-- end HasExtensions -->
-
-
-<a name="xpla.reward.v1beta1.Msg"></a>
-
-### Msg
-Msg defines the reawrd Msg service.
-
-| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
-| ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `FundFeeCollector` | [MsgFundFeeCollector](#xpla.reward.v1beta1.MsgFundFeeCollector) | [MsgFundFeeCollectorResponse](#xpla.reward.v1beta1.MsgFundFeeCollectorResponse) | FundFeeCollector defines a method to allow an account to directly fund the fee collector. | |
+| `VolunteerValidators` | [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest) | [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse) |  | GET|/xpla/volun/v1beta1/validators|
 
  <!-- end services -->
 

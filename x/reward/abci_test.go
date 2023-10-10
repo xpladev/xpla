@@ -3,13 +3,15 @@ package reward_test
 import (
 	"testing"
 
+	"github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	"github.com/cosmos/cosmos-sdk/x/staking/testutil"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/xpladev/xpla/x/reward"
 	"github.com/xpladev/xpla/x/reward/keeper"
 )
@@ -21,7 +23,8 @@ import (
 // 4. process 1 block
 func TestBeginBlocker(t *testing.T) {
 	input := keeper.CreateTestInput(t)
-	sh := staking.NewHandler(input.StakingKeeper)
+	sh := testutil.NewHelper(t, input.Ctx, input.StakingKeeper)
+	sh.Commission = stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(10, 2), sdk.OneDec(), sdk.OneDec())
 
 	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
 	defaultFee := sdk.NewInt(11).Mul(sdk.DefaultPowerReduction).Quo(sdk.NewInt(10)) // 1.1
@@ -32,8 +35,7 @@ func TestBeginBlocker(t *testing.T) {
 		require.NoError(t, err)
 
 		valAddress := sdk.ValAddress(keeper.Pks[i].Address())
-		_, err = sh(input.Ctx, keeper.NewTestMsgCreateValidator(valAddress, keeper.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100)))
-		require.NoError(t, err)
+		sh.CreateValidator(valAddress, keeper.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100), true)
 	}
 
 	// validator settlement delegation
@@ -43,8 +45,7 @@ func TestBeginBlocker(t *testing.T) {
 	for i := 0; i < keeper.ValidatorCount; i++ {
 		valAddress := sdk.ValAddress(keeper.Pks[i].Address())
 
-		_, err = sh(input.Ctx, keeper.NewTestMsgDelegate(sdk.AccAddress(keeper.Pks[keeper.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10)))
-		require.NoError(t, err)
+		sh.Delegate(sdk.AccAddress(keeper.Pks[keeper.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10))
 	}
 
 	staking.EndBlocker(input.Ctx, input.StakingKeeper)
@@ -99,7 +100,7 @@ func TestBeginBlocker(t *testing.T) {
 		Header: tmproto.Header{
 			ProposerAddress: keeper.Pks[0].Address().Bytes(),
 		},
-		LastCommitInfo: types.LastCommitInfo{
+		LastCommitInfo: types.CommitInfo{
 			Round: int32(1),
 			Votes: voteInfoes,
 		},

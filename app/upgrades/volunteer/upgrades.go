@@ -6,11 +6,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	icacontrollertypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/controller/types"
-	icahosttypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/types"
-	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
-	ibcfeetypes "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/types"
-	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v4/router/types"
+	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
+	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
+	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
+	ibcfee "github.com/cosmos/ibc-go/v7/modules/apps/29-fee"
+	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
+	"github.com/strangelove-ventures/packet-forward-middleware/v7/router"
+	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
 
 	"github.com/xpladev/xpla/app/keepers"
 )
@@ -21,9 +24,9 @@ func CreateUpgradeHandler(
 	keepers *keepers.AppKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		fromVM[icatypes.ModuleName] = mm.Modules[icatypes.ModuleName].ConsensusVersion()
-		fromVM[routertypes.ModuleName] = mm.Modules[routertypes.ModuleName].ConsensusVersion()
-		fromVM[ibcfeetypes.ModuleName] = mm.Modules[ibcfeetypes.ModuleName].ConsensusVersion()
+		fromVM[icatypes.ModuleName] = ica.AppModule{}.ConsensusVersion()
+		fromVM[routertypes.ModuleName] = router.AppModule{}.ConsensusVersion()
+		fromVM[ibcfeetypes.ModuleName] = ibcfee.AppModule{}.ConsensusVersion()
 
 		var msg UpgradeVolunteerMsg
 		err := json.Unmarshal([]byte(plan.Info), &msg)
@@ -46,7 +49,7 @@ func CreateUpgradeHandler(
 		}
 		keepers.ICAHostKeeper.SetParams(ctx, newIcaHostParams)
 		keepers.ICAControllerKeeper.SetParams(ctx, icacontrollertypes.Params{ControllerEnabled: true})
-		keepers.RouterKeeper.SetParams(ctx, routertypes.DefaultParams())
+		keepers.PFMRouterKeeper.SetParams(ctx, routertypes.DefaultParams())
 
 		return versionMap, err
 	}

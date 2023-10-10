@@ -1,12 +1,13 @@
 package staking
 
 import (
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	"github.com/cosmos/cosmos-sdk/x/staking/exported"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/xpladev/xpla/x/staking/keeper"
 )
 
@@ -17,13 +18,16 @@ var (
 type AppModule struct {
 	staking.AppModule
 
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
+
+	// legacySubspace is used solely for migration of x/params managed parameters
+	legacySubspace exported.Subspace
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak stakingtypes.AccountKeeper, bk stakingtypes.BankKeeper) AppModule {
+func NewAppModule(cdc codec.Codec, keeper *keeper.Keeper, ak stakingtypes.AccountKeeper, bk stakingtypes.BankKeeper, ls exported.Subspace) AppModule {
 	return AppModule{
-		AppModule: staking.NewAppModule(cdc, keeper.Keeper, ak, bk),
+		AppModule: staking.NewAppModule(cdc, keeper.Keeper, ak, bk, ls),
 		keeper:    keeper,
 	}
 }

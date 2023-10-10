@@ -18,7 +18,7 @@ import (
 	ed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	govtype "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1types "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	paramtype "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -26,7 +26,7 @@ import (
 	xplatypes "github.com/xpladev/xpla/types"
 	volunteerValType "github.com/xpladev/xpla/x/volunteer/types"
 
-	// evmtypes "github.com/evmos/ethermint/x/evm/types"
+	// evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 
 	abibind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -387,6 +387,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{},
 				proposalContent,
 				t.VolunteerValidatorWallet1,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -495,7 +496,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
-			assert.NoError(t.T(), err)
+			assert.Error(t.T(), err)
 
 			queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
 			_, err = queryClient.GetTx(context.Background(), &txtypes.GetTxRequest{
@@ -599,6 +600,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			err := applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{},
 				proposalContent,
 				t.VolunteerValidatorWallet1,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -656,7 +658,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				sdktypes.ValAddress(t.UserWallet1.ByteAddress.Bytes()),
 			)
 
-			proposalMsg, err := govtype.NewMsgSubmitProposal(
+			proposalMsg, err := govv1beta1types.NewMsgSubmitProposal(
 				proposalContent,
 				sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
 				t.UserWallet1.ByteAddress,
@@ -711,6 +713,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 
 				err = applyVoteTallyingProposal(
 					desc.GetConnectionWithContext(context.Background()),
+					[]sdktypes.Msg{},
 					proposalContent,
 					t.VolunteerValidatorWallet2,
 					[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -773,6 +776,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 
 				err := applyVoteTallyingProposal(
 					desc.GetConnectionWithContext(context.Background()),
+					[]sdktypes.Msg{},
 					proposalContent,
 					t.VolunteerValidatorWallet2,
 					[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -840,6 +844,7 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVolunteer
 
 		err = applyVoteTallyingProposal(
 			desc.GetConnectionWithContext(context.Background()),
+			[]sdktypes.Msg{},
 			proposalContent,
 			t.VolunteerValidatorWallet2,
 			[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -882,14 +887,18 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 				paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
 			}
 
+			msg, err := makeUpdateParamMaxValidators(desc.GetConnectionWithContext(context.Background()), maxValidators)
+			assert.NoError(t.T(), err)
+
 			proposalContent := paramtype.NewParameterChangeProposal(
 				"decrease_validator_active_set",
 				"Decrease validator active set",
 				expectedChange,
 			)
 
-			err := applyVoteTallyingProposal(
+			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{msg},
 				proposalContent,
 				t.ValidatorWallet2,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -953,6 +962,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{},
 				proposalContent,
 				t.VolunteerValidatorWallet3,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -1027,6 +1037,8 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Increasing MaxValidators to 6")
 			maxValidators += 1
 
+			msg, err := makeUpdateParamMaxValidators(desc.GetConnectionWithContext(context.Background()), maxValidators)
+
 			expectedChange := []paramtype.ParamChange{
 				paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
 			}
@@ -1037,8 +1049,9 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 				expectedChange,
 			)
 
-			err := applyVoteTallyingProposal(
+			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{msg},
 				proposalContent,
 				t.ValidatorWallet1,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -1303,6 +1316,9 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 				paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
 			}
 
+			msg, err := makeUpdateParamMaxValidators(desc.GetConnectionWithContext(context.Background()), maxValidators)
+			assert.NoError(t.T(), err)
+
 			fmt.Println("Decrease the number of active set")
 			fmt.Println("Current # of validator:", maxValidators)
 
@@ -1312,8 +1328,9 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 				expectedChange,
 			)
 
-			err := applyVoteTallyingProposal(
+			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{msg},
 				proposalContent,
 				t.ValidatorWallet2,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -1517,6 +1534,9 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 				paramtype.NewParamChange(stakingtype.ModuleName, string(stakingtype.KeyMaxValidators), fmt.Sprintf("%d", maxValidators)),
 			}
 
+			msg, err := makeUpdateParamMaxValidators(desc.GetConnectionWithContext(context.Background()), maxValidators)
+			assert.NoError(t.T(), err)
+
 			fmt.Println("Decrease the number of active set")
 			fmt.Println("Current # of validator:", maxValidators)
 
@@ -1526,8 +1546,9 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 				expectedChange,
 			)
 
-			err := applyVoteTallyingProposal(
+			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{msg},
 				paramChangeProposalContent,
 				t.ValidatorWallet2,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},
@@ -1546,6 +1567,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			err := applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
+				[]sdktypes.Msg{},
 				unregisterProposalContent,
 				t.VolunteerValidatorWallet3,
 				[]*WalletInfo{t.ValidatorWallet1, t.ValidatorWallet2, t.ValidatorWallet3, t.ValidatorWallet4},

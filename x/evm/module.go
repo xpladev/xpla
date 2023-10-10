@@ -6,9 +6,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/evmos/ethermint/x/evm"
-	"github.com/evmos/ethermint/x/evm/keeper"
-	"github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/evmos/v14/x/evm"
+	"github.com/evmos/evmos/v14/x/evm/keeper"
+	"github.com/evmos/evmos/v14/x/evm/types"
 )
 
 var (
@@ -25,9 +25,10 @@ type AppModule struct {
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	keeper *keeper.Keeper,
-	ak types.AccountKeeper) AppModule {
+	ak types.AccountKeeper,
+	ss types.Subspace) AppModule {
 	return AppModule{
-		AppModule: evm.NewAppModule(keeper, ak),
+		AppModule: evm.NewAppModule(keeper, ak, ss),
 		keeper:    keeper,
 		ak:        ak,
 	}

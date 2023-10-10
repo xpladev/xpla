@@ -3,11 +3,11 @@ package ante
 import (
 	"math/big"
 
+	tmstrings "github.com/cometbft/cometbft/libs/strings"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
 
-	ethermintante "github.com/evmos/ethermint/app/ante"
+	ethermintante "github.com/evmos/evmos/v14/app/ante/evm"
 )
 
 const maxBypassMinFeeMsgGasUsage = uint64(200_000)

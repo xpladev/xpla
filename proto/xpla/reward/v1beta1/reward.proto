@@ -4,9 +4,11 @@ package xpla.reward.v1beta1;
 option go_package = "github.com/xpladev/xpla/x/reward/types";
 
 import "gogoproto/gogo.proto";
+import "amino/amino.proto";
 
 // Params defines the set of params for the reward module.
 message Params {
+  option (amino.name)                 = "xpladev/x/reward/Params";
   option (gogoproto.goproto_stringer) = false;
 
   string fee_pool_rate = 1 [
