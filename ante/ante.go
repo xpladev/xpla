@@ -85,6 +85,9 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 				case "/ethermint.evm.v1.ExtensionOptionsEthereumTx":
 					// handle as *evmtypes.MsgEthereumTx
 					anteHandler = newEthAnteHandler(opts)
+				case "/ethermint.types.v1.ExtensionOptionsWeb3Tx":
+					// handle as normal Cosmos SDK tx, except signature is checked for EIP712 representation
+					anteHandler = newCosmosAnteHandlerEip712(opts)
 				default:
 					return ctx, sdkerrors.Wrapf(
 						sdkerrors.ErrUnknownExtensionOptions,
@@ -137,6 +140,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		authante.NewIncrementSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator
 		ibcante.NewAnteDecorator(opts.IBCKeeper),
+		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
 	}
 	return sdk.ChainAnteDecorators(anteDecorators...)
 }
@@ -144,15 +148,41 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                                      // outermost AnteDecorator. SetUpContext must be called first
+		evmante.NewEthMempoolFeeDecorator(opts.EvmKeeper),                                        // Check eth effective gas price against minimal-gas-prices
 		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes), // Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
 		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
-		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
 		evmante.NewCanTransferDecorator(opts.EvmKeeper),
+		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
 		evmante.NewEthIncrementSenderSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator.
 		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
 		evmante.NewEthEmitEventDecorator(opts.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
+	)
+}
+
+func newCosmosAnteHandlerEip712(opts HandlerOptions) sdk.AnteHandler {
+	return sdk.ChainAnteDecorators(
+		evmante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		authante.NewSetUpContextDecorator(),
+		// NOTE: extensions option decorator removed
+		// ante.NewRejectExtensionOptionsDecorator(),
+		authante.NewMempoolFeeDecorator(),
+		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes),
+		authante.NewValidateBasicDecorator(),
+		authante.NewTxTimeoutHeightDecorator(),
+		authante.NewValidateMemoDecorator(opts.AccountKeeper),
+		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
+		authante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper),
+		// SetPubKeyDecorator must be called before all signature verification decorators
+		authante.NewSetPubKeyDecorator(opts.AccountKeeper),
+		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
+		authante.NewSigGasConsumeDecorator(opts.AccountKeeper, opts.SigGasConsumer),
+		// Note: signature verification uses EIP instead of the cosmos signature validator
+		evmante.NewEip712SigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
+		authante.NewIncrementSequenceDecorator(opts.AccountKeeper),
+		ibcante.NewAnteDecorator(opts.IBCKeeper),
+		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
 	)
 }
 
