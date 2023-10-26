@@ -14,7 +14,7 @@ const (
 	validatorActiveBlocks = 3
 	downtimeJailDuration  = 20
 
-	xplaGeneralGasLimit  int64 = 240000
+	xplaGeneralGasLimit  int64 = 300000
 	xplaCodeGasLimit     int64 = 5000000
 	xplaProposalGasLimit int64 = 500000
 	xplaGasPrice               = "8500000000"
