@@ -35,7 +35,7 @@ func TestIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *IntegrationTestSuite) SetupTest() {
-	chainId := fmt.Sprintf("test_%d-%d", rand.Intn(1000), rand.Intn(10))
+	chainId := fmt.Sprintf("test_%d-%d", rand.Intn(1000)+1, rand.Intn(10)+1)
 
 	app := xplahelpers.Setup(s.T(), chainId, false, 1)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{
