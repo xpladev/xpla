@@ -57,6 +57,7 @@ import (
 
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
+	volunteercube "github.com/xpladev/xpla/app/upgrades/volunteer-cube"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 )
 
@@ -417,6 +418,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		volunteer.UpgradeName,
 		volunteer.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
+	)
+
+	// VolunteerCube upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		volunteercube.UpgradeName,
+		volunteercube.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
 	)
 
 	// When a planned update height is reached, the old binary will panic
