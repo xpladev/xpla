@@ -57,7 +57,6 @@ import (
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/docs"
 
-	erc20upgrade "github.com/xpladev/xpla/app/upgrades/erc20"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
@@ -423,12 +422,6 @@ func (app *XplaApp) setUpgradeHandlers() {
 		volunteer.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
 	)
 
-	// ERC20 upgrade handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		erc20upgrade.UpgradeName,
-		erc20upgrade.CreateUpgradeHandler(app.mm, app.configurator),
-	)
-
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -455,10 +448,6 @@ func (app *XplaApp) setUpgradeHandlers() {
 	case volunteer.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: volunteer.AddModules,
-		}
-	case erc20upgrade.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: erc20upgrade.AddModules,
 		}
 	}
 
