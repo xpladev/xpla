@@ -1,8 +1,6 @@
 package volunteer
 
 import (
-	"encoding/json"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
@@ -25,14 +23,13 @@ func CreateUpgradeHandler(
 		fromVM[routertypes.ModuleName] = mm.Modules[routertypes.ModuleName].ConsensusVersion()
 		fromVM[ibcfeetypes.ModuleName] = mm.Modules[ibcfeetypes.ModuleName].ConsensusVersion()
 
-		var msg UpgradeVolunteerMsg
-		err := json.Unmarshal([]byte(plan.Info), &msg)
-		if err != nil {
-			panic(err)
-		}
-
 		params := keepers.FeeMarketKeeper.GetParams(ctx)
-		params.MinGasPrice = msg.MinGasPrice
+		params.NoBaseFee = false
+		params.MinGasPrice = sdk.MustNewDecFromStr("850000000000")
+		params.BaseFee = sdk.NewInt(850000000000)
+		params.BaseFeeChangeDenominator = 1
+		params.ElasticityMultiplier = 1
+		params.MinGasMultiplier = sdk.NewDec(0)
 		keepers.FeeMarketKeeper.SetParams(ctx, params)
 
 		// Run migrations
