@@ -29,7 +29,6 @@ func CreateUpgradeHandler(
 		params.BaseFee = sdk.NewInt(850000000000)
 		params.BaseFeeChangeDenominator = 1
 		params.ElasticityMultiplier = 1
-		params.MinGasMultiplier = sdk.NewDec(0)
 		keepers.FeeMarketKeeper.SetParams(ctx, params)
 
 		// Run migrations
