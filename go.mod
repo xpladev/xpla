@@ -192,6 +192,8 @@ replace (
 	// TODO: Simapp dependency, review removing when updating to SDK with backported update https://github.com/cosmos/cosmos-sdk/issues/13423
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.2 // indirect
 
+	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.45.17-xpla
+
 	// enforce same SDK and IBC on all dependencies
 	github.com/cosmos/ibc-go/v4 => github.com/cosmos/ibc-go/v4 v4.5.1
 
