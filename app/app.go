@@ -426,7 +426,7 @@ func (app *XplaApp) setUpgradeHandlers() {
 	// v1_4 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v1_4.UpgradeName,
-		v1_4.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers.StakingKeeper),
+		v1_4.CreateUpgradeHandler(app.mm, app.configurator, app.AppKeepers.AccountKeeper, &app.AppKeepers.StakingKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
