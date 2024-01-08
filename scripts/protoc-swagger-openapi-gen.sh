@@ -20,7 +20,7 @@ wasm_dir=$(go list -f '{{ .Dir }}' -m github.com/CosmWasm/wasmd)
 ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v4)
 ica=$(go list -f '{{ .Dir }}' -m github.com/cosmos/interchain-accounts)
 ethermint_dir=$(go list -f '{{ .Dir }}' -m github.com/evmos/ethermint)
-pfm=$(go list -f '{{ .Dir }}' -m github.com/strangelove-ventures/packet-forward-middleware/v4)
+pfm=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v4)
 xpla_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/xpla)
 
 # move the vendor folder back to ./vendor
