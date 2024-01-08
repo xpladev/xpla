@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/xpladev/xpla/tests/integration/testutil"
 	"github.com/xpladev/xpla/x/reward"
-	"github.com/xpladev/xpla/x/reward/keeper"
 )
 
 // TestBeginBlocker
@@ -20,46 +20,46 @@ import (
 // 3. 1.1 fee
 // 4. process 1 block
 func TestBeginBlocker(t *testing.T) {
-	input := keeper.CreateTestInput(t)
-	sh := staking.NewHandler(input.StakingKeeper)
+	input := testutil.CreateTestInput(t)
+	sh := staking.NewHandler(input.StakingKeeper.Keeper)
 
 	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
 	defaultFee := sdk.NewInt(11).Mul(sdk.DefaultPowerReduction).Quo(sdk.NewInt(10)) // 1.1
 
 	// create validator & self delegation
-	for i := 0; i < keeper.ValidatorCount; i++ {
-		err := input.InitAccountWithCoins(sdk.AccAddress(keeper.Pks[i].Address()), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100))))
+	for i := 0; i < testutil.ValidatorCount; i++ {
+		err := input.InitAccountWithCoins(sdk.AccAddress(testutil.Pks[i].Address()), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100))))
 		require.NoError(t, err)
 
-		valAddress := sdk.ValAddress(keeper.Pks[i].Address())
-		_, err = sh(input.Ctx, keeper.NewTestMsgCreateValidator(valAddress, keeper.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100)))
+		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
+		_, err = sh(input.Ctx, testutil.NewMsgCreateValidator(valAddress, testutil.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100)))
 		require.NoError(t, err)
 	}
 
 	// validator settlement delegation
-	err := input.InitAccountWithCoins(sdk.AccAddress(keeper.Pks[keeper.ValidatorSettlementIndex].Address()), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100))))
+	err := input.InitAccountWithCoins(sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address()), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100))))
 	require.NoError(t, err)
 
-	for i := 0; i < keeper.ValidatorCount; i++ {
-		valAddress := sdk.ValAddress(keeper.Pks[i].Address())
+	for i := 0; i < testutil.ValidatorCount; i++ {
+		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
 
-		_, err = sh(input.Ctx, keeper.NewTestMsgDelegate(sdk.AccAddress(keeper.Pks[keeper.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10)))
+		_, err = sh(input.Ctx, testutil.NewMsgDelegate(sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10)))
 		require.NoError(t, err)
 	}
 
-	staking.EndBlocker(input.Ctx, input.StakingKeeper)
+	staking.EndBlocker(input.Ctx, input.StakingKeeper.Keeper)
 
 	// checkt balance & staking
-	for i := 0; i < keeper.ValidatorCount; i++ {
+	for i := 0; i < testutil.ValidatorCount; i++ {
 		require.Equal(
 			t, sdk.NewCoins(sdk.Coin{
 				Denom:  "",
 				Amount: sdk.ZeroInt(),
 			}),
-			input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(keeper.Pks[i].Address())),
+			input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(testutil.Pks[i].Address())),
 		)
 
-		valAddress := sdk.ValAddress(keeper.Pks[i].Address())
+		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
 		require.Equal(
 			t, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 110),
 			input.StakingKeeper.Validator(input.Ctx, valAddress).GetBondedTokens(),
@@ -71,25 +71,25 @@ func TestBeginBlocker(t *testing.T) {
 			Denom:  "",
 			Amount: sdk.ZeroInt(),
 		}),
-		input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(keeper.Pks[keeper.ValidatorSettlementIndex].Address())),
+		input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address())),
 	)
 
 	// fund fee
-	err = input.InitAccountWithCoins(sdk.AccAddress(keeper.Pks[keeper.TempIndex].Address()), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, defaultFee)))
+	err = input.InitAccountWithCoins(sdk.AccAddress(testutil.Pks[testutil.TempIndex].Address()), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, defaultFee)))
 	require.NoError(t, err)
 
-	err = input.BankKeeper.SendCoinsFromAccountToModule(input.Ctx, sdk.AccAddress(keeper.Pks[keeper.TempIndex].Address()), authtypes.FeeCollectorName, sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, defaultFee)))
+	err = input.BankKeeper.SendCoinsFromAccountToModule(input.Ctx, sdk.AccAddress(testutil.Pks[testutil.TempIndex].Address()), authtypes.FeeCollectorName, sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, defaultFee)))
 	require.NoError(t, err)
 
 	// distirubte
-	input.DistrKeeper.SetPreviousProposerConsAddr(input.Ctx, sdk.ConsAddress(keeper.Pks[0].Address()))
+	input.DistrKeeper.SetPreviousProposerConsAddr(input.Ctx, sdk.ConsAddress(testutil.Pks[0].Address()))
 	input.Ctx = input.Ctx.WithBlockHeight(input.Ctx.BlockHeight() + 2)
 
 	voteInfoes := []types.VoteInfo{}
-	for i := 0; i < keeper.ValidatorCount; i++ {
+	for i := 0; i < testutil.ValidatorCount; i++ {
 		voteInfoes = append(voteInfoes, types.VoteInfo{
 			Validator: types.Validator{
-				Address: keeper.Pks[i].Address().Bytes(),
+				Address: testutil.Pks[i].Address().Bytes(),
 				Power:   int64(110),
 			},
 		})
@@ -97,7 +97,7 @@ func TestBeginBlocker(t *testing.T) {
 
 	distribution.BeginBlocker(input.Ctx, types.RequestBeginBlock{
 		Header: tmproto.Header{
-			ProposerAddress: keeper.Pks[0].Address().Bytes(),
+			ProposerAddress: testutil.Pks[0].Address().Bytes(),
 		},
 		LastCommitInfo: types.LastCommitInfo{
 			Round: int32(1),
@@ -129,6 +129,6 @@ func TestBeginBlocker(t *testing.T) {
 	// 3. reserve account (0.0009)
 	require.Equal(
 		t, "900000000000000stake",
-		input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(keeper.Pks[keeper.ReserveIndex].Address())).String(),
+		input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(testutil.Pks[testutil.ReserveIndex].Address())).String(),
 	)
 }
