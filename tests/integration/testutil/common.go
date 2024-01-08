@@ -1,4 +1,4 @@
-package keeper
+package testutil
 
 import (
 	"testing"
@@ -12,10 +12,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	"github.com/xpladev/xpla/x/reward/types"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -35,9 +33,16 @@ import (
 	params "github.com/cosmos/cosmos-sdk/x/params"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/cosmos/cosmos-sdk/x/slashing"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
+	rewardtypes "github.com/xpladev/xpla/x/reward/types"
+	stakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
+	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
+	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
 const (
@@ -60,6 +65,7 @@ var ModuleBasics = module.NewBasicManager(
 	bank.AppModuleBasic{},
 	distr.AppModuleBasic{},
 	staking.AppModuleBasic{},
+	slashing.AppModuleBasic{},
 	mint.AppModuleBasic{},
 	params.AppModuleBasic{},
 )
@@ -76,8 +82,8 @@ func MakeEncodingConfig(_ *testing.T) simparams.EncodingConfig {
 
 	ModuleBasics.RegisterLegacyAminoCodec(amino)
 	ModuleBasics.RegisterInterfaces(interfaceRegistry)
-	types.RegisterLegacyAminoCodec(amino)
-	types.RegisterInterfaces(interfaceRegistry)
+	rewardtypes.RegisterLegacyAminoCodec(amino)
+	rewardtypes.RegisterInterfaces(interfaceRegistry)
 	return simparams.EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
 		Marshaler:         marshaler,
@@ -88,13 +94,17 @@ func MakeEncodingConfig(_ *testing.T) simparams.EncodingConfig {
 
 // TestInput nolint
 type TestInput struct {
-	Ctx           sdk.Context
-	Cdc           *codec.LegacyAmino
-	AccountKeeper authkeeper.AccountKeeper
-	BankKeeper    bankkeeper.Keeper
-	RewardKeeper  Keeper
-	StakingKeeper stakingkeeper.Keeper
-	DistrKeeper   distrkeeper.Keeper
+	Ctx             sdk.Context
+	Cdc             *codec.LegacyAmino
+	AccountKeeper   authkeeper.AccountKeeper
+	BankKeeper      bankkeeper.Keeper
+	RewardKeeper    rewardkeeper.Keeper
+	StakingKeeper   stakingkeeper.Keeper
+	SlashingKeeper  slashingkeeper.Keeper
+	DistrKeeper     distrkeeper.Keeper
+	VolunteerKeeper volunteerkeeper.Keeper
+
+	StakingHandler sdk.Handler
 }
 
 // CreateTestInput nolint
@@ -103,10 +113,12 @@ func CreateTestInput(t *testing.T) TestInput {
 	keyBank := sdk.NewKVStoreKey(banktypes.StoreKey)
 	keyParams := sdk.NewKVStoreKey(paramstypes.StoreKey)
 	tKeyParams := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	keyReward := sdk.NewKVStoreKey(types.StoreKey)
+	keyReward := sdk.NewKVStoreKey(rewardtypes.StoreKey)
 	keyStaking := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	keySlahsing := sdk.NewKVStoreKey(slashingtypes.StoreKey)
 	keyDistr := sdk.NewKVStoreKey(distrtypes.StoreKey)
 	keyMint := sdk.NewKVStoreKey(minttypes.StoreKey)
+	keyVolunteer := sdk.NewKVStoreKey(volunteertypes.StoreKey)
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
@@ -120,8 +132,10 @@ func CreateTestInput(t *testing.T) TestInput {
 	ms.MountStoreWithDB(keyParams, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyReward, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyStaking, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keySlahsing, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyDistr, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyMint, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyVolunteer, sdk.StoreTypeIAVL, db)
 
 	require.NoError(t, ms.LoadLatestVersion())
 
@@ -138,19 +152,21 @@ func CreateTestInput(t *testing.T) TestInput {
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		distrtypes.ModuleName:          nil,
-		types.ModuleName:               nil,
+		rewardtypes.ModuleName:         nil,
 	}
 
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, keyParams, tKeyParams)
 	accountKeeper := authkeeper.NewAccountKeeper(appCodec, keyAcc, paramsKeeper.Subspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms)
 	bankKeeper := bankkeeper.NewBaseKeeper(appCodec, keyBank, accountKeeper, paramsKeeper.Subspace(banktypes.ModuleName), blackListAddrs)
 
+	var volunteerKeeper volunteerkeeper.Keeper
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec,
 		keyStaking,
 		accountKeeper,
 		bankKeeper,
 		paramsKeeper.Subspace(stakingtypes.ModuleName),
+		&volunteerKeeper,
 	)
 
 	stakingParams := stakingtypes.DefaultParams()
@@ -165,20 +181,25 @@ func CreateTestInput(t *testing.T) TestInput {
 		accountKeeper, bankKeeper, stakingKeeper,
 		authtypes.FeeCollectorName, blackListAddrs)
 
+	slashingKeeper := slashingkeeper.NewKeeper(appCodec, keySlahsing, &stakingKeeper, paramsKeeper.Subspace(slashingtypes.ModuleName))
+	slashingKeeper.SetParams(ctx, slashingtypes.DefaultParams())
+
+	volunteerKeeper = volunteerkeeper.NewKeeper(keyVolunteer, appCodec, &stakingKeeper, distrKeeper)
+
 	distrKeeper.SetFeePool(ctx, distrtypes.InitialFeePool())
 	distrParams := distrtypes.DefaultParams()
 	distrParams.CommunityTax = sdk.ZeroDec()
 	distrParams.BaseProposerReward = sdk.ZeroDec()
 	distrParams.BonusProposerReward = sdk.ZeroDec()
 	distrKeeper.SetParams(ctx, distrParams)
-	stakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(distrKeeper.Hooks()))
+	stakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(distrKeeper.Hooks(), slashingKeeper.Hooks()))
 	mintKeeper.SetParams(ctx, minttypes.DefaultParams())
 
 	feeCollectorAcc := authtypes.NewEmptyModuleAccount(authtypes.FeeCollectorName)
 	notBondedPool := authtypes.NewEmptyModuleAccount(stakingtypes.NotBondedPoolName, authtypes.Burner, authtypes.Staking)
 	bondPool := authtypes.NewEmptyModuleAccount(stakingtypes.BondedPoolName, authtypes.Burner, authtypes.Staking)
 	distrAcc := authtypes.NewEmptyModuleAccount(distrtypes.ModuleName)
-	rewardAcc := authtypes.NewEmptyModuleAccount(types.ModuleName)
+	rewardAcc := authtypes.NewEmptyModuleAccount(rewardtypes.ModuleName)
 
 	accountKeeper.SetModuleAccount(ctx, feeCollectorAcc)
 	accountKeeper.SetModuleAccount(ctx, bondPool)
@@ -186,10 +207,10 @@ func CreateTestInput(t *testing.T) TestInput {
 	accountKeeper.SetModuleAccount(ctx, distrAcc)
 	accountKeeper.SetModuleAccount(ctx, rewardAcc)
 
-	keeper := NewKeeper(
+	keeper := rewardkeeper.NewKeeper(
 		appCodec,
 		keyReward,
-		paramsKeeper.Subspace(types.ModuleName),
+		paramsKeeper.Subspace(rewardtypes.ModuleName),
 		accountKeeper,
 		bankKeeper,
 		stakingKeeper,
@@ -197,7 +218,7 @@ func CreateTestInput(t *testing.T) TestInput {
 		mintKeeper,
 	)
 
-	defaults := types.Params{
+	defaults := rewardtypes.Params{
 		FeePoolRate:             sdk.NewDecWithPrec(20, 2),
 		CommunityPoolRate:       sdk.NewDecWithPrec(79, 2),
 		ReserveRate:             sdk.NewDecWithPrec(1, 2),
@@ -206,7 +227,9 @@ func CreateTestInput(t *testing.T) TestInput {
 	}
 	keeper.SetParams(ctx, defaults)
 
-	return TestInput{ctx, legacyAmino, accountKeeper, bankKeeper, keeper, stakingKeeper, distrKeeper}
+	sh := staking.NewHandler(stakingKeeper.Keeper)
+
+	return TestInput{ctx, legacyAmino, accountKeeper, bankKeeper, keeper, stakingKeeper, slashingKeeper, distrKeeper, volunteerKeeper, sh}
 }
 
 func (ti *TestInput) InitAccountWithCoins(addr sdk.AccAddress, coins sdk.Coins) error {
@@ -221,23 +244,4 @@ func (ti *TestInput) InitAccountWithCoins(addr sdk.AccAddress, coins sdk.Coins) 
 	}
 
 	return nil
-}
-
-// NewTestMsgCreateValidator test msg creator
-func NewTestMsgCreateValidator(address sdk.ValAddress, pubKey cryptotypes.PubKey, amt sdk.Int) *stakingtypes.MsgCreateValidator {
-	commission := stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(10, 2), sdk.OneDec(), sdk.OneDec())
-	msg, _ := stakingtypes.NewMsgCreateValidator(
-		address, pubKey, sdk.NewCoin(sdk.DefaultBondDenom, amt),
-		stakingtypes.Description{}, commission, sdk.OneInt(),
-	)
-
-	return msg
-}
-
-// NewTestMsgDelegate test msg creator
-func NewTestMsgDelegate(delegatorAddress sdk.AccAddress, validatorAddress sdk.ValAddress, amt sdk.Int) *stakingtypes.MsgDelegate {
-
-	return stakingtypes.NewMsgDelegate(
-		delegatorAddress, validatorAddress, sdk.NewCoin(sdk.DefaultBondDenom, amt),
-	)
 }

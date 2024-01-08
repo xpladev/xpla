@@ -39,10 +39,10 @@ RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LDFLAGS='-linkmode=external -extldflag
 FROM alpine:3.15 AS runtime
 
 WORKDIR /opt
-RUN [ "mkdir", "-p", "/opt/integration_test" ]
+RUN [ "mkdir", "-p", "/opt/tests/integration" ]
 
 COPY --from=build /localnet/build/xplad /usr/bin/xplad
-COPY --from=build /localnet/integration_test /opt/integration_test
+COPY --from=build /localnet/tests/e2e /opt/tests/e2e
 
 # Expose Cosmos ports
 EXPOSE 9090

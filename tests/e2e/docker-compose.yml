@@ -4,7 +4,7 @@ services:
     container_name: xpla-localnet-validator1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     volumes:
@@ -16,7 +16,7 @@ services:
       - "36656:26656"
       - "36657:26657"
     
-    entrypoint: sh -c "MONIKER=validator1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_master.sh"
+    entrypoint: sh -c "MONIKER=validator1 XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_master.sh"
     
     networks:
       vpcbr:
@@ -32,7 +32,7 @@ services:
       - node1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     ports:
@@ -40,7 +40,7 @@ services:
       - "19100:9090"
       - "36666:26656"
     
-    entrypoint: sh -c "MONIKER=validator2 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=validator2 XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -56,7 +56,7 @@ services:
       - node1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     ports:
@@ -64,7 +64,7 @@ services:
       - "19110:9090"
       - "36676:26656"
     
-    entrypoint: sh -c "MONIKER=validator3 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=validator3 XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -80,7 +80,7 @@ services:
       - node1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     ports:
@@ -88,7 +88,7 @@ services:
       - "19120:9090"
       - "36686:26656"
     
-    entrypoint: sh -c "MONIKER=validator4 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=validator4 XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -104,7 +104,7 @@ services:
       - node1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     ports:
@@ -112,7 +112,7 @@ services:
       - "19130:9090"
       - "36696:26656"
     
-    entrypoint: sh -c "MONIKER=validator5_experimental XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=validator5_experimental XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -128,7 +128,7 @@ services:
       - node1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     ports:
@@ -136,7 +136,7 @@ services:
       - "19140:9090"
       - "36706:26656"
     
-    entrypoint: sh -c "MONIKER=volunteer_validator1 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=volunteer_validator1 XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -152,7 +152,7 @@ services:
       - node1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     ports:
@@ -160,7 +160,7 @@ services:
       - "19150:9090"
       - "36716:26656"
     
-    entrypoint: sh -c "MONIKER=volunteer_validator2 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=volunteer_validator2 XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_secondary.sh"
     
     networks:
       vpcbr:
@@ -176,7 +176,7 @@ services:
       - node1
 
     build:
-      context: ../.
+      context: ../../.
       target: runtime
 
     ports:
@@ -184,7 +184,7 @@ services:
       - "19160:9090"
       - "36726:26656"
     
-    entrypoint: sh -c "MONIKER=volunteer_validator3 XPLAHOME=$XPLAHOME sh /opt/integration_test/entrypoint_secondary.sh"
+    entrypoint: sh -c "MONIKER=volunteer_validator3 XPLAHOME=$XPLAHOME sh /opt/tests/e2e/entrypoint_secondary.sh"
     
     networks:
       vpcbr:

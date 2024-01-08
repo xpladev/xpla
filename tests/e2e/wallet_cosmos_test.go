@@ -1,4 +1,4 @@
-package integrationtest
+package e2e
 
 import (
 	"context"
