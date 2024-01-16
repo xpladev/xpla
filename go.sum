@@ -1046,8 +1046,8 @@ github.com/xeipuuv/gojsonschema v1.2.0/go.mod h1:anYRn/JVcOK2ZgGU+IjEV4nwlhoK5sQ
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6/go.mod h1:ce1O1j6UtZfjr22oyGxGLbauSBp2YVXpARAosm7dHBg=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
-github.com/xpladev/cosmos-sdk v0.45.19-xpla h1:d7ZV4ioj+OfHiVsQZvWlyHoPmvVez/7mI0kfDyUc+wo=
-github.com/xpladev/cosmos-sdk v0.45.19-xpla/go.mod h1:3MSZtH7mYNdRrybrpw8aJi4lnjQPJgg7Suw9K4fUh/w=
+github.com/xpladev/cosmos-sdk v0.45.19-xpla.0.20240116082818-d70da869f149 h1:+HaKG+dqpiwWmb7qo/CwbPlseOTotuwvfZIPLiC5Z08=
+github.com/xpladev/cosmos-sdk v0.45.19-xpla.0.20240116082818-d70da869f149/go.mod h1:3MSZtH7mYNdRrybrpw8aJi4lnjQPJgg7Suw9K4fUh/w=
 github.com/xpladev/ethermint v0.19.4-xpla h1:F7SdxazMYXhVz37u4XyyXa4nGZ0ad/g6uifZX+quAvk=
 github.com/xpladev/ethermint v0.19.4-xpla/go.mod h1:yVEHdlFKDd/ZOfkR30ZCK0yyQ3KufwmTTwvk1IYz6qY=
 github.com/xpladev/evmos/v9 v9.2.0-xpla h1:UwuEqik0RyEsxMJzlrbE9u+hfmnY1VZXQMfprJebI3U=
