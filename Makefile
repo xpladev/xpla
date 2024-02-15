@@ -16,9 +16,12 @@ NAME := xpla
 APPNAME := xplad
 LEDGER_ENABLED ?= true
 TM_VERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::') # grab everything after the space in "github.com/tendermint/tendermint v0.34.7"
+BUILDDIR ?= $(CURDIR)/build
+GO_VERSION ?= "1.19"
 
 # for dockerized protobuf tools
 DOCKER := $(shell which docker)
+DOCKER_COMPOSE := $(shell which docker-compose)
 BUF_IMAGE=bufbuild/buf@sha256:3cb1f8a4b48bd5ad8f09168f10f607ddc318af202f5c057d52a45216793d85e5 #v1.4.0
 DOCKER_BUF := $(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(BUF_IMAGE)
 
@@ -87,11 +90,55 @@ endif
 
 all: install
 
+.PHONY: install
 install: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/xplad
 
+.PHONY: build
 build: go.sum
 	go build -mod=readonly $(BUILD_FLAGS) -o build/xplad ./cmd/xplad
+
+build-release: build/linux/amd64 build/linux/arm64
+
+build-release-amd64: go.sum $(BUILDDIR)/
+	$(DOCKER) buildx create --name xpla-builder || true
+	$(DOCKER) buildx use xpla-builder
+	$(DOCKER) buildx build \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--build-arg GIT_VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(COMMIT) \
+		--build-arg GOOS=linux \
+		--build-arg GOARCH=amd64 \
+		--platform linux/amd64 \
+		-t xpla:local-amd64 \
+		--load \
+		-f Dockerfile .
+	$(DOCKER) rm -f xpla-builder || true
+	$(DOCKER) create -ti --name xpla-builder xpla:local-amd64
+	$(DOCKER) cp xpla-builder:/usr/bin/xplad $(BUILDDIR)/release/xplad
+	tar -czvf $(BUILDDIR)/release/xpla_$(VERSION)_Linux_x86_64.tar.gz -C $(BUILDDIR)/release/ xplad
+	rm $(BUILDDIR)/release/xplad
+	$(DOCKER) rm -f xpla-builder
+
+build-release-arm64: go.sum $(BUILDDIR)/
+	$(DOCKER) buildx create --name xpla-builder  || true
+	$(DOCKER) buildx use xpla-builder 
+	$(DOCKER) buildx build \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--build-arg GIT_VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(COMMIT) \
+		--build-arg GOOS=linux \
+		--build-arg GOARCH=arm64 \
+		--platform linux/arm64 \
+		-t xpla:local-arm64 \
+		--load \
+		-f Dockerfile .
+	$(DOCKER) rm -f xpla-builder || true
+	$(DOCKER) create -ti --name xpla-builder xpla:local-arm64
+	$(DOCKER) cp xpla-builder:/usr/bin/xplad $(BUILDDIR)/release/xplad 
+	tar -czvf $(BUILDDIR)/release/xpla_$(VERSION)_Linux_arm64.tar.gz -C $(BUILDDIR)/release/ xplad 
+	rm $(BUILDDIR)/release/xplad
+	$(DOCKER) rm -f xpla-builder
 
 .PHONY: test
 test: go.sum
