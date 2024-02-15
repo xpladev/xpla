@@ -8,41 +8,37 @@
 
 ### BUILD
 FROM golang:1.19-alpine AS build
-WORKDIR /localnet
 
 # Create appuser.
 RUN adduser -D -g '' valiuser
 # Install required binaries
 RUN apk add --update --no-cache zip git make cmake build-base linux-headers musl-dev libc-dev
 
-# Copy source files
-COPY . /localnet/
-
-ENV LIBWASMVM_VERSION=v1.3.0
-
+WORKDIR /
 RUN git clone --depth 1 https://github.com/microsoft/mimalloc; cd mimalloc; mkdir build; cd build; cmake ..; make -j$(nproc); make install
 ENV MIMALLOC_RESERVE_HUGE_OS_PAGES=4
 
-# See https://github.com/CosmWasm/wasmvm/releases
-ADD https://github.com/CosmWasm/wasmvm/releases/download/${LIBWASMVM_VERSION}/libwasmvm_muslc.aarch64.a /lib/libwasmvm_muslc.aarch64.a
-ADD https://github.com/CosmWasm/wasmvm/releases/download/${LIBWASMVM_VERSION}/libwasmvm_muslc.x86_64.a /lib/libwasmvm_muslc.x86_64.a
-RUN sha256sum /lib/libwasmvm_muslc.aarch64.a | grep b1610f9c8ad8bdebf5b8f819f71d238466f83521c74a2deb799078932e862722
-RUN sha256sum /lib/libwasmvm_muslc.x86_64.a | grep b4aad4480f9b4c46635b4943beedbb72c929eab1d1b9467fe3b43e6dbf617e32
 
-# Copy the library you want to the final location that will be found by the linker flag `-lwasmvm_muslc`
-RUN cp /lib/libwasmvm_muslc.`uname -m`.a /lib/libwasmvm_muslc.a
+WORKDIR /workspace
+# Copy source files
+COPY . .
+# Download dependencies and CosmWasm libwasmvm if found.
+RUN set -eux; \    
+    export ARCH=$(uname -m); \
+    WASM_VERSION=$(go list -mod=readonly -m all | grep github.com/CosmWasm/wasmvm | awk '{print $2}'); \
+    if [ ! -z "${WASM_VERSION}" ]; then \
+      wget -O /lib/libwasmvm_muslc.a https://github.com/CosmWasm/wasmvm/releases/download/${WASM_VERSION}/libwasmvm_muslc.${ARCH}.a; \      
+    fi; \
+    go mod download;
 
 # Build executable
-RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LDFLAGS='-linkmode=external -extldflags "-L/localnet/mimalloc/build -lmimalloc -Wl,-z,muldefs -static"' make build
+RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LDFLAGS='-linkmode=external -extldflags "-L/mimalloc/build -lmimalloc -Wl,-z,muldefs -static"' make build
 
 # --------------------------------------------------------
-FROM alpine:3.15 AS runtime
+FROM alpine:3.18 AS runtime
 
-WORKDIR /opt
-RUN [ "mkdir", "-p", "/opt/tests/integration" ]
-
-COPY --from=build /localnet/build/xplad /usr/bin/xplad
-COPY --from=build /localnet/tests/e2e /opt/tests/e2e
+COPY --from=build /workspace/build/xplad /usr/bin/xplad
+COPY --from=build /workspace/tests/e2e /opt/tests/e2e
 
 # Expose Cosmos ports
 EXPOSE 9090
