@@ -1,5 +1,5 @@
 #!/bin/sh
-# MONIKER=validator1|validator2|validator3|validator4 sh /opt/integration_test/entrypoint.sh
+# MONIKER=validator1|validator2|validator3|validator4 sh /opt/tests/e2e/entrypoint.sh
 
 # File is not atomic and somestimes secondary nodes copies the existing old genesisfile
 # It should be cleared
@@ -10,25 +10,25 @@ rm -f /genesis/*
 
 # 2. Register the keys
 # xpla1z2k85n48ydfvzslrugwzl4j2u7vtdyf3xvucmc
-/usr/bin/xplad keys add validator1 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/validator1.mnemonics
+/usr/bin/xplad keys add validator1 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/validator1.mnemonics
 # xpla16wx7ye3ce060tjvmmpu8lm0ak5xr7gm2dp0kpt
-/usr/bin/xplad keys add validator2 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/validator2.mnemonics
+/usr/bin/xplad keys add validator2 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/validator2.mnemonics
 # xpla1pe9mc2q72u94sn2gg52ramrt26x5efw6hr5gt4
-/usr/bin/xplad keys add validator3 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/validator3.mnemonics
+/usr/bin/xplad keys add validator3 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/validator3.mnemonics
 # xpla1luqjvjyns9e92h06tq6zqtw76k8xtegfcerzjr
-/usr/bin/xplad keys add validator4 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/validator4.mnemonics
+/usr/bin/xplad keys add validator4 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/validator4.mnemonics
 # xpla1y6gnay0pv49asun56la09jcmhg2kc949mpftvt
-/usr/bin/xplad keys add user1 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/user1.mnemonics
+/usr/bin/xplad keys add user1 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/user1.mnemonics
 # xpla1u27snswkjpenlscgvszcfjmz8uy2y5qacx0826
-/usr/bin/xplad keys add user2 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/user2.mnemonics
+/usr/bin/xplad keys add user2 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/user2.mnemonics
 # xpla14xprgqlnuep23kmvsk5utd9pw7w27yeyjlcmcz -- validator5_experimental
-/usr/bin/xplad keys add validator5_experimental --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/validator5_experimental.mnemonics
+/usr/bin/xplad keys add validator5_experimental --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/validator5_experimental.mnemonics
 # xpla1ur90l8ecppc55gll7k57dk2tvs2w5m9jzptpcj -- volunteer validator1
-/usr/bin/xplad keys add volunteer_validator1 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/volunteer_validator1.mnemonics
+/usr/bin/xplad keys add volunteer_validator1 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/volunteer_validator1.mnemonics
 # xpla1yct6tmmm0twn2wz637lt0yz62xwtqhyqa84uu5 -- volunteer validator2
-/usr/bin/xplad keys add volunteer_validator2 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/volunteer_validator2.mnemonics
+/usr/bin/xplad keys add volunteer_validator2 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/volunteer_validator2.mnemonics
 # xpla1unq7rvf4jkcpmqww09j0u8k37qkgjxm43llwx5 -- volunteer validator3
-/usr/bin/xplad keys add volunteer_validator3 --recover --keyring-backend test --home $XPLAHOME < /opt/integration_test/test_keys/volunteer_validator3.mnemonics
+/usr/bin/xplad keys add volunteer_validator3 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/volunteer_validator3.mnemonics
 
 # 3. Add the genesis accounts
 /usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
@@ -49,8 +49,8 @@ rm -f /genesis/*
 for IDX in 1 2 3 4
 do
     # 1) Copy the credentials
-    cp /opt/integration_test/validator$IDX/node_key.json $XPLAHOME/config
-    cp /opt/integration_test/validator$IDX/priv_validator_key.json $XPLAHOME/config
+    cp /opt/tests/e2e/validator$IDX/node_key.json $XPLAHOME/config
+    cp /opt/tests/e2e/validator$IDX/priv_validator_key.json $XPLAHOME/config
 
     # 2) Execute a gentx
     /usr/bin/xplad gentx validator$IDX 9000000000000000000axpla  \
@@ -104,8 +104,8 @@ cp $XPLAHOME/config/genesis.json /genesis
 ### followings are for validator setting
 
 # 1. Copy the node setting files to the node home dir
-cp -r /opt/integration_test/$MONIKER/* $XPLAHOME/config
-cp -r /opt/integration_test/common_configs/* $XPLAHOME/config
+cp -r /opt/tests/e2e/$MONIKER/* $XPLAHOME/config
+cp -r /opt/tests/e2e/common_configs/* $XPLAHOME/config
 
 # 2. Get genesis.json from the shared
 cp /genesis/genesis.json $XPLAHOME/config

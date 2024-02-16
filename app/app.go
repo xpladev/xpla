@@ -58,6 +58,7 @@ import (
 	"github.com/xpladev/xpla/docs"
 
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
+	"github.com/xpladev/xpla/app/upgrades/v1_4"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 )
@@ -422,6 +423,12 @@ func (app *XplaApp) setUpgradeHandlers() {
 		volunteer.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
 	)
 
+	// v1_4 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v1_4.UpgradeName,
+		v1_4.CreateUpgradeHandler(app.mm, app.configurator, app.AppKeepers.AccountKeeper, &app.AppKeepers.StakingKeeper),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -449,6 +456,9 @@ func (app *XplaApp) setUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: volunteer.AddModules,
 		}
+	case v1_4.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{}
+
 	}
 
 	if storeUpgrades != nil {
