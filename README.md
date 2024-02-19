@@ -9,4 +9,4 @@ make install
 
 ## License
 
-XPLA is licensed under the Apache License 2.1
+XPLA is licensed under the Apache License 21
