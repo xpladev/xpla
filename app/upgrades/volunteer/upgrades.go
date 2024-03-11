@@ -10,8 +10,8 @@ import (
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 	ibcfee "github.com/cosmos/ibc-go/v7/modules/apps/29-fee"
 	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
-	"github.com/strangelove-ventures/packet-forward-middleware/v7/router"
-	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
+	router "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
+	routertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
 
 	"github.com/xpladev/xpla/app/keepers"
 )

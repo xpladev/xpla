@@ -20,7 +20,7 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	pfmroutertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
+	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 	"github.com/xpladev/xpla/app/keepers"

@@ -8,8 +8,10 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -49,6 +51,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
+	router "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
+	pfmrouterkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/keeper"
+	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
 	icacontroller "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
@@ -67,19 +73,16 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	"github.com/strangelove-ventures/packet-forward-middleware/v7/router"
-	pfmrouterkeeper "github.com/strangelove-ventures/packet-forward-middleware/v7/router/keeper"
-	pfmroutertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
 
 	"github.com/xpladev/ethermint/x/erc20"
 	erc20keeper "github.com/xpladev/ethermint/x/erc20/keeper"
 	erc20types "github.com/xpladev/ethermint/x/erc20/types"
-
 	etherminttypes "github.com/xpladev/ethermint/types"
 	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
+
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
@@ -101,7 +104,7 @@ type AppKeepers struct {
 	SlashingKeeper   slashingkeeper.Keeper
 	MintKeeper       mintkeeper.Keeper
 	DistrKeeper      distrkeeper.Keeper
-	GovKeeper        govkeeper.Keeper
+	GovKeeper        *govkeeper.Keeper
 	CrisisKeeper     *crisiskeeper.Keeper
 	UpgradeKeeper    *upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
@@ -305,12 +308,10 @@ func NewAppKeeper(
 		panic("error while reading wasm config: " + err.Error())
 	}
 
-	availableCapabilities := strings.Join(wasmapp.AllCapabilities(), ",")
 
-	// XXX
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	//supportedFeatures := "iterator,staking,stargate,cosmwasm_1_1"
+	availableCapabilities := strings.Join(wasmapp.AllCapabilities(), ",")
 
 	// Stargate Queries
 	accepted := wasmkeeper.AcceptedStargateQueries{
@@ -354,10 +355,7 @@ func NewAppKeeper(
 		bApp.GRPCQueryRouter(),
 		wasmDir,
 		wasmConfig,
-		// XXX is this needed?
 		availableCapabilities,
-		// XXX is this needed?
-		//supportedFeatures,
 		govModAddress,
 		wasmOpts...,
 	)
@@ -391,7 +389,7 @@ func NewAppKeeper(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	govKeeper.SetLegacyRouter(govRouter)
 
-	appKeepers.GovKeeper = *govKeeper.SetHooks(
+	appKeepers.GovKeeper = govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
 		// register governance hooks
 		),
@@ -431,15 +429,16 @@ func NewAppKeeper(
 	)
 
 	// RouterKeeper must be created before TransferKeeper
+	authority := authtypes.NewModuleAddress(govtypes.ModuleName).String()
 	appKeepers.PFMRouterKeeper = pfmrouterkeeper.NewKeeper(
 		appCodec, appKeepers.keys[pfmroutertypes.StoreKey],
-		appKeepers.GetSubspace(pfmroutertypes.ModuleName),
-		appKeepers.TransferKeeper, // Will be zero-value here. Reference is set later on with SetTransferKeeper.
+		nil, // Will be zero-value here. Reference is set later on with SetTransferKeeper.
 		appKeepers.IBCKeeper.ChannelKeeper,
 		appKeepers.DistrKeeper,
 		appKeepers.BankKeeper,
 		// The ICS4Wrapper is replaced by the IBCFeeKeeper instead of the channel so that sending can be overridden by the middleware
 		&appKeepers.IBCFeeKeeper,
+		authority,
 	)
 
 	appKeepers.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
@@ -464,6 +463,7 @@ func NewAppKeeper(
 		appKeepers.ScopedTransferKeeper,
 	)
 
+	// Must be called on PFMRouter AFTER TransferKeeper initialized
 	appKeepers.PFMRouterKeeper.SetTransferKeeper(appKeepers.TransferKeeper)
 
 	appKeepers.ICAHostKeeper = icahostkeeper.NewKeeper(

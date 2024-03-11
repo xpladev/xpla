@@ -24,7 +24,7 @@ import (
 	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
+	routertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 	erc20types "github.com/xpladev/ethermint/x/erc20/types"

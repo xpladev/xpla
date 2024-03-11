@@ -7,18 +7,27 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cast"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/cometbft/cometbft/libs/log"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
@@ -34,18 +43,13 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/spf13/cast"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	ethermintclient "github.com/xpladev/ethermint/client"
 	"github.com/xpladev/ethermint/crypto/hd"
 	ethermintserver "github.com/xpladev/ethermint/server"
 	evmcfg "github.com/xpladev/ethermint/server/config"
-
 	"github.com/xpladev/ethermint/client/debug"
-	"github.com/xpladev/xpla/app"
+
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"
 	xplatypes "github.com/xpladev/xpla/types"
@@ -91,6 +95,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 			xplaTemplate, xplaAppConfig := initAppConfig()
 			customTMConfig := initTendermintConfig()
+
 			return server.InterceptConfigsPreRunHandler(cmd, xplaTemplate, xplaAppConfig, customTMConfig)
 		},
 	}
@@ -137,8 +142,11 @@ func initAppConfig() (string, interface{}) {
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg := sdk.GetConfig()
-
 	cfg.Seal()
+
+	ac := appCreator{
+		encCfg: encodingConfig,
+	}
 
 	rootCmd.AddCommand(
 		ethermintclient.ValidateChainID(
@@ -151,11 +159,10 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		config.Cmd(),
+		pruning.PruningCmd(ac.newApp),
+		snapshot.Cmd(ac.newApp),
 	)
 
-	ac := appCreator{
-		encCfg: encodingConfig,
-	}
 	ethermintserver.AddCommands(rootCmd, ethermintserver.NewDefaultStartOptions(ac.newApp, xpla.DefaultNodeHome), ac.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
@@ -236,7 +243,6 @@ func (ac appCreator) newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
-
 	var cache sdk.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
@@ -296,7 +302,7 @@ func (ac appCreator) newApp(
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
-		app.GetEnabledProposals(),
+		xpla.GetEnabledProposals(),
 		appOpts,
 		wasmOpts,
 		baseapp.SetPruning(pruningOpts),
@@ -345,7 +351,7 @@ func (ac appCreator) appExport(
 		homePath,
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
-		app.GetEnabledProposals(),
+		xpla.GetEnabledProposals(),
 		appOpts,
 		emptyWasmOpts,
 	)

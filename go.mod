@@ -1,6 +1,6 @@
 module github.com/xpladev/xpla
 
-go 1.19
+go 1.20
 
 require (
 	cosmossdk.io/api v0.3.1
@@ -12,7 +12,8 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.4
 	github.com/cosmos/cosmos-sdk v0.47.9
 	github.com/cosmos/gogoproto v1.4.10
-	github.com/cosmos/ibc-go/v7 v7.2.0
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.1.2
+	github.com/cosmos/ibc-go/v7 v7.3.1
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.3
@@ -24,7 +25,6 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
-	github.com/strangelove-ventures/packet-forward-middleware/v7 v7.0.0-20230523193151-73dea436e53f
 	github.com/stretchr/testify v1.8.4
 	github.com/xpladev/ethermint v0.6.1-0.20240223100045-44f149239f1a
 	golang.org/x/sync v0.4.0
