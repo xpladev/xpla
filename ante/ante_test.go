@@ -5,16 +5,16 @@ import (
 	"math/rand"
 	"testing"
 
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	xplaapp "github.com/xpladev/xpla/app"
 	xplahelpers "github.com/xpladev/xpla/app/helpers"
@@ -35,15 +35,16 @@ func TestIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *IntegrationTestSuite) SetupTest() {
-	chainId := fmt.Sprintf("test_%d-%d", rand.Intn(1000)+1, rand.Intn(10)+1)
+	chainId := fmt.Sprintf("test_9001-%d", rand.Intn(10))
 
-	app := xplahelpers.Setup(s.T(), chainId, false, 1)
+	app := xplahelpers.Setup(s.T(), chainId)
+
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{
 		ChainID: chainId,
 		Height:  1,
 	})
 
-	encodingConfig := simapp.MakeTestEncodingConfig()
+	encodingConfig := moduletestutil.MakeTestEncodingConfig()
 	encodingConfig.Amino.RegisterConcrete(&testdata.TestMsg{}, "testdata.TestMsg", nil)
 	testdata.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 

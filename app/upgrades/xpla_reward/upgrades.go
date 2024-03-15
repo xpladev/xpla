@@ -5,6 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/xpladev/xpla/x/reward"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 )
@@ -15,7 +16,7 @@ func CreateUpgradeHandler(
 	rk rewardkeeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		fromVM[rewardtypes.ModuleName] = mm.Modules[rewardtypes.ModuleName].ConsensusVersion()
+		fromVM[rewardtypes.ModuleName] = reward.AppModule{}.ConsensusVersion()
 
 		var params rewardtypes.Params
 		err := jsonpb.UnmarshalString(plan.Info, &params)

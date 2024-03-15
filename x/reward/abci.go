@@ -1,9 +1,9 @@
 package reward
 
 import (
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/xpladev/xpla/x/reward/keeper"
 	"github.com/xpladev/xpla/x/reward/types"
 

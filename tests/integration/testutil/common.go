@@ -4,18 +4,19 @@ import (
 	"testing"
 	"time"
 
+	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/store"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
+	simparams "cosmossdk.io/simapp/params"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	simparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/std"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -27,6 +28,7 @@ import (
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -56,7 +58,7 @@ const (
 )
 
 var (
-	Pks = simapp.CreateTestPubKeys(TotalCount)
+	Pks = simtestutil.CreateTestPubKeys(TotalCount)
 )
 
 // ModuleBasics nolint
@@ -86,7 +88,7 @@ func MakeEncodingConfig(_ *testing.T) simparams.EncodingConfig {
 	rewardtypes.RegisterInterfaces(interfaceRegistry)
 	return simparams.EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Marshaler:         marshaler,
+		Codec:             marshaler,
 		TxConfig:          txCfg,
 		Amino:             amino,
 	}
@@ -99,7 +101,7 @@ type TestInput struct {
 	AccountKeeper   authkeeper.AccountKeeper
 	BankKeeper      bankkeeper.Keeper
 	RewardKeeper    rewardkeeper.Keeper
-	StakingKeeper   stakingkeeper.Keeper
+	StakingKeeper   *stakingkeeper.Keeper
 	SlashingKeeper  slashingkeeper.Keeper
 	DistrKeeper     distrkeeper.Keeper
 	VolunteerKeeper volunteerkeeper.Keeper
@@ -124,18 +126,18 @@ func CreateTestInput(t *testing.T) TestInput {
 	ms := store.NewCommitMultiStore(db)
 	ctx := sdk.NewContext(ms, tmproto.Header{Time: time.Now().UTC()}, false, log.NewNopLogger())
 	encodingConfig := MakeEncodingConfig(t)
-	appCodec, legacyAmino := encodingConfig.Marshaler, encodingConfig.Amino
+	appCodec, legacyAmino := encodingConfig.Codec, encodingConfig.Amino
 
-	ms.MountStoreWithDB(keyAcc, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyBank, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(tKeyParams, sdk.StoreTypeTransient, db)
-	ms.MountStoreWithDB(keyParams, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyReward, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyStaking, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keySlahsing, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyDistr, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyMint, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyVolunteer, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyAcc, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyBank, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(tKeyParams, storetypes.StoreTypeTransient, db)
+	ms.MountStoreWithDB(keyParams, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyReward, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyStaking, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keySlahsing, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyDistr, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyMint, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyVolunteer, storetypes.StoreTypeIAVL, db)
 
 	require.NoError(t, ms.LoadLatestVersion())
 
@@ -155,9 +157,11 @@ func CreateTestInput(t *testing.T) TestInput {
 		rewardtypes.ModuleName:         nil,
 	}
 
+	govModAddress := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, keyParams, tKeyParams)
-	accountKeeper := authkeeper.NewAccountKeeper(appCodec, keyAcc, paramsKeeper.Subspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms)
-	bankKeeper := bankkeeper.NewBaseKeeper(appCodec, keyBank, accountKeeper, paramsKeeper.Subspace(banktypes.ModuleName), blackListAddrs)
+	accountKeeper := authkeeper.NewAccountKeeper(appCodec, keyAcc, authtypes.ProtoBaseAccount, maccPerms, sdk.GetConfig().GetBech32AccountAddrPrefix(), govModAddress)
+	bankKeeper := bankkeeper.NewBaseKeeper(appCodec, keyBank, accountKeeper, blackListAddrs, govModAddress)
 
 	var volunteerKeeper volunteerkeeper.Keeper
 	stakingKeeper := stakingkeeper.NewKeeper(
@@ -165,7 +169,7 @@ func CreateTestInput(t *testing.T) TestInput {
 		keyStaking,
 		accountKeeper,
 		bankKeeper,
-		paramsKeeper.Subspace(stakingtypes.ModuleName),
+		govModAddress,
 		&volunteerKeeper,
 	)
 
@@ -173,18 +177,18 @@ func CreateTestInput(t *testing.T) TestInput {
 	stakingParams.BondDenom = sdk.DefaultBondDenom
 	stakingKeeper.SetParams(ctx, stakingParams)
 
-	mintKeeper := mintkeeper.NewKeeper(appCodec, keyMint, paramsKeeper.Subspace(minttypes.ModuleName), stakingKeeper, accountKeeper, bankKeeper, authtypes.FeeCollectorName)
+	mintKeeper := mintkeeper.NewKeeper(appCodec, keyMint, stakingKeeper, accountKeeper, bankKeeper, authtypes.FeeCollectorName, govModAddress)
 
 	distrKeeper := distrkeeper.NewKeeper(
 		appCodec,
-		keyDistr, paramsKeeper.Subspace(distrtypes.ModuleName),
+		keyDistr,
 		accountKeeper, bankKeeper, stakingKeeper,
-		authtypes.FeeCollectorName, blackListAddrs)
+		authtypes.FeeCollectorName, govModAddress)
 
-	slashingKeeper := slashingkeeper.NewKeeper(appCodec, keySlahsing, &stakingKeeper, paramsKeeper.Subspace(slashingtypes.ModuleName))
+	slashingKeeper := slashingkeeper.NewKeeper(appCodec, legacyAmino, keySlahsing, stakingKeeper, govModAddress)
 	slashingKeeper.SetParams(ctx, slashingtypes.DefaultParams())
 
-	volunteerKeeper = volunteerkeeper.NewKeeper(keyVolunteer, appCodec, &stakingKeeper, distrKeeper)
+	volunteerKeeper = volunteerkeeper.NewKeeper(keyVolunteer, appCodec, stakingKeeper, distrKeeper)
 
 	distrKeeper.SetFeePool(ctx, distrtypes.InitialFeePool())
 	distrParams := distrtypes.DefaultParams()
@@ -227,7 +231,8 @@ func CreateTestInput(t *testing.T) TestInput {
 	}
 	keeper.SetParams(ctx, defaults)
 
-	sh := staking.NewHandler(stakingKeeper.Keeper)
+	// XXX
+	var sh sdk.Handler = nil//testutil.NewHandler(stakingKeeper.Keeper)
 
 	return TestInput{ctx, legacyAmino, accountKeeper, bankKeeper, keeper, stakingKeeper, slashingKeeper, distrKeeper, volunteerKeeper, sh}
 }
