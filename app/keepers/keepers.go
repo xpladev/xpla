@@ -67,19 +67,19 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	etherminttypes "github.com/evmos/evmos/v14/types"
-	evmkeeper "github.com/evmos/evmos/v14/x/evm/keeper"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-	feemarketkeeper "github.com/evmos/evmos/v14/x/feemarket/keeper"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 	"github.com/strangelove-ventures/packet-forward-middleware/v7/router"
 	pfmrouterkeeper "github.com/strangelove-ventures/packet-forward-middleware/v7/router/keeper"
 	pfmroutertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
 
-	"github.com/evmos/evmos/v14/x/erc20"
-	erc20keeper "github.com/evmos/evmos/v14/x/erc20/keeper"
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/xpladev/ethermint/x/erc20"
+	erc20keeper "github.com/xpladev/ethermint/x/erc20/keeper"
+	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 
+	etherminttypes "github.com/xpladev/ethermint/types"
+	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
@@ -419,11 +419,9 @@ func NewAppKeeper(
 		appKeepers.GetSubspace(evmtypes.ModuleName),
 	)
 
-	// XXX
 	appKeepers.Erc20Keeper = erc20keeper.NewKeeper(
 		appKeepers.keys[erc20types.StoreKey], appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
 		appKeepers.AccountKeeper, appKeepers.BankKeeper, appKeepers.EvmKeeper, appKeepers.StakingKeeper,
-		nil, // XXX
 	)
 
 	appKeepers.EvmKeeper = appKeepers.EvmKeeper.SetHooks(

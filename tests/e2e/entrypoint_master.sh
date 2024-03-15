@@ -7,6 +7,7 @@ rm -f /genesis/*
 
 # 1. chain init
 /usr/bin/xplad init $MONIKER --chain-id localtest_9001-1 --home $XPLAHOME
+/usr/bin/xplad config chain-id localtest_9001-1 --home $XPLAHOME
 
 # 2. Register the keys
 # xpla1z2k85n48ydfvzslrugwzl4j2u7vtdyf3xvucmc
@@ -73,7 +74,7 @@ done
 
 # 6. Replace params
 sed -i 's/"bond_denom": "stake"/"bond_denom": "axpla"/g' $XPLAHOME/config/genesis.json
-sed -i 's/"evm_denom": "aevmos",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"evm_denom": "aphoton",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom": "stake",/"denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"max_gas": "-1"/"max_gas": "5000000"/g' $XPLAHOME/config/genesis.json

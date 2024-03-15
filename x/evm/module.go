@@ -6,9 +6,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/evmos/evmos/v14/x/evm"
-	"github.com/evmos/evmos/v14/x/evm/keeper"
-	"github.com/evmos/evmos/v14/x/evm/types"
+	"github.com/xpladev/ethermint/x/evm"
+	"github.com/xpladev/ethermint/x/evm/keeper"
+	"github.com/xpladev/ethermint/x/evm/types"
 )
 
 var (

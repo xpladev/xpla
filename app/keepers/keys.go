@@ -24,10 +24,10 @@ import (
 	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	routertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
+	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )

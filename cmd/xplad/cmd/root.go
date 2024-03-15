@@ -39,12 +39,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	ethermintclient "github.com/evmos/evmos/v14/client"
-	"github.com/evmos/evmos/v14/crypto/hd"
-	ethermintserver "github.com/evmos/evmos/v14/server"
-	evmcfg "github.com/evmos/evmos/v14/server/config"
+	ethermintclient "github.com/xpladev/ethermint/client"
+	"github.com/xpladev/ethermint/crypto/hd"
+	ethermintserver "github.com/xpladev/ethermint/server"
+	evmcfg "github.com/xpladev/ethermint/server/config"
 
-	"github.com/evmos/evmos/v14/client/debug"
+	"github.com/xpladev/ethermint/client/debug"
 	"github.com/xpladev/xpla/app"
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"

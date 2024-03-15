@@ -26,7 +26,7 @@ import (
 	xplatypes "github.com/xpladev/xpla/types"
 	volunteerValType "github.com/xpladev/xpla/x/volunteer/types"
 
-	// evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	// evmtypes "github.com/xpladev/ethermint/x/evm/types"
 
 	abibind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethcommon "github.com/ethereum/go-ethereum/common"

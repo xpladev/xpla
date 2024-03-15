@@ -3,7 +3,7 @@ package volunteer
 import (
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
 	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 

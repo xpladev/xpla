@@ -20,9 +20,9 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 	pfmroutertypes "github.com/strangelove-ventures/packet-forward-middleware/v7/router/types"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 	"github.com/xpladev/xpla/app/keepers"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 )
@@ -64,7 +64,7 @@ func CreateUpgradeHandler(
 			case icahosttypes.SubModuleName:
 				keyTable = icahosttypes.ParamKeyTable()
 
-			// evmos
+			// ethermint
 			case evmtypes.ModuleName:
 				keyTable = evmtypes.ParamKeyTable() //nolint:staticcheck
 			case feemarkettypes.ModuleName:

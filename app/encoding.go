@@ -3,7 +3,7 @@ package app
 import (
 	"github.com/xpladev/xpla/app/params"
 
-	"github.com/evmos/evmos/v14/encoding/codec"
+	"github.com/xpladev/ethermint/encoding/codec"
 )
 
 // MakeTestEncodingConfig creates an EncodingConfig for testing. This function

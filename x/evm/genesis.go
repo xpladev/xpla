@@ -5,9 +5,9 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	ethermint "github.com/evmos/evmos/v14/types"
-	"github.com/evmos/evmos/v14/x/evm/keeper"
-	"github.com/evmos/evmos/v14/x/evm/types"
+	ethermint "github.com/xpladev/ethermint/types"
+	"github.com/xpladev/ethermint/x/evm/keeper"
+	"github.com/xpladev/ethermint/x/evm/types"
 )
 
 // ExportGenesis exports genesis state of the EVM module
