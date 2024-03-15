@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 
 	"github.com/xpladev/xpla/ante"
 )

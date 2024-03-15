@@ -18,8 +18,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	ethhd "github.com/evmos/evmos/v14/crypto/hd"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	ethhd "github.com/xpladev/ethermint/crypto/hd"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
 )

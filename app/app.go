@@ -51,7 +51,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/prometheus/client_golang/prometheus"
 
-	erc20client "github.com/evmos/evmos/v14/x/erc20/client"
+	erc20client "github.com/xpladev/ethermint/x/erc20/client"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
@@ -262,20 +262,18 @@ func NewXplaApp(
 
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			Cdc:                app.appCodec,
-			AccountKeeper:      app.AccountKeeper,
-			BankKeeper:         app.BankKeeper,
-			DistributionKeeper: app.DistrKeeper,
-			IBCKeeper:          app.IBCKeeper,
-			StakingKeeper:      app.StakingKeeper,
-			EvmKeeper:          app.EvmKeeper,
-			FeegrantKeeper:     app.FeeGrantKeeper,
-			VolunteerKeeper:    app.VolunteerKeeper,
-			SignModeHandler:    encodingConfig.TxConfig.SignModeHandler(),
-			SigGasConsumer:     xplaante.SigVerificationGasConsumer,
-			FeeMarketKeeper:    app.FeeMarketKeeper,
-			MaxTxGasWanted:     evmMaxGasWanted,
-			TxFeeChecker:       noOpTxFeeChecker,
+			Cdc:             app.appCodec,
+			AccountKeeper:   app.AccountKeeper,
+			BankKeeper:      app.BankKeeper,
+			IBCKeeper:       app.IBCKeeper,
+			EvmKeeper:       app.EvmKeeper,
+			FeegrantKeeper:  app.FeeGrantKeeper,
+			VolunteerKeeper: app.VolunteerKeeper,
+			SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+			SigGasConsumer:  xplaante.SigVerificationGasConsumer,
+			FeeMarketKeeper: app.FeeMarketKeeper,
+			MaxTxGasWanted:  evmMaxGasWanted,
+			TxFeeChecker:    noOpTxFeeChecker,
 
 			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
 			TxCounterStoreKey:    app.GetKey(wasm.StoreKey),

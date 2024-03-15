@@ -3,6 +3,7 @@
 
 # 1. chain init
 /usr/bin/xplad init $MONIKER --chain-id localtest_9001-1 --home $XPLAHOME
+/usr/bin/xplad config chain-id localtest_9001-1 --home $XPLAHOME
 
 # 2. copy the node setting files to the node home dir
 cp -r /opt/tests/e2e/$MONIKER/* $XPLAHOME/config

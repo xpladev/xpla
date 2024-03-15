@@ -19,7 +19,7 @@ cosmos_sdk_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-sdk)
 wasm_dir=$(go list -f '{{ .Dir }}' -m github.com/CosmWasm/wasmd)
 ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v4)
 ica=$(go list -f '{{ .Dir }}' -m github.com/cosmos/interchain-accounts)
-ethermint_dir=$(go list -f '{{ .Dir }}' -m github.com/evmos/ethermint)
+ethermint_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/ethermint)
 pfm=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v4)
 xpla_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/xpla)
 

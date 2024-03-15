@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	ethermintante "github.com/evmos/evmos/v14/app/ante/evm"
+	ethermintante "github.com/xpladev/ethermint/app/ante"
 )
 
 const maxBypassMinFeeMsgGasUsage = uint64(1_000_000)

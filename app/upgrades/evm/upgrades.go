@@ -6,12 +6,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/evmos/evmos/v14/x/evm"
-	evmkeeper "github.com/evmos/evmos/v14/x/evm/keeper"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-	"github.com/evmos/evmos/v14/x/feemarket"
-	feemarketkeeper "github.com/evmos/evmos/v14/x/feemarket/keeper"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
+	"github.com/xpladev/ethermint/x/evm"
+	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	"github.com/xpladev/ethermint/x/feemarket"
+	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 )
 
 func CreateUpgradeHandler(
