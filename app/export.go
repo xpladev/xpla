@@ -2,8 +2,9 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,7 +16,7 @@ import (
 // ExportAppStateAndValidators exports the state of the application for a genesis
 // file.
 func (app *XplaApp) ExportAppStateAndValidators(
-	forZeroHeight bool, jailAllowedAddrs []string,
+	forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	// as if they could withdraw from the start of the next block
 	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
@@ -25,10 +26,13 @@ func (app *XplaApp) ExportAppStateAndValidators(
 	height := app.LastBlockHeight() + 1
 	if forZeroHeight {
 		height = 0
-		app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs)
+
+		if err := app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs); err != nil {
+			return servertypes.ExportedApp{}, err
+		}
 	}
 
-	genState := app.mm.ExportGenesis(ctx, app.appCodec)
+	genState := app.mm.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
 	appState, err := json.MarshalIndent(genState, "", "  ")
 	if err != nil {
 		return servertypes.ExportedApp{}, err
@@ -47,7 +51,7 @@ func (app *XplaApp) ExportAppStateAndValidators(
 // NOTE zero height genesis is a temporary feature which will be deprecated
 //
 //	in favour of export at a block height
-func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
+func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) error {
 	applyAllowedAddrs := false
 
 	// check if there is a allowed address list
@@ -60,7 +64,7 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 	for _, addr := range jailAllowedAddrs {
 		_, err := sdk.ValAddressFromBech32(addr)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		allowedAddrsMap[addr] = true
 	}
@@ -84,18 +88,14 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 	for _, delegation := range dels {
 		valAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		delAddr, err := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		_, err = app.DistrKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
-		if err != nil {
-			panic(err)
-		}
-
+		_, _ = app.DistrKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
 	}
 
 	// clear validator slash events
@@ -124,14 +124,20 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 	for _, del := range dels {
 		valAddr, err := sdk.ValAddressFromBech32(del.ValidatorAddress)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		delAddr, err := sdk.AccAddressFromBech32(del.DelegatorAddress)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr)
-		app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr)
+		err = app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr)
+		if err != nil {
+			return err
+		}
+		err = app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr)
+		if err != nil {
+			return err
+		}
 	}
 
 	// reset context height
@@ -164,28 +170,28 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 	counter := int16(0)
 
 	// Closure to ensure iterator doesn't leak.
-	func() {
-		defer iter.Close()
-		for ; iter.Valid(); iter.Next() {
-			addr := sdk.ValAddress(stakingtypes.AddressFromValidatorsKey(iter.Key()))
-			validator, found := app.StakingKeeper.GetValidator(ctx, addr)
-			if !found {
-				panic("expected validator, not found")
-			}
-
-			validator.UnbondingHeight = 0
-			if applyAllowedAddrs && !allowedAddrsMap[addr.String()] {
-				validator.Jailed = true
-			}
-
-			app.StakingKeeper.SetValidator(ctx, validator)
-			counter++
+	for ; iter.Valid(); iter.Next() {
+		addr := sdk.ValAddress(stakingtypes.AddressFromValidatorsKey(iter.Key()))
+		validator, found := app.StakingKeeper.GetValidator(ctx, addr)
+		if !found {
+			return fmt.Errorf("expected validator %s not found", addr)
 		}
-	}()
 
-	_, err := app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
-	if err != nil {
-		panic(err)
+		validator.UnbondingHeight = 0
+		if applyAllowedAddrs && !allowedAddrsMap[addr.String()] {
+			validator.Jailed = true
+		}
+
+		app.StakingKeeper.SetValidator(ctx, validator)
+		counter++
+	}
+
+	if err := iter.Close(); err != nil {
+		return err
+	}
+
+	if _, err := app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx); err != nil {
+		return err
 	}
 
 	/* Handle slashing state. */
@@ -199,4 +205,6 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 			return false
 		},
 	)
+
+	return nil
 }

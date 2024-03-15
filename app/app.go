@@ -10,46 +10,48 @@ import (
 	"path/filepath"
 	"strings"
 
+	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	tmos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
+
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
-	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ibcclientclient "github.com/cosmos/ibc-go/v4/modules/core/02-client/client"
+	ibcclientclient "github.com/cosmos/ibc-go/v7/modules/core/02-client/client"
 	"github.com/spf13/cast"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	dbm "github.com/tendermint/tm-db"
 	volunteerclient "github.com/xpladev/xpla/x/volunteer/client"
 
-	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
-
 	"github.com/CosmWasm/wasmd/x/wasm"
-	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/prometheus/client_golang/prometheus"
 
-	erc20client "github.com/evmos/evmos/v9/x/erc20/client"
+	erc20client "github.com/evmos/evmos/v14/x/erc20/client"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
@@ -58,7 +60,7 @@ import (
 	"github.com/xpladev/xpla/docs"
 
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
-	"github.com/xpladev/xpla/app/upgrades/v1_4"
+	v1_4 "github.com/xpladev/xpla/app/upgrades/v1_4"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
 )
@@ -113,23 +115,16 @@ func GetWasmOpts(appOpts servertypes.AppOptions) []wasm.Option {
 }
 
 func getGovProposalHandlers() []govclient.ProposalHandler {
-	var govProposalHandlers []govclient.ProposalHandler
+	govProposalHandlers := volunteerclient.ProposalHandler
 
-	govProposalHandlers = wasmclient.ProposalHandlers
-
-	govProposalHandlers = append(govProposalHandlers,
+	return append(govProposalHandlers, []govclient.ProposalHandler{
 		paramsclient.ProposalHandler,
-		distrclient.ProposalHandler,
-		upgradeclient.ProposalHandler,
-		upgradeclient.CancelProposalHandler,
+		upgradeclient.LegacyProposalHandler,
+		upgradeclient.LegacyCancelProposalHandler,
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
 		erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler, erc20client.ToggleTokenConversionProposalHandler,
-	)
-
-	govProposalHandlers = append(govProposalHandlers, volunteerclient.ProposalHandler...)
-
-	return govProposalHandlers
+	}...)
 }
 
 // XplaApp extends an ABCI application, but with most of its parameters exported.
@@ -181,11 +176,13 @@ func NewXplaApp(
 	appCodec := encodingConfig.Codec
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
+	txConfig := encodingConfig.TxConfig
 
-	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
+	bApp.SetTxEncoder(txConfig.TxEncoder())
 
 	app := &XplaApp{
 		BaseApp:           bApp,
@@ -208,6 +205,7 @@ func NewXplaApp(
 		homePath,
 		invCheckPeriod,
 		enabledProposals,
+		logger,
 		appOpts,
 		wasmOpts,
 	)
@@ -239,11 +237,18 @@ func NewXplaApp(
 	// Uncomment if you want to set a custom migration order here.
 	// app.mm.SetOrderMigrations(custom order)
 
-	app.mm.RegisterInvariants(&app.CrisisKeeper)
-	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
+	app.mm.RegisterInvariants(app.CrisisKeeper)
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
+
+	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
+
+	reflectionSvc, err := runtimeservices.NewReflectionService()
+	if err != nil {
+		panic(err)
+	}
+	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
 	// initialize stores
 	app.MountKVStores(app.GetKVStoreKey())
@@ -257,19 +262,24 @@ func NewXplaApp(
 
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			AccountKeeper:        app.AccountKeeper,
-			BankKeeper:           app.BankKeeper,
-			EvmKeeper:            app.EvmKeeper,
-			FeeMarketKeeper:      app.FeeMarketKeeper,
-			FeegrantKeeper:       app.FeeGrantKeeper,
-			VolunteerKeeper:      app.VolunteerKeeper,
-			SignModeHandler:      encodingConfig.TxConfig.SignModeHandler(),
-			SigGasConsumer:       xplaante.SigVerificationGasConsumer,
-			IBCKeeper:            app.IBCKeeper,
+			Cdc:                app.appCodec,
+			AccountKeeper:      app.AccountKeeper,
+			BankKeeper:         app.BankKeeper,
+			DistributionKeeper: app.DistrKeeper,
+			IBCKeeper:          app.IBCKeeper,
+			StakingKeeper:      app.StakingKeeper,
+			EvmKeeper:          app.EvmKeeper,
+			FeegrantKeeper:     app.FeeGrantKeeper,
+			VolunteerKeeper:    app.VolunteerKeeper,
+			SignModeHandler:    encodingConfig.TxConfig.SignModeHandler(),
+			SigGasConsumer:     xplaante.SigVerificationGasConsumer,
+			FeeMarketKeeper:    app.FeeMarketKeeper,
+			MaxTxGasWanted:     evmMaxGasWanted,
+			TxFeeChecker:       noOpTxFeeChecker,
+
 			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
 			TxCounterStoreKey:    app.GetKey(wasm.StoreKey),
 			WasmConfig:           wasmConfig,
-			MaxTxGasWanted:       evmMaxGasWanted,
 		},
 	)
 	if err != nil {
@@ -374,18 +384,16 @@ func (app *XplaApp) InterfaceRegistry() types.InterfaceRegistry {
 // API server.
 func (app *XplaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
-	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
-	// Register legacy tx routes.
-	authrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
+
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	// Register legacy and grpc-gateway routes for all modules.
-	evmrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
-	ModuleBasics.RegisterRESTRoutes(clientCtx, apiSvr.Router)
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
+	// Register nodeservice grpc-gateway routes.
+	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// register app's OpenAPI routes.
 	if apiConfig.Swagger {
@@ -401,7 +409,17 @@ func (app *XplaApp) RegisterTxService(clientCtx client.Context) {
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *XplaApp) RegisterTendermintService(clientCtx client.Context) {
-	tmservice.RegisterTendermintService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
+	tmservice.RegisterTendermintService(
+		clientCtx,
+		app.BaseApp.GRPCQueryRouter(),
+		app.interfaceRegistry,
+		app.Query,
+	)
+}
+
+// RegisterTxService allows query minimum-gas-prices in app.toml
+func (app *XplaApp) RegisterNodeService(clientCtx client.Context) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
 }
 
 func (app *XplaApp) setUpgradeHandlers() {
@@ -423,10 +441,10 @@ func (app *XplaApp) setUpgradeHandlers() {
 		volunteer.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
 	)
 
-	// v1_4 upgrade handler
+	// v1.4 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v1_4.UpgradeName,
-		v1_4.CreateUpgradeHandler(app.mm, app.configurator, app.AppKeepers.AccountKeeper, &app.AppKeepers.StakingKeeper),
+		v1_4.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
 	)
 
 	// When a planned update height is reached, the old binary will panic
@@ -457,12 +475,24 @@ func (app *XplaApp) setUpgradeHandlers() {
 			Added: volunteer.AddModules,
 		}
 	case v1_4.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{}
-
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: v1_4.AddModules,
+		}
 	}
 
 	if storeUpgrades != nil {
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
 	}
+}
+
+// noOpTxFeeChecker is an ante TxFeeChecker for the DeductFeeDecorator, see x/auth/ante/fee.go,
+// it performs a no-op by not checking tx fees and always returns a zero tx priority
+func noOpTxFeeChecker(_ sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
+	feeTx, ok := tx.(sdk.FeeTx)
+	if !ok {
+		return nil, 0, errorsmod.Wrap(sdkerrors.ErrTxDecode, "Tx must be a FeeTx")
+	}
+
+	return feeTx.GetFee(), 0, nil
 }
