@@ -204,7 +204,7 @@ replace (
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 
 	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.10.19-xpla
-	github.com/evmos/ethermint => github.com/xpladev/ethermint v0.19.4-xpla
+	github.com/evmos/ethermint => github.com/xpladev/ethermint v0.19.4-xpla.0.20240315073453-f76d5ddb5d20
 	github.com/evmos/evmos/v9 => github.com/xpladev/evmos/v9 v9.2.0-xpla
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
