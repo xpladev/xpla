@@ -232,7 +232,7 @@ func CreateTestInput(t *testing.T) TestInput {
 	keeper.SetParams(ctx, defaults)
 
 	// XXX
-	var sh sdk.Handler = nil//testutil.NewHandler(stakingKeeper.Keeper)
+	var sh sdk.Handler = nil //testutil.NewHandler(stakingKeeper.Keeper)
 
 	return TestInput{ctx, legacyAmino, accountKeeper, bankKeeper, keeper, stakingKeeper, slashingKeeper, distrKeeper, volunteerKeeper, sh}
 }

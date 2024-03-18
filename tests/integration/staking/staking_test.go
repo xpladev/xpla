@@ -1,4 +1,5 @@
 package staking_test
+
 /* XXX
 import (
 	"testing"

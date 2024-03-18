@@ -3,7 +3,6 @@ package xpla.volunteer.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
-import "google/api/annotations.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/staking/v1beta1/staking.proto";
@@ -11,6 +10,7 @@ import "amino/amino.proto";
 
 option go_package = "github.com/xpladev/xpla/x/volunteer/types";
 
+// RegisterVolunteerValidatorProposal
 message RegisterVolunteerValidatorProposal {
   option (amino.name) = "xpladev/RegisterVolunteerValidatorProposal";
   option (gogoproto.equal) = false;
@@ -30,6 +30,7 @@ message RegisterVolunteerValidatorProposal {
   cosmos.base.v1beta1.Coin amount = 7 [ (gogoproto.nullable) = false ];
 }
 
+// RegisterVolunteerValidatorProposalWithDeposit
 message RegisterVolunteerValidatorProposalWithDeposit {
   option (amino.name) = "xpladev/RegisterVolunteerValidatorProposalWithDeposit";
   option (gogoproto.equal) = false;
@@ -50,6 +51,7 @@ message RegisterVolunteerValidatorProposalWithDeposit {
   string deposit = 8;
 }
 
+// UnregisterVolunteerValidatorProposal
 message UnregisterVolunteerValidatorProposal {
   option (amino.name) = "xpladev/UnregisterVolunteerValidatorProposal";
   option (gogoproto.equal) = false;
@@ -61,6 +63,7 @@ message UnregisterVolunteerValidatorProposal {
   string validator_address = 3;
 }
 
+// UnregisterVolunteerValidatorProposalWithDeposit
 message UnregisterVolunteerValidatorProposalWithDeposit {
   option (amino.name) =
       "xpladev/UnregisterVolunteerValidatorProposalWithDeposit";
