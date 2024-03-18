@@ -74,10 +74,10 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
+	etherminttypes "github.com/xpladev/ethermint/types"
 	"github.com/xpladev/ethermint/x/erc20"
 	erc20keeper "github.com/xpladev/ethermint/x/erc20/keeper"
 	erc20types "github.com/xpladev/ethermint/x/erc20/types"
-	etherminttypes "github.com/xpladev/ethermint/types"
 	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
@@ -307,7 +307,6 @@ func NewAppKeeper(
 	if err != nil {
 		panic("error while reading wasm config: " + err.Error())
 	}
-
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks

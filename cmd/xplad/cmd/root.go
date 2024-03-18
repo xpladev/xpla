@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -45,10 +45,10 @@ import (
 	ibcchanneltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	ethermintclient "github.com/xpladev/ethermint/client"
+	"github.com/xpladev/ethermint/client/debug"
 	"github.com/xpladev/ethermint/crypto/hd"
 	ethermintserver "github.com/xpladev/ethermint/server"
 	evmcfg "github.com/xpladev/ethermint/server/config"
-	"github.com/xpladev/ethermint/client/debug"
 
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"

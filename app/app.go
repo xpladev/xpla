@@ -47,11 +47,11 @@ import (
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
-	"github.com/xpladev/xpla/docs"
 	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
 	v1_4 "github.com/xpladev/xpla/app/upgrades/v1_4"
 	"github.com/xpladev/xpla/app/upgrades/volunteer"
 	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
+	"github.com/xpladev/xpla/docs"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
