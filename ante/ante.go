@@ -43,6 +43,7 @@ type HandlerOptions struct {
 
 	BypassMinFeeMsgTypes []string
 	TxCounterStoreKey    storetypes.StoreKey
+	WasmKeeper           *wasmkeeper.Keeper
 	WasmConfig           wasmTypes.WasmConfig
 }
 
@@ -141,6 +142,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
+		wasmkeeper.NewGasRegisterDecorator(opts.WasmKeeper.GetGasRegister()),
 		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
