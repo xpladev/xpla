@@ -227,7 +227,7 @@ replace (
 	// TODO: remove it: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 
-	//github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.10.26-xpla-rc0
+	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.10.26-xpla
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
