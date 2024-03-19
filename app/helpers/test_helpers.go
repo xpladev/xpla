@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -21,7 +22,6 @@ import (
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/xpladev/xpla/app"
 	xplaapp "github.com/xpladev/xpla/app"
 )
 
@@ -126,9 +126,8 @@ func setup(chainId string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		xplaapp.DefaultNodeHome,
 		5,
 		encCdc,
-		app.GetEnabledProposals(),
 		EmptyAppOptions{},
-		[]wasm.Option{},
+		[]wasmkeeper.Option{},
 		baseapp.SetChainID(chainId),
 	)
 	return app, xplaapp.NewDefaultGenesisState()

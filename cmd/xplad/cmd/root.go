@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -275,7 +274,7 @@ func (ac appCreator) newApp(
 		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
 	)
 
-	var wasmOpts []wasm.Option
+	var wasmOpts []wasmkeeper.Option
 	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
 		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
 	}
@@ -302,7 +301,6 @@ func (ac appCreator) newApp(
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
-		xpla.GetEnabledProposals(),
 		appOpts,
 		wasmOpts,
 		baseapp.SetPruning(pruningOpts),
@@ -340,7 +338,7 @@ func (ac appCreator) appExport(
 	if height == -1 {
 		loadLatest = true
 	}
-	var emptyWasmOpts []wasm.Option
+	var emptyWasmOpts []wasmkeeper.Option
 
 	xplaApp := xpla.NewXplaApp(
 		logger,
@@ -351,7 +349,6 @@ func (ac appCreator) appExport(
 		homePath,
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
-		xpla.GetEnabledProposals(),
 		appOpts,
 		emptyWasmOpts,
 	)
