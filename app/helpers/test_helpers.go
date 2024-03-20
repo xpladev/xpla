@@ -15,6 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/server"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -116,6 +118,9 @@ func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs 
 
 func setup(chainId string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 	db := dbm.NewMemDB()
+	appOptions := make(simtestutil.AppOptionsMap, 0)
+	appOptions[server.FlagInvCheckPeriod] = 5
+
 	encCdc := xplaapp.MakeTestEncodingConfig()
 	app := xplaapp.NewXplaApp(
 		log.NewNopLogger(),
@@ -124,7 +129,6 @@ func setup(chainId string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		true,
 		map[int64]bool{},
 		xplaapp.DefaultNodeHome,
-		5,
 		encCdc,
 		EmptyAppOptions{},
 		[]wasmkeeper.Option{},
