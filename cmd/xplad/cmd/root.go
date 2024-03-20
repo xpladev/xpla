@@ -299,7 +299,6 @@ func (ac appCreator) newApp(
 	return xpla.NewXplaApp(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
 		appOpts,
 		wasmOpts,
@@ -334,6 +333,15 @@ func (ac appCreator) appExport(
 		return servertypes.ExportedApp{}, errors.New("application home is not set")
 	}
 
+	// InvCheckPeriod
+	viperAppOpts, ok := appOpts.(*viper.Viper)
+	if !ok {
+		return servertypes.ExportedApp{}, errors.New("appOpts is not viper.Viper")
+	}
+	// overwrite the FlagInvCheckPeriod
+	viperAppOpts.Set(server.FlagInvCheckPeriod, 1)
+	appOpts = viperAppOpts
+
 	var loadLatest bool
 	if height == -1 {
 		loadLatest = true
@@ -347,7 +355,6 @@ func (ac appCreator) appExport(
 		loadLatest,
 		map[int64]bool{},
 		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
 		appOpts,
 		emptyWasmOpts,

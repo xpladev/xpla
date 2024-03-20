@@ -27,6 +27,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -78,6 +79,7 @@ type XplaApp struct { // nolint: golint
 
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
+	txConfig          client.TxConfig
 	interfaceRegistry types.InterfaceRegistry
 
 	invCheckPeriod uint
@@ -107,7 +109,6 @@ func NewXplaApp(
 	loadLatest bool,
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
-	invCheckPeriod uint,
 	encodingConfig xplaappparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
@@ -118,6 +119,10 @@ func NewXplaApp(
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 	txConfig := encodingConfig.TxConfig
 
+	// App Opts
+	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
+
 	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
@@ -127,6 +132,7 @@ func NewXplaApp(
 	app := &XplaApp{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
+		txConfig:          txConfig,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
 		invCheckPeriod:    invCheckPeriod,
@@ -148,8 +154,6 @@ func NewXplaApp(
 		appOpts,
 		wasmOpts,
 	)
-
-	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.

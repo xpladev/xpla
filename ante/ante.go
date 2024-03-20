@@ -28,18 +28,19 @@ import (
 // HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
 // channel keeper.
 type HandlerOptions struct {
-	Cdc             codec.BinaryCodec
-	AccountKeeper   evmtypes.AccountKeeper
-	BankKeeper      evmtypes.BankKeeper
-	IBCKeeper       *ibckeeper.Keeper
-	EvmKeeper       evmante.EVMKeeper
-	FeegrantKeeper  authante.FeegrantKeeper
-	VolunteerKeeper volunteerante.VolunteerKeeper
-	SignModeHandler authsigning.SignModeHandler
-	SigGasConsumer  authante.SignatureVerificationGasConsumer
-	FeeMarketKeeper evmante.FeeMarketKeeper
-	MaxTxGasWanted  uint64
-	TxFeeChecker    authante.TxFeeChecker
+	Cdc                    codec.BinaryCodec
+	AccountKeeper          evmtypes.AccountKeeper
+	BankKeeper             evmtypes.BankKeeper
+	IBCKeeper              *ibckeeper.Keeper
+	EvmKeeper              evmante.EVMKeeper
+	FeegrantKeeper         authante.FeegrantKeeper
+	VolunteerKeeper        volunteerante.VolunteerKeeper
+	ExtensionOptionChecker authante.ExtensionOptionChecker
+	SignModeHandler        authsigning.SignModeHandler
+	SigGasConsumer         authante.SignatureVerificationGasConsumer
+	FeeMarketKeeper        evmante.FeeMarketKeeper
+	MaxTxGasWanted         uint64
+	TxFeeChecker           authante.TxFeeChecker
 
 	BypassMinFeeMsgTypes []string
 	TxCounterStoreKey    storetypes.StoreKey
@@ -77,11 +78,6 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	}
 	if opts.VolunteerKeeper == nil {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "staking keeper is required for AnteHandler")
-	}
-
-	sigGasConsumer := opts.SigGasConsumer
-	if sigGasConsumer == nil {
-		sigGasConsumer = authante.DefaultSigVerificationGasConsumer
 	}
 
 	return func(
@@ -140,6 +136,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		evmante.NewAuthzLimiterDecorator(disabledAuthzMsgs),
 		volunteerante.NewRejectDelegateVolunteerValidatorDecorator(opts.VolunteerKeeper),
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
+		authante.NewExtensionOptionsDecorator(opts.ExtensionOptionChecker),
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
 		wasmkeeper.NewGasRegisterDecorator(opts.WasmKeeper.GetGasRegister()),
