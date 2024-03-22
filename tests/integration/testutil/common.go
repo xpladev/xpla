@@ -39,6 +39,7 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	stakingtestutil "github.com/cosmos/cosmos-sdk/x/staking/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
@@ -106,7 +107,7 @@ type TestInput struct {
 	DistrKeeper     distrkeeper.Keeper
 	VolunteerKeeper volunteerkeeper.Keeper
 
-	StakingHandler sdk.Handler
+	StakingHandler *stakingtestutil.Helper
 }
 
 // CreateTestInput nolint
@@ -231,8 +232,7 @@ func CreateTestInput(t *testing.T) TestInput {
 	}
 	keeper.SetParams(ctx, defaults)
 
-	// XXX
-	var sh sdk.Handler = nil //testutil.NewHandler(stakingKeeper.Keeper)
+	sh := stakingtestutil.NewHelper(t, ctx, stakingKeeper.Keeper)
 
 	return TestInput{ctx, legacyAmino, accountKeeper, bankKeeper, keeper, stakingKeeper, slashingKeeper, distrKeeper, volunteerKeeper, sh}
 }
