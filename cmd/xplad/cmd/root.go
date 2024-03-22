@@ -27,6 +27,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
+	"github.com/cosmos/cosmos-sdk/crypto/ledger"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
@@ -45,6 +47,7 @@ import (
 
 	ethermintclient "github.com/xpladev/ethermint/client"
 	"github.com/xpladev/ethermint/client/debug"
+	"github.com/xpladev/ethermint/crypto/ethsecp256k1"
 	"github.com/xpladev/ethermint/crypto/hd"
 	ethermintserver "github.com/xpladev/ethermint/server"
 	evmcfg "github.com/xpladev/ethermint/server/config"
@@ -100,6 +103,10 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	}
 
 	initRootCmd(rootCmd, encodingConfig)
+
+	ledger.SetCreatePubkey(func(key []byte) cryptotypes.PubKey {
+		return &ethsecp256k1.PubKey{Key: key}
+	})
 
 	return rootCmd, encodingConfig
 }
