@@ -95,7 +95,10 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 			return err
 		}
 
-		_, _ = app.DistrKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
+		_, err = app.DistrKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
+		if err != nil {
+			return err
+		}
 	}
 
 	// clear validator slash events
@@ -167,6 +170,7 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 	// update bond intra-tx counters.
 	store := ctx.KVStore(app.GetKey(stakingtypes.StoreKey))
 	iter := sdk.KVStoreReversePrefixIterator(store, stakingtypes.ValidatorsKey)
+	defer iter.Close()
 	counter := int16(0)
 
 	// Closure to ensure iterator doesn't leak.
@@ -184,10 +188,6 @@ func (app *XplaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 
 		app.StakingKeeper.SetValidator(ctx, validator)
 		counter++
-	}
-
-	if err := iter.Close(); err != nil {
-		return err
 	}
 
 	if _, err := app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx); err != nil {
