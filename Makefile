@@ -153,7 +153,7 @@ go.sum: go.mod
 ###############################################################################
 PROTO_VERSION=0.11.6
 PROTO_BUILDER_IMAGE=ghcr.io/cosmos/proto-builder:$(PROTO_VERSION)
-PROTO_FORMATTER_IMAGE=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE)
+PROTO_FORMATTER_IMAGE=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace --user 0 $(PROTO_BUILDER_IMAGE)
 
 proto-all: proto-format proto-lint proto-gen
 
