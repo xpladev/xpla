@@ -1,9 +1,11 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/xpladev/xpla/x/volunteer/types"
 )
@@ -49,7 +51,7 @@ func handlerUnregisterVolunteerValidatorProposal(ctx sdk.Context, k Keeper, p *t
 
 	_, found := k.GetVolunteerValidator(ctx, valAddress)
 	if !found {
-		return sdkerrors.Wrapf(sdkerrors.ErrNotFound, `volunteer validator (%s)`, valAddress.String())
+		return errorsmod.Wrapf(errortypes.ErrNotFound, `volunteer validator (%s)`, valAddress.String())
 	}
 
 	if validator, found := k.stakingKeeper.GetValidator(ctx, valAddress); found {

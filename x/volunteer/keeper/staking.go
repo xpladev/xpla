@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
-
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -42,7 +40,15 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 
 	cp := ctx.ConsensusParams()
 	if cp != nil && cp.Validator != nil {
-		if !tmstrings.StringInSlice(pk.Type(), cp.Validator.PubKeyTypes) {
+		pkType := pk.Type()
+		hasKeyType := false
+		for _, keyType := range cp.Validator.PubKeyTypes {
+			if pkType == keyType {
+				hasKeyType = true
+				break
+			}
+		}
+		if !hasKeyType {
 			return sdkerrors.Wrapf(
 				stakingtypes.ErrValidatorPubKeyTypeNotSupported,
 				"got: %s, expected: %s", pk.Type(), cp.Validator.PubKeyTypes,
@@ -76,7 +82,9 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 	k.stakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
 
 	// call the after-creation hook
-	k.stakingKeeper.AfterValidatorCreated(ctx, validator.GetOperator())
+	if err := k.stakingKeeper.Hooks().AfterValidatorCreated(ctx, validator.GetOperator()); err != nil {
+		return err
+	}
 
 	// move coins from the msg.Address account to a (self-delegation) delegator account
 	// the validator account and global shares are updated within here
@@ -91,11 +99,6 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 			stakingtypes.EventTypeCreateValidator,
 			sdk.NewAttribute(stakingtypes.AttributeKeyValidator, msg.ValidatorAddress),
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Value.String()),
-		),
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
 		),
 	})
 

@@ -5,6 +5,7 @@ option go_package = "github.com/xpladev/xpla/x/reward/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "amino/amino.proto";
 
 // Msg defines the reawrd Msg service.
 service Msg {
@@ -17,6 +18,7 @@ service Msg {
 // MsgFundFeeCollector allows an account to directly
 // fund the fee collector.
 message MsgFundFeeCollector {
+  option (amino.name) = "xpladev/MsgFundFeeCollector";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 

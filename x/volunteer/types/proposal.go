@@ -8,7 +8,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -27,8 +27,6 @@ var (
 func init() {
 	govtypes.RegisterProposalType(string(ProposalTypeRegisterVolunteerValidator))
 	govtypes.RegisterProposalType(string(ProposalTypeUnregisterVolunteerValidator))
-	govtypes.RegisterProposalTypeCodec(&RegisterVolunteerValidatorProposal{}, "volunteer/RegisterVolunteerValidatorProposal")
-	govtypes.RegisterProposalTypeCodec(&UnregisterVolunteerValidatorProposal{}, "volunteer/UnregisterVolunteerValidatorProposal")
 }
 
 func NewRegisterVolunteerValidatorProposal(title, description string, delAddr sdk.AccAddress, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey,

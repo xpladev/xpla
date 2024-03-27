@@ -2,28 +2,27 @@ package keeper
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/xpladev/xpla/x/staking/types"
 )
 
 type Keeper struct {
-	stakingkeeper.Keeper
+	*stakingkeeper.Keeper
 
-	storeKey        sdk.StoreKey
+	storeKey        storetypes.StoreKey
 	cdc             codec.BinaryCodec
 	bankKeeper      types.BankKeeper
 	volunteerKeeper types.VolunteerKeeper
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, ak stakingtypes.AccountKeeper, bk stakingtypes.BankKeeper,
-	ps paramtypes.Subspace, vk types.VolunteerKeeper,
-) Keeper {
-	return Keeper{
-		Keeper:          stakingkeeper.NewKeeper(cdc, key, ak, bk, ps),
+	cdc codec.BinaryCodec, key storetypes.StoreKey, ak stakingtypes.AccountKeeper, bk stakingtypes.BankKeeper,
+	govModAddress string, vk types.VolunteerKeeper,
+) *Keeper {
+	return &Keeper{
+		Keeper:          stakingkeeper.NewKeeper(cdc, key, ak, bk, govModAddress),
 		storeKey:        key,
 		cdc:             cdc,
 		bankKeeper:      bk,

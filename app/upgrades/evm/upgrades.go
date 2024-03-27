@@ -6,10 +6,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	"github.com/xpladev/ethermint/x/evm"
+	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	"github.com/xpladev/ethermint/x/feemarket"
+	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 )
 
 func CreateUpgradeHandler(
@@ -19,8 +21,8 @@ func CreateUpgradeHandler(
 	fk feemarketkeeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		fromVM[evmtypes.ModuleName] = mm.Modules[evmtypes.ModuleName].ConsensusVersion()
-		fromVM[feemarkettypes.ModuleName] = mm.Modules[feemarkettypes.ModuleName].ConsensusVersion()
+		fromVM[evmtypes.ModuleName] = evm.AppModule{}.ConsensusVersion()
+		fromVM[feemarkettypes.ModuleName] = feemarket.AppModule{}.ConsensusVersion()
 
 		var params EvmUpgradeParams
 		err := json.Unmarshal([]byte(plan.Info), &params)

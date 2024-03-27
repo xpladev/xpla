@@ -3,13 +3,15 @@ package reward_test
 import (
 	"testing"
 
+	"github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
 	"github.com/xpladev/xpla/tests/integration/testutil"
 	"github.com/xpladev/xpla/x/reward"
 )
@@ -21,7 +23,7 @@ import (
 // 4. process 1 block
 func TestBeginBlocker(t *testing.T) {
 	input := testutil.CreateTestInput(t)
-	sh := staking.NewHandler(input.StakingKeeper.Keeper)
+	input.StakingHandler.Commission = stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(10, 2), sdk.OneDec(), sdk.OneDec())
 
 	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
 	defaultFee := sdk.NewInt(11).Mul(sdk.DefaultPowerReduction).Quo(sdk.NewInt(10)) // 1.1
@@ -32,8 +34,7 @@ func TestBeginBlocker(t *testing.T) {
 		require.NoError(t, err)
 
 		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
-		_, err = sh(input.Ctx, testutil.NewMsgCreateValidator(valAddress, testutil.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100)))
-		require.NoError(t, err)
+		input.StakingHandler.CreateValidator(valAddress, testutil.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100), true)
 	}
 
 	// validator settlement delegation
@@ -43,8 +44,7 @@ func TestBeginBlocker(t *testing.T) {
 	for i := 0; i < testutil.ValidatorCount; i++ {
 		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
 
-		_, err = sh(input.Ctx, testutil.NewMsgDelegate(sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10)))
-		require.NoError(t, err)
+		input.StakingHandler.Delegate(sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10))
 	}
 
 	staking.EndBlocker(input.Ctx, input.StakingKeeper.Keeper)
@@ -99,7 +99,7 @@ func TestBeginBlocker(t *testing.T) {
 		Header: tmproto.Header{
 			ProposerAddress: testutil.Pks[0].Address().Bytes(),
 		},
-		LastCommitInfo: types.LastCommitInfo{
+		LastCommitInfo: types.CommitInfo{
 			Round: int32(1),
 			Votes: voteInfoes,
 		},

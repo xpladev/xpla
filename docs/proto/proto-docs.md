@@ -317,7 +317,7 @@ GenesisState defines the volunteer module's genesis state.
 <a name="xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposal"></a>
 
 ### RegisterVolunteerValidatorProposal
-
+RegisterVolunteerValidatorProposal
 
 
 | Field | Type | Label | Description |
@@ -338,7 +338,7 @@ GenesisState defines the volunteer module's genesis state.
 <a name="xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposalWithDeposit"></a>
 
 ### RegisterVolunteerValidatorProposalWithDeposit
-
+RegisterVolunteerValidatorProposalWithDeposit
 
 
 | Field | Type | Label | Description |
@@ -360,7 +360,7 @@ GenesisState defines the volunteer module's genesis state.
 <a name="xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposal"></a>
 
 ### UnregisterVolunteerValidatorProposal
-
+UnregisterVolunteerValidatorProposal
 
 
 | Field | Type | Label | Description |
@@ -377,7 +377,7 @@ GenesisState defines the volunteer module's genesis state.
 <a name="xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposalWithDeposit"></a>
 
 ### UnregisterVolunteerValidatorProposalWithDeposit
-
+UnregisterVolunteerValidatorProposalWithDeposit
 
 
 | Field | Type | Label | Description |
@@ -411,7 +411,7 @@ GenesisState defines the volunteer module's genesis state.
 <a name="xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest"></a>
 
 ### QueryVolunteerValidatorsRequest
-
+QueryVolunteerValidatorsRequest
 
 
 
@@ -421,7 +421,7 @@ GenesisState defines the volunteer module's genesis state.
 <a name="xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse"></a>
 
 ### QueryVolunteerValidatorsResponse
-
+QueryVolunteerValidatorsResponse
 
 
 | Field | Type | Label | Description |
@@ -446,7 +446,7 @@ Query defines the gRPC querier service for volunteer module.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `VolunteerValidators` | [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest) | [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse) |  | GET|/xpla/volunteer/v1beta1/validators|
+| `VolunteerValidators` | [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest) | [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse) | VolunteerValidators | GET|/xpla/volunteer/v1beta1/validators|
 
  <!-- end services -->
 

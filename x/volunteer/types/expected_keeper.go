@@ -14,7 +14,6 @@ type StakingKeeper interface {
 	SetValidator(ctx sdk.Context, validator stakingtypes.Validator)
 	SetValidatorByConsAddr(ctx sdk.Context, validator stakingtypes.Validator) error
 	SetNewValidatorByPowerIndex(ctx sdk.Context, validator stakingtypes.Validator)
-	AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress)
 	Delegate(
 		ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int, tokenSrc stakingtypes.BondStatus,
 		validator stakingtypes.Validator, subtractAccount bool,
@@ -22,6 +21,7 @@ type StakingKeeper interface {
 	Undelegate(
 		ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec,
 	) (time.Time, error)
+	Hooks() stakingtypes.StakingHooks
 }
 
 type DistributionKeeper interface {

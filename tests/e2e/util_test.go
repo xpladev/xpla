@@ -13,14 +13,17 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	govtype "github.com/cosmos/cosmos-sdk/x/gov/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1type "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govv1beta1type "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmcrypto "github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/bytes"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmhttp "github.com/tendermint/tendermint/rpc/client/http"
-	tmtypes "github.com/tendermint/tendermint/types"
+	tmcrypto "github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/bytes"
+	tmjson "github.com/cometbft/cometbft/libs/json"
+	tmhttp "github.com/cometbft/cometbft/rpc/client/http"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
 )
@@ -195,17 +198,30 @@ func txCheck(txHash string) error {
 	return err
 }
 
-func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Content, proposerWallet *WalletInfo, voters []*WalletInfo) error {
+func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdktypes.Msg, proposalContent govv1beta1type.Content, proposerWallet *WalletInfo, voters []*WalletInfo) error {
 	proposalId := uint64(0)
 
 	{
 		fmt.Println("Proposal apply")
 
-		proposalMsg, err := govtype.NewMsgSubmitProposal(
-			proposalContent,
-			sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
-			proposerWallet.ByteAddress,
-		)
+		var msg sdktypes.Msg
+		var err error
+		if len(proposalMsgs) > 0 {
+			msg, err = govv1type.NewMsgSubmitProposal(proposalMsgs, sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))), proposerWallet.ByteAddress.String(), "", proposalContent.GetTitle(), proposalContent.GetDescription())
+			if err != nil {
+				return err
+			}
+
+		} else {
+			msg, err = govv1beta1type.NewMsgSubmitProposal(
+				proposalContent,
+				sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
+				proposerWallet.ByteAddress,
+			)
+			if err != nil {
+				return err
+			}
+		}
 
 		if err != nil {
 			return err
@@ -214,7 +230,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
-		txhash, err := proposerWallet.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+		txhash, err := proposerWallet.SendTx(ChainID, msg, fee, xplaProposalGasLimit, false)
 		if txhash != "" && err == nil {
 			fmt.Println("Tx sent:", txhash)
 		} else {
@@ -259,7 +275,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalContent govtype.Co
 			addr := addr
 
 			eg.Go(func() error {
-				voteMsg := govtype.NewMsgVote(addr.ByteAddress, proposalId, govtype.OptionYes)
+				voteMsg := govv1beta1type.NewMsgVote(addr.ByteAddress, proposalId, govv1beta1type.OptionYes)
 				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
 				fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
@@ -359,4 +375,45 @@ func getValidatorBondingState(conn *grpc.ClientConn, addr sdktypes.ValAddress) (
 	}
 
 	return resp.Validator.Status, nil
+}
+
+func makeUpdateParamMaxValidators(conn *grpc.ClientConn, maxValidators uint32) (sdktypes.Msg, error) {
+	stakingQueryClient := stakingtype.NewQueryClient(conn)
+	resStakingParams, err := stakingQueryClient.Params(context.Background(), &stakingtype.QueryParamsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	authQueryClient := authtypes.NewQueryClient(conn)
+	resModuleAccount, err := authQueryClient.ModuleAccountByName(context.Background(), &authtypes.QueryModuleAccountByNameRequest{Name: govtypes.ModuleName})
+	if err != nil {
+		return nil, err
+	}
+
+	// change MaxValidators
+	resStakingParams.Params.MaxValidators = maxValidators
+
+	var moduleAccount authtypes.AccountI
+	err = marshaler.UnpackAny(resModuleAccount.Account, &moduleAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	msgUpdateParams := stakingtype.MsgUpdateParams{
+		Authority: moduleAccount.GetAddress().String(),
+		Params:    resStakingParams.Params,
+	}
+
+	m, err := marshaler.MarshalInterface(&msgUpdateParams)
+	if err != nil {
+		return nil, err
+	}
+
+	var msg sdktypes.Msg
+	err = marshaler.UnmarshalInterface(m, &msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }

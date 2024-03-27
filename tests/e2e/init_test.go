@@ -4,6 +4,10 @@ import (
 	"log"
 	"os"
 
+	codec "github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 	xplatype "github.com/xpladev/xpla/types"
 )
 
@@ -21,12 +25,18 @@ const (
 )
 
 var (
-	logger *log.Logger
-	desc   *ServiceDesc
+	logger    *log.Logger
+	desc      *ServiceDesc
+	marshaler *codec.ProtoCodec
 )
 
 func init() {
 	logger = log.New(os.Stderr, "base network", 0)
 
 	xplatype.SetConfig()
+
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	authtypes.RegisterInterfaces(interfaceRegistry)
+	stakingtype.RegisterInterfaces(interfaceRegistry)
+	marshaler = codec.NewProtoCodec(interfaceRegistry)
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgFundFeeCollector{}, "cosmos-sdk/MsgFundFeeCollector", nil)
+	cdc.RegisterConcrete(&MsgFundFeeCollector{}, "xpladev/MsgFundFeeCollector", nil)
 }
 
 func RegisterInterfaces(registry types.InterfaceRegistry) {

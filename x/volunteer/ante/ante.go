@@ -4,15 +4,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 )
 
 type RejectDelegateVolunteerValidatorDecorator struct {
-	volunteerKeeper volunteerkeeper.Keeper
+	volunteerKeeper VolunteerKeeper
 }
 
-func NewRejectDelegateVolunteerValidatorDecorator(vk volunteerkeeper.Keeper) RejectDelegateVolunteerValidatorDecorator {
+func NewRejectDelegateVolunteerValidatorDecorator(vk VolunteerKeeper) RejectDelegateVolunteerValidatorDecorator {
 	return RejectDelegateVolunteerValidatorDecorator{
 		volunteerKeeper: vk,
 	}
