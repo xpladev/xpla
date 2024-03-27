@@ -385,7 +385,7 @@ func (app *XplaApp) setUpgradeHandlers() {
 	// v1.4 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v1_4.UpgradeName,
-		v1_4.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
+		v1_4.CreateUpgradeHandler(app.mm, app.configurator, app.AppKeepers.AccountKeeper, app.AppKeepers.StakingKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
@@ -416,9 +416,7 @@ func (app *XplaApp) setUpgradeHandlers() {
 			Added: volunteer.AddModules,
 		}
 	case v1_4.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: v1_4.AddModules,
-		}
+		storeUpgrades = &storetypes.StoreUpgrades{}
 	}
 
 	if storeUpgrades != nil {
