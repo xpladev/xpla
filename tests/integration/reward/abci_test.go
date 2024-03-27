@@ -9,7 +9,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/staking"
-	s_testutil "github.com/cosmos/cosmos-sdk/x/staking/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 
@@ -24,8 +23,7 @@ import (
 // 4. process 1 block
 func TestBeginBlocker(t *testing.T) {
 	input := testutil.CreateTestInput(t)
-	sh := s_testutil.NewHelper(t, input.Ctx, input.StakingKeeper.Keeper)
-	sh.Commission = stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(10, 2), sdk.OneDec(), sdk.OneDec())
+	input.StakingHandler.Commission = stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(10, 2), sdk.OneDec(), sdk.OneDec())
 
 	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
 	defaultFee := sdk.NewInt(11).Mul(sdk.DefaultPowerReduction).Quo(sdk.NewInt(10)) // 1.1
@@ -36,7 +34,7 @@ func TestBeginBlocker(t *testing.T) {
 		require.NoError(t, err)
 
 		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
-		sh.CreateValidator(valAddress, testutil.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100), true)
+		input.StakingHandler.CreateValidator(valAddress, testutil.Pks[i], input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100), true)
 	}
 
 	// validator settlement delegation
@@ -46,7 +44,7 @@ func TestBeginBlocker(t *testing.T) {
 	for i := 0; i < testutil.ValidatorCount; i++ {
 		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
 
-		sh.Delegate(sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10))
+		input.StakingHandler.Delegate(sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10))
 	}
 
 	staking.EndBlocker(input.Ctx, input.StakingKeeper.Keeper)
