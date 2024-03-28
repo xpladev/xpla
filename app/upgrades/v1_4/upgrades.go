@@ -13,16 +13,18 @@ import (
 	etherminttypes "github.com/xpladev/ethermint/types"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 
+	"github.com/xpladev/xpla/app/keepers"
 	stakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 )
 
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
-	authKeeper authkeeper.AccountKeeper,
-	stakingKeeper *stakingkeeper.Keeper,
+	keepers *keepers.AppKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		authKeeper := keepers.AccountKeeper
+		stakingKeeper := keepers.StakingKeeper
 
 		migrateBaseAccountToEthAccount(ctx, authKeeper)
 
