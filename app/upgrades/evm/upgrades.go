@@ -6,19 +6,19 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
 	"github.com/xpladev/ethermint/x/evm"
-	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	"github.com/xpladev/ethermint/x/feemarket"
-	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
+
+	"github.com/xpladev/xpla/app/keepers"
 )
 
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
-	ek evmkeeper.Keeper,
-	fk feemarketkeeper.Keeper,
+	keepers *keepers.AppKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		fromVM[evmtypes.ModuleName] = evm.AppModule{}.ConsensusVersion()
@@ -29,6 +29,9 @@ func CreateUpgradeHandler(
 		if err != nil {
 			panic(err)
 		}
+
+		ek := *keepers.EvmKeeper
+		fk := keepers.FeeMarketKeeper
 
 		ek.SetParams(ctx, params.Evm)
 		fk.SetParams(ctx, params.FeeMarket)

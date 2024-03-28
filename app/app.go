@@ -31,7 +31,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -46,10 +45,8 @@ import (
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
-	evmupgrade "github.com/xpladev/xpla/app/upgrades/evm"
-	v1_4 "github.com/xpladev/xpla/app/upgrades/v1_4"
-	"github.com/xpladev/xpla/app/upgrades/volunteer"
-	xplareward "github.com/xpladev/xpla/app/upgrades/xpla_reward"
+	"github.com/xpladev/xpla/app/upgrades"
+	v1_5 "github.com/xpladev/xpla/app/upgrades/v1_5"
 	"github.com/xpladev/xpla/docs"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -59,6 +56,10 @@ import (
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
+
+	Upgrades = []upgrades.Upgrade{
+		v1_5.Upgrade,
+	}
 )
 
 var (
@@ -232,6 +233,7 @@ func NewXplaApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.setUpgradeHandlers()
+	app.setUpgradeStoreLoaders()
 
 	if manager := app.SnapshotManager(); manager != nil {
 		err = manager.RegisterExtensions(
@@ -363,65 +365,39 @@ func (app *XplaApp) RegisterNodeService(clientCtx client.Context) {
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
 }
 
-func (app *XplaApp) setUpgradeHandlers() {
-	// XplaRewawrd upgrade handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		xplareward.UpgradeName,
-		xplareward.CreateUpgradeHandler(app.mm, app.configurator, app.RewardKeeper),
-	)
-
-	// evm upgrade handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		evmupgrade.UpgradeName,
-		evmupgrade.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.FeeMarketKeeper),
-	)
-
-	// Volunteer upgrade handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		volunteer.UpgradeName,
-		volunteer.CreateUpgradeHandler(app.mm, app.configurator, &app.AppKeepers),
-	)
-
-	// v1.4 upgrade handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v1_4.UpgradeName,
-		v1_4.CreateUpgradeHandler(app.mm, app.configurator, app.AppKeepers.AccountKeeper, app.AppKeepers.StakingKeeper),
-	)
-
+// configure store loader that checks if version == upgradeHeight and applies store upgrades
+func (app *XplaApp) setUpgradeStoreLoaders() {
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
-	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	upgradeInfo, err := app.AppKeepers.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
 	}
 
-	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if app.AppKeepers.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		return
 	}
 
-	var storeUpgrades *storetypes.StoreUpgrades
-
-	switch upgradeInfo.Name {
-	case xplareward.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: xplareward.AddModules,
+	for _, upgrade := range Upgrades {
+		upgrade := upgrade
+		if upgradeInfo.Name == upgrade.UpgradeName {
+			storeUpgrades := upgrade.StoreUpgrades
+			app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 		}
-	case evmupgrade.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: evmupgrade.AddModules,
-		}
-	case volunteer.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: volunteer.AddModules,
-		}
-	case v1_4.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{}
 	}
+}
 
-	if storeUpgrades != nil {
-		// configure store loader that checks if version == upgradeHeight and applies store upgrades
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
+func (app *XplaApp) setUpgradeHandlers() {
+	for _, upgrade := range Upgrades {
+		app.AppKeepers.UpgradeKeeper.SetUpgradeHandler(
+			upgrade.UpgradeName,
+			upgrade.CreateUpgradeHandler(
+				app.mm,
+				app.configurator,
+				&app.AppKeepers,
+			),
+		)
 	}
 }
 
