@@ -19,9 +19,6 @@ type AppModule struct {
 	staking.AppModule
 
 	keeper *keeper.Keeper
-
-	// legacySubspace is used solely for migration of x/params managed parameters
-	legacySubspace exported.Subspace
 }
 
 // NewAppModule creates a new AppModule object
