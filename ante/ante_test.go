@@ -36,7 +36,7 @@ func TestIntegrationTestSuite(t *testing.T) {
 
 func (s *IntegrationTestSuite) SetupTest() {
 	// epoch number should not be 0
-	chainId := fmt.Sprintf("test_9001-%d", rand.Intn(9)+1)
+	chainId := fmt.Sprintf("test_1-%d", rand.Intn(9)+1)
 
 	app := xplahelpers.Setup(s.T(), chainId)
 
