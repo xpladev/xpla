@@ -59,6 +59,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEn
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the reward module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *runtime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		// same behavior as in cosmos-sdk
 		panic(err)
 	}
 }

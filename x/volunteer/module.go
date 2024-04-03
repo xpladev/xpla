@@ -60,7 +60,10 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEn
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the volunteer module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
 }
 
 // GetTxCmd returns the root tx command for the volunteer module.
