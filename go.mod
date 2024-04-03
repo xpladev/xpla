@@ -14,10 +14,9 @@ require (
 	github.com/cosmos/cosmos-sdk v0.47.10
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.1.3-0.20240228213828-cce7f56d000b
-	github.com/cosmos/ibc-go/v7 v7.3.1
+	github.com/cosmos/ibc-go/v7 v7.3.2
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/golang/protobuf v1.5.4
-	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.16.0
@@ -26,7 +25,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
-	github.com/xpladev/ethermint v0.6.1-0.20240223100045-44f149239f1a
+	github.com/xpladev/ethermint v0.23.0-xpla-rc2
 	golang.org/x/sync v0.6.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80
 	google.golang.org/grpc v1.62.1
@@ -119,6 +118,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
