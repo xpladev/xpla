@@ -14,9 +14,6 @@ const (
 
 	// RouterKey is the message route for volunteer
 	RouterKey = ModuleName
-
-	// QuerierRoute is the querier route for volunteer
-	QuerierRoute = ModuleName
 )
 
 var (
