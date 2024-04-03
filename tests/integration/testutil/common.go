@@ -4,19 +4,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/require"
 
 	simparams "cosmossdk.io/simapp/params"
+
+	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
+	"github.com/cosmos/cosmos-sdk/store"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -41,9 +43,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtestutil "github.com/cosmos/cosmos-sdk/x/staking/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	etherminttypes "github.com/xpladev/ethermint/types"
+
+	"github.com/xpladev/xpla/x/reward"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	stakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
+	"github.com/xpladev/xpla/x/volunteer"
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
@@ -71,6 +78,8 @@ var ModuleBasics = module.NewBasicManager(
 	slashing.AppModuleBasic{},
 	mint.AppModuleBasic{},
 	params.AppModuleBasic{},
+	reward.AppModuleBasic{},
+	volunteer.AppModuleBasic{},
 )
 
 // MakeEncodingConfig nolint
@@ -81,12 +90,9 @@ func MakeEncodingConfig(_ *testing.T) simparams.EncodingConfig {
 	txCfg := tx.NewTxConfig(marshaler, tx.DefaultSignModes)
 
 	std.RegisterInterfaces(interfaceRegistry)
-	std.RegisterLegacyAminoCodec(amino)
-
-	ModuleBasics.RegisterLegacyAminoCodec(amino)
+	etherminttypes.RegisterInterfaces(interfaceRegistry)
 	ModuleBasics.RegisterInterfaces(interfaceRegistry)
-	rewardtypes.RegisterLegacyAminoCodec(amino)
-	rewardtypes.RegisterInterfaces(interfaceRegistry)
+
 	return simparams.EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
 		Codec:             marshaler,
@@ -161,7 +167,7 @@ func CreateTestInput(t *testing.T) TestInput {
 	govModAddress := authtypes.NewModuleAddress(govtypes.ModuleName).String()
 
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, keyParams, tKeyParams)
-	accountKeeper := authkeeper.NewAccountKeeper(appCodec, keyAcc, authtypes.ProtoBaseAccount, maccPerms, sdk.GetConfig().GetBech32AccountAddrPrefix(), govModAddress)
+	accountKeeper := authkeeper.NewAccountKeeper(appCodec, keyAcc, etherminttypes.ProtoAccount, maccPerms, sdk.GetConfig().GetBech32AccountAddrPrefix(), govModAddress)
 	bankKeeper := bankkeeper.NewBaseKeeper(appCodec, keyBank, accountKeeper, blackListAddrs, govModAddress)
 
 	var volunteerKeeper volunteerkeeper.Keeper
