@@ -6,8 +6,8 @@
 rm -f /genesis/*
 
 # 1. chain init
-/usr/bin/xplad init $MONIKER --chain-id localtest_9001-1 --home $XPLAHOME
-/usr/bin/xplad config chain-id localtest_9001-1 --home $XPLAHOME
+/usr/bin/xplad init $MONIKER --chain-id localtest_1-1 --home $XPLAHOME
+/usr/bin/xplad config chain-id localtest_1-1 --home $XPLAHOME
 
 # 2. Register the keys
 # xpla1z2k85n48ydfvzslrugwzl4j2u7vtdyf3xvucmc
@@ -55,7 +55,7 @@ do
 
     # 2) Execute a gentx
     /usr/bin/xplad gentx validator$IDX 9000000000000000000axpla  \
-        --chain-id="localtest_9001-1" \
+        --chain-id="localtest_1-1" \
         --pubkey=$(xplad tendermint show-validator --home $XPLAHOME) \
         --min-self-delegation=1 \
         --moniker=validator$IDX \

@@ -26,7 +26,7 @@ import (
 
 const (
 	Prefix  = "xpla"
-	ChainID = "localtest_9001-1"
+	ChainID = "localtest_1-1"
 )
 
 type WalletInfo struct {
