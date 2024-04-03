@@ -194,8 +194,6 @@ func CreateTestInput(t *testing.T) TestInput {
 	distrKeeper.SetFeePool(ctx, distrtypes.InitialFeePool())
 	distrParams := distrtypes.DefaultParams()
 	distrParams.CommunityTax = sdk.ZeroDec()
-	distrParams.BaseProposerReward = sdk.ZeroDec()
-	distrParams.BonusProposerReward = sdk.ZeroDec()
 	distrKeeper.SetParams(ctx, distrParams)
 	stakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(distrKeeper.Hooks(), slashingKeeper.Hooks()))
 	mintKeeper.SetParams(ctx, minttypes.DefaultParams())
