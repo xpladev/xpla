@@ -8,7 +8,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
@@ -55,10 +54,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEn
 	}
 
 	return types.ValidateGenesis(&data)
-}
-
-// RegisterRESTRoutes registers the REST routes for the reward module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx sdkclient.Context, rtr *mux.Router) {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the reward module.
@@ -115,10 +110,6 @@ func (AppModule) Name() string {
 // RegisterInvariants registers the reward module invariants.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 
-}
-
-func (am AppModule) NewHandler() sdk.Handler {
-	return NewHandler(am.keeper)
 }
 
 // RegisterServices registers module services.
