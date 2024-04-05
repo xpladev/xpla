@@ -35,7 +35,6 @@ import (
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	params "github.com/cosmos/cosmos-sdk/x/params"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
@@ -166,7 +165,6 @@ func CreateTestInput(t *testing.T) TestInput {
 
 	govModAddress := authtypes.NewModuleAddress(govtypes.ModuleName).String()
 
-	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, keyParams, tKeyParams)
 	accountKeeper := authkeeper.NewAccountKeeper(appCodec, keyAcc, etherminttypes.ProtoAccount, maccPerms, sdk.GetConfig().GetBech32AccountAddrPrefix(), govModAddress)
 	bankKeeper := bankkeeper.NewBaseKeeper(appCodec, keyBank, accountKeeper, blackListAddrs, govModAddress)
 
@@ -219,12 +217,12 @@ func CreateTestInput(t *testing.T) TestInput {
 	keeper := rewardkeeper.NewKeeper(
 		appCodec,
 		keyReward,
-		paramsKeeper.Subspace(rewardtypes.ModuleName),
 		accountKeeper,
 		bankKeeper,
 		stakingKeeper,
 		distrKeeper,
 		mintKeeper,
+		govModAddress,
 	)
 
 	defaults := rewardtypes.Params{

@@ -422,7 +422,6 @@ func NewAppKeeper(
 	)
 
 	// RouterKeeper must be created before TransferKeeper
-	authority := authtypes.NewModuleAddress(govtypes.ModuleName).String()
 	appKeepers.PFMRouterKeeper = pfmrouterkeeper.NewKeeper(
 		appCodec, appKeepers.keys[pfmroutertypes.StoreKey],
 		nil, // Will be zero-value here. Reference is set later on with SetTransferKeeper.
@@ -431,7 +430,7 @@ func NewAppKeeper(
 		appKeepers.BankKeeper,
 		// The ICS4Wrapper is replaced by the IBCFeeKeeper instead of the channel so that sending can be overridden by the middleware
 		&appKeepers.IBCFeeKeeper,
-		authority,
+		govModAddress,
 	)
 
 	appKeepers.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
@@ -526,12 +525,12 @@ func NewAppKeeper(
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[rewardtypes.StoreKey],
-		appKeepers.GetSubspace(rewardtypes.ModuleName),
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.DistrKeeper,
 		appKeepers.MintKeeper,
+		govModAddress,
 	)
 
 	return appKeepers
