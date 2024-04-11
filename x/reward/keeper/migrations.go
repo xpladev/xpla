@@ -17,7 +17,7 @@ func NewMigrator(keeper Keeper, legacySubspace exported.Subspace) Migrator {
 	return Migrator{keeper: keeper, legacySubspace: legacySubspace}
 }
 
-// Migrate2to3 migrates the x/reward module state from the consensus
+// Migrate1to2 migrates the x/reward module state from the consensus
 // version 1 to version 2. Specifically, it takes the parameters that are currently stored
 // and managed by the x/params module and stores them directly into the x/reward
 // module state.
