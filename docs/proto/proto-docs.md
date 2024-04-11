@@ -21,6 +21,8 @@
 - [xpla/reward/v1beta1/tx.proto](#xpla/reward/v1beta1/tx.proto)
     - [MsgFundFeeCollector](#xpla.reward.v1beta1.MsgFundFeeCollector)
     - [MsgFundFeeCollectorResponse](#xpla.reward.v1beta1.MsgFundFeeCollectorResponse)
+    - [MsgUpdateParams](#xpla.reward.v1beta1.MsgUpdateParams)
+    - [MsgUpdateParamsResponse](#xpla.reward.v1beta1.MsgUpdateParamsResponse)
   
     - [Msg](#xpla.reward.v1beta1.Msg)
   
@@ -224,6 +226,35 @@ MsgFundFeeCollectorResponse defines the Msg/FundFeeCollector response type.
 
 
 
+
+<a name="xpla.reward.v1beta1.MsgUpdateParams"></a>
+
+### MsgUpdateParams
+MsgUpdateParams is the Msg/UpdateParams request type for reward parameters.
+Since: cosmos-sdk 0.47
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authority` | [string](#string) |  | authority is the address of the governance account. |
+| `params` | [Params](#xpla.reward.v1beta1.Params) |  | params defines the x/evm parameters to update. NOTE: All parameters must be supplied. |
+
+
+
+
+
+
+<a name="xpla.reward.v1beta1.MsgUpdateParamsResponse"></a>
+
+### MsgUpdateParamsResponse
+MsgUpdateParamsResponse defines the response structure for executing a
+MsgUpdateParams message.
+Since: cosmos-sdk 0.47
+
+
+
+
+
  <!-- end messages -->
 
  <!-- end enums -->
@@ -239,6 +270,7 @@ Msg defines the reawrd Msg service.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `FundFeeCollector` | [MsgFundFeeCollector](#xpla.reward.v1beta1.MsgFundFeeCollector) | [MsgFundFeeCollectorResponse](#xpla.reward.v1beta1.MsgFundFeeCollectorResponse) | FundFeeCollector defines a method to allow an account to directly fund the fee collector. | |
+| `UpdateParams` | [MsgUpdateParams](#xpla.reward.v1beta1.MsgUpdateParams) | [MsgUpdateParamsResponse](#xpla.reward.v1beta1.MsgUpdateParamsResponse) | UpdateParams defined a governance operation for updating the x/reward module parameters. The authority is hard-coded to the Cosmos SDK x/gov module account | |
 
  <!-- end services -->
 
