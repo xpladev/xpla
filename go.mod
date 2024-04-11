@@ -25,7 +25,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
-	github.com/xpladev/ethermint v0.23.0-xpla-rc3
+	github.com/xpladev/ethermint v0.23.0-xpla
 	golang.org/x/sync v0.6.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80
 	google.golang.org/grpc v1.62.1
@@ -229,7 +229,7 @@ require (
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.47.10-xpla-rc0
+	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.47.10-xpla
 
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.12.2-xpla
 
