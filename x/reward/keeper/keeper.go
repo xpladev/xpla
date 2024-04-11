@@ -1,21 +1,24 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/xpladev/xpla/x/reward/types"
 )
 
 type Keeper struct {
-	storeKey   storetypes.StoreKey
-	cdc        codec.BinaryCodec
-	paramSpace paramtypes.Subspace
+	storeKey storetypes.StoreKey
+	cdc      codec.BinaryCodec
+	// the address capable of executing a MsgUpdateParams message. Typically, this
+	// should be the x/gov module account.
+	authority string
 
 	authKeeper    types.AccountKeeper
 	bankKeeper    types.BankKeeper
@@ -25,24 +28,30 @@ type Keeper struct {
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.BinaryCodec, key storetypes.StoreKey,
 	ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper, mk types.MintKeeper,
+	authority string,
 ) Keeper {
-	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	// ensure reward module account is set
+	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
+		panic(fmt.Sprintf("%s module account has not been set", types.ModuleName))
 	}
 
 	return Keeper{
 		storeKey:      key,
 		cdc:           cdc,
-		paramSpace:    paramSpace,
 		authKeeper:    ak,
 		bankKeeper:    bk,
 		stakingKeeper: sk,
 		distKeeper:    dk,
 		mintKeeper:    mk,
+		authority:     authority,
 	}
+}
+
+// GetAuthority returns the x/reward module's authority.
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
 
 // Logger returns a module-specific logger.

@@ -7,6 +7,7 @@ import (
 
 const (
 	TypeMsgFundFeeCollector = "fund_fee_collector"
+	TypeMsgUpdateParams     = "update_params"
 )
 
 // NewMsgFundFeeCollector returns a new MsgFundFeeCollector with a sender and
@@ -51,4 +52,25 @@ func (msg MsgFundFeeCollector) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+// GetSigners returns the expected signers for a MsgUpdateParams message.
+func (msg *MsgUpdateParams) GetSigners() []sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.Authority)
+	return []sdk.AccAddress{addr}
+}
+
+// ValidateBasic does a sanity check of the provided data
+func (msg *MsgUpdateParams) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
+		return sdkerrors.Wrap(err, "Invalid authority address")
+	}
+
+	return msg.Params.ValidateBasic()
+}
+
+// GetSignBytes implements the LegacyMsg interface.
+func (msg MsgUpdateParams) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
 }

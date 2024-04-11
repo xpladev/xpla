@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/xpladev/xpla/x/reward/client/cli"
+	"github.com/xpladev/xpla/x/reward/exported"
 	"github.com/xpladev/xpla/x/reward/keeper"
 	"github.com/xpladev/xpla/x/reward/types"
 )
@@ -87,12 +88,15 @@ type AppModule struct {
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
 	distKeeper    types.DistributionKeeper
+
+	// legacySubspace is used solely for migration of x/params managed parameters
+	legacySubspace exported.Subspace
 }
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	cdc codec.Codec, keeper keeper.Keeper,
-	bankKeeper types.BankKeeper, stakingKeeper types.StakingKeeper, distKeeper types.DistributionKeeper,
+	bankKeeper types.BankKeeper, stakingKeeper types.StakingKeeper, distKeeper types.DistributionKeeper, ss exported.Subspace,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{cdc: cdc},
@@ -100,6 +104,7 @@ func NewAppModule(
 		bankKeeper:     bankKeeper,
 		stakingKeeper:  stakingKeeper,
 		distKeeper:     distKeeper,
+		legacySubspace: ss,
 	}
 }
 
@@ -117,6 +122,11 @@ func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	m := keeper.NewMigrator(am.keeper, am.legacySubspace)
+	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/%s from version 1 to 2: %v", types.ModuleName, err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the reward module. It returns
@@ -136,7 +146,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock returns the begin blocker for the reward module.
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {

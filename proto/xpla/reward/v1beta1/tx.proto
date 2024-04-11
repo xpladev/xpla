@@ -5,6 +5,9 @@ option go_package = "github.com/xpladev/xpla/x/reward/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "xpla/reward/v1beta1/reward.proto";
 import "amino/amino.proto";
 
 // Msg defines the reawrd Msg service.
@@ -13,6 +16,11 @@ service Msg {
   // fund the fee collector.
   rpc FundFeeCollector(MsgFundFeeCollector)
       returns (MsgFundFeeCollectorResponse);
+
+  // UpdateParams defined a governance operation for updating the x/reward
+  // module parameters. The authority is hard-coded to the Cosmos SDK x/gov
+  // module account
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
 // MsgFundFeeCollector allows an account to directly
@@ -31,3 +39,21 @@ message MsgFundFeeCollector {
 
 // MsgFundFeeCollectorResponse defines the Msg/FundFeeCollector response type.
 message MsgFundFeeCollectorResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type for reward parameters.
+// Since: cosmos-sdk 0.47
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // authority is the address of the governance account.
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // params defines the x/evm parameters to update.
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [ (gogoproto.nullable) = false ];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}
