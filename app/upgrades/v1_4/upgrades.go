@@ -25,7 +25,7 @@ func CreateUpgradeHandler(
 	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		authKeeper := keepers.AccountKeeper
+		authKeeper := keepers.AccountKeeper.AccountKeeper
 		stakingKeeper := keepers.StakingKeeper
 
 		migrateBaseAccountToEthAccount(ctx, authKeeper)

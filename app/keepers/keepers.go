@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/streaming"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -73,6 +72,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
 	etherminttypes "github.com/xpladev/ethermint/types"
+	ethermintauthkeeper "github.com/xpladev/ethermint/x/auth/keeper"
 	"github.com/xpladev/ethermint/x/erc20"
 	erc20keeper "github.com/xpladev/ethermint/x/erc20/keeper"
 	erc20types "github.com/xpladev/ethermint/x/erc20/types"
@@ -95,7 +95,7 @@ type AppKeepers struct {
 	memKeys map[string]*storetypes.MemoryStoreKey
 
 	// keepers
-	AccountKeeper    authkeeper.AccountKeeper
+	AccountKeeper    ethermintauthkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper *capabilitykeeper.Keeper
 	StakingKeeper    *xplastakingkeeper.Keeper
@@ -206,7 +206,7 @@ func NewAppKeeper(
 	)
 
 	// add normal keepers
-	appKeepers.AccountKeeper = authkeeper.NewAccountKeeper(
+	appKeepers.AccountKeeper = ethermintauthkeeper.NewAccountKeeper(
 		appCodec,
 		appKeepers.keys[authtypes.StoreKey],
 		etherminttypes.ProtoAccount,
