@@ -8,7 +8,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.45.16
 	github.com/cosmos/gogoproto v1.4.6
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v4 v4.1.1
-	github.com/cosmos/ibc-go/v4 v4.5.1
+	github.com/cosmos/ibc-go/v4 v4.6.0
 	github.com/ethereum/go-ethereum v1.10.19
 	github.com/evmos/ethermint v0.19.3
 	github.com/evmos/evmos/v9 v9.1.0
@@ -195,7 +195,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.45.20-xpla
 
 	// enforce same SDK and IBC on all dependencies
-	github.com/cosmos/ibc-go/v4 => github.com/cosmos/ibc-go/v4 v4.5.1
+	github.com/cosmos/ibc-go/v4 => github.com/cosmos/ibc-go/v4 v4.6.0
 
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.12.2-xpla
 
