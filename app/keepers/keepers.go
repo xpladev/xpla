@@ -129,7 +129,7 @@ type AppKeepers struct {
 	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
 
-	WasmKeeper       wasm.Keeper
+	WasmKeeper       wasmkeeper.Keeper
 	scopedWasmKeeper capabilitykeeper.ScopedKeeper
 
 	EvmKeeper       *evmkeeper.Keeper
@@ -299,6 +299,15 @@ func NewAppKeeper(
 		appKeepers.ScopedIBCKeeper,
 	)
 
+	appKeepers.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
+		appCodec, appKeepers.keys[ibcfeetypes.StoreKey],
+		appKeepers.IBCKeeper.ChannelKeeper, // replaced with IBC middleware
+		appKeepers.IBCKeeper.ChannelKeeper,
+		&appKeepers.IBCKeeper.PortKeeper,
+		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+	)
+
 	wasmDir := filepath.Join(homePath, "data")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
@@ -335,7 +344,7 @@ func NewAppKeeper(
 			Stargate: wasmkeeper.AcceptListStargateQuerier(accepted, bApp.GRPCQueryRouter(), appCodec),
 		})
 	wasmOpts = append(wasmOpts, querierOpts)
-	appKeepers.WasmKeeper = wasm.NewKeeper(
+	appKeepers.WasmKeeper = wasmkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[wasmtypes.StoreKey],
 		appKeepers.AccountKeeper,
@@ -428,15 +437,6 @@ func NewAppKeeper(
 		// The ICS4Wrapper is replaced by the IBCFeeKeeper instead of the channel so that sending can be overridden by the middleware
 		&appKeepers.IBCFeeKeeper,
 		govModAddress,
-	)
-
-	appKeepers.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
-		appCodec, appKeepers.keys[ibcfeetypes.StoreKey],
-		appKeepers.IBCKeeper.ChannelKeeper, // replaced with IBC middleware
-		appKeepers.IBCKeeper.ChannelKeeper,
-		&appKeepers.IBCKeeper.PortKeeper,
-		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
 	)
 
 	appKeepers.TransferKeeper = ibctransferkeeper.NewKeeper(
