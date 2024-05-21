@@ -1,15 +1,16 @@
 package keeper
 
 import (
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/xpladev/xpla/x/volunteer/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type Keeper struct {
-	storeKey sdk.StoreKey
+	storeKey storetypes.StoreKey
 	cdc      codec.BinaryCodec
 
 	stakingKeeper types.StakingKeeper
@@ -17,7 +18,7 @@ type Keeper struct {
 }
 
 // NewKeeper constructs a message authorization Keeper
-func NewKeeper(storeKey sdk.StoreKey, cdc codec.BinaryCodec, sk types.StakingKeeper, dk types.DistributionKeeper) Keeper {
+func NewKeeper(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, sk types.StakingKeeper, dk types.DistributionKeeper) Keeper {
 	return Keeper{
 		storeKey:      storeKey,
 		cdc:           cdc,

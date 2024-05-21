@@ -1,26 +1,32 @@
 package v1_4
 
 import (
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/ethereum/go-ethereum/common"
-	etherminttypes "github.com/evmos/ethermint/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	etherminttypes "github.com/xpladev/ethermint/types"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+
+	"github.com/xpladev/xpla/app/keepers"
 	stakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 )
 
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
-	authKeeper authkeeper.AccountKeeper,
-	stakingKeeper *stakingkeeper.Keeper,
+	keepers *keepers.AppKeepers,
+	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		authKeeper := keepers.AccountKeeper.AccountKeeper
+		stakingKeeper := keepers.StakingKeeper
 
 		migrateBaseAccountToEthAccount(ctx, authKeeper)
 

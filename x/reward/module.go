@@ -7,9 +7,8 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -17,7 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/xpladev/xpla/x/reward/client/cli"
-	"github.com/xpladev/xpla/x/reward/client/rest"
+	"github.com/xpladev/xpla/x/reward/exported"
 	"github.com/xpladev/xpla/x/reward/keeper"
 	"github.com/xpladev/xpla/x/reward/types"
 )
@@ -58,14 +57,12 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEn
 	return types.ValidateGenesis(&data)
 }
 
-// RegisterRESTRoutes registers the REST routes for the reward module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx sdkclient.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the reward module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
 }
 
 // GetTxCmd returns the root tx command for the reward module.
@@ -91,12 +88,15 @@ type AppModule struct {
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
 	distKeeper    types.DistributionKeeper
+
+	// legacySubspace is used solely for migration of x/params managed parameters
+	legacySubspace exported.Subspace
 }
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	cdc codec.Codec, keeper keeper.Keeper,
-	bankKeeper types.BankKeeper, stakingKeeper types.StakingKeeper, distKeeper types.DistributionKeeper,
+	bankKeeper types.BankKeeper, stakingKeeper types.StakingKeeper, distKeeper types.DistributionKeeper, ss exported.Subspace,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{cdc: cdc},
@@ -104,6 +104,7 @@ func NewAppModule(
 		bankKeeper:     bankKeeper,
 		stakingKeeper:  stakingKeeper,
 		distKeeper:     distKeeper,
+		legacySubspace: ss,
 	}
 }
 
@@ -117,25 +118,15 @@ func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 
 }
 
-// Route returns the message routing key for the reward module.
-func (am AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.RouterKey, NewHandler(am.keeper))
-}
-
-// QuerierRoute returns the reward module's querier route name.
-func (AppModule) QuerierRoute() string {
-	return types.QuerierRoute
-}
-
-// LegacyQuerierHandler returns the reward module sdk.Querier.
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return keeper.NewQuerier(am.keeper, legacyQuerierCdc)
-}
-
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	m := keeper.NewMigrator(am.keeper, am.legacySubspace)
+	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/%s from version 1 to 2: %v", types.ModuleName, err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the reward module. It returns
@@ -155,7 +146,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock returns the begin blocker for the reward module.
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {

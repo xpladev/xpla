@@ -3,7 +3,7 @@ package params
 import (
 	"strings"
 
-	evmconfig "github.com/evmos/ethermint/server/config"
+	evmconfig "github.com/xpladev/ethermint/server/config"
 )
 
 var (

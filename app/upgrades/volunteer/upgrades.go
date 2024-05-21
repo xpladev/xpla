@@ -1,14 +1,18 @@
 package volunteer
 
 import (
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	routertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v4/router/types"
-	icacontrollertypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/controller/types"
-	icahosttypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/types"
-	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
-	ibcfeetypes "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/types"
+	router "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
+	routertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
+	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
+	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
+	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
+	ibcfee "github.com/cosmos/ibc-go/v7/modules/apps/29-fee"
+	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
 
 	"github.com/xpladev/xpla/app/keepers"
 )
@@ -17,11 +21,12 @@ func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
 	keepers *keepers.AppKeepers,
+	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		fromVM[icatypes.ModuleName] = mm.Modules[icatypes.ModuleName].ConsensusVersion()
-		fromVM[routertypes.ModuleName] = mm.Modules[routertypes.ModuleName].ConsensusVersion()
-		fromVM[ibcfeetypes.ModuleName] = mm.Modules[ibcfeetypes.ModuleName].ConsensusVersion()
+		fromVM[icatypes.ModuleName] = ica.AppModule{}.ConsensusVersion()
+		fromVM[routertypes.ModuleName] = router.AppModule{}.ConsensusVersion()
+		fromVM[ibcfeetypes.ModuleName] = ibcfee.AppModule{}.ConsensusVersion()
 
 		params := keepers.FeeMarketKeeper.GetParams(ctx)
 		params.NoBaseFee = false
@@ -42,7 +47,7 @@ func CreateUpgradeHandler(
 		}
 		keepers.ICAHostKeeper.SetParams(ctx, newIcaHostParams)
 		keepers.ICAControllerKeeper.SetParams(ctx, icacontrollertypes.Params{ControllerEnabled: true})
-		keepers.RouterKeeper.SetParams(ctx, routertypes.DefaultParams())
+		keepers.PFMRouterKeeper.SetParams(ctx, routertypes.DefaultParams())
 
 		return versionMap, err
 	}

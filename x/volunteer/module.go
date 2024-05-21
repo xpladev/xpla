@@ -7,9 +7,8 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -19,7 +18,6 @@ import (
 
 	"github.com/xpladev/xpla/x/volunteer/client/cli"
 
-	"github.com/xpladev/xpla/x/volunteer/client/rest"
 	"github.com/xpladev/xpla/x/volunteer/keeper"
 	"github.com/xpladev/xpla/x/volunteer/types"
 )
@@ -60,14 +58,12 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEn
 	return types.ValidateGenesis(&data)
 }
 
-// RegisterRESTRoutes registers the REST routes for the volunteer module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx sdkclient.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the volunteer module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
 }
 
 // GetTxCmd returns the root tx command for the volunteer module.
@@ -109,21 +105,6 @@ func (AppModule) Name() string {
 
 // RegisterInvariants registers the volunteer module invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
-
-// Route returns the message routing key for the volunteer module.
-func (am AppModule) Route() sdk.Route {
-	return sdk.Route{}
-}
-
-// QuerierRoute returns the volunteer module's querier route name.
-func (AppModule) QuerierRoute() string {
-	return types.QuerierRoute
-}
-
-// LegacyQuerierHandler returns the volunteer module sdk.Querier.
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return keeper.NewQuerier(am.keeper, legacyQuerierCdc)
-}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {

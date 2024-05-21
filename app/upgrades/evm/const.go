@@ -1,14 +1,24 @@
 package evm
 
 import (
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	store "github.com/cosmos/cosmos-sdk/store/types"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
+
+	"github.com/xpladev/xpla/app/upgrades"
 )
 
 const (
 	UpgradeName = "EVM"
 )
 
-var (
-	AddModules = []string{evmtypes.ModuleName, feemarkettypes.ModuleName}
-)
+var Upgrade = upgrades.Upgrade{
+	UpgradeName:          UpgradeName,
+	CreateUpgradeHandler: CreateUpgradeHandler,
+	StoreUpgrades: store.StoreUpgrades{
+		Added: []string{
+			evmtypes.ModuleName,
+			feemarkettypes.ModuleName,
+		},
+	},
+}

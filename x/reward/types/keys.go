@@ -9,7 +9,8 @@ const (
 
 	// RouterKey is the message route for reward
 	RouterKey = ModuleName
+)
 
-	// QuerierRoute is the querier route for reward
-	QuerierRoute = ModuleName
+var (
+	ParamsKey = []byte{0x01} // key for reward module params
 )

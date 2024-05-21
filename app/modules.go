@@ -2,8 +2,11 @@ package app
 
 import (
 	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -13,6 +16,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
@@ -24,6 +29,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
+	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -34,30 +40,36 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
+	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v4/router"
-	routertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v4/router/types"
-	ica "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts"
-	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
-	ibcfee "github.com/cosmos/ibc-go/v4/modules/apps/29-fee"
-	ibcfeetypes "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/types"
-	"github.com/cosmos/ibc-go/v4/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v4/modules/core"
-	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ethermintapp "github.com/evmos/ethermint/app"
-	"github.com/evmos/ethermint/x/evm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"github.com/evmos/ethermint/x/feemarket"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-	"github.com/evmos/evmos/v9/x/erc20"
-	erc20types "github.com/evmos/evmos/v9/x/erc20/types"
+
+	router "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
+	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
+	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
+	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
+	ibcfee "github.com/cosmos/ibc-go/v7/modules/apps/29-fee"
+	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
+	"github.com/cosmos/ibc-go/v7/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v7/modules/core"
+	ibcclientclient "github.com/cosmos/ibc-go/v7/modules/core/02-client/client"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	ethermintauth "github.com/xpladev/ethermint/x/auth"
+	"github.com/xpladev/ethermint/x/erc20"
+	erc20client "github.com/xpladev/ethermint/x/erc20/client"
+	erc20types "github.com/xpladev/ethermint/x/erc20/types"
+	"github.com/xpladev/ethermint/x/evm"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	"github.com/xpladev/ethermint/x/feemarket"
+	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 	xplaparams "github.com/xpladev/xpla/app/params"
-	xplaevm "github.com/xpladev/xpla/x/evm"
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastaking "github.com/xpladev/xpla/x/staking"
 	"github.com/xpladev/xpla/x/volunteer"
+	volunteerclient "github.com/xpladev/xpla/x/volunteer/client"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
@@ -72,10 +84,24 @@ var maccPerms = map[string][]string{
 	govtypes.ModuleName:            {authtypes.Burner},
 	ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 	ibcfeetypes.ModuleName:         nil,
-	wasm.ModuleName:                {authtypes.Burner},
+	wasmtypes.ModuleName:           {authtypes.Burner},
 	evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 	erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	rewardtypes.ModuleName:         nil,
+}
+
+func getGovProposalHandlers() []govclient.ProposalHandler {
+	govProposalHandlers := volunteerclient.ProposalHandler
+
+	return append(govProposalHandlers, []govclient.ProposalHandler{
+		upgradeclient.LegacyProposalHandler,
+		upgradeclient.LegacyCancelProposalHandler,
+		ibcclientclient.UpdateClientProposalHandler,
+		ibcclientclient.UpgradeProposalHandler,
+		erc20client.RegisterCoinProposalHandler,
+		erc20client.RegisterERC20ProposalHandler,
+		erc20client.ToggleTokenConversionProposalHandler,
+	}...)
 }
 
 // ModuleBasics defines the module BasicManager is in charge of setting up basic,
@@ -83,21 +109,21 @@ var maccPerms = map[string][]string{
 // and genesis verification.
 var ModuleBasics = module.NewBasicManager(
 	auth.AppModuleBasic{},
-	genutil.AppModuleBasic{},
+	genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 	bank.AppModuleBasic{},
 	capability.AppModuleBasic{},
 	staking.AppModuleBasic{},
 	mint.AppModuleBasic{},
 	distr.AppModuleBasic{},
-	gov.NewAppModuleBasic(
-		getGovProposalHandlers()...,
-	),
+	gov.NewAppModuleBasic(getGovProposalHandlers()),
 	params.AppModuleBasic{},
 	crisis.AppModuleBasic{},
 	slashing.AppModuleBasic{},
 	feegrantmodule.AppModuleBasic{},
 	authzmodule.AppModuleBasic{},
+	consensus.AppModuleBasic{},
 	ibc.AppModuleBasic{},
+	ibctm.AppModuleBasic{},
 	ibcfee.AppModuleBasic{},
 	upgrade.AppModuleBasic{},
 	evidence.AppModuleBasic{},
@@ -127,31 +153,32 @@ func appModules(
 			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, ethermintapp.RandomGenesisAccounts),
-		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
-		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
-		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		xplastaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		ethermintauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
+		vesting.NewAppModule(app.AccountKeeper.AccountKeeper, app.BankKeeper),
+		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
+		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
+		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
+		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
+		xplastaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+		consensus.NewAppModule(appCodec, app.AppKeepers.ConsensusParamsKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		transfer.NewAppModule(app.TransferKeeper),
 		ibcfee.NewAppModule(app.IBCFeeKeeper),
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
-		router.NewAppModule(app.RouterKeeper),
-		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		xplaevm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
-		feemarket.NewAppModule(app.FeeMarketKeeper),
-		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
-		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper),
+		router.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
+		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
+		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
+		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
+		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 	}
 }
@@ -177,12 +204,13 @@ func orderBeginBlockers() []string {
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
+		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
-		routertypes.ModuleName,
+		pfmroutertypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		wasm.ModuleName,
+		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
@@ -209,12 +237,13 @@ func orderEndBlockers() []string {
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
+		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
-		routertypes.ModuleName,
+		pfmroutertypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		wasm.ModuleName,
+		wasmtypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		erc20types.ModuleName,
@@ -243,15 +272,16 @@ func orderInitBlockers() []string {
 		// gentx transactions use MinGasPriceDecorator.AnteHandle
 		feemarkettypes.ModuleName,
 		genutiltypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
+		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
-		routertypes.ModuleName,
+		pfmroutertypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		wasm.ModuleName,
+		wasmtypes.ModuleName,
 		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
