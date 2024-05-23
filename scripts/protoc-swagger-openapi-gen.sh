@@ -26,7 +26,6 @@ xpla_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/xpla)
 if [ -d $temp_dir ]; then
   mv ./$temp_dir ./vendor
 fi
-
 proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $ethermint_dir/proto $pfm/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 for dir in $proto_dirs; do
   # generate swagger files (filter query files)
