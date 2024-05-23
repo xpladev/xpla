@@ -14949,7 +14949,7 @@ paths:
           type: boolean
       tags:
         - cosmos/base/tendermint
-  /ethermint/erc20/v1/params:
+  /evmos/erc20/v1/params:
     get:
       summary: Params retrieves the erc20 module params
       operationId: Params
@@ -15002,8 +15002,8 @@ paths:
                       type: string
                       format: byte
       tags:
-        - ethermint/erc20/v1
-  /ethermint/erc20/v1/token_pairs:
+        - evmos/erc20/v1
+  /evmos/erc20/v1/token_pairs:
     get:
       summary: TokenPairs retrieves registered token pairs
       operationId: TokenPairs
@@ -15157,8 +15157,8 @@ paths:
           required: false
           type: boolean
       tags:
-        - ethermint/erc20/v1
-  /ethermint/erc20/v1/token_pairs/{token}:
+        - evmos/erc20/v1
+  /evmos/erc20/v1/token_pairs/{token}:
     get:
       summary: TokenPair retrieves a registered token pair
       operationId: TokenPair
@@ -15241,7 +15241,7 @@ paths:
           required: true
           type: string
       tags:
-        - ethermint/erc20/v1
+        - evmos/erc20/v1
   /ibc/apps/interchain_accounts/host/v1/params:
     get:
       summary: Params queries all parameters of the ICA host submodule.
