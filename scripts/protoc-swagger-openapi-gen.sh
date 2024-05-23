@@ -11,7 +11,7 @@ if [ -d vendor ]; then
 fi
 
 # Get the path of the cosmos-sdk repo from go/pkg/mod
-gogo_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/gogo/protobuf)
+gogo_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/gogoproto)
 google_api_dir=$(go list -f '{{ .Dir }}' -m github.com/grpc-ecosystem/grpc-gateway)
 tendermint_dir=$(go list -f '{{ .Dir }}' -m github.com/cometbft/cometbft)
 cosmos_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-proto)

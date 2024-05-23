@@ -193,10 +193,23 @@ Use BatchEntry not CommitmentProof, to avoid recursion
 <a name="cosmos.ics23.v1.ExistenceProof"></a>
 
 ### ExistenceProof
+ExistenceProof takes a key and a value and a set of steps to perform on it.
+The result of peforming all these steps will provide a "root hash", which can
+be compared to the value in a header.
+
+Since it is computationally infeasible to produce a hash collission for any of
+the used cryptographic hash functions, if someone can provide a series of
+operations to transform a given key and value into a root hash that matches some
+trusted root, these key and values must be in the referenced merkle tree.
+
+The only possible issue is maliablity in LeafOp, such as providing extra prefix
+data, which should be controlled by a spec. Eg. with lengthOp as NONE, prefix =
+FOO, key = BAR, value = CHOICE and prefix = F, key = OOBAR, value = CHOICE would
+produce the same value.
+
 With LengthOp this is tricker but not impossible. Which is why the
-"leafPrefixEqual" field in the ProofSpec is valuable to prevent this
-mutability. And why all trees should length-prefix the data before hashing
-it.
+"leafPrefixEqual" field in the ProofSpec is valuable to prevent this mutability.
+And why all trees should length-prefix the data before hashing it.
 
 
 | Field | Type | Label | Description |
@@ -305,9 +318,9 @@ output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
 <a name="cosmos.ics23.v1.NonExistenceProof"></a>
 
 ### NonExistenceProof
-NonExistenceProof takes a proof of two neighbors, one left of the desired
-key, one right of the desired key. If both proofs are valid AND they are
-neighbors, then there is no valid proof for the given key.
+NonExistenceProof takes a proof of two neighbors, one left of the desired key,
+one right of the desired key. If both proofs are valid AND they are neighbors,
+then there is no valid proof for the given key.
 
 
 | Field | Type | Label | Description |
