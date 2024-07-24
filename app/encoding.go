@@ -1,6 +1,8 @@
 package app
 
 import (
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+
 	"github.com/xpladev/xpla/app/params"
 
 	"github.com/xpladev/ethermint/encoding/codec"
@@ -16,5 +18,9 @@ func MakeTestEncodingConfig() params.EncodingConfig {
 	codec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+
+	// for removing vesting module
+	vestingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+
 	return encodingConfig
 }

@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -26,6 +27,8 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctmmigrations "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/migrations"
 
+	"github.com/ethereum/go-ethereum/common"
+	etherminttypes "github.com/xpladev/ethermint/types"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 
@@ -40,6 +43,19 @@ func CreateUpgradeHandler(
 	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		// migrate VestingAccount to EthAccount
+		keepers.AccountKeeper.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
+			acc, ok := account.(vestexported.VestingAccount)
+			if ok {
+				newacc := authtypes.NewBaseAccount(acc.GetAddress(), acc.GetPubKey(), acc.GetAccountNumber(), acc.GetSequence())
+				ethAcc := &etherminttypes.EthAccount{
+					BaseAccount: newacc,
+					CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).String(),
+				}
+				keepers.AccountKeeper.SetAccount(ctx, ethAcc)
+			}
+			return false
+		})
 		// Set param key table for params module migration
 		for _, subspace := range keepers.ParamsKeeper.GetSubspaces() {
 			var keyTable paramstypes.KeyTable
