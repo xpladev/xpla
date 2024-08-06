@@ -12,10 +12,9 @@ import "amino/amino.proto";
 
 // Msg defines the reawrd Msg service.
 service Msg {
-  // FundFeeCollector defines a method to allow an account to directly
-  // fund the fee collector.
-  rpc FundFeeCollector(MsgFundFeeCollector)
-      returns (MsgFundFeeCollectorResponse);
+  // MsgFundRewardPool defines a method to allow an account to directly
+  // fund the reward pool.
+  rpc FundRewardPool(MsgFundRewardPool) returns (MsgFundRewardPoolResponse);
 
   // UpdateParams defined a governance operation for updating the x/reward
   // module parameters. The authority is hard-coded to the Cosmos SDK x/gov
@@ -23,10 +22,10 @@ service Msg {
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
-// MsgFundFeeCollector allows an account to directly
-// fund the fee collector.
-message MsgFundFeeCollector {
-  option (amino.name) = "xpladev/MsgFundFeeCollector";
+// MsgFundRewardPool allows an account to directly
+// fund the reward pool.
+message MsgFundRewardPool {
+  option (amino.name) = "xpladev/MsgFundRewardPool";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
@@ -37,8 +36,8 @@ message MsgFundFeeCollector {
   string depositor = 2;
 }
 
-// MsgFundFeeCollectorResponse defines the Msg/FundFeeCollector response type.
-message MsgFundFeeCollectorResponse {}
+// MsgFundRewardPoolResponse defines the Msg/FundRewardPool response type.
+message MsgFundRewardPoolResponse {}
 
 // MsgUpdateParams is the Msg/UpdateParams request type for reward parameters.
 // Since: cosmos-sdk 0.47
