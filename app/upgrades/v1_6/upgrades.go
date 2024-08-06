@@ -38,6 +38,20 @@ func CreateUpgradeHandler(
 			return nil, err
 		}
 
+		// fund fee collector by reward distirubte account
+		rewardParams := keepers.RewardKeeper.GetParams(ctx)
+		rewardDistributeAccount, err := sdk.AccAddressFromBech32(rewardParams.RewardDistributeAccount)
+		if err != nil {
+			return nil, err
+		}
+		evmDenom := keepers.EvmKeeper.GetParams(ctx).EvmDenom
+		borrowedCoins := sdk.NewCoin(evmDenom, sdk.DefaultPowerReduction)
+		err = keepers.BankKeeper.SendCoinsFromAccountToModule(ctx, rewardDistributeAccount, authtypes.FeeCollectorName, sdk.NewCoins(borrowedCoins))
+		if err != nil {
+			return nil, err
+		}
+
+		// execute thiredweb proxy contract
 		res, err := keepers.EvmKeeper.EthereumTx(ctx, msg)
 		if err != nil {
 			return nil, err
@@ -51,16 +65,22 @@ func CreateUpgradeHandler(
 		tx := msg.AsTransaction()
 
 		signer := ethtypes.NewLondonSigner(keepers.EvmKeeper.ChainID())
-		coreMsg, err := msg.AsMessage(signer, keepers.FeeMarketKeeper.CalculateBaseFee(ctx))
+		from, err := signer.Sender(tx)
 		if err != nil {
 			return nil, err
 		}
 
+		// sender -> rewardDistributeAccount
 		refundedGas := msg.GetGas() - res.GasUsed
 		refundAmount := new(big.Int).Mul(new(big.Int).SetUint64(refundedGas), tx.GasPrice())
-		evmDenom := keepers.EvmKeeper.GetParams(ctx).EvmDenom
+		refundCoin := sdk.NewCoin(evmDenom, sdkmath.NewIntFromBigInt(refundAmount))
+		err = keepers.BankKeeper.SendCoins(ctx, from.Bytes(), rewardDistributeAccount, sdk.NewCoins(refundCoin))
+		if err != nil {
+			return nil, err
+		}
 
-		err = keepers.BankKeeper.SendCoinsFromAccountToModule(ctx, coreMsg.From().Bytes(), authtypes.FeeCollectorName, sdk.NewCoins(sdk.NewCoin(evmDenom, sdkmath.NewIntFromBigInt(refundAmount))))
+		// feeCollector -> rewardDistributeAccount
+		err = keepers.BankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, rewardDistributeAccount, sdk.NewCoins(borrowedCoins.Sub(refundCoin)))
 		if err != nil {
 			return nil, err
 		}
