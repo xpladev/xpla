@@ -1,12 +1,12 @@
 package v1_6
 
 import (
+	"cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/pkg/errors"
 
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	"github.com/xpladev/xpla/app/keepers"
@@ -36,6 +36,10 @@ func CreateUpgradeHandler(
 		res, err := keepers.EvmKeeper.EthereumTx(ctx, msg)
 		if err != nil {
 			return nil, err
+		}
+
+		if res.Failed() {
+			return nil, errors.ErrPanic.Wrap(res.VmError)
 		}
 
 		return mm.RunMigrations(ctx, configurator, fromVM)
