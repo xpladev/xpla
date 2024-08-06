@@ -374,6 +374,9 @@ func NewAppKeeper(
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&appKeepers.Erc20Keeper)).
 		AddRoute(volunteertypes.RouterKey, volunteerkeeper.NewVolunteerValidatorProposalHandler(appKeepers.VolunteerKeeper))
 
+	govConfig := govtypes.DefaultConfig()
+	// set the MaxMetadataLen for proposals to the same value as it was pre-sdk v0.47.x
+	govConfig.MaxMetadataLen = 10200
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[govtypes.StoreKey],
@@ -381,7 +384,7 @@ func NewAppKeeper(
 		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		bApp.MsgServiceRouter(),
-		govtypes.DefaultConfig(),
+		govConfig,
 		govModAddress,
 	)
 
