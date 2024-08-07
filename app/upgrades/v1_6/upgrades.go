@@ -38,15 +38,14 @@ func CreateUpgradeHandler(
 			return nil, err
 		}
 
-		// fund fee collector by reward distirubte account
-		rewardParams := keepers.RewardKeeper.GetParams(ctx)
-		rewardDistributeAccount, err := sdk.AccAddressFromBech32(rewardParams.RewardDistributeAccount)
+		// fund fee collector by upgrade fee supporter
+		upgradeFeeSupporterAccout, err := sdk.AccAddressFromBech32(upgradeFeeSupporter)
 		if err != nil {
 			return nil, err
 		}
 		evmDenom := keepers.EvmKeeper.GetParams(ctx).EvmDenom
 		borrowedCoins := sdk.NewCoin(evmDenom, sdk.DefaultPowerReduction)
-		err = keepers.BankKeeper.SendCoinsFromAccountToModule(ctx, rewardDistributeAccount, authtypes.FeeCollectorName, sdk.NewCoins(borrowedCoins))
+		err = keepers.BankKeeper.SendCoinsFromAccountToModule(ctx, upgradeFeeSupporterAccout, authtypes.FeeCollectorName, sdk.NewCoins(borrowedCoins))
 		if err != nil {
 			return nil, err
 		}
@@ -74,13 +73,13 @@ func CreateUpgradeHandler(
 		refundedGas := msg.GetGas() - res.GasUsed
 		refundAmount := new(big.Int).Mul(new(big.Int).SetUint64(refundedGas), tx.GasPrice())
 		refundCoin := sdk.NewCoin(evmDenom, sdkmath.NewIntFromBigInt(refundAmount))
-		err = keepers.BankKeeper.SendCoins(ctx, from.Bytes(), rewardDistributeAccount, sdk.NewCoins(refundCoin))
+		err = keepers.BankKeeper.SendCoins(ctx, from.Bytes(), upgradeFeeSupporterAccout, sdk.NewCoins(refundCoin))
 		if err != nil {
 			return nil, err
 		}
 
 		// feeCollector -> rewardDistributeAccount
-		err = keepers.BankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, rewardDistributeAccount, sdk.NewCoins(borrowedCoins.Sub(refundCoin)))
+		err = keepers.BankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, upgradeFeeSupporterAccout, sdk.NewCoins(borrowedCoins.Sub(refundCoin)))
 		if err != nil {
 			return nil, err
 		}
