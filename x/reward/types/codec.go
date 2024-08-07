@@ -9,14 +9,14 @@ import (
 )
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgFundFeeCollector{}, "xpladev/MsgFundFeeCollector", nil)
+	cdc.RegisterConcrete(&MsgFundRewardPool{}, "xpladev/MsgFundRewardPool", nil)
 	cdc.RegisterConcrete(&MsgUpdateParams{}, "xpladev/reward/MsgUpdateParams", nil)
 }
 
 func RegisterInterfaces(registry types.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
-		&MsgFundFeeCollector{},
+		&MsgFundRewardPool{},
 		&MsgUpdateParams{},
 	)
 

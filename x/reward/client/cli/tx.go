@@ -30,7 +30,7 @@ func NewTxCmd() *cobra.Command {
 	}
 
 	distTxCmd.AddCommand(
-		NewFundFeeCollectorCmd(),
+		NewFundRewardPoolCmd(),
 	)
 
 	return distTxCmd
@@ -38,16 +38,16 @@ func NewTxCmd() *cobra.Command {
 
 type newGenerateOrBroadcastFunc func(client.Context, *pflag.FlagSet, ...sdk.Msg) error
 
-func NewFundFeeCollectorCmd() *cobra.Command {
+func NewFundRewardPoolCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fund-fee-collector [amount]",
+		Use:   "fund-reward-pool [amount]",
 		Args:  cobra.ExactArgs(1),
-		Short: "Funds the fee collector with the specified amount",
+		Short: "Funds the reward pool with the specified amount",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Funds the fee collector with the specified amount
+			fmt.Sprintf(`Funds the reward pool with the specified amount
 
 Example:
-$ %s tx reward fund-fee-collector 100axpla --from mykey
+$ %s tx reward fund-reward-pool 100axpla --from mykey
 `,
 				version.AppName,
 			),
@@ -63,7 +63,7 @@ $ %s tx reward fund-fee-collector 100axpla --from mykey
 				return err
 			}
 
-			msg := types.NewMsgFundFeeCollector(amount, depositorAddr)
+			msg := types.NewMsgFundRewardPool(amount, depositorAddr)
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
