@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/xpladev/xpla/x/reward/types"
 )
@@ -59,11 +58,11 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-// FundFeeCollector allows an account to directly fund the fee collector fund.
-// The amount is added to the fee collector account
+// FundRewardPool allows an account to directly fund the reward pool fund.
+// The amount is added to the reward pool account
 // An error is returned if the amount cannot be sent to the module account.
-func (k Keeper) FundFeeCollector(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error {
-	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, authtypes.FeeCollectorName, amount); err != nil {
+func (k Keeper) FundRewardPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error {
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, amount); err != nil {
 		return err
 	}
 

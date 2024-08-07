@@ -6,28 +6,28 @@ import (
 )
 
 const (
-	TypeMsgFundFeeCollector = "fund_fee_collector"
-	TypeMsgUpdateParams     = "update_params"
+	TypeMsgFundRewardPool = "fund_reward_pool"
+	TypeMsgUpdateParams   = "update_params"
 )
 
-// NewMsgFundFeeCollector returns a new MsgFundFeeCollector with a sender and
+// NewMsgFundRewardPool returns a new MsgFundRewardPool with a sender and
 // a funding amount.
-func NewMsgFundFeeCollector(amount sdk.Coins, depositor sdk.AccAddress) *MsgFundFeeCollector {
-	return &MsgFundFeeCollector{
+func NewMsgFundRewardPool(amount sdk.Coins, depositor sdk.AccAddress) *MsgFundRewardPool {
+	return &MsgFundRewardPool{
 		Amount:    amount,
 		Depositor: depositor.String(),
 	}
 }
 
-// Route returns the MsgFundFeeCollector message route.
-func (msg MsgFundFeeCollector) Route() string { return ModuleName }
+// Route returns the MsgFundRewardPool message route.
+func (msg MsgFundRewardPool) Route() string { return ModuleName }
 
-// Type returns the MsgFundFeeCollector message type.
-func (msg MsgFundFeeCollector) Type() string { return TypeMsgFundFeeCollector }
+// Type returns the MsgFundRewardPool message type.
+func (msg MsgFundRewardPool) Type() string { return TypeMsgFundRewardPool }
 
 // GetSigners returns the signer addresses that are expected to sign the result
 // of GetSignBytes.
-func (msg MsgFundFeeCollector) GetSigners() []sdk.AccAddress {
+func (msg MsgFundRewardPool) GetSigners() []sdk.AccAddress {
 	depoAddr, err := sdk.AccAddressFromBech32(msg.Depositor)
 	if err != nil {
 		panic(err)
@@ -35,15 +35,15 @@ func (msg MsgFundFeeCollector) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{depoAddr}
 }
 
-// GetSignBytes returns the raw bytes for a MsgFundFeeCollector message that
+// GetSignBytes returns the raw bytes for a MsgFundRewardPool message that
 // the expected signer needs to sign.
-func (msg MsgFundFeeCollector) GetSignBytes() []byte {
+func (msg MsgFundRewardPool) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
 }
 
-// ValidateBasic performs basic MsgFundFeeCollector message validation.
-func (msg MsgFundFeeCollector) ValidateBasic() error {
+// ValidateBasic performs basic MsgFundRewardPool message validation.
+func (msg MsgFundRewardPool) ValidateBasic() error {
 	if !msg.Amount.IsValid() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
 	}

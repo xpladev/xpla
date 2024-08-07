@@ -21,7 +21,7 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-func (k msgServer) FundFeeCollector(goCtx context.Context, msg *types.MsgFundFeeCollector) (*types.MsgFundFeeCollectorResponse, error) {
+func (k msgServer) FundRewardPool(goCtx context.Context, msg *types.MsgFundRewardPool) (*types.MsgFundRewardPoolResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	depositer, err := sdk.AccAddressFromBech32(msg.Depositor)
@@ -29,7 +29,7 @@ func (k msgServer) FundFeeCollector(goCtx context.Context, msg *types.MsgFundFee
 		return nil, err
 	}
 
-	err = k.Keeper.FundFeeCollector(ctx, msg.Amount, depositer)
+	err = k.Keeper.FundRewardPool(ctx, msg.Amount, depositer)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (k msgServer) FundFeeCollector(goCtx context.Context, msg *types.MsgFundFee
 		),
 	)
 
-	return &types.MsgFundFeeCollectorResponse{}, nil
+	return &types.MsgFundRewardPoolResponse{}, nil
 }
 
 // UpdateParams implements the gRPC MsgServer interface. After a successful governance vote
