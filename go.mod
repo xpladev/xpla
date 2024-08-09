@@ -229,7 +229,7 @@ require (
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.47.13-xpla
+	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.47.13-xpla.0.20240809004040-68c6e872b5b3
 
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.12.2-xpla
 
