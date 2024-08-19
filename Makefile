@@ -21,7 +21,6 @@ GO_VERSION ?= "1.19"
 
 # for dockerized protobuf tools
 DOCKER := $(shell which docker)
-DOCKER_COMPOSE := $(shell which docker-compose)
 BUF_IMAGE=bufbuild/buf@sha256:3cb1f8a4b48bd5ad8f09168f10f607ddc318af202f5c057d52a45216793d85e5 #v1.4.0
 DOCKER_BUF := $(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(BUF_IMAGE)
 
