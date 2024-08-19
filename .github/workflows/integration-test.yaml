@@ -2,9 +2,9 @@ name: End-to-end test
 
 on:
   push:
-    branches: [ "main", "cube", "tesseract", "release/*" ]
+    branches: [ "main", "cube", "release/**" ]
   pull_request:
-    branches: [ "*" ]
+    types: [opened, reopened]
 
 jobs:
 
@@ -17,7 +17,7 @@ jobs:
     - name: Setup network
       run: |
         mkdir ~/genesis
-        cd tests/e2e && docker-compose up -d
+        cd tests/e2e && docker compose up -d
         docker ps
         sleep 20
 
@@ -30,4 +30,4 @@ jobs:
       run: cd tests/e2e && go test
 
     - name: Teardown
-      run: cd tests/e2e && docker-compose down
+      run: cd tests/e2e && docker compose down

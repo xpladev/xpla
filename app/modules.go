@@ -8,8 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -128,7 +126,6 @@ var ModuleBasics = module.NewBasicManager(
 	upgrade.AppModuleBasic{},
 	evidence.AppModuleBasic{},
 	transfer.AppModuleBasic{},
-	vesting.AppModuleBasic{},
 	router.AppModuleBasic{},
 	ica.AppModuleBasic{},
 	erc20.AppModuleBasic{},
@@ -154,7 +151,6 @@ func appModules(
 			encodingConfig.TxConfig,
 		),
 		ethermintauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
-		vesting.NewAppModule(app.AccountKeeper.AccountKeeper, app.BankKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
@@ -203,7 +199,6 @@ func orderBeginBlockers() []string {
 		authz.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
-		vestingtypes.ModuleName,
 		ibcexported.ModuleName,
 		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -236,7 +231,6 @@ func orderEndBlockers() []string {
 		evidencetypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
-		vestingtypes.ModuleName,
 		ibcexported.ModuleName,
 		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -280,7 +274,6 @@ func orderInitBlockers() []string {
 		ibcfeetypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
-		vestingtypes.ModuleName,
 		wasmtypes.ModuleName,
 		erc20types.ModuleName,
 		rewardtypes.ModuleName,

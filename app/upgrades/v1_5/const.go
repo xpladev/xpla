@@ -2,6 +2,7 @@ package v1_5
 
 import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 
@@ -19,6 +20,9 @@ var Upgrade = upgrades.Upgrade{
 		Added: []string{
 			consensustypes.ModuleName,
 			crisistypes.ModuleName,
+		},
+		Deleted: []string{
+			vestingtypes.ModuleName,
 		},
 	},
 }

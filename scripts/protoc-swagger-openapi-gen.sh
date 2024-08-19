@@ -11,27 +11,25 @@ if [ -d vendor ]; then
 fi
 
 # Get the path of the cosmos-sdk repo from go/pkg/mod
-gogo_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/gogo/protobuf)
+gogo_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/gogoproto)
 google_api_dir=$(go list -f '{{ .Dir }}' -m github.com/grpc-ecosystem/grpc-gateway)
-tendermint_dir=$(go list -f '{{ .Dir }}' -m github.com/tendermint/tendermint)
+tendermint_dir=$(go list -f '{{ .Dir }}' -m github.com/cometbft/cometbft)
 cosmos_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-proto)
 cosmos_sdk_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-sdk)
 wasm_dir=$(go list -f '{{ .Dir }}' -m github.com/CosmWasm/wasmd)
-ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v4)
-ica=$(go list -f '{{ .Dir }}' -m github.com/cosmos/interchain-accounts)
+ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v7)
 ethermint_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/ethermint)
-pfm=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v4)
+pfm=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7)
 xpla_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/xpla)
 
 # move the vendor folder back to ./vendor
 if [ -d $temp_dir ]; then
   mv ./$temp_dir ./vendor
 fi
-
-proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $ethermint_dir/proto $ica/proto $pfm/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
+proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $ethermint_dir/proto $pfm/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 for dir in $proto_dirs; do
   # generate swagger files (filter query files)
-  query_file=$(find "${dir}" -maxdepth 1 \( -name 'query.proto' -o -name 'service.proto' \))
+  query_file=$(find "${dir}" -maxdepth 1 \( -not \( -path '*/autocli/*' -o -path '*/group/*' -o -path '*/orm/*' -o -path '*/nft/*' \) \) \( -name 'query.proto' -o -name 'service.proto' \))
   if [[ ! -z "$query_file" ]]; then
     protoc  \
     -I "$tendermint_dir/proto" \
@@ -39,7 +37,6 @@ for dir in $proto_dirs; do
     -I "$ibc_dir/proto" \
     -I "$ethermint_dir/proto" \
     -I "$xpla_dir/proto" \
-    -I "$ica/proto" \
     -I "$pfm/proto" \
     -I "$wasm_dir/proto" \
     -I "$gogo_proto_dir" \

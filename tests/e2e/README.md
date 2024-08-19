@@ -12,7 +12,7 @@ This module is basically for the automated end-to-end test. But if you want to e
 ```bash
 # 1. From the repo root, move to the tests/e2e, and execute docker compose
 cd tests/e2e
-docker-compose up -d
+docker compose up -d
 
 # 2. Wait for building. Once done without error, you may check the nodes running
 docker ps
@@ -34,7 +34,7 @@ go test
 # ok      github.com/xpladev/xpla/tests/e2e        29.365s
 
 # If you see the pass sign, you may down the nodes
-docker-compose down
+docker compose down
 ```
 
 ## Test scenario
