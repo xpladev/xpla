@@ -1,13 +1,13 @@
 module github.com/xpladev/xpla
 
-go 1.20
+go 1.21
 
 require (
 	cosmossdk.io/api v0.3.1
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/simapp v0.0.0-20230608160436-666c345ad23d
-	github.com/CosmWasm/wasmd v0.45.0
+	github.com/CosmWasm/wasmd v0.46.0
 	github.com/cometbft/cometbft v0.37.5
 	github.com/cometbft/cometbft-db v0.8.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
@@ -46,7 +46,7 @@ require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v1.0.0 // indirect
-	github.com/CosmWasm/wasmvm v1.5.1 // indirect
+	github.com/CosmWasm/wasmvm v1.5.4 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
