@@ -1,8 +1,8 @@
 package v1_5
 
 import (
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmmigrationv2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
