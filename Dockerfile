@@ -7,7 +7,7 @@
 #   docker run --rm -it --env-file=path/to/.env --name xpla-localnet xpladev/xpla
 
 ### BUILD
-FROM golang:1.20-alpine3.17 AS build
+FROM golang:1.23.0-alpine3.20 AS build
 
 # Create appuser.
 RUN adduser -D -g '' valiuser
@@ -35,7 +35,7 @@ RUN set -eux; \
 RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LDFLAGS='-linkmode=external -extldflags "-L/mimalloc/build -lmimalloc -Wl,-z,muldefs -static"' make build
 
 # --------------------------------------------------------
-FROM alpine:3.18 AS runtime
+FROM alpine:3.20 AS runtime
 
 COPY --from=build /workspace/build/xplad /usr/bin/xplad
 COPY --from=build /workspace/tests/e2e /opt/tests/e2e
