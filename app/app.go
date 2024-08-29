@@ -46,7 +46,7 @@ import (
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	v1_5 "github.com/xpladev/xpla/app/upgrades/v1_5"
+	v1_6 "github.com/xpladev/xpla/app/upgrades/v1_6"
 	"github.com/xpladev/xpla/docs"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -58,7 +58,7 @@ var (
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_5.Upgrade,
+		v1_6.Upgrade,
 	}
 )
 

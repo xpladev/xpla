@@ -10,7 +10,7 @@ import (
 	"github.com/xpladev/xpla/x/reward/types"
 )
 
-func TestMsgFundFeeCollector(t *testing.T) {
+func TestMsgFundRewardPool(t *testing.T) {
 	tests := []struct {
 		amount        sdk.Coins
 		depositorAddr sdk.AccAddress
@@ -22,7 +22,7 @@ func TestMsgFundFeeCollector(t *testing.T) {
 	}
 
 	for i, tc := range tests {
-		msg := types.NewMsgFundFeeCollector(tc.amount, tc.depositorAddr)
+		msg := types.NewMsgFundRewardPool(tc.amount, tc.depositorAddr)
 		if tc.expectPass {
 			require.Nil(t, msg.ValidateBasic(), "test index: %v", i)
 		} else {

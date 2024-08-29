@@ -1,6 +1,7 @@
 package v1_5
 
 import (
+	wasmmigrationv2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -95,7 +96,7 @@ func CreateUpgradeHandler(
 
 			// wasm
 			case wasmtypes.ModuleName:
-				keyTable = wasmtypes.ParamKeyTable() //nolint:staticcheck
+				keyTable = wasmmigrationv2.ParamKeyTable() //nolint:staticcheck
 
 			// xpla
 			case rewardtypes.ModuleName:

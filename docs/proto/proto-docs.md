@@ -19,8 +19,8 @@
     - [Query](#xpla.reward.v1beta1.Query)
   
 - [xpla/reward/v1beta1/tx.proto](#xpla/reward/v1beta1/tx.proto)
-    - [MsgFundFeeCollector](#xpla.reward.v1beta1.MsgFundFeeCollector)
-    - [MsgFundFeeCollectorResponse](#xpla.reward.v1beta1.MsgFundFeeCollectorResponse)
+    - [MsgFundRewardPool](#xpla.reward.v1beta1.MsgFundRewardPool)
+    - [MsgFundRewardPoolResponse](#xpla.reward.v1beta1.MsgFundRewardPoolResponse)
     - [MsgUpdateParams](#xpla.reward.v1beta1.MsgUpdateParams)
     - [MsgUpdateParamsResponse](#xpla.reward.v1beta1.MsgUpdateParamsResponse)
   
@@ -200,11 +200,11 @@ Query defines the gRPC querier service for reward module.
 
 
 
-<a name="xpla.reward.v1beta1.MsgFundFeeCollector"></a>
+<a name="xpla.reward.v1beta1.MsgFundRewardPool"></a>
 
-### MsgFundFeeCollector
-MsgFundFeeCollector allows an account to directly
-fund the fee collector.
+### MsgFundRewardPool
+MsgFundRewardPool allows an account to directly
+fund the reward pool.
 
 
 | Field | Type | Label | Description |
@@ -217,10 +217,10 @@ fund the fee collector.
 
 
 
-<a name="xpla.reward.v1beta1.MsgFundFeeCollectorResponse"></a>
+<a name="xpla.reward.v1beta1.MsgFundRewardPoolResponse"></a>
 
-### MsgFundFeeCollectorResponse
-MsgFundFeeCollectorResponse defines the Msg/FundFeeCollector response type.
+### MsgFundRewardPoolResponse
+MsgFundRewardPoolResponse defines the Msg/FundRewardPool response type.
 
 
 
@@ -269,7 +269,7 @@ Msg defines the reawrd Msg service.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `FundFeeCollector` | [MsgFundFeeCollector](#xpla.reward.v1beta1.MsgFundFeeCollector) | [MsgFundFeeCollectorResponse](#xpla.reward.v1beta1.MsgFundFeeCollectorResponse) | FundFeeCollector defines a method to allow an account to directly fund the fee collector. | |
+| `FundRewardPool` | [MsgFundRewardPool](#xpla.reward.v1beta1.MsgFundRewardPool) | [MsgFundRewardPoolResponse](#xpla.reward.v1beta1.MsgFundRewardPoolResponse) | MsgFundRewardPool defines a method to allow an account to directly fund the reward pool. | |
 | `UpdateParams` | [MsgUpdateParams](#xpla.reward.v1beta1.MsgUpdateParams) | [MsgUpdateParamsResponse](#xpla.reward.v1beta1.MsgUpdateParamsResponse) | UpdateParams defined a governance operation for updating the x/reward module parameters. The authority is hard-coded to the Cosmos SDK x/gov module account | |
 
  <!-- end services -->
