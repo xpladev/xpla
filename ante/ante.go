@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 
 	errorsmod "cosmossdk.io/errors"
-	tmlog "github.com/cometbft/cometbft/libs/log"
+	tmlog "cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"

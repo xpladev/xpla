@@ -1,10 +1,11 @@
 module github.com/xpladev/xpla
 
-go 1.21
+go 1.22.6
 
 require (
 	cosmossdk.io/api v0.3.1
 	cosmossdk.io/errors v1.0.1
+	cosmossdk.io/log v1.3.1
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/simapp v0.0.0-20230608160436-666c345ad23d
 	github.com/CosmWasm/wasmd v0.46.0
@@ -40,7 +41,6 @@ require (
 	cloud.google.com/go/storage v1.36.0 // indirect
 	cosmossdk.io/core v0.6.1 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
-	cosmossdk.io/log v1.3.1 // indirect
 	cosmossdk.io/tools/rosetta v0.2.1 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -229,24 +229,22 @@ require (
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.47.13-xpla
 
+	// xpla features
+	//github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.47.13-xpla
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.12.2-xpla
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// TODO: remove it: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 
+	// xpla features
 	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.10.26-xpla
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
 
+	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-
-	// stick with compatible version or x/exp in v0.47.x line
-	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
-	// stick with compatible version of rapid in v0.47.x line
-	pgregory.net/rapid => pgregory.net/rapid v0.5.5
 )

@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	"github.com/xpladev/xpla/x/volunteer/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
