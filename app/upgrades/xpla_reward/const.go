@@ -1,7 +1,7 @@
 package xpla_reward
 
 import (
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	store "cosmossdk.io/store/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
