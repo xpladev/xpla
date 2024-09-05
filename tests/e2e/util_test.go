@@ -198,7 +198,7 @@ func txCheck(txHash string) error {
 	return err
 }
 
-func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdktypes.Msg, proposalContent govv1beta1type.Content, proposerWallet *WalletInfo, voters []*WalletInfo) error {
+func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdktypes.Msg, title, description string, proposerWallet *WalletInfo, voters []*WalletInfo) error {
 	proposalId := uint64(0)
 
 	{
@@ -206,23 +206,8 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdktypes.Ms
 
 		var msg sdktypes.Msg
 		var err error
-		if len(proposalMsgs) > 0 {
-			msg, err = govv1type.NewMsgSubmitProposal(proposalMsgs, sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))), proposerWallet.ByteAddress.String(), "", proposalContent.GetTitle(), proposalContent.GetDescription())
-			if err != nil {
-				return err
-			}
 
-		} else {
-			msg, err = govv1beta1type.NewMsgSubmitProposal(
-				proposalContent,
-				sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
-				proposerWallet.ByteAddress,
-			)
-			if err != nil {
-				return err
-			}
-		}
-
+		msg, err = govv1type.NewMsgSubmitProposal(proposalMsgs, sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))), proposerWallet.ByteAddress.String(), "", title, description)
 		if err != nil {
 			return err
 		}

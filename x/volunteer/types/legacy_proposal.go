@@ -19,36 +19,6 @@ const (
 	ProposalTypeUnregisterVolunteerValidator ProposalType = "UnregisterVolunteerValidator"
 )
 
-var (
-	_ govtypes.Content = &RegisterVolunteerValidatorProposal{}
-	_ govtypes.Content = &UnregisterVolunteerValidatorProposal{}
-)
-
-func init() {
-	govtypes.RegisterProposalType(string(ProposalTypeRegisterVolunteerValidator))
-	govtypes.RegisterProposalType(string(ProposalTypeUnregisterVolunteerValidator))
-}
-
-func NewRegisterVolunteerValidatorProposal(title, description string, delAddr sdk.AccAddress, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey,
-	selfDelegation sdk.Coin, validatorDescription stakingtypes.Description) (*RegisterVolunteerValidatorProposal, error) {
-	var pkAny *codectypes.Any
-	if pubKey != nil {
-		var err error
-		if pkAny, err = codectypes.NewAnyWithValue(pubKey); err != nil {
-			return nil, err
-		}
-	}
-	return &RegisterVolunteerValidatorProposal{
-		Title:                title,
-		Description:          description,
-		ValidatorDescription: validatorDescription,
-		Amount:               selfDelegation,
-		DelegatorAddress:     delAddr.String(),
-		ValidatorAddress:     valAddr.String(),
-		Pubkey:               pkAny,
-	}, nil
-}
-
 // GetTitle returns the title of a register volunteer validator proposal.
 func (p *RegisterVolunteerValidatorProposal) GetTitle() string { return p.Title }
 

@@ -12,6 +12,7 @@ option go_package = "github.com/xpladev/xpla/x/volunteer/types";
 
 // RegisterVolunteerValidatorProposal
 message RegisterVolunteerValidatorProposal {
+  option deprecated = true;
   option (amino.name) = "xpladev/RegisterVolunteerValidatorProposal";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
@@ -32,6 +33,7 @@ message RegisterVolunteerValidatorProposal {
 
 // RegisterVolunteerValidatorProposalWithDeposit
 message RegisterVolunteerValidatorProposalWithDeposit {
+  option deprecated = true;
   option (amino.name) = "xpladev/RegisterVolunteerValidatorProposalWithDeposit";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
@@ -53,6 +55,7 @@ message RegisterVolunteerValidatorProposalWithDeposit {
 
 // UnregisterVolunteerValidatorProposal
 message UnregisterVolunteerValidatorProposal {
+  option deprecated = true;
   option (amino.name) = "xpladev/UnregisterVolunteerValidatorProposal";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
@@ -65,6 +68,7 @@ message UnregisterVolunteerValidatorProposal {
 
 // UnregisterVolunteerValidatorProposalWithDeposit
 message UnregisterVolunteerValidatorProposalWithDeposit {
+  option deprecated = true;
   option (amino.name) =
       "xpladev/UnregisterVolunteerValidatorProposalWithDeposit";
   option (gogoproto.equal) = false;

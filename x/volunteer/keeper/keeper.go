@@ -15,16 +15,23 @@ type Keeper struct {
 
 	stakingKeeper types.StakingKeeper
 	distKeeper    types.DistributionKeeper
+	authority     string
 }
 
 // NewKeeper constructs a message authorization Keeper
-func NewKeeper(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, sk types.StakingKeeper, dk types.DistributionKeeper) Keeper {
+func NewKeeper(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, sk types.StakingKeeper, dk types.DistributionKeeper, authority string) Keeper {
 	return Keeper{
 		storeKey:      storeKey,
 		cdc:           cdc,
 		stakingKeeper: sk,
 		distKeeper:    dk,
+		authority:     authority,
 	}
+}
+
+// GetAuthority returns the x/volunteer module's authority.
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
 
 // Logger returns a module-specific logger.

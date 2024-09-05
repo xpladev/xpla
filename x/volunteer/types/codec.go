@@ -2,21 +2,22 @@ package types
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	v1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&RegisterVolunteerValidatorProposal{}, "xpladev/RegisterVolunteerValidatorProposal", nil)
-	cdc.RegisterConcrete(&UnregisterVolunteerValidatorProposal{}, "xpladev/UnregisterVolunteerValidatorProposal", nil)
+	legacy.RegisterAminoMsg(cdc, &MsgRegisterVolunteerValidator{}, "xpladev/MsgRegisterVolunteerValidator")
+	legacy.RegisterAminoMsg(cdc, &MsgUnregisterVolunteerValidator{}, "xpladev/MsgUnregisterVolunteerValidator")
 }
 
 func RegisterInterfaces(registry types.InterfaceRegistry) {
 	registry.RegisterImplementations(
-		(*v1beta1.Content)(nil),
-		&RegisterVolunteerValidatorProposal{},
-		&UnregisterVolunteerValidatorProposal{},
+		(*sdk.Msg)(nil),
+		&MsgRegisterVolunteerValidator{},
+		&MsgUnregisterVolunteerValidator{},
 	)
 }
 
