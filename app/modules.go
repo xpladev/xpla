@@ -38,7 +38,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
-	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	router "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
@@ -67,7 +66,6 @@ import (
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastaking "github.com/xpladev/xpla/x/staking"
 	"github.com/xpladev/xpla/x/volunteer"
-	volunteerclient "github.com/xpladev/xpla/x/volunteer/client"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
@@ -89,17 +87,13 @@ var maccPerms = map[string][]string{
 }
 
 func getGovProposalHandlers() []govclient.ProposalHandler {
-	govProposalHandlers := volunteerclient.ProposalHandler
-
-	return append(govProposalHandlers, []govclient.ProposalHandler{
-		upgradeclient.LegacyProposalHandler,
-		upgradeclient.LegacyCancelProposalHandler,
+	return []govclient.ProposalHandler{
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
 		erc20client.RegisterCoinProposalHandler,
 		erc20client.RegisterERC20ProposalHandler,
 		erc20client.ToggleTokenConversionProposalHandler,
-	}...)
+	}
 }
 
 // ModuleBasics defines the module BasicManager is in charge of setting up basic,

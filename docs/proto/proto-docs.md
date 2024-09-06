@@ -44,6 +44,14 @@
   
     - [Query](#xpla.volunteer.v1beta1.Query)
   
+- [xpla/volunteer/v1beta1/tx.proto](#xpla/volunteer/v1beta1/tx.proto)
+    - [MsgRegisterVolunteerValidator](#xpla.volunteer.v1beta1.MsgRegisterVolunteerValidator)
+    - [MsgRegisterVolunteerValidatorResponse](#xpla.volunteer.v1beta1.MsgRegisterVolunteerValidatorResponse)
+    - [MsgUnregisterVolunteerValidator](#xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidator)
+    - [MsgUnregisterVolunteerValidatorResponse](#xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidatorResponse)
+  
+    - [Msg](#xpla.volunteer.v1beta1.Msg)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -479,6 +487,93 @@ Query defines the gRPC querier service for volunteer module.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `VolunteerValidators` | [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest) | [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse) | VolunteerValidators | GET|/xpla/volunteer/v1beta1/validators|
+
+ <!-- end services -->
+
+
+
+<a name="xpla/volunteer/v1beta1/tx.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/volunteer/v1beta1/tx.proto
+
+
+
+<a name="xpla.volunteer.v1beta1.MsgRegisterVolunteerValidator"></a>
+
+### MsgRegisterVolunteerValidator
+MsgRegisterVolunteerValidator defines a message to register a new volunteer
+validator.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authority` | [string](#string) |  | authority is the address of the governance account. |
+| `validator_description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
+| `delegator_address` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.MsgRegisterVolunteerValidatorResponse"></a>
+
+### MsgRegisterVolunteerValidatorResponse
+MsgRegisterVolunteerValidatorResponse defines the RegisterVolunteerValidator
+response.
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidator"></a>
+
+### MsgUnregisterVolunteerValidator
+MsgUnregisterVolunteerValidator defines a message to unregister a volunteer
+validator.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authority` | [string](#string) |  | authority is the address of the governance account. |
+| `validator_address` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidatorResponse"></a>
+
+### MsgUnregisterVolunteerValidatorResponse
+MsgUnregisterVolunteerValidatorResponse defines the
+UnregisterVolunteerValidator response.
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="xpla.volunteer.v1beta1.Msg"></a>
+
+### Msg
+Msg defines the volunteer Msg service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `RegisterVolunteerValidator` | [MsgRegisterVolunteerValidator](#xpla.volunteer.v1beta1.MsgRegisterVolunteerValidator) | [MsgRegisterVolunteerValidatorResponse](#xpla.volunteer.v1beta1.MsgRegisterVolunteerValidatorResponse) | RegisterVolunteerValidator defines a method to register a new volunteer validator. | |
+| `UnregisterVolunteerValidator` | [MsgUnregisterVolunteerValidator](#xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidator) | [MsgUnregisterVolunteerValidatorResponse](#xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidatorResponse) | UnregisterVolunteerValidator defines a method to unregister a volunteer | |
 
  <!-- end services -->
 

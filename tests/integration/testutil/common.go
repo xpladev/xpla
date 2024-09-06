@@ -193,7 +193,7 @@ func CreateTestInput(t *testing.T) TestInput {
 	slashingKeeper := slashingkeeper.NewKeeper(appCodec, legacyAmino, keySlahsing, stakingKeeper, govModAddress)
 	slashingKeeper.SetParams(ctx, slashingtypes.DefaultParams())
 
-	volunteerKeeper = volunteerkeeper.NewKeeper(keyVolunteer, appCodec, stakingKeeper, distrKeeper)
+	volunteerKeeper = volunteerkeeper.NewKeeper(keyVolunteer, appCodec, stakingKeeper, distrKeeper, govModAddress)
 
 	distrKeeper.SetFeePool(ctx, distrtypes.InitialFeePool())
 	distrParams := distrtypes.DefaultParams()
