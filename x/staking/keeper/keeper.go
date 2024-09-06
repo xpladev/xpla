@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/xpladev/xpla/x/staking/types"

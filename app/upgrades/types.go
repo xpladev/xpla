@@ -1,10 +1,10 @@
 package upgrades
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
 	store "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/types/module"
 
 	"github.com/xpladev/xpla/app/keepers"
 )

@@ -1,8 +1,8 @@
 package v2
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/xpladev/xpla/x/reward/exported"
 	"github.com/xpladev/xpla/x/reward/types"

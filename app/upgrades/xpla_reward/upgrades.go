@@ -1,10 +1,10 @@
 package xpla_reward
 
 import (
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/gogoproto/jsonpb"
 
 	"github.com/xpladev/xpla/app/keepers"
