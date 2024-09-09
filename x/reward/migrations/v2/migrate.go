@@ -8,8 +8,7 @@ import (
 	"github.com/xpladev/xpla/x/reward/types"
 )
 
-func MigrateStore(ctx sdk.Context, storeKey storetypes.StoreKey, legacySubspace exported.Subspace, cdc codec.BinaryCodec) error {
-	store := ctx.KVStore(storeKey)
+func MigrateStore(ctx sdk.Context, store storetypes.KVStore, legacySubspace exported.Subspace, cdc codec.BinaryCodec) error {
 	var currParams types.Params
 	legacySubspace.GetParamSet(ctx, &currParams)
 
