@@ -1,6 +1,8 @@
 package ante
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -49,20 +51,20 @@ func (rdvvd RejectDelegateVolunteerValidatorDecorator) AnteHandle(ctx sdk.Contex
 func (rdvvd RejectDelegateVolunteerValidatorDecorator) checkVolunteerValidator(ctx sdk.Context, validatorAddress, delegatorAddress string) error {
 	valAddress, err := sdk.ValAddressFromBech32(validatorAddress)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())
 	}
 
 	if _, found := rdvvd.volunteerKeeper.GetVolunteerValidator(ctx, valAddress); found {
 		delAddress, err := sdk.AccAddressFromBech32(delegatorAddress)
 		if err != nil {
-			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())
+			return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())
 		}
 
 		if delAddress.Equals(valAddress) {
 			return nil
 		}
 
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "cannot delegate to volunteer validator")
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "cannot delegate to volunteer validator")
 	}
 
 	return nil

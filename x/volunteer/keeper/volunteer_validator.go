@@ -1,38 +1,45 @@
 package keeper
 
 import (
+	"context"
+
+	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/xpladev/xpla/x/volunteer/types"
 )
 
-func (k Keeper) GetVolunteerValidator(ctx sdk.Context, valAddress sdk.ValAddress) (types.VolunteerValidator, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.GetVolunteerValidatorKey(valAddress))
-	if bz == nil {
-		return types.VolunteerValidator{}, false
+func (k Keeper) GetVolunteerValidator(ctx context.Context, valAddress sdk.ValAddress) (types.VolunteerValidator, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.GetVolunteerValidatorKey(valAddress))
+	if err != nil {
+		return types.VolunteerValidator{}, err
 	}
 
 	volunteerValidator := types.VolunteerValidator{}
 	k.cdc.MustUnmarshal(bz, &volunteerValidator)
 
-	return volunteerValidator, true
+	return volunteerValidator, nil
 }
 
-func (k Keeper) SetVolunteerValidator(ctx sdk.Context, valAddress sdk.ValAddress, validator types.VolunteerValidator) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) SetVolunteerValidator(ctx context.Context, valAddress sdk.ValAddress, validator types.VolunteerValidator) error {
+	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&validator)
-	store.Set(types.GetVolunteerValidatorKey(valAddress), bz)
+	return store.Set(types.GetVolunteerValidatorKey(valAddress), bz)
 }
 
-func (k Keeper) DeleteVolunteerValidator(ctx sdk.Context, valAddress sdk.ValAddress) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetVolunteerValidatorKey(valAddress))
+func (k Keeper) DeleteVolunteerValidator(ctx context.Context, valAddress sdk.ValAddress) error {
+	store := k.storeService.OpenKVStore(ctx)
+	return store.Delete(types.GetVolunteerValidatorKey(valAddress))
 }
 
-func (k Keeper) GetVolunteerValidators(ctx sdk.Context) (volunteerValidators map[string]types.VolunteerValidator) {
+func (k Keeper) GetVolunteerValidators(ctx context.Context) (volunteerValidators map[string]types.VolunteerValidator, err error) {
 	volunteerValidators = make(map[string]types.VolunteerValidator)
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.VolunteerValidatorKey)
+	store := k.storeService.OpenKVStore(ctx)
+	iterator, err := store.Iterator(types.VolunteerValidatorKey, storetypes.PrefixEndBytes(types.VolunteerValidatorKey))
+	if err != nil {
+		return nil, err
+	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -43,5 +50,5 @@ func (k Keeper) GetVolunteerValidators(ctx sdk.Context) (volunteerValidators map
 		volunteerValidators[validator.Address] = validator
 	}
 
-	return volunteerValidators
+	return volunteerValidators, nil
 }

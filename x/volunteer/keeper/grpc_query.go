@@ -21,7 +21,10 @@ func (k Querier) VolunteerValidators(c context.Context, req *types.QueryVoluntee
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	addresses := k.GetVolunteerValidators(ctx)
+	addresses, err := k.GetVolunteerValidators(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	volunteerValidators := []string{}
 	for address, _ := range addresses {

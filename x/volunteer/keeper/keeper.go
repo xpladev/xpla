@@ -1,17 +1,20 @@
 package keeper
 
 import (
-	"cosmossdk.io/log"
-	"github.com/xpladev/xpla/x/volunteer/types"
+	"context"
 
-	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/core/store"
+	"cosmossdk.io/log"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/xpladev/xpla/x/volunteer/types"
 )
 
 type Keeper struct {
-	storeKey storetypes.StoreKey
-	cdc      codec.BinaryCodec
+	storeService store.KVStoreService
+	cdc          codec.BinaryCodec
 
 	stakingKeeper types.StakingKeeper
 	distKeeper    types.DistributionKeeper
@@ -19,9 +22,9 @@ type Keeper struct {
 }
 
 // NewKeeper constructs a message authorization Keeper
-func NewKeeper(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, sk types.StakingKeeper, dk types.DistributionKeeper, authority string) Keeper {
+func NewKeeper(storeService store.KVStoreService, cdc codec.BinaryCodec, sk types.StakingKeeper, dk types.DistributionKeeper, authority string) Keeper {
 	return Keeper{
-		storeKey:      storeKey,
+		storeService:  storeService,
 		cdc:           cdc,
 		stakingKeeper: sk,
 		distKeeper:    dk,
@@ -35,6 +38,7 @@ func (k Keeper) GetAuthority() string {
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+types.ModuleName)
+func (k Keeper) Logger(ctx context.Context) log.Logger {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }

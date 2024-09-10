@@ -15,7 +15,7 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 	}
 
 	// check to see if the pubkey or sender has been registered before
-	if _, found := k.stakingKeeper.GetValidator(ctx, valAddr); found {
+	if _, err := k.stakingKeeper.GetValidator(ctx, valAddr); err == nil {
 		return stakingtypes.ErrValidatorOwnerExists
 	}
 
@@ -40,7 +40,7 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 	}
 
 	cp := ctx.ConsensusParams()
-	if cp != nil && cp.Validator != nil {
+	if cp.Validator != nil {
 		pkType := pk.Type()
 		hasKeyType := false
 		for _, keyType := range cp.Validator.PubKeyTypes {
@@ -57,7 +57,7 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 		}
 	}
 
-	validator, err := stakingtypes.NewValidator(valAddr, pk, msg.Description)
+	validator, err := stakingtypes.NewValidator(valAddr.String(), pk, msg.Description)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,8 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 	k.stakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
 
 	// call the after-creation hook
-	if err := k.stakingKeeper.Hooks().AfterValidatorCreated(ctx, validator.GetOperator()); err != nil {
+	valBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+	if err := k.stakingKeeper.Hooks().AfterValidatorCreated(ctx, valBz); err != nil {
 		return err
 	}
 
