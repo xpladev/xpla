@@ -4,20 +4,22 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	corestoretypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	tmlog "cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
+	//storetypes "cosmossdk.io/store/types"
+	txsigning "cosmossdk.io/x/tx/signing"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	evmante "github.com/xpladev/ethermint/app/ante"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
@@ -25,7 +27,7 @@ import (
 	volunteerante "github.com/xpladev/xpla/x/volunteer/ante"
 )
 
-// HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
+// HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
 // channel keeper.
 type HandlerOptions struct {
 	Cdc                    codec.BinaryCodec
@@ -36,16 +38,16 @@ type HandlerOptions struct {
 	FeegrantKeeper         authante.FeegrantKeeper
 	VolunteerKeeper        volunteerante.VolunteerKeeper
 	ExtensionOptionChecker authante.ExtensionOptionChecker
-	SignModeHandler        authsigning.SignModeHandler
+	SignModeHandler        *txsigning.HandlerMap
 	SigGasConsumer         authante.SignatureVerificationGasConsumer
 	FeeMarketKeeper        evmante.FeeMarketKeeper
 	MaxTxGasWanted         uint64
 	TxFeeChecker           authante.TxFeeChecker
 
-	BypassMinFeeMsgTypes []string
-	TxCounterStoreKey    storetypes.StoreKey
-	WasmKeeper           *wasmkeeper.Keeper
-	WasmConfig           wasmTypes.WasmConfig
+	BypassMinFeeMsgTypes  []string
+	TXCounterStoreService corestoretypes.KVStoreService
+	WasmKeeper            *wasmkeeper.Keeper
+	WasmConfig            wasmtypes.WasmConfig
 }
 
 var disabledAuthzMsgs = []string{
@@ -62,7 +64,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "bank keeper is required for AnteHandler")
 	}
 	if opts.SignModeHandler == nil {
-		return nil, errorsmod.Wrap(errortypes.ErrLogic, "sign mode handler is required for ante builder")
+		return nil, errorsmod.Wrap(errortypes.ErrLogic, "sign mode handler is required for AnteHandler")
 	}
 	if opts.IBCKeeper == nil {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "IBC keeper is required for AnteHandler")
@@ -74,7 +76,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "Feegrant keeper is required for AnteHandler")
 	}
 	if opts.FeeMarketKeeper == nil {
-		return nil, errorsmod.Wrap(errortypes.ErrLogic, "Feemarket keeper is required for AnteHandler")
+		return nil, errorsmod.Wrap(errortypes.ErrLogic, "FeeMarket keeper is required for AnteHandler")
 	}
 	if opts.VolunteerKeeper == nil {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "staking keeper is required for AnteHandler")
@@ -138,7 +140,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
 		authante.NewExtensionOptionsDecorator(opts.ExtensionOptionChecker),
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
-		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
+		wasmkeeper.NewCountTXDecorator(opts.TXCounterStoreService),
 		wasmkeeper.NewGasRegisterDecorator(opts.WasmKeeper.GetGasRegister()),
 		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes),
 		authante.NewValidateBasicDecorator(),
