@@ -11,46 +11,62 @@ import (
 
 	"github.com/spf13/cast"
 
-	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
-	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
-	errorsmod "cosmossdk.io/errors"
-
-	"cosmossdk.io/log"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmos "github.com/cometbft/cometbft/libs/os"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/gogoproto/proto"
+
+	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
+	"cosmossdk.io/x/tx/signing"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
+	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	v1_6 "github.com/xpladev/xpla/app/upgrades/v1_6"
+	"github.com/xpladev/xpla/app/upgrades/v1_7"
 	"github.com/xpladev/xpla/docs"
-
-	"github.com/CosmWasm/wasmd/x/wasm"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 )
 
 var (
@@ -58,11 +74,12 @@ var (
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_6.Upgrade,
+		v1_7.Upgrade,
 	}
 )
 
 var (
+	_ runtime.AppI            = (*XplaApp)(nil)
 	_ servertypes.Application = (*XplaApp)(nil)
 )
 
@@ -86,7 +103,8 @@ type XplaApp struct { // nolint: golint
 	invCheckPeriod uint
 
 	// the module manager
-	mm *module.Manager
+	mm           *module.Manager
+	ModuleBasics module.BasicManager
 
 	configurator module.Configurator
 }
@@ -94,7 +112,7 @@ type XplaApp struct { // nolint: golint
 func init() {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
-		stdlog.Println("Failed to get home dir %2", err)
+		panic(err)
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, ".xpla")
@@ -110,21 +128,42 @@ func NewXplaApp(
 	loadLatest bool,
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
-	encodingConfig xplaappparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *XplaApp {
-	appCodec := encodingConfig.Codec
-	legacyAmino := encodingConfig.Amino
-	interfaceRegistry := encodingConfig.InterfaceRegistry
-	txConfig := encodingConfig.TxConfig
+	legacyAmino := codec.NewLegacyAmino()
+	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+			},
+			ValidatorAddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	appCodec := codec.NewProtoCodec(interfaceRegistry)
+	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+
+	std.RegisterLegacyAminoCodec(legacyAmino)
+	std.RegisterInterfaces(interfaceRegistry)
 
 	// App Opts
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
 
-	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(
+		appName,
+		logger,
+		db,
+		txConfig.TxDecoder(),
+		baseAppOptions...)
+
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
@@ -158,7 +197,29 @@ func NewXplaApp(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(appModules(app, encodingConfig, skipGenesisInvariants)...)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, skipGenesisInvariants)...)
+	app.ModuleBasics = newBasicManagerFromManager(app)
+
+	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
+	enabledSignModes = append(enabledSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL)
+
+	txConfigOpts := authtx.ConfigOptions{
+		EnabledSignModes:           enabledSignModes,
+		TextualCoinMetadataQueryFn: txmodule.NewBankKeeperCoinMetadataQueryFn(app.BankKeeper),
+	}
+	txConfig, err = authtx.NewTxConfigWithOptions(
+		appCodec,
+		txConfigOpts,
+	)
+	if err != nil {
+		panic(err)
+	}
+	app.txConfig = txConfig
+
+	// NOTE: upgrade module is required to be prioritized
+	app.mm.SetOrderPreBlockers(
+		upgradetypes.ModuleName,
+	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
@@ -183,7 +244,10 @@ func NewXplaApp(
 
 	app.mm.RegisterInvariants(app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	app.mm.RegisterServices(app.configurator)
+	err = app.mm.RegisterServices(app.configurator)
+	if err != nil {
+		panic(err)
+	}
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
 
@@ -205,23 +269,22 @@ func NewXplaApp(
 
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			Cdc:             app.appCodec,
 			AccountKeeper:   app.AccountKeeper,
 			BankKeeper:      app.BankKeeper,
-			IBCKeeper:       app.IBCKeeper,
-			EvmKeeper:       app.EvmKeeper,
 			FeegrantKeeper:  app.FeeGrantKeeper,
-			VolunteerKeeper: app.VolunteerKeeper,
-			SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+			SignModeHandler: txConfig.SignModeHandler(),
 			SigGasConsumer:  xplaante.SigVerificationGasConsumer,
-			FeeMarketKeeper: app.FeeMarketKeeper,
-			MaxTxGasWanted:  evmMaxGasWanted,
-			TxFeeChecker:    noOpTxFeeChecker,
 
+			Codec:                 appCodec,
+			IBCkeeper:             app.IBCKeeper,
+			EvmKeeper:             app.EvmKeeper,
+			VolunteerKeeper: app.VolunteerKeeper,
+			FeeMarketKeeper:       app.FeeMarketKeeper,
+			WasmConfig:            &wasmConfig,
 			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
-			TxCounterStoreKey:    app.GetKey(wasm.StoreKey),
-			WasmKeeper:           &app.WasmKeeper,
-			WasmConfig:           wasmConfig,
+			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
+			TxFeeChecker:    noOpTxFeeChecker,
+			MaxTxGasWanted:  evmMaxGasWanted,
 		},
 	)
 	if err != nil {
@@ -230,10 +293,9 @@ func NewXplaApp(
 
 	app.SetAnteHandler(anteHandler)
 	app.SetInitChainer(app.InitChainer)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
-	app.setUpgradeHandlers()
-	app.setUpgradeStoreLoaders()
 
 	if manager := app.SnapshotManager(); manager != nil {
 		err = manager.RegisterExtensions(
@@ -244,9 +306,31 @@ func NewXplaApp(
 		}
 	}
 
+	app.setUpgradeHandlers()
+	app.setUpgradeStoreLoaders()
+
+	// At startup, after all modules have been registered, check that all prot
+	// annotations are correct.
+	protoFiles, err := proto.MergedRegistry()
+	if err != nil {
+		panic(err)
+	}
+	err = msgservice.ValidateProtoAnnotations(protoFiles)
+	if err != nil {
+		// Once we switch to using protoreflect-based antehandlers, we might
+		// want to panic here instead of logging a warning.
+		fmt.Fprintln(os.Stderr, err.Error())
+	}
+
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
+		}
+
+		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+
+		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
+			tmos.Exit(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
 		}
 	}
 
@@ -256,24 +340,31 @@ func NewXplaApp(
 // Name returns the name of the App
 func (app *XplaApp) Name() string { return app.BaseApp.Name() }
 
+// PreBlocker application updates every pre block
+func (app *XplaApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	return app.mm.PreBlock(ctx)
+}
+
 // BeginBlocker application updates every begin block
-func (app *XplaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	return app.mm.BeginBlock(ctx, req)
+func (app *XplaApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	return app.mm.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
-func (app *XplaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
-	return app.mm.EndBlock(ctx, req)
+func (app *XplaApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	return app.mm.EndBlock(ctx)
 }
 
 // InitChainer application update at chain initialization
-func (app *XplaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+func (app *XplaApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
 
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
+	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()); err != nil {
+		return nil, err
+	}
 
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
@@ -333,7 +424,8 @@ func (app *XplaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	// Register new tendermint queries routes from grpc-gateway.
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	// Register legacy and grpc-gateway routes for all modules.
+	app.ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register nodeservice grpc-gateway routes.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
@@ -343,6 +435,11 @@ func (app *XplaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 		apiSvr.Router.Handle("/static/openapi.yml", http.FileServer(http.FS(docs.Docs)))
 		apiSvr.Router.PathPrefix("/swagger/").Handler(openapiconsole.Handler(appName, "/static/openapi.yml"))
 	}
+}
+
+// RegisterNodeService allows query minimum-gas-prices in app.toml
+func (app *XplaApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
@@ -360,22 +457,17 @@ func (app *XplaApp) RegisterTendermintService(clientCtx client.Context) {
 	)
 }
 
-// RegisterTxService allows query minimum-gas-prices in app.toml
-func (app *XplaApp) RegisterNodeService(clientCtx client.Context) {
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
-}
-
 // configure store loader that checks if version == upgradeHeight and applies store upgrades
 func (app *XplaApp) setUpgradeStoreLoaders() {
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
-	upgradeInfo, err := app.AppKeepers.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
 	}
 
-	if app.AppKeepers.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		return
 	}
 
@@ -390,7 +482,7 @@ func (app *XplaApp) setUpgradeStoreLoaders() {
 
 func (app *XplaApp) setUpgradeHandlers() {
 	for _, upgrade := range Upgrades {
-		app.AppKeepers.UpgradeKeeper.SetUpgradeHandler(
+		app.UpgradeKeeper.SetUpgradeHandler(
 			upgrade.UpgradeName,
 			upgrade.CreateUpgradeHandler(
 				app.mm,
@@ -399,6 +491,26 @@ func (app *XplaApp) setUpgradeHandlers() {
 				app.appCodec,
 			),
 		)
+	}
+}
+
+// AutoCliOpts returns the autocli options for the app.
+func (app *XplaApp) AutoCliOpts() autocli.AppOptions {
+	modules := make(map[string]appmodule.AppModule, 0)
+	for _, m := range app.mm.Modules {
+		if moduleWithName, ok := m.(module.HasName); ok {
+			moduleName := moduleWithName.Name()
+			if appModule, ok := moduleWithName.(appmodule.AppModule); ok {
+				modules[moduleName] = appModule
+			}
+		}
+	}
+
+	return autocli.AppOptions{
+		Modules:               modules,
+		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	}
 }
 
