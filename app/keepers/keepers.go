@@ -444,6 +444,10 @@ func NewAppKeeper(
 		govModAddress,
 	)
 
+	// Must be called on PFMRouter AFTER TransferKeeper initialized
+	appKeepers.PFMRouterKeeper.SetTransferKeeper(appKeepers.TransferKeeper)
+
+	// wasm start
 	// Stargate Queries
 	accepted := wasmkeeper.AcceptedStargateQueries{
 		// ibc
@@ -470,9 +474,6 @@ func NewAppKeeper(
 			Stargate: wasmkeeper.AcceptListStargateQuerier(accepted, bApp.GRPCQueryRouter(), appCodec),
 		})
 	wasmOpts = append(wasmOpts, querierOpts)
-
-	// Must be called on PFMRouter AFTER TransferKeeper initialized
-	appKeepers.PFMRouterKeeper.SetTransferKeeper(appKeepers.TransferKeeper)
 
 	wasmDir := filepath.Join(homePath, "data")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
@@ -527,19 +528,12 @@ func NewAppKeeper(
 	transferStack = ratelimit.NewIBCMiddleware(appKeepers.RatelimitKeeper, transferStack)
 	transferStack = ibcfee.NewIBCMiddleware(transferStack, appKeepers.IBCFeeKeeper)
 
-	// RecvPacket, message that originates from core IBC and goes down to app, the flow is:
-	// channel.RecvPacket -> fee.OnRecvPacket -> icaHost.OnRecvPacket
 	// Create ICAHost Stack
 	var icaHostStack porttypes.IBCModule = icahost.NewIBCModule(appKeepers.ICAHostKeeper)
-	// icaHostStack := ibcfee.NewIBCMiddleware(icaHostIBCModule, appKeepers.IBCFeeKeeper)
 
-	// icaHostIBCModule := icahost.NewIBCModule(appKeepers.ICAHostKeeper)
-
-	// initialize ICA module with mock module as the authentication module on the controller side
 	// Create Interchain Accounts Controller Stack
 	var icaControllerStack porttypes.IBCModule
 	icaControllerStack = icacontroller.NewIBCMiddleware(icaControllerStack, appKeepers.ICAControllerKeeper)
-	// icaControllerStack = ibcfee.NewIBCMiddleware(icaControllerStack, appKeepers.IBCFeeKeeper)
 
 	var wasmStack porttypes.IBCModule
 	wasmStack = wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCFeeKeeper)
@@ -558,14 +552,14 @@ func NewAppKeeper(
 	appKeepers.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec,
 		govModAddress,
-		appKeepers.keys[feemarkettypes.StoreKey],
+		runtime.NewKVStoreService(appKeepers.keys[feemarkettypes.StoreKey]),
 		appKeepers.tkeys[feemarkettypes.TransientKey],
 		appKeepers.GetSubspace(feemarkettypes.ModuleName),
 	)
 
 	appKeepers.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec,
-		appKeepers.keys[evmtypes.StoreKey],
+		runtime.NewKVStoreService(appKeepers.keys[evmtypes.StoreKey]),
 		appKeepers.tkeys[evmtypes.TransientKey],
 		govModAddress,
 		appKeepers.AccountKeeper,
@@ -577,7 +571,7 @@ func NewAppKeeper(
 	)
 
 	appKeepers.Erc20Keeper = erc20keeper.NewKeeper(
-		appKeepers.keys[erc20types.StoreKey],
+		runtime.NewKVStoreService(appKeepers.keys[erc20types.StoreKey]),
 		appCodec,
 		govModAddress,
 		appKeepers.AccountKeeper,
@@ -594,7 +588,7 @@ func NewAppKeeper(
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
 		appCodec,
-		appKeepers.keys[rewardtypes.StoreKey],
+		runtime.NewKVStoreService(appKeepers.keys[rewardtypes.StoreKey]),
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
