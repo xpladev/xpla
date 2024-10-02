@@ -24,11 +24,14 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 		return errorsmod.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", pk)
 	}
 
-	if _, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.GetConsAddress(pk)); found {
+	if _, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.GetConsAddress(pk)); err == nil {
 		return stakingtypes.ErrValidatorPubKeyExists
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 	if msg.Value.Denom != bondDenom {
 		return errorsmod.Wrapf(
 			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", msg.Value.Denom, bondDenom,
@@ -78,12 +81,24 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 
 	validator.MinSelfDelegation = msg.MinSelfDelegation
 
-	k.stakingKeeper.SetValidator(ctx, validator)
-	k.stakingKeeper.SetValidatorByConsAddr(ctx, validator)
-	k.stakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
+	err = k.stakingKeeper.SetValidator(ctx, validator)
+	if err != nil {
+		return err
+	}
+	err = k.stakingKeeper.SetValidatorByConsAddr(ctx, validator)
+	if err != nil {
+		return err
+	}
+	err = k.stakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
+	if err != nil {
+		return err
+	}
 
 	// call the after-creation hook
 	valBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+	if err != nil {
+		return err
+	}
 	if err := k.stakingKeeper.Hooks().AfterValidatorCreated(ctx, valBz); err != nil {
 		return err
 	}

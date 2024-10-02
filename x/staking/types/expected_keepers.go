@@ -19,5 +19,5 @@ type BankKeeper interface {
 }
 
 type VolunteerKeeper interface {
-	GetVolunteerValidators(ctx context.Context) (volunteerValidators map[string]volunteertypes.VolunteerValidator)
+	GetVolunteerValidators(ctx context.Context) (volunteerValidators map[string]volunteertypes.VolunteerValidator, err error)
 }

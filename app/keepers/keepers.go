@@ -3,7 +3,6 @@ package keepers
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	pfmrouter "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	pfmrouterkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
@@ -121,6 +120,8 @@ type AppKeepers struct {
 
 	PFMRouterKeeper *pfmrouterkeeper.Keeper
 	RatelimitKeeper ratelimitkeeper.Keeper
+
+	IBCFeeKeeper    ibcfeekeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -449,7 +450,7 @@ func NewAppKeeper(
 
 	// wasm start
 	// Stargate Queries
-	accepted := wasmkeeper.AcceptedStargateQueries{
+	accepted := wasmkeeper.AcceptedQueries{
 		// ibc
 		"/ibc.core.client.v1.Query/ClientState":    &ibcclienttypes.QueryClientStateResponse{},
 		"/ibc.core.client.v1.Query/ConsensusState": &ibcclienttypes.QueryConsensusStateResponse{},
@@ -551,17 +552,21 @@ func NewAppKeeper(
 	// Create Ethermint keepers
 	appKeepers.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec,
-		govModAddress,
-		runtime.NewKVStoreService(appKeepers.keys[feemarkettypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
+		// TODO storeKey should be changed to storeService
+		// runtime.NewKVStoreService(appKeepers.keys[feemarkettypes.StoreKey]),
+		appKeepers.keys[feemarkettypes.StoreKey],
 		appKeepers.tkeys[feemarkettypes.TransientKey],
 		appKeepers.GetSubspace(feemarkettypes.ModuleName),
 	)
 
 	appKeepers.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec,
-		runtime.NewKVStoreService(appKeepers.keys[evmtypes.StoreKey]),
+		// TODO storeKey should be changed to storeService
+		// runtime.NewKVStoreService(appKeepers.keys[evmtypes.StoreKey]),
+		appKeepers.keys[evmtypes.StoreKey],
 		appKeepers.tkeys[evmtypes.TransientKey],
-		govModAddress,
+		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
@@ -571,9 +576,11 @@ func NewAppKeeper(
 	)
 
 	appKeepers.Erc20Keeper = erc20keeper.NewKeeper(
-		runtime.NewKVStoreService(appKeepers.keys[erc20types.StoreKey]),
+		// TODO storeKey should be changed to storeService
+		// runtime.NewKVStoreService(appKeepers.keys[erc20types.StoreKey]),
+		appKeepers.keys[erc20types.StoreKey],
 		appCodec,
-		govModAddress,
+		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.EvmKeeper,

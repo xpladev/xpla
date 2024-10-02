@@ -30,7 +30,11 @@ func (k Keeper) GetLastValidators(ctx context.Context) (validators []types.Valid
 	}
 
 	// add to volunteer validator count
-	maxValidators += uint32(len(k.volunteerKeeper.GetVolunteerValidators(ctx)))
+	volunteerValidators, err := k.volunteerKeeper.GetVolunteerValidators(ctx)
+	if err != nil {
+		return nil, err
+	}
+	maxValidators += uint32(len(volunteerValidators))
 
 	validators = make([]types.Validator, maxValidators)
 

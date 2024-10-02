@@ -154,7 +154,10 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	defer iterator.Close()
 
 	// Remove to jailed volunteer validator
-	volunteerValidators := k.volunteerKeeper.GetVolunteerValidators(ctx)
+	volunteerValidators, err := k.volunteerKeeper.GetVolunteerValidators(ctx)
+	if err != nil {
+		return nil, err
+	}
 	for strValAddress := range volunteerValidators {
 		valAddress, err := sdk.ValAddressFromBech32(strValAddress)
 		if err != nil {

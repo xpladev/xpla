@@ -62,7 +62,7 @@ func (k msgServer) UnregisterVolunteerValidator(goCtx context.Context, req *type
 	}
 
 	if validator, err := k.stakingKeeper.GetValidator(ctx, valAddress); err == nil {
-		_, err := k.stakingKeeper.Undelegate(ctx, sdk.AccAddress(valAddress), valAddress, validator.DelegatorShares)
+		_, _, err := k.stakingKeeper.Undelegate(ctx, sdk.AccAddress(valAddress), valAddress, validator.DelegatorShares)
 		if err != nil {
 			return nil, err
 		}

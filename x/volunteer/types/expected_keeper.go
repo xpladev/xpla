@@ -13,18 +13,18 @@ import (
 
 type StakingKeeper interface {
 	GetValidator(ctx context.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, err error)
-	GetValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
-	BondDenom(ctx context.Context) (res string)
-	SetValidator(ctx context.Context, validator stakingtypes.Validator)
+	GetValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, err error)
+	BondDenom(ctx context.Context) (string, error)
+	SetValidator(ctx context.Context, validator stakingtypes.Validator) error
 	SetValidatorByConsAddr(ctx context.Context, validator stakingtypes.Validator) error
-	SetNewValidatorByPowerIndex(ctx context.Context, validator stakingtypes.Validator)
+	SetNewValidatorByPowerIndex(ctx context.Context, validator stakingtypes.Validator) error
 	Delegate(
 		ctx context.Context, delAddr sdk.AccAddress, bondAmt sdkmath.Int, tokenSrc stakingtypes.BondStatus,
 		validator stakingtypes.Validator, subtractAccount bool,
 	) (newShares sdkmath.LegacyDec, err error)
 	Undelegate(
 		ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdkmath.LegacyDec,
-	) (time.Time, error)
+	) (time.Time, sdkmath.Int, error)
 	Hooks() stakingtypes.StakingHooks
 	ValidatorAddressCodec() address.Codec
 }
