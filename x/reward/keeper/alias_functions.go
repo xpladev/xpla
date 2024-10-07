@@ -15,7 +15,7 @@ func (k Keeper) GetRewardAccount(ctx context.Context) authtypes.ModuleAccountI {
 }
 
 func (k Keeper) GetBlocksPerYear(ctx context.Context) uint64 {
-	params := k.mintKeeper.GetParams(ctx)
+	params, _ := k.mintKeeper.Params.Get(ctx)
 	return params.BlocksPerYear
 }
 

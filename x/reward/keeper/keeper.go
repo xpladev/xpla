@@ -9,6 +9,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 
 	"github.com/xpladev/xpla/x/reward/types"
 )
@@ -24,12 +25,13 @@ type Keeper struct {
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
 	distKeeper    types.DistributionKeeper
-	mintKeeper    types.MintKeeper
+	// XXX Can I use whole mintkeeper here?
+	mintKeeper    mintkeeper.Keeper
 }
 
 func NewKeeper(
 	cdc codec.BinaryCodec, storeService store.KVStoreService,
-	ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper, mk types.MintKeeper,
+	ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper, mk mintkeeper.Keeper,
 	authority string,
 ) Keeper {
 	// ensure reward module account is set
