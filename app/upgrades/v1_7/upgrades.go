@@ -1,6 +1,7 @@
 package v1_7
 
 import (
+	"context"
 	"math/big"
 
 	"cosmossdk.io/errors"
@@ -23,7 +24,8 @@ func CreateUpgradeHandler(
 	keepers *keepers.AppKeepers,
 	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
-	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+	return func(c context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		ctx := sdk.UnwrapSDKContext(c)
 		data, err := hexutil.Decode(thirdwebProxy)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to decode ethereum tx hex bytes")
