@@ -150,7 +150,7 @@ go.sum: go.mod
 ###############################################################################
 ###                                Protobuf                                 ###
 ###############################################################################
-PROTO_VERSION=0.11.6
+PROTO_VERSION=0.13.0
 PROTO_BUILDER_IMAGE=ghcr.io/cosmos/proto-builder:$(PROTO_VERSION)
 PROTO_FORMATTER_IMAGE=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace --user 0 $(PROTO_BUILDER_IMAGE)
 
@@ -170,3 +170,7 @@ proto-swagger-gen:
 
 proto-lint:
 	$(PROTO_FORMATTER_IMAGE) buf lint --error-format=json
+
+proto-update-deps:
+	@echo "Updating Protobuf dependencies"
+	$(DOCKER) run --rm -v $(CURDIR)/proto:/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE) buf mod update
