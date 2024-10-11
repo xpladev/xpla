@@ -5,24 +5,28 @@ import (
 	"testing"
 	"time"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-
 	"cosmossdk.io/log"
-	dbm "github.com/cometbft/cometbft-db"
+	sdkmath "cosmossdk.io/math"
+
+	"github.com/stretchr/testify/require"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
+
+	dbm "github.com/cosmos/cosmos-db"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/server"
+	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/ibc-go/v8/testing/mock"
-	"github.com/stretchr/testify/require"
+
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	xplaapp "github.com/xpladev/xpla/app"
 )
@@ -53,9 +57,9 @@ var DefaultConsensusParams = &tmproto.ConsensusParams{
 
 type EmptyAppOptions struct{}
 
-func (EmptyAppOptions) Get(o string) interface{} { return nil }
+func (EmptyAppOptions) Get(_ string) interface{} { return nil }
 
-func Setup(t *testing.T, chainId string) *xplaapp.XplaApp {
+func Setup(t *testing.T) *xplaapp.XplaApp {
 	t.Helper()
 
 	privVal := mock.NewPV()
@@ -72,10 +76,10 @@ func Setup(t *testing.T, chainId string) *xplaapp.XplaApp {
 	acc := authtypes.NewBaseAccount(senderPubKey.Address().Bytes(), senderPubKey, 0, 0)
 	balance := banktypes.Balance{
 		Address: acc.GetAddress().String(),
-		Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100000000000000))),
+		Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(100000000000000))),
 	}
 	genesisAccounts := []authtypes.GenesisAccount{acc}
-	app := SetupWithGenesisValSet(t, valSet, genesisAccounts, chainId, balance)
+	app := SetupWithGenesisValSet(t, valSet, genesisAccounts, balance)
 
 	return app
 }
@@ -84,44 +88,43 @@ func Setup(t *testing.T, chainId string) *xplaapp.XplaApp {
 // that also act as delegators. For simplicity, each validator is bonded with a delegation
 // of one consensus engine unit in the default token of the GaiaApp from first genesis
 // account. A Nop logger is set in GaiaApp.
-func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainId string, balances ...banktypes.Balance) *xplaapp.XplaApp {
+func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *xplaapp.XplaApp {
 	t.Helper()
 
-	xpalApp, genesisState := setup(chainId)
-	genesisState = genesisStateWithValSet(t, xpalApp, genesisState, valSet, genAccs, balances...)
+	xplaApp, genesisState := setup()
+	genesisState = genesisStateWithValSet(t, xplaApp, genesisState, valSet, genAccs, balances...)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
 
 	// init chain will set the validator set and initialize the genesis accounts
-	xpalApp.InitChain(
-		abci.RequestInitChain{
-			ChainId:         chainId,
+	_, err = xplaApp.InitChain(
+		&abci.RequestInitChain{
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: DefaultConsensusParams,
 			AppStateBytes:   stateBytes,
 		},
 	)
+	require.NoError(t, err)
 
 	// commit genesis changes
-	xpalApp.Commit()
-	xpalApp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
-		ChainID:            chainId,
-		Height:             xpalApp.LastBlockHeight() + 1,
-		AppHash:            xpalApp.LastCommitID().Hash,
-		ValidatorsHash:     valSet.Hash(),
+	_, err = xplaApp.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height:             xplaApp.LastBlockHeight() + 1,
+		Hash:               xplaApp.LastCommitID().Hash,
 		NextValidatorsHash: valSet.Hash(),
-	}})
+	})
+	require.NoError(t, err)
 
-	return xpalApp
+	return xplaApp
 }
 
-func setup(chainId string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
+func setup() (*xplaapp.XplaApp, xplaapp.GenesisState) {
 	db := dbm.NewMemDB()
 	appOptions := make(simtestutil.AppOptionsMap, 0)
+	emptyWasmOpts := []wasmkeeper.Option{}
 	appOptions[server.FlagInvCheckPeriod] = 5
+	appOptions[server.FlagMinGasPrices] = "0axpla"
 
-	encCdc := xplaapp.MakeTestEncodingConfig()
 	app := xplaapp.NewXplaApp(
 		log.NewNopLogger(),
 		db,
@@ -129,12 +132,10 @@ func setup(chainId string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		true,
 		map[int64]bool{},
 		xplaapp.DefaultNodeHome,
-		encCdc,
-		EmptyAppOptions{},
-		[]wasmkeeper.Option{},
-		baseapp.SetChainID(chainId),
+		appOptions,
+		emptyWasmOpts,
 	)
-	return app, xplaapp.NewDefaultGenesisState()
+	return app, app.ModuleBasics.DefaultGenesis(app.AppCodec())
 }
 
 func genesisStateWithValSet(t *testing.T,
@@ -153,25 +154,24 @@ func genesisStateWithValSet(t *testing.T,
 	bondAmt := sdk.DefaultPowerReduction
 
 	for _, val := range valSet.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
 		pkAny, err := codectypes.NewAnyWithValue(pk)
 		require.NoError(t, err)
 		validator := stakingtypes.Validator{
-			OperatorAddress:   sdk.ValAddress(val.Address).String(),
-			ConsensusPubkey:   pkAny,
-			Jailed:            false,
-			Status:            stakingtypes.Bonded,
-			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
-			Description:       stakingtypes.Description{},
-			UnbondingHeight:   int64(0),
-			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			OperatorAddress: sdk.ValAddress(val.Address).String(),
+			ConsensusPubkey: pkAny,
+			Jailed:          false,
+			Status:          stakingtypes.Bonded,
+			Tokens:          bondAmt,
+			DelegatorShares: sdkmath.LegacyOneDec(),
+			Description:     stakingtypes.Description{},
+			UnbondingHeight: int64(0),
+			UnbondingTime:   time.Unix(0, 0).UTC(),
+			Commission:      stakingtypes.NewCommission(sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec()),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), sdk.ValAddress(val.Address).String(), sdkmath.LegacyOneDec()))
 
 	}
 	// set validators and delegations
