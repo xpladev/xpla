@@ -30,7 +30,7 @@ import (
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
 // channel keeper.
 type HandlerOptions struct {
-	Cdc                    codec.BinaryCodec
+	Codec                  codec.BinaryCodec
 	AccountKeeper          evmtypes.AccountKeeper
 	BankKeeper             evmtypes.BankKeeper
 	IBCKeeper              *ibckeeper.Keeper
@@ -47,7 +47,7 @@ type HandlerOptions struct {
 	BypassMinFeeMsgTypes  []string
 	TXCounterStoreService corestoretypes.KVStoreService
 	WasmKeeper            *wasmkeeper.Keeper
-	WasmConfig            wasmtypes.WasmConfig
+	WasmConfig            *wasmtypes.WasmConfig
 }
 
 var disabledAuthzMsgs = []string{

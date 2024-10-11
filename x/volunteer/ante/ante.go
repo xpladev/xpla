@@ -54,7 +54,7 @@ func (rdvvd RejectDelegateVolunteerValidatorDecorator) checkVolunteerValidator(c
 		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())
 	}
 
-	if _, found := rdvvd.volunteerKeeper.GetVolunteerValidator(ctx, valAddress); found {
+	if _, err := rdvvd.volunteerKeeper.GetVolunteerValidator(ctx, valAddress); err == nil {
 		delAddress, err := sdk.AccAddressFromBech32(delegatorAddress)
 		if err != nil {
 			return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())

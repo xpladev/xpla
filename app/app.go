@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"io"
-	stdlog "log"
 	"math/big"
 	"net/http"
 	"os"
@@ -25,7 +24,7 @@ import (
 	"cosmossdk.io/core/appmodule"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/x/tx/signing"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -106,6 +105,8 @@ type XplaApp struct { // nolint: golint
 	mm           *module.Manager
 	ModuleBasics module.BasicManager
 
+	// simulation manager
+	sm           *module.SimulationManager
 	configurator module.Configurator
 }
 
@@ -117,7 +118,7 @@ func init() {
 
 	DefaultNodeHome = filepath.Join(userHomeDir, ".xpla")
 	// apply custom power reduction for 'a' base denom unit 10^18
-	sdk.DefaultPowerReduction = sdk.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
+	sdk.DefaultPowerReduction = sdkmath.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
 }
 
 // NewXplaApp returns a reference to an initialized Xpla.
@@ -257,6 +258,14 @@ func NewXplaApp(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
+	// create the simulation manager and define the order of the modules for deterministic simulations
+	//
+	// NOTE: this is not required apps that don't use the simulator for fuzz testing
+	// transactions
+	app.sm = module.NewSimulationManager(simulationModules(app, appCodec, skipGenesisInvariants)...)
+
+	app.sm.RegisterStoreDecoders()
+
 	// initialize stores
 	app.MountKVStores(app.GetKVStoreKey())
 	app.MountTransientStores(app.GetTransientStoreKey())
@@ -276,7 +285,7 @@ func NewXplaApp(
 			SigGasConsumer:  xplaante.SigVerificationGasConsumer,
 
 			Codec:                 appCodec,
-			IBCkeeper:             app.IBCKeeper,
+			IBCKeeper:             app.IBCKeeper,
 			EvmKeeper:             app.EvmKeeper,
 			VolunteerKeeper: app.VolunteerKeeper,
 			FeeMarketKeeper:       app.FeeMarketKeeper,
@@ -363,10 +372,15 @@ func (app *XplaApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*a
 	}
 
 	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()); err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+	response, err := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+	if err != nil {
+		panic(err)
+	}
+
+	return response, nil
 }
 
 // LoadHeight loads a particular height
@@ -412,6 +426,11 @@ func (app *XplaApp) AppCodec() codec.Codec {
 // InterfaceRegistry returns Xpla's InterfaceRegistry
 func (app *XplaApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
+}
+
+// SimulationManager implements the SimulationApp interface
+func (app *XplaApp) SimulationManager() *module.SimulationManager {
+	return app.sm
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
