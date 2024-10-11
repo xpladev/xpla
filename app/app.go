@@ -533,6 +533,29 @@ func (app *XplaApp) AutoCliOpts() autocli.AppOptions {
 	}
 }
 
+// TestingApp functions
+
+// GetBaseApp implements the TestingApp interface.
+func (app *XplaApp) GetBaseApp() *baseapp.BaseApp {
+	return app.BaseApp
+}
+
+// GetTxConfig implements the TestingApp interface.
+func (app *XplaApp) GetTxConfig() client.TxConfig {
+	return app.txConfig
+}
+
+// EmptyAppOptions is a stub implementing AppOptions
+type EmptyAppOptions struct{}
+
+// Get implements AppOptions
+func (ao EmptyAppOptions) Get(_ string) interface{} {
+	return nil
+}
+
+// EmptyWasmOptions is a stub implementing Wasmkeeper Option
+var EmptyWasmOptions []wasmkeeper.Option
+
 // noOpTxFeeChecker is an ante TxFeeChecker for the DeductFeeDecorator, see x/auth/ante/fee.go,
 // it performs a no-op by not checking tx fees and always returns a zero tx priority
 func noOpTxFeeChecker(_ sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
