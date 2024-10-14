@@ -41,7 +41,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -59,6 +58,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	ethenc "github.com/xpladev/ethermint/encoding/codec"
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
@@ -151,8 +151,8 @@ func NewXplaApp(
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
 
-	std.RegisterLegacyAminoCodec(legacyAmino)
-	std.RegisterInterfaces(interfaceRegistry)
+	ethenc.RegisterLegacyAminoCodec(legacyAmino)
+	ethenc.RegisterInterfaces(interfaceRegistry)
 
 	// App Opts
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
