@@ -6,14 +6,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"cosmossdk.io/log"
-	dbm "github.com/cometbft/cometbft-db"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	simparams "cosmossdk.io/simapp/params"
-
 	"cosmossdk.io/store"
+	storemetrics "cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
+
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
@@ -117,20 +119,21 @@ type TestInput struct {
 
 // CreateTestInput nolint
 func CreateTestInput(t *testing.T) TestInput {
-	keyAcc := sdk.NewKVStoreKey(authtypes.StoreKey)
-	keyBank := sdk.NewKVStoreKey(banktypes.StoreKey)
-	keyParams := sdk.NewKVStoreKey(paramstypes.StoreKey)
-	tKeyParams := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	keyReward := sdk.NewKVStoreKey(rewardtypes.StoreKey)
-	keyStaking := sdk.NewKVStoreKey(stakingtypes.StoreKey)
-	keySlahsing := sdk.NewKVStoreKey(slashingtypes.StoreKey)
-	keyDistr := sdk.NewKVStoreKey(distrtypes.StoreKey)
-	keyMint := sdk.NewKVStoreKey(minttypes.StoreKey)
-	keyVolunteer := sdk.NewKVStoreKey(volunteertypes.StoreKey)
+	keyAcc := storetypes.NewKVStoreKey(authtypes.StoreKey)
+	keyBank := storetypes.NewKVStoreKey(banktypes.StoreKey)
+	keyParams := storetypes.NewKVStoreKey(paramstypes.StoreKey)
+	tKeyParams := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
+	keyReward := storetypes.NewKVStoreKey(rewardtypes.StoreKey)
+	keyStaking := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
+	keySlahsing := storetypes.NewKVStoreKey(slashingtypes.StoreKey)
+	keyDistr := storetypes.NewKVStoreKey(distrtypes.StoreKey)
+	keyMint := storetypes.NewKVStoreKey(minttypes.StoreKey)
+	keyVolunteer := storetypes.NewKVStoreKey(volunteertypes.StoreKey)
 
+	logger := log.NewNopLogger()
 	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
-	ctx := sdk.NewContext(ms, tmproto.Header{Time: time.Now().UTC()}, false, log.NewNopLogger())
+	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
+	ctx := sdk.NewContext(ms, tmproto.Header{Time: time.Now().UTC()}, false, logger)
 	encodingConfig := MakeEncodingConfig(t)
 	appCodec, legacyAmino := encodingConfig.Codec, encodingConfig.Amino
 
@@ -197,7 +200,7 @@ func CreateTestInput(t *testing.T) TestInput {
 
 	distrKeeper.SetFeePool(ctx, distrtypes.InitialFeePool())
 	distrParams := distrtypes.DefaultParams()
-	distrParams.CommunityTax = sdk.ZeroDec()
+	distrParams.CommunityTax = sdkmath.LegacyZeroDec()
 	distrKeeper.SetParams(ctx, distrParams)
 	stakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(distrKeeper.Hooks(), slashingKeeper.Hooks()))
 	mintKeeper.SetParams(ctx, minttypes.DefaultParams())
@@ -226,9 +229,9 @@ func CreateTestInput(t *testing.T) TestInput {
 	)
 
 	defaults := rewardtypes.Params{
-		FeePoolRate:             sdk.NewDecWithPrec(20, 2),
-		CommunityPoolRate:       sdk.NewDecWithPrec(79, 2),
-		ReserveRate:             sdk.NewDecWithPrec(1, 2),
+		FeePoolRate:             sdkmath.LegacyNewDecWithPrec(20, 2),
+		CommunityPoolRate:       sdkmath.LegacyNewDecWithPrec(79, 2),
+		ReserveRate:             sdkmath.LegacyNewDecWithPrec(1, 2),
 		ReserveAccount:          sdk.AccAddress(Pks[ReserveIndex].Address()).String(),
 		RewardDistributeAccount: sdk.AccAddress(Pks[ValidatorSettlementIndex].Address()).String(),
 	}
