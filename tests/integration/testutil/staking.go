@@ -13,7 +13,7 @@ import (
 func NewMsgCreateValidator(address sdk.ValAddress, pubKey cryptotypes.PubKey, amt sdkmath.Int) *stakingtypes.MsgCreateValidator {
 	commission := stakingtypes.NewCommissionRates(sdkmath.LegacyNewDecWithPrec(10, 2), sdkmath.LegacyOneDec(), sdkmath.LegacyOneDec())
 	msg, _ := stakingtypes.NewMsgCreateValidator(
-		address, pubKey, sdk.NewCoin(sdk.DefaultBondDenom, amt),
+		address.String(), pubKey, sdk.NewCoin(sdk.DefaultBondDenom, amt),
 		stakingtypes.Description{}, commission, sdkmath.OneInt(),
 	)
 
@@ -24,6 +24,6 @@ func NewMsgCreateValidator(address sdk.ValAddress, pubKey cryptotypes.PubKey, am
 func NewMsgDelegate(delegatorAddress sdk.AccAddress, validatorAddress sdk.ValAddress, amt sdkmath.Int) *stakingtypes.MsgDelegate {
 
 	return stakingtypes.NewMsgDelegate(
-		delegatorAddress, validatorAddress, sdk.NewCoin(sdk.DefaultBondDenom, amt),
+		delegatorAddress.String(), validatorAddress.String(), sdk.NewCoin(sdk.DefaultBondDenom, amt),
 	)
 }
