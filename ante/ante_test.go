@@ -13,7 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/stretchr/testify/suite"
 
 	xplaapp "github.com/xpladev/xpla/app"
@@ -38,9 +38,9 @@ func (s *IntegrationTestSuite) SetupTest() {
 	// epoch number should not be 0
 	chainId := fmt.Sprintf("test_1-%d", rand.Intn(9)+1)
 
-	app := xplahelpers.Setup(s.T(), chainId)
+	app := xplahelpers.Setup(s.T())
 
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{
+	ctx := app.BaseApp.NewUncachedContext(false, tmproto.Header{
 		ChainID: chainId,
 		Height:  1,
 	})
@@ -54,13 +54,16 @@ func (s *IntegrationTestSuite) SetupTest() {
 	s.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 }
 
-func (s *IntegrationTestSuite) CreateTestTx(privs []cryptotypes.PrivKey, accNums []uint64, accSeqs []uint64, chainID string) (xauthsigning.Tx, error) {
+func (s *IntegrationTestSuite) CreateTestTx(privs []cryptotypes.PrivKey, accNums []uint64, accSeqs []uint64, chainID string) (authsigning.Tx, error) {
 	var sigsV2 []signing.SignatureV2
+	defaultSignMode, err := authsigning.APISignModeToInternal(s.clientCtx.TxConfig.SignModeHandler().DefaultMode())
+	s.Require().NoError(err)
+
 	for i, priv := range privs {
 		sigV2 := signing.SignatureV2{
 			PubKey: priv.PubKey(),
 			Data: &signing.SingleSignatureData{
-				SignMode:  s.clientCtx.TxConfig.SignModeHandler().DefaultMode(),
+				SignMode:  defaultSignMode,
 				Signature: nil,
 			},
 			Sequence: accSeqs[i],
@@ -75,13 +78,14 @@ func (s *IntegrationTestSuite) CreateTestTx(privs []cryptotypes.PrivKey, accNums
 
 	sigsV2 = []signing.SignatureV2{}
 	for i, priv := range privs {
-		signerData := xauthsigning.SignerData{
+		signerData := authsigning.SignerData{
 			ChainID:       chainID,
 			AccountNumber: accNums[i],
 			Sequence:      accSeqs[i],
 		}
 		sigV2, err := tx.SignWithPrivKey(
-			s.clientCtx.TxConfig.SignModeHandler().DefaultMode(),
+			s.ctx,
+			defaultSignMode,
 			signerData,
 			s.txBuilder,
 			priv,
