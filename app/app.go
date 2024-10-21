@@ -58,7 +58,12 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	evmapi "github.com/xpladev/ethermint/api/ethermint/evm/v1"
+	erc20api "github.com/xpladev/ethermint/api/evmos/erc20/v1"
 	ethenc "github.com/xpladev/ethermint/encoding/codec"
+	erc20types "github.com/xpladev/ethermint/x/erc20/types"
+	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
@@ -66,6 +71,8 @@ import (
 	"github.com/xpladev/xpla/app/upgrades"
 	"github.com/xpladev/xpla/app/upgrades/v1_7"
 	"github.com/xpladev/xpla/docs"
+
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 var (
@@ -134,16 +141,27 @@ func NewXplaApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *XplaApp {
 	legacyAmino := codec.NewLegacyAmino()
-	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
-		ProtoFiles: proto.HybridResolver,
-		SigningOptions: signing.Options{
-			AddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
-			},
-			ValidatorAddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
-			},
+	signingOptions := signing.Options{
+		AddressCodec: address.Bech32Codec{
+			Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		},
+		ValidatorAddressCodec: address.Bech32Codec{
+			Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+		},
+	}
+	// apply custom GetSigners for MsgEthereumTx
+	signingOptions.DefineCustomGetSigners(
+		protov2.MessageName(&evmapi.MsgEthereumTx{}),
+		evmtypes.GetSignersV2,
+	)
+	// apply custom GetSigners for MsgConvertERC20
+	signingOptions.DefineCustomGetSigners(
+		protov2.MessageName(&erc20api.MsgConvertERC20{}),
+		erc20types.GetSignersV2,
+	)
+	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles:     proto.HybridResolver,
+		SigningOptions: signingOptions,
 	})
 	if err != nil {
 		panic(err)
@@ -287,13 +305,13 @@ func NewXplaApp(
 			Codec:                 appCodec,
 			IBCKeeper:             app.IBCKeeper,
 			EvmKeeper:             app.EvmKeeper,
-			VolunteerKeeper: app.VolunteerKeeper,
+			VolunteerKeeper:       app.VolunteerKeeper,
 			FeeMarketKeeper:       app.FeeMarketKeeper,
 			WasmConfig:            &wasmConfig,
-			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
+			BypassMinFeeMsgTypes:  cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
 			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
-			TxFeeChecker:    noOpTxFeeChecker,
-			MaxTxGasWanted:  evmMaxGasWanted,
+			TxFeeChecker:          noOpTxFeeChecker,
+			MaxTxGasWanted:        evmMaxGasWanted,
 		},
 	)
 	if err != nil {
