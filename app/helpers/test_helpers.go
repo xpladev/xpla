@@ -16,6 +16,7 @@ import (
 
 	dbm "github.com/cosmos/cosmos-db"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -59,7 +60,7 @@ type EmptyAppOptions struct{}
 
 func (EmptyAppOptions) Get(_ string) interface{} { return nil }
 
-func Setup(t *testing.T) *xplaapp.XplaApp {
+func Setup(t *testing.T, chainid string) *xplaapp.XplaApp {
 	t.Helper()
 
 	privVal := mock.NewPV()
@@ -79,7 +80,7 @@ func Setup(t *testing.T) *xplaapp.XplaApp {
 		Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(100000000000000))),
 	}
 	genesisAccounts := []authtypes.GenesisAccount{acc}
-	app := SetupWithGenesisValSet(t, valSet, genesisAccounts, balance)
+	app := SetupWithGenesisValSet(t, valSet, genesisAccounts, chainid, balance)
 
 	return app
 }
@@ -88,10 +89,10 @@ func Setup(t *testing.T) *xplaapp.XplaApp {
 // that also act as delegators. For simplicity, each validator is bonded with a delegation
 // of one consensus engine unit in the default token of the GaiaApp from first genesis
 // account. A Nop logger is set in GaiaApp.
-func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *xplaapp.XplaApp {
+func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainid string, balances ...banktypes.Balance) *xplaapp.XplaApp {
 	t.Helper()
 
-	xplaApp, genesisState := setup()
+	xplaApp, genesisState := setup(chainid)
 	genesisState = genesisStateWithValSet(t, xplaApp, genesisState, valSet, genAccs, balances...)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
@@ -100,6 +101,7 @@ func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs 
 	// init chain will set the validator set and initialize the genesis accounts
 	_, err = xplaApp.InitChain(
 		&abci.RequestInitChain{
+			ChainId:         chainid,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: DefaultConsensusParams,
 			AppStateBytes:   stateBytes,
@@ -118,7 +120,7 @@ func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs 
 	return xplaApp
 }
 
-func setup() (*xplaapp.XplaApp, xplaapp.GenesisState) {
+func setup(chainid string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 	db := dbm.NewMemDB()
 	appOptions := make(simtestutil.AppOptionsMap, 0)
 	emptyWasmOpts := []wasmkeeper.Option{}
@@ -134,6 +136,7 @@ func setup() (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		xplaapp.DefaultNodeHome,
 		appOptions,
 		emptyWasmOpts,
+		baseapp.SetChainID(chainid),
 	)
 	return app, app.ModuleBasics.DefaultGenesis(app.AppCodec())
 }

@@ -16,7 +16,6 @@ import (
 )
 
 func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
-	s.SetupTest()
 	s.txBuilder = s.clientCtx.TxConfig.NewTxBuilder()
 
 	s.app.FeeMarketKeeper.SetParams(s.ctx, feemarkettypes.NewParams(true, 8, 2, 0, 0, sdkmath.LegacyNewDec(200), sdkmath.LegacyMustNewDecFromStr("1.5")))
