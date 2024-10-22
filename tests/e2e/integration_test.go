@@ -158,8 +158,8 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 	coin := sdk.NewCoin(xplatypes.DefaultDenom, amt)
 
 	delegationMsg := stakingtype.NewMsgDelegate(
-		t.UserWallet1.ByteAddress,
-		t.ValidatorWallet1.ByteAddress.Bytes(),
+		t.UserWallet1.ByteAddress.String(),
+		t.ValidatorWallet1.ByteAddress.String(),
 		coin,
 	)
 
@@ -186,8 +186,8 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 
 	expected := []stakingtype.DelegationResponse{
 		stakingtype.NewDelegationResp(
-			t.UserWallet1.ByteAddress,
-			t.ValidatorWallet1.ByteAddress.Bytes(),
+			t.UserWallet1.ByteAddress.String(),
+			t.ValidatorWallet1.ByteAddress.String(),
 			sdkmath.LegacyNewDecFromInt(amt),
 			sdk.NewCoin(xplatypes.DefaultDenom, amt),
 		),
@@ -437,8 +437,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			expected := []stakingtype.DelegationResponse{
 				stakingtype.NewDelegationResp(
-					t.VolunteerValidatorWallet1.ByteAddress,
-					t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+					t.VolunteerValidatorWallet1.ByteAddress.String(),
+					t.VolunteerValidatorWallet1.ByteAddress.String(),
 					sdkmath.LegacyNewDecFromInt(amt),
 					sdk.NewCoin(xplatypes.DefaultDenom, amt),
 				),
@@ -475,8 +475,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			delegationMsg := stakingtype.NewMsgDelegate(
-				t.VolunteerValidatorWallet1.ByteAddress,
-				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
 				coin,
 			)
 
@@ -494,8 +494,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			delegationMsg := stakingtype.NewMsgDelegate(
-				t.UserWallet1.ByteAddress,
-				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+				t.UserWallet1.ByteAddress.String(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
 				coin,
 			)
 
@@ -524,9 +524,9 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			redelegationMsg := stakingtype.NewMsgBeginRedelegate(
-				t.VolunteerValidatorWallet1.ByteAddress,
-				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
-				t.ValidatorWallet1.ByteAddress.Bytes(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				t.ValidatorWallet1.ByteAddress.String(),
 				coin,
 			)
 
@@ -543,9 +543,9 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			redelegationMsg := stakingtype.NewMsgBeginRedelegate(
-				t.UserWallet1.ByteAddress,
-				t.ValidatorWallet1.ByteAddress.Bytes(),
-				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+				t.UserWallet1.ByteAddress.String(),
+				t.ValidatorWallet1.ByteAddress.String(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
 				coin,
 			)
 
@@ -567,8 +567,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			redelegationMsg := stakingtype.NewMsgUndelegate(
-				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
-				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				t.VolunteerValidatorWallet1.ByteAddress.String(),
 				coin,
 			)
 
@@ -910,7 +910,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			delegationAmt := sdk.NewCoin(xplatypes.DefaultDenom, generalValUpperDelegationAmt)
 
 			createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
-				sdk.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()),
+				sdk.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()).String(),
 				&ed25519.PubKey{Key: t.Validator5PVKey.PubKey.Bytes()},
 				delegationAmt,
 				stakingtype.NewDescription("validator5", "", "", "", ""),
@@ -1054,7 +1054,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			// VolunteerValidatorWallet1 is not volunteer validator anymore.
 			delegationAmt := sdk.NewCoin(xplatypes.DefaultDenom, generalValLowerDelegationAmt)
 			createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
-				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()),
+				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				&ed25519.PubKey{Key: t.VolunteerValidatorPVKey1.PubKey.Bytes()},
 				delegationAmt,
 				stakingtype.NewDescription("lower_powered_general_validator_6", "", "", "", ""),
@@ -1217,7 +1217,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Wait enough time(20sec) to replay the blocks and spend downtime_jail_duration...")
 			time.Sleep(time.Second * downtimeJailDuration)
 
-			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
+			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress).String())
 
 			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
 			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
@@ -1427,7 +1427,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Wait enough time(20sec) to replay the blocks and spend downtime_jail_duration...")
 			time.Sleep(time.Second * downtimeJailDuration)
 
-			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
+			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress).String())
 
 			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
 			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
