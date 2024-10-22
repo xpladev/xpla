@@ -3,14 +3,18 @@ package reward_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/stretchr/testify/require"
 
 	"github.com/xpladev/xpla/tests/integration/testutil"
 	"github.com/xpladev/xpla/x/reward"
@@ -23,10 +27,10 @@ import (
 // 4. process 1 block
 func TestBeginBlocker(t *testing.T) {
 	input := testutil.CreateTestInput(t)
-	input.StakingHandler.Commission = stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(10, 2), sdk.OneDec(), sdk.OneDec())
+	input.StakingHandler.Commission = stakingtypes.NewCommissionRates(sdkmath.LegacyNewDecWithPrec(10, 2), sdkmath.LegacyOneDec(), sdkmath.LegacyOneDec())
 
-	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
-	defaultFee := sdk.NewInt(11).Mul(sdk.DefaultPowerReduction).Quo(sdk.NewInt(10)) // 1.1
+	sdk.DefaultPowerReduction = sdkmath.NewIntFromUint64(1000000000000000000)
+	defaultFee := sdkmath.NewInt(11).Mul(sdk.DefaultPowerReduction).Quo(sdkmath.NewInt(10)) // 1.1
 
 	// create validator & self delegation
 	for i := 0; i < testutil.ValidatorCount; i++ {
@@ -54,7 +58,7 @@ func TestBeginBlocker(t *testing.T) {
 		require.Equal(
 			t, sdk.NewCoins(sdk.Coin{
 				Denom:  "",
-				Amount: sdk.ZeroInt(),
+				Amount: sdkmath.ZeroInt(),
 			}),
 			input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(testutil.Pks[i].Address())),
 		)
@@ -69,7 +73,7 @@ func TestBeginBlocker(t *testing.T) {
 	require.Equal(
 		t, sdk.NewCoins(sdk.Coin{
 			Denom:  "",
-			Amount: sdk.ZeroInt(),
+			Amount: sdkmath.ZeroInt(),
 		}),
 		input.BankKeeper.GetAllBalances(input.Ctx, sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address())),
 	)
@@ -109,7 +113,7 @@ func TestBeginBlocker(t *testing.T) {
 	// check result
 
 	// 1. reward module account (0.018)
-	decPoolBalance, _ := sdk.NewDecFromStr("0.018")
+	decPoolBalance, _ := sdkmath.LegacyNewDecFromStr("0.018")
 	poolBalance := decPoolBalance.MulInt(sdk.DefaultPowerReduction)
 	blockPerYear := int64(input.RewardKeeper.GetBlocksPerYear(input.Ctx))
 	remainPoolBalance := poolBalance.MulInt64(blockPerYear - 1).QuoInt64(blockPerYear).Ceil()

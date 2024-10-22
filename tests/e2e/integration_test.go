@@ -14,16 +14,19 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdkmath "cosmossdk.io/math"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	ed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1types "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
 	volunteerValType "github.com/xpladev/xpla/x/volunteer/types"
@@ -151,8 +154,8 @@ func (u *WASMIntegrationTestSuite) TearDownSuite() {
 // 4. Contract execute
 
 func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
-	amt := sdktypes.NewInt(100000000000000)
-	coin := sdktypes.NewCoin(xplatypes.DefaultDenom, amt)
+	amt := sdkmath.NewInt(100000000000000)
+	coin := sdk.NewCoin(xplatypes.DefaultDenom, amt)
 
 	delegationMsg := stakingtype.NewMsgDelegate(
 		t.UserWallet1.ByteAddress,
@@ -160,8 +163,8 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 		coin,
 	)
 
-	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
 	assert.NoError(t.T(), err)
@@ -185,8 +188,8 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 		stakingtype.NewDelegationResp(
 			t.UserWallet1.ByteAddress,
 			t.ValidatorWallet1.ByteAddress.Bytes(),
-			sdktypes.NewDecFromInt(amt),
-			sdktypes.NewCoin(xplatypes.DefaultDenom, amt),
+			sdkmath.LegacyNewDecFromInt(amt),
+			sdk.NewCoin(xplatypes.DefaultDenom, amt),
 		),
 	}
 
@@ -204,8 +207,8 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 		WASMByteCode: contractBytes,
 	}
 
-	feeAmt := sdktypes.NewDec(xplaCodeGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+	feeAmt := sdkmath.LegacyNewDec(xplaCodeGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, fee, xplaCodeGasLimit, false)
 
 	assert.NoError(t.T(), err)
@@ -249,8 +252,8 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 		Msg:    initMsg,
 	}
 
-	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, fee, xplaGeneralGasLimit, false)
 	assert.NoError(t.T(), err)
@@ -319,8 +322,8 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 		Msg:      transferMsg,
 	}
 
-	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, fee, xplaGeneralGasLimit, false)
 	assert.NoError(t.T(), err)
@@ -357,7 +360,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 }
 
 func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnregistryDelegation() {
-	amt := sdktypes.NewInt(1000000000000000000)
+	amt := sdkmath.NewInt(1000000000000000000)
 
 	{
 		/// Test 1 - Registering a volunteer validator works well
@@ -381,16 +384,16 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			msgRegisterVolunteer := volunteerValType.MsgRegisterVolunteerValidator{
 				DelegatorAddress:     t.VolunteerValidatorWallet1.ByteAddress.String(),
-				ValidatorAddress:     sdktypes.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
+				ValidatorAddress:     sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				Pubkey:               codectypes.UnsafePackAny(&ed25519.PubKey{Key: t.VolunteerValidatorPVKey1.PubKey.Bytes()}),
-				Amount:               sdktypes.NewCoin(xplatypes.DefaultDenom, amt),
+				Amount:               sdk.NewCoin(xplatypes.DefaultDenom, amt),
 				Authority:            t.GovAddress,
 				ValidatorDescription: stakingtype.NewDescription("volunteer_validator_1", "", "", "", ""),
 			}
 
 			err := applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{&msgRegisterVolunteer},
+				[]sdk.Msg{&msgRegisterVolunteer},
 				"register_volunteer_validator",
 				"Test volunteer validator registary",
 				t.VolunteerValidatorWallet1,
@@ -436,8 +439,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				stakingtype.NewDelegationResp(
 					t.VolunteerValidatorWallet1.ByteAddress,
 					t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
-					sdktypes.NewDecFromInt(amt),
-					sdktypes.NewCoin(xplatypes.DefaultDenom, amt),
+					sdkmath.LegacyNewDecFromInt(amt),
+					sdk.NewCoin(xplatypes.DefaultDenom, amt),
 				),
 			}
 
@@ -450,7 +453,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		}
 	}
 
-	delegationAmt := sdktypes.NewInt(100000000000000)
+	delegationAmt := sdkmath.NewInt(100000000000000)
 
 	/// Test 2 - No other delegation is allowed to the volunteer validator
 	/// Environment
@@ -469,7 +472,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		{
 			fmt.Println("Try operator wallet delegation and should success...")
 
-			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
+			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			delegationMsg := stakingtype.NewMsgDelegate(
 				t.VolunteerValidatorWallet1.ByteAddress,
@@ -477,8 +480,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
 			assert.NoError(t.T(), err)
@@ -488,7 +491,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		{
 			fmt.Println("Try other wallet delegation and should fail...")
 
-			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
+			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			delegationMsg := stakingtype.NewMsgDelegate(
 				t.UserWallet1.ByteAddress,
@@ -496,8 +499,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
 			assert.Error(t.T(), err)
@@ -518,7 +521,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		{
 			fmt.Println("Try operator wallet redelegation and should success...")
 
-			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
+			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			redelegationMsg := stakingtype.NewMsgBeginRedelegate(
 				t.VolunteerValidatorWallet1.ByteAddress,
@@ -527,8 +530,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
 			assert.NoError(t.T(), err)
@@ -537,7 +540,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		{
 			fmt.Println("Try other wallet redelegation and should fail...")
 
-			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
+			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			redelegationMsg := stakingtype.NewMsgBeginRedelegate(
 				t.UserWallet1.ByteAddress,
@@ -546,8 +549,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.UserWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
 			if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
@@ -561,7 +564,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 		{
 			fmt.Println("Try operator wallet undelegation and should success...")
 
-			coin := sdktypes.NewCoin(xplatypes.DefaultDenom, delegationAmt)
+			coin := sdk.NewCoin(xplatypes.DefaultDenom, delegationAmt)
 
 			redelegationMsg := stakingtype.NewMsgUndelegate(
 				t.VolunteerValidatorWallet1.ByteAddress.Bytes(),
@@ -569,8 +572,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
 			assert.NoError(t.T(), err)
@@ -598,12 +601,12 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			msgUnregisterVolunteerValidator := volunteerValType.MsgUnregisterVolunteerValidator{
 				Authority:        t.GovAddress,
-				ValidatorAddress: sdktypes.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
+				ValidatorAddress: sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 			}
 
 			err := applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{&msgUnregisterVolunteerValidator},
+				[]sdk.Msg{&msgUnregisterVolunteerValidator},
 				"unregister_volunteer_validator",
 				"Test volunteer validator unregistration",
 				t.VolunteerValidatorWallet1,
@@ -624,7 +627,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			validatorStatus, err := client.VolunteerValidators(context.Background(), &volunteerValType.QueryVolunteerValidatorsRequest{})
 			assert.NoError(t.T(), err)
 
-			thisVolunteerValAddress := sdktypes.ValAddress(t.VolunteerValidatorWallet1.ByteAddress).String()
+			thisVolunteerValAddress := sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress).String()
 
 			if assert.NotContains(t.T(), validatorStatus.GetVolunteerValidators(), thisVolunteerValAddress) {
 				fmt.Println(thisVolunteerValAddress, "is successfully removed from validator set!")
@@ -659,19 +662,19 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			proposalContent := volunteerValType.NewUnregisterVolunteerValidatorProposal(
 				"false_unregister_volunteer_validator",
 				"False volunteer validator unregistration",
-				sdktypes.ValAddress(t.UserWallet1.ByteAddress.Bytes()),
+				sdk.ValAddress(t.UserWallet1.ByteAddress.Bytes()),
 			)
 
 			proposalMsg, err := govv1beta1types.NewMsgSubmitProposal(
 				proposalContent,
-				sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
+				sdk.NewCoins(sdk.NewCoin(xplatypes.DefaultDenom, sdkmath.NewInt(10000000))),
 				t.UserWallet1.ByteAddress,
 			)
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, txErr = t.UserWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
 		}
@@ -689,7 +692,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 }
 
 func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
-	amt := sdktypes.NewInt(1000000000000000000)
+	amt := sdkmath.NewInt(1000000000000000000)
 
 	{
 		fmt.Println("Preparing multiple proposals to add a volunteer validator")
@@ -703,15 +706,15 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 				msgRegisterVolunteer := volunteerValType.MsgRegisterVolunteerValidator{
 					ValidatorDescription: stakingtype.NewDescription("volunteer_validator_2", "", "", "", ""),
 					DelegatorAddress:     t.VolunteerValidatorWallet2.ByteAddress.String(),
-					ValidatorAddress:     sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress.Bytes()).String(),
+					ValidatorAddress:     sdk.ValAddress(t.VolunteerValidatorWallet2.ByteAddress.Bytes()).String(),
 					Pubkey:               codectypes.UnsafePackAny(&ed25519.PubKey{Key: t.VolunteerValidatorPVKey2.PubKey.Bytes()}),
-					Amount:               sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
+					Amount:               sdk.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
 					Authority:            t.GovAddress,
 				}
 
 				err := applyVoteTallyingProposal(
 					desc.GetConnectionWithContext(context.Background()),
-					[]sdktypes.Msg{&msgRegisterVolunteer},
+					[]sdk.Msg{&msgRegisterVolunteer},
 					fmt.Sprintf("register_multiple_volunteer_validator_%d", i),
 					fmt.Sprintf("Test volunteer validator registary_%d", i),
 					t.VolunteerValidatorWallet2,
@@ -746,7 +749,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 		validatorStatus, err := client.VolunteerValidators(context.Background(), &volunteerValType.QueryVolunteerValidatorsRequest{})
 		assert.NoError(t.T(), err)
 
-		thisVolunteerValAddress := sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress).String()
+		thisVolunteerValAddress := sdk.ValAddress(t.VolunteerValidatorWallet2.ByteAddress).String()
 
 		if len(validatorStatus.GetVolunteerValidators()) == 1 &&
 			assert.Contains(t.T(), validatorStatus.GetVolunteerValidators(), thisVolunteerValAddress) {
@@ -769,12 +772,12 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 				// apply proposal
 				msgUnregisterVolunteerValidator := volunteerValType.MsgUnregisterVolunteerValidator{
 					Authority:        t.GovAddress,
-					ValidatorAddress: sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress.Bytes()).String(),
+					ValidatorAddress: sdk.ValAddress(t.VolunteerValidatorWallet2.ByteAddress.Bytes()).String(),
 				}
 
 				err := applyVoteTallyingProposal(
 					desc.GetConnectionWithContext(context.Background()),
-					[]sdktypes.Msg{&msgUnregisterVolunteerValidator},
+					[]sdk.Msg{&msgUnregisterVolunteerValidator},
 					fmt.Sprintf("unregister_multiple_volunteer_validator_%d", i),
 					fmt.Sprintf("Test volunteer validator unregistary_%d", i),
 					t.VolunteerValidatorWallet2,
@@ -812,7 +815,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 		validatorStatus, err := client.VolunteerValidators(context.Background(), &volunteerValType.QueryVolunteerValidatorsRequest{})
 		assert.NoError(t.T(), err)
 
-		thisVolunteerValAddress := sdktypes.ValAddress(t.VolunteerValidatorWallet2.ByteAddress).String()
+		thisVolunteerValAddress := sdk.ValAddress(t.VolunteerValidatorWallet2.ByteAddress).String()
 
 		if assert.NotContains(t.T(), validatorStatus.GetVolunteerValidators(), thisVolunteerValAddress) {
 			fmt.Println(thisVolunteerValAddress, "successfully removed from the validator set!")
@@ -824,7 +827,7 @@ func (t *WASMIntegrationTestSuite) Test13_MultipleProposals() {
 }
 
 func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVolunteerValidator_ShouldFail() {
-	amt := sdktypes.NewInt(1_000000_000000_000000)
+	amt := sdkmath.NewInt(1_000000_000000_000000)
 
 	{
 		fmt.Println("Try registering as a volunteer validator from the general validator...")
@@ -832,15 +835,15 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVolunteer
 		msgRegisterVolunteer := volunteerValType.MsgRegisterVolunteerValidator{
 			ValidatorDescription: stakingtype.NewDescription("volunteer_validator", "", "", "", ""),
 			DelegatorAddress:     t.ValidatorWallet1.ByteAddress.String(),
-			ValidatorAddress:     sdktypes.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()).String(),
+			ValidatorAddress:     sdk.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()).String(),
 			Pubkey:               codectypes.UnsafePackAny(&ed25519.PubKey{Key: t.Validator1PVKey.PubKey.Bytes()}),
-			Amount:               sdktypes.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
+			Amount:               sdk.NewCoin(xplatypes.DefaultDenom, amt), // smaller amount than other basic validators
 			Authority:            t.GovAddress,
 		}
 
 		err := applyVoteTallyingProposal(
 			desc.GetConnectionWithContext(context.Background()),
-			[]sdktypes.Msg{&msgRegisterVolunteer},
+			[]sdk.Msg{&msgRegisterVolunteer},
 			"register_volunteer_validator_from_general_validator",
 			"Test volunteer validator registary",
 			t.VolunteerValidatorWallet2,
@@ -853,7 +856,7 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVolunteer
 		validatorStatus, err := client.VolunteerValidators(context.Background(), &volunteerValType.QueryVolunteerValidatorsRequest{})
 		assert.NoError(t.T(), err)
 
-		thisVolunteerValAddress := sdktypes.ValAddress(t.ValidatorWallet1.ByteAddress).String()
+		thisVolunteerValAddress := sdk.ValAddress(t.ValidatorWallet1.ByteAddress).String()
 
 		if assert.NotContains(t.T(), validatorStatus.GetVolunteerValidators(), thisVolunteerValAddress) {
 			fmt.Println(thisVolunteerValAddress, "successfully dosen't exist from the validator set!")
@@ -865,9 +868,9 @@ func (t *WASMIntegrationTestSuite) Test14_TryChangingGeneralValidatorToVolunteer
 }
 
 func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
-	volunteerValDelegationAmt := sdktypes.NewInt(5_000000_000000_000000)
-	generalValUpperDelegationAmt := sdktypes.NewInt(8_000000_000000_000000)
-	generalValLowerDelegationAmt := sdktypes.NewInt(2_000000_000000_000000)
+	volunteerValDelegationAmt := sdkmath.NewInt(5_000000_000000_000000)
+	generalValUpperDelegationAmt := sdkmath.NewInt(8_000000_000000_000000)
+	generalValLowerDelegationAmt := sdkmath.NewInt(2_000000_000000_000000)
 	var maxValidators uint32 = 5
 
 	{
@@ -892,7 +895,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{msg},
+				[]sdk.Msg{msg},
 				"decrease_validator_active_set",
 				"Decrease validator active set",
 				t.ValidatorWallet2,
@@ -904,25 +907,25 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Add normal validator")
 
 			// more than volunteer validator but less than other validator
-			delegationAmt := sdktypes.NewCoin(xplatypes.DefaultDenom, generalValUpperDelegationAmt)
+			delegationAmt := sdk.NewCoin(xplatypes.DefaultDenom, generalValUpperDelegationAmt)
 
 			createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
-				sdktypes.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()),
+				sdk.ValAddress(t.ValidatorWallet5.ByteAddress.Bytes()),
 				&ed25519.PubKey{Key: t.Validator5PVKey.PubKey.Bytes()},
 				delegationAmt,
 				stakingtype.NewDescription("validator5", "", "", "", ""),
 				stakingtype.NewCommissionRates(
-					sdktypes.MustNewDecFromStr("0.1"),
-					sdktypes.MustNewDecFromStr("0.2"),
-					sdktypes.MustNewDecFromStr("0.01"),
+					sdkmath.LegacyMustNewDecFromStr("0.1"),
+					sdkmath.LegacyMustNewDecFromStr("0.2"),
+					sdkmath.LegacyMustNewDecFromStr("0.01"),
 				),
-				sdktypes.NewInt(1),
+				sdkmath.NewInt(1),
 			)
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
@@ -946,15 +949,15 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			msgRegisterVolunteer := volunteerValType.MsgRegisterVolunteerValidator{
 				ValidatorDescription: stakingtype.NewDescription("volunteer_validator_3", "", "", "", ""),
 				DelegatorAddress:     t.VolunteerValidatorWallet3.ByteAddress.String(),
-				ValidatorAddress:     sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()).String(),
+				ValidatorAddress:     sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()).String(),
 				Pubkey:               codectypes.UnsafePackAny(&ed25519.PubKey{Key: t.VolunteerValidatorPVKey3.PubKey.Bytes()}),
-				Amount:               sdktypes.NewCoin(xplatypes.DefaultDenom, volunteerValDelegationAmt), // smaller amount than other basic validators
+				Amount:               sdk.NewCoin(xplatypes.DefaultDenom, volunteerValDelegationAmt), // smaller amount than other basic validators
 				Authority:            t.GovAddress,
 			}
 
 			err := applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{&msgRegisterVolunteer},
+				[]sdk.Msg{&msgRegisterVolunteer},
 				"register_volunteer_validator_3",
 				"Test volunteer validator registry3 ",
 				t.VolunteerValidatorWallet3,
@@ -1034,7 +1037,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{msg},
+				[]sdk.Msg{msg},
 				"increase_validator_active_set",
 				"Increase validator active set",
 				t.ValidatorWallet1,
@@ -1049,24 +1052,24 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Activate one more validator. But its power is smaller than the volunteer validator.")
 
 			// VolunteerValidatorWallet1 is not volunteer validator anymore.
-			delegationAmt := sdktypes.NewCoin(xplatypes.DefaultDenom, generalValLowerDelegationAmt)
+			delegationAmt := sdk.NewCoin(xplatypes.DefaultDenom, generalValLowerDelegationAmt)
 			createValidatorMsg, err := stakingtype.NewMsgCreateValidator(
-				sdktypes.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()),
+				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()),
 				&ed25519.PubKey{Key: t.VolunteerValidatorPVKey1.PubKey.Bytes()},
 				delegationAmt,
 				stakingtype.NewDescription("lower_powered_general_validator_6", "", "", "", ""),
 				stakingtype.NewCommissionRates(
-					sdktypes.MustNewDecFromStr("0.1"),
-					sdktypes.MustNewDecFromStr("0.2"),
-					sdktypes.MustNewDecFromStr("0.01"),
+					sdkmath.LegacyMustNewDecFromStr("0.1"),
+					sdkmath.LegacyMustNewDecFromStr("0.2"),
+					sdkmath.LegacyMustNewDecFromStr("0.01"),
 				),
-				sdktypes.NewInt(1),
+				sdkmath.NewInt(1),
 			)
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.VolunteerValidatorWallet1.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
@@ -1214,10 +1217,10 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Wait enough time(20sec) to replay the blocks and spend downtime_jail_duration...")
 			time.Sleep(time.Second * downtimeJailDuration)
 
-			unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
+			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
 
-			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
@@ -1305,7 +1308,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{msg},
+				[]sdk.Msg{msg},
 				"decrease_validator_active_set",
 				"Decrease validator active set",
 				t.ValidatorWallet2,
@@ -1424,10 +1427,10 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			fmt.Println("Wait enough time(20sec) to replay the blocks and spend downtime_jail_duration...")
 			time.Sleep(time.Second * downtimeJailDuration)
 
-			unjailMsg := slashingtype.NewMsgUnjail(sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
+			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress))
 
-			feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-			fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
@@ -1515,7 +1518,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{msg},
+				[]sdk.Msg{msg},
 				"decrease_validator_active_set",
 				"Decrease validator active set",
 				t.ValidatorWallet2,
@@ -1529,12 +1532,12 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 		{
 			msgUnregisterVolunteerValidator := volunteerValType.MsgUnregisterVolunteerValidator{
 				Authority:        t.GovAddress,
-				ValidatorAddress: sdktypes.ValAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()).String(),
+				ValidatorAddress: sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress.Bytes()).String(),
 			}
 
 			err := applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
-				[]sdktypes.Msg{&msgUnregisterVolunteerValidator},
+				[]sdk.Msg{&msgUnregisterVolunteerValidator},
 				"unregister_volunteer_validator",
 				"Test volunteer validator unregistration",
 				t.VolunteerValidatorWallet3,
@@ -1751,8 +1754,8 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 // 	err = msg.FromEthereumTx(unsentTx)
 // 	assert.NoError(t.T(), err)
 
-// 	feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-// 	fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+// 	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+// 	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 // 	txHash, err := t.UserWallet1.CosmosWalletInfo.SendTx(ChainID, msg, fee, xplaGeneralGasLimit, true)
 // 	assert.NoError(t.T(), err)
