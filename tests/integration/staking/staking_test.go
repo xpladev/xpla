@@ -43,7 +43,8 @@ func TestDustShare(t *testing.T) {
 	// try to remove all delegation
 	input.StakingHandler.Undelegate(sdk.AccAddress(testutil.Pks[0].Address()), sdk.ValAddress(testutil.Pks[0].Address()), sdkmath.NewInt(99), true)
 
-	delegations := input.StakingKeeper.GetValidatorDelegations(input.Ctx, sdk.ValAddress(testutil.Pks[0].Address()))
+	delegations, err := input.StakingKeeper.GetValidatorDelegations(input.Ctx, sdk.ValAddress(testutil.Pks[0].Address()))
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(delegations))
 	assert.Equal(t, sdk.AccAddress(testutil.Pks[1].Address()).String(), delegations[0].DelegatorAddress)
 }

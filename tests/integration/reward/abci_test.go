@@ -8,12 +8,10 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	"github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/xpladev/xpla/tests/integration/testutil"
@@ -51,7 +49,7 @@ func TestBeginBlocker(t *testing.T) {
 		input.StakingHandler.Delegate(sdk.AccAddress(testutil.Pks[testutil.ValidatorSettlementIndex].Address()), valAddress, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 10))
 	}
 
-	staking.EndBlocker(input.Ctx, input.StakingKeeper.Keeper)
+	input.StakingKeeper.Keeper.EndBlocker(input.Ctx)
 
 	// checkt balance & staking
 	for i := 0; i < testutil.ValidatorCount; i++ {
@@ -64,9 +62,11 @@ func TestBeginBlocker(t *testing.T) {
 		)
 
 		valAddress := sdk.ValAddress(testutil.Pks[i].Address())
+		val, err := input.StakingKeeper.Validator(input.Ctx, valAddress)
+		require.NoError(t, err)
 		require.Equal(
 			t, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 110),
-			input.StakingKeeper.Validator(input.Ctx, valAddress).GetBondedTokens(),
+			val.GetBondedTokens(),
 		)
 	}
 
@@ -99,16 +99,8 @@ func TestBeginBlocker(t *testing.T) {
 		})
 	}
 
-	distribution.BeginBlocker(input.Ctx, types.RequestBeginBlock{
-		Header: tmproto.Header{
-			ProposerAddress: testutil.Pks[0].Address().Bytes(),
-		},
-		LastCommitInfo: types.CommitInfo{
-			Round: int32(1),
-			Votes: voteInfoes,
-		},
-	}, input.DistrKeeper)
-	reward.BeginBlocker(input.Ctx, types.RequestBeginBlock{}, input.RewardKeeper, input.BankKeeper, input.StakingKeeper, input.DistrKeeper)
+	distribution.BeginBlocker(input.Ctx, input.DistrKeeper)
+	reward.BeginBlocker(input.Ctx, input.RewardKeeper, input.BankKeeper, input.StakingKeeper, input.DistrKeeper)
 
 	// check result
 
@@ -123,8 +115,8 @@ func TestBeginBlocker(t *testing.T) {
 	)
 
 	// 2. community pool balance (0.0711)
-	res := input.DistrKeeper.GetFeePoolCommunityCoins(input.Ctx)
-	communityPool, _ := res.TruncateDecimal()
+	res, err := input.DistrKeeper.FeePool.Get(input.Ctx)
+	communityPool, _ := res.CommunityPool.TruncateDecimal()
 	require.Equal(
 		t, "71100000000000000stake",
 		communityPool.String(),

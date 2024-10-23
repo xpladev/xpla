@@ -209,7 +209,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, ti
 		var msg sdk.Msg
 		var err error
 
-		msg, err = govv1type.NewMsgSubmitProposal(proposalMsgs, sdk.NewCoins(sdk.NewCoin(xplatypes.DefaultDenom, sdkmath.NewInt(10000000))), proposerWallet.ByteAddress.String(), "", title, description)
+		msg, err = govv1type.NewMsgSubmitProposal(proposalMsgs, sdk.NewCoins(sdk.NewCoin(xplatypes.DefaultDenom, sdkmath.NewInt(10000000))), proposerWallet.ByteAddress.String(), "", title, description, false)
 		if err != nil {
 			return err
 		}
