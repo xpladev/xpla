@@ -31,7 +31,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -42,7 +41,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
-	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -56,9 +54,7 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	ethermintauth "github.com/xpladev/ethermint/x/auth"
-	"github.com/xpladev/ethermint/x/erc20"
-	erc20client "github.com/xpladev/ethermint/x/erc20/client"
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
+	ethermintbank "github.com/xpladev/ethermint/x/bank"
 	"github.com/xpladev/ethermint/x/evm"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	"github.com/xpladev/ethermint/x/feemarket"
@@ -84,7 +80,6 @@ var maccPerms = map[string][]string{
 	ibcfeetypes.ModuleName:         nil,
 	wasmtypes.ModuleName:           {authtypes.Burner},
 	evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
-	erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	rewardtypes.ModuleName:         nil,
 }
 
@@ -102,7 +97,7 @@ func appModules(
 			txConfig,
 		),
 		ethermintauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		ethermintbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -126,7 +121,6 @@ func appModules(
 		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
 		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
-		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 	}
@@ -140,13 +134,6 @@ func newBasicManagerFromManager(app *XplaApp) module.BasicManager {
 		app.mm,
 		map[string]module.AppModuleBasic{
 			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
-			govtypes.ModuleName: gov.NewAppModuleBasic(
-				[]govclient.ProposalHandler{
-					erc20client.RegisterCoinProposalHandler,
-					erc20client.RegisterERC20ProposalHandler,
-					erc20client.ToggleTokenConversionProposalHandler,
-				},
-			),
 		})
 	basicManager.RegisterLegacyAminoCodec(app.legacyAmino)
 	basicManager.RegisterInterfaces(app.interfaceRegistry)
@@ -162,7 +149,7 @@ func simulationModules(
 ) []module.AppModuleSimulation {
 	return []module.AppModuleSimulation{
 		ethermintauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		ethermintbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -218,7 +205,6 @@ func orderBeginBlockers() []string {
 		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
@@ -259,7 +245,6 @@ func orderEndBlockers() []string {
 		wasmtypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
@@ -303,7 +288,6 @@ func orderInitBlockers() []string {
 		upgradetypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}

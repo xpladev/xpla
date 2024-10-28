@@ -35,7 +35,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
-	github.com/xpladev/ethermint v0.23.0-xpla-4.0.20240905083340-db88220a9cbc
+	github.com/xpladev/ethermint v0.23.0-xpla-4.0.20241028083534-537ad1a8a22d
 	golang.org/x/sync v0.7.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237
 	google.golang.org/grpc v1.64.1
