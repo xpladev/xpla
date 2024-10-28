@@ -24,7 +24,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.20.x
+        go-version: 1.23.x
 
     - name: End-to-end test
       run: cd tests/e2e && go test
