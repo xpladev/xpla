@@ -68,8 +68,6 @@ func (k msgServer) UnregisterVolunteerValidator(goCtx context.Context, req *type
 		}
 
 		k.DeleteVolunteerValidator(ctx, valAddress)
-	} else {
-		return nil, err
 	}
 
 	return &types.MsgUnregisterVolunteerValidatorResponse{}, nil

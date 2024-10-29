@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
 
@@ -14,6 +15,9 @@ func (k Keeper) GetVolunteerValidator(ctx context.Context, valAddress sdk.ValAdd
 	bz, err := store.Get(types.GetVolunteerValidatorKey(valAddress))
 	if err != nil {
 		return types.VolunteerValidator{}, err
+	}
+	if bz == nil {
+		return types.VolunteerValidator{}, fmt.Errorf("no volunteer validator found")
 	}
 
 	volunteerValidator := types.VolunteerValidator{}
