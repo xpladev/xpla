@@ -159,7 +159,7 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 
 	delegationMsg := stakingtype.NewMsgDelegate(
 		t.UserWallet1.ByteAddress.String(),
-		t.ValidatorWallet1.ByteAddress.String(),
+		sdk.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()).String(),
 		coin,
 	)
 
@@ -187,7 +187,7 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 	expected := []stakingtype.DelegationResponse{
 		stakingtype.NewDelegationResp(
 			t.UserWallet1.ByteAddress.String(),
-			t.ValidatorWallet1.ByteAddress.String(),
+			sdk.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()).String(),
 			sdkmath.LegacyNewDecFromInt(amt),
 			sdk.NewCoin(xplatypes.DefaultDenom, amt),
 		),
@@ -438,7 +438,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 			expected := []stakingtype.DelegationResponse{
 				stakingtype.NewDelegationResp(
 					t.VolunteerValidatorWallet1.ByteAddress.String(),
-					t.VolunteerValidatorWallet1.ByteAddress.String(),
+					sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 					sdkmath.LegacyNewDecFromInt(amt),
 					sdk.NewCoin(xplatypes.DefaultDenom, amt),
 				),
@@ -476,7 +476,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			delegationMsg := stakingtype.NewMsgDelegate(
 				t.VolunteerValidatorWallet1.ByteAddress.String(),
-				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				coin,
 			)
 
@@ -495,7 +495,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			delegationMsg := stakingtype.NewMsgDelegate(
 				t.UserWallet1.ByteAddress.String(),
-				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				coin,
 			)
 
@@ -525,8 +525,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			redelegationMsg := stakingtype.NewMsgBeginRedelegate(
 				t.VolunteerValidatorWallet1.ByteAddress.String(),
-				t.VolunteerValidatorWallet1.ByteAddress.String(),
-				t.ValidatorWallet1.ByteAddress.String(),
+				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
+				sdk.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()).String(),
 				coin,
 			)
 
@@ -544,8 +544,8 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			redelegationMsg := stakingtype.NewMsgBeginRedelegate(
 				t.UserWallet1.ByteAddress.String(),
-				t.ValidatorWallet1.ByteAddress.String(),
-				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				sdk.ValAddress(t.ValidatorWallet1.ByteAddress.Bytes()).String(),
+				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				coin,
 			)
 
@@ -568,7 +568,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			redelegationMsg := stakingtype.NewMsgUndelegate(
 				t.VolunteerValidatorWallet1.ByteAddress.String(),
-				t.VolunteerValidatorWallet1.ByteAddress.String(),
+				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				coin,
 			)
 
