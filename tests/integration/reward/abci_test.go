@@ -51,7 +51,7 @@ func TestBeginBlocker(t *testing.T) {
 
 	input.StakingKeeper.Keeper.EndBlocker(input.Ctx)
 
-	// checkt balance & staking
+	// check balance & staking
 	for i := 0; i < testutil.ValidatorCount; i++ {
 		require.Equal(
 			t, sdk.NewCoins(sdk.Coin{
@@ -85,19 +85,22 @@ func TestBeginBlocker(t *testing.T) {
 	err = input.BankKeeper.SendCoinsFromAccountToModule(input.Ctx, sdk.AccAddress(testutil.Pks[testutil.TempIndex].Address()), authtypes.FeeCollectorName, sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, defaultFee)))
 	require.NoError(t, err)
 
-	// distirubte
+	// distribute
 	input.DistrKeeper.SetPreviousProposerConsAddr(input.Ctx, sdk.ConsAddress(testutil.Pks[0].Address()))
 	input.Ctx = input.Ctx.WithBlockHeight(input.Ctx.BlockHeight() + 2)
 
-	voteInfoes := []types.VoteInfo{}
+	voteInfos := []types.VoteInfo{}
 	for i := 0; i < testutil.ValidatorCount; i++ {
-		voteInfoes = append(voteInfoes, types.VoteInfo{
+		voteInfos = append(voteInfos, types.VoteInfo{
 			Validator: types.Validator{
 				Address: testutil.Pks[i].Address().Bytes(),
 				Power:   int64(110),
 			},
 		})
 	}
+	input.Ctx = input.Ctx.WithVoteInfos(voteInfos)
+	// I don't know why this is needed, but set this for historical reason
+	input.Ctx = input.Ctx.WithProposer(testutil.Pks[0].Address().Bytes())
 
 	distribution.BeginBlocker(input.Ctx, input.DistrKeeper)
 	reward.BeginBlocker(input.Ctx, input.RewardKeeper, input.BankKeeper, input.StakingKeeper, input.DistrKeeper)
