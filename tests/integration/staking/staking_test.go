@@ -49,6 +49,6 @@ func TestDustShare(t *testing.T) {
 	assert.NoError(t, err)
 	// XXX comment out for passing test temporary
 	// TODO remove this comment
-	//assert.Equal(t, 1, len(delegations))
+	assert.Equal(t, 1, len(delegations))
 	assert.Equal(t, sdk.AccAddress(testutil.Pks[1].Address()).String(), delegations[0].DelegatorAddress)
 }

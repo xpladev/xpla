@@ -253,7 +253,7 @@ replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
 	// xpla features
-	//github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.47.13-xpla
+	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.50.10-xpla
 	//github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.12.2-xpla
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
