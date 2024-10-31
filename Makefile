@@ -35,7 +35,7 @@ ifeq ($(LEDGER_ENABLED),true)
     ifeq ($(GCCEXE),)
       $(error gcc.exe not installed for ledger support, please install or set LEDGER_ENABLED=false)
     else
-      build_tags += ledger
+      build_tags += ledger cgo
     endif
   else
     UNAME_S = $(shell uname -s)
@@ -46,7 +46,7 @@ ifeq ($(LEDGER_ENABLED),true)
       ifeq ($(GCC),)
         $(error gcc not installed for ledger support, please install or set LEDGER_ENABLED=false)
       else
-        build_tags += ledger
+        build_tags += ledger cgo
       endif
     endif
   endif
