@@ -553,18 +553,14 @@ func NewAppKeeper(
 	appKeepers.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec,
 		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
-		// TODO storeKey should be changed to storeService
-		// runtime.NewKVStoreService(appKeepers.keys[feemarkettypes.StoreKey]),
-		appKeepers.keys[feemarkettypes.StoreKey],
+		runtime.NewKVStoreService(appKeepers.keys[feemarkettypes.StoreKey]),
 		appKeepers.tkeys[feemarkettypes.TransientKey],
 		appKeepers.GetSubspace(feemarkettypes.ModuleName),
 	)
 
 	appKeepers.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec,
-		// TODO storeKey should be changed to storeService
-		// runtime.NewKVStoreService(appKeepers.keys[evmtypes.StoreKey]),
-		appKeepers.keys[evmtypes.StoreKey],
+		runtime.NewKVStoreService(appKeepers.keys[evmtypes.StoreKey]),
 		appKeepers.tkeys[evmtypes.TransientKey],
 		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
 		appKeepers.AccountKeeper,
