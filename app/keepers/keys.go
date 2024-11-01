@@ -29,7 +29,6 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 
@@ -68,7 +67,6 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 		wasmtypes.StoreKey,
 		// ethermint keys
 		evmtypes.StoreKey,
-		erc20types.StoreKey,
 		feemarkettypes.StoreKey,
 		// XPLA keys
 		rewardtypes.StoreKey,

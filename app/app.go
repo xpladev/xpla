@@ -59,9 +59,7 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	evmapi "github.com/xpladev/ethermint/api/ethermint/evm/v1"
-	erc20api "github.com/xpladev/ethermint/api/evmos/erc20/v1"
 	ethenc "github.com/xpladev/ethermint/encoding/codec"
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
@@ -153,11 +151,6 @@ func NewXplaApp(
 	signingOptions.DefineCustomGetSigners(
 		protov2.MessageName(&evmapi.MsgEthereumTx{}),
 		evmtypes.GetSignersV2,
-	)
-	// apply custom GetSigners for MsgConvertERC20
-	signingOptions.DefineCustomGetSigners(
-		protov2.MessageName(&erc20api.MsgConvertERC20{}),
-		erc20types.GetSignersV2,
 	)
 	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles:     proto.HybridResolver,

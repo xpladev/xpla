@@ -74,9 +74,6 @@ import (
 
 	etherminttypes "github.com/xpladev/ethermint/types"
 	ethermintauthkeeper "github.com/xpladev/ethermint/x/auth/keeper"
-	"github.com/xpladev/ethermint/x/erc20"
-	erc20keeper "github.com/xpladev/ethermint/x/erc20/keeper"
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
@@ -132,7 +129,6 @@ type AppKeepers struct {
 
 	EvmKeeper       *evmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
-	Erc20Keeper     erc20keeper.Keeper
 
 	RewardKeeper    rewardkeeper.Keeper
 	VolunteerKeeper volunteerkeeper.Keeper
@@ -348,9 +344,7 @@ func NewAppKeeper(
 	// by granting the governance module the right to execute the message.
 	// See: https://docs.cosmos.network/main/modules/gov#proposal-messages
 	govRouter := govv1betatypes.NewRouter()
-	govRouter.
-		AddRoute(govtypes.RouterKey, govv1betatypes.ProposalHandler).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&appKeepers.Erc20Keeper))
+	govRouter.AddRoute(govtypes.RouterKey, govv1betatypes.ProposalHandler)
 
 	// Set legacy router for backwards compatibility with gov v1beta1
 	appKeepers.GovKeeper.SetLegacyRouter(govRouter)
@@ -571,24 +565,6 @@ func NewAppKeeper(
 		appKeepers.GetSubspace(evmtypes.ModuleName),
 	)
 
-	appKeepers.Erc20Keeper = erc20keeper.NewKeeper(
-		// TODO storeKey should be changed to storeService
-		// runtime.NewKVStoreService(appKeepers.keys[erc20types.StoreKey]),
-		appKeepers.keys[erc20types.StoreKey],
-		appCodec,
-		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
-		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
-		appKeepers.EvmKeeper,
-		appKeepers.StakingKeeper,
-	)
-
-	appKeepers.EvmKeeper = appKeepers.EvmKeeper.SetHooks(
-		evmkeeper.NewMultiEvmHooks(
-			appKeepers.Erc20Keeper.Hooks(),
-		),
-	)
-
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[rewardtypes.StoreKey]),
@@ -636,7 +612,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
 	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable())
-	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(volunteertypes.ModuleName)
 
