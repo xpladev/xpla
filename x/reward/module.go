@@ -21,9 +21,9 @@ import (
 )
 
 var (
-	_ module.AppModule	= AppModule{}
+	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
-	_ module.HasGenesis	= AppModule{}
+	_ module.HasGenesis     = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the reward module.

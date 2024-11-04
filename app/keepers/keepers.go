@@ -118,7 +118,7 @@ type AppKeepers struct {
 	PFMRouterKeeper *pfmrouterkeeper.Keeper
 	RatelimitKeeper ratelimitkeeper.Keeper
 
-	IBCFeeKeeper    ibcfeekeeper.Keeper
+	IBCFeeKeeper ibcfeekeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper

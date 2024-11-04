@@ -16,7 +16,7 @@ import (
 
 type Keeper struct {
 	storeService store.KVStoreService
-	cdc      codec.BinaryCodec
+	cdc          codec.BinaryCodec
 	// the address capable of executing a MsgUpdateParams message. Typically, this
 	// should be the x/gov module account.
 	authority string
@@ -26,7 +26,7 @@ type Keeper struct {
 	stakingKeeper types.StakingKeeper
 	distKeeper    types.DistributionKeeper
 	// XXX Can I use whole mintkeeper here?
-	mintKeeper    mintkeeper.Keeper
+	mintKeeper mintkeeper.Keeper
 }
 
 func NewKeeper(
