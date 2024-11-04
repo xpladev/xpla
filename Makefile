@@ -141,6 +141,7 @@ build-release-arm64: go.sum $(BUILDDIR)/
 
 .PHONY: test
 test: go.sum
+	go clean -testcache
 	go test -short -p 1 ./...
 
 go.sum: go.mod
