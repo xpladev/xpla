@@ -1,13 +1,14 @@
 package keeper
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"context"
+
 	"github.com/xpladev/xpla/x/reward/types"
 )
 
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ParamsKey)
+func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, _ := store.Get(types.ParamsKey)
 	if bz == nil {
 		return params
 	}
@@ -16,25 +17,24 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 	return params
 }
 
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
+func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	if err := params.ValidateBasic(); err != nil {
 		return err
 	}
 
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(&params)
 	if err != nil {
 		return err
 	}
-	store.Set(types.ParamsKey, bz)
 
-	return nil
+	return store.Set(types.ParamsKey, bz)
 }
 
-func (k Keeper) GetReserveAccount(ctx sdk.Context) (reserveAccount string) {
+func (k Keeper) GetReserveAccount(ctx context.Context) (reserveAccount string) {
 	return k.GetParams(ctx).ReserveAccount
 }
 
-func (k Keeper) GetRewardDistributeAccount(ctx sdk.Context) (rewardDistributeAccount string) {
+func (k Keeper) GetRewardDistributeAccount(ctx context.Context) (rewardDistributeAccount string) {
 	return k.GetParams(ctx).RewardDistributeAccount
 }

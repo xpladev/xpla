@@ -1,13 +1,15 @@
 package volunteer
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"context"
+
 	"github.com/xpladev/xpla/x/volunteer/keeper"
 )
 
-func BeginBlock(ctx sdk.Context, k keeper.Keeper) {
+func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 	err := k.VolunteerValidatorCommissionProcess(ctx)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }

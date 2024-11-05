@@ -9,15 +9,17 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	cosmwasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktype "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	txtype "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
+	cosmwasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
+
 	ethhd "github.com/xpladev/ethermint/crypto/hd"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 
@@ -125,10 +127,16 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, g
 		}
 	}
 
+	defaultSignMode, err := authsigning.APISignModeToInternal(w.EncCfg.TxConfig.SignModeHandler().DefaultMode())
+	if err != nil {
+		err = errors.Wrap(err, "SendTx, APISignModeToInternal")
+		return "", err
+	}
+
 	sigV2 := signing.SignatureV2{
 		PubKey: w.PrivKey.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  w.EncCfg.TxConfig.SignModeHandler().DefaultMode(),
+			SignMode:  defaultSignMode,
 			Signature: nil,
 		},
 		Sequence: w.Sequence,
@@ -140,14 +148,14 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, g
 		return "", err
 	}
 
-	signerData := xauthsigning.SignerData{
+	signerData := authsigning.SignerData{
 		ChainID:       chainId,
 		AccountNumber: w.AccountNumber,
 		Sequence:      w.Sequence,
 	}
 
 	sigV2, err = tx.SignWithPrivKey(
-		w.EncCfg.TxConfig.SignModeHandler().DefaultMode(), signerData, txBuilder, w.PrivKey, w.EncCfg.TxConfig, w.Sequence)
+		context.Background(), defaultSignMode, signerData, txBuilder, w.PrivKey, w.EncCfg.TxConfig, w.Sequence)
 	if err != nil {
 		err = errors.Wrap(err, "SendTx, do sign")
 		return "", err

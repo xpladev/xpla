@@ -1,34 +1,47 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
+
+	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func (k Keeper) mustGetValidator(ctx sdk.Context, addr sdk.ValAddress) types.Validator {
-	validator, found := k.GetValidator(ctx, addr)
-	if !found {
+func (k Keeper) mustGetValidator(ctx context.Context, addr sdk.ValAddress) types.Validator {
+	validator, err := k.GetValidator(ctx, addr)
+	if err != nil {
 		panic(fmt.Sprintf("validator record not found for address: %X\n", addr))
 	}
 
 	return validator
 }
 
-// get the group of the bonded validators
-func (k Keeper) GetLastValidators(ctx sdk.Context) (validators []types.Validator) {
-	store := ctx.KVStore(k.storeKey)
+// GetLastValidators gets the group of the bonded validators
+func (k Keeper) GetLastValidators(ctx context.Context) (validators []types.Validator, err error) {
+	store := k.storeService.OpenKVStore(ctx)
 
 	// add the actual validator power sorted store
-	maxValidators := k.MaxValidators(ctx)
+	maxValidators, err := k.MaxValidators(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// add to volunteer validator count
-	maxValidators += uint32(len(k.volunteerKeeper.GetVolunteerValidators(ctx)))
+	volunteerValidators, err := k.volunteerKeeper.GetVolunteerValidators(ctx)
+	if err != nil {
+		return nil, err
+	}
+	maxValidators += uint32(len(volunteerValidators))
 
 	validators = make([]types.Validator, maxValidators)
 
-	iterator := sdk.KVStorePrefixIterator(store, types.LastValidatorPowerKey)
+	iterator, err := store.Iterator(types.LastValidatorPowerKey, storetypes.PrefixEndBytes(types.LastValidatorPowerKey))
+	if err != nil {
+		return nil, err
+	}
 	defer iterator.Close()
 
 	i := 0
@@ -39,11 +52,14 @@ func (k Keeper) GetLastValidators(ctx sdk.Context) (validators []types.Validator
 		}
 
 		address := types.AddressFromLastValidatorPowerKey(iterator.Key())
-		validator := k.mustGetValidator(ctx, address)
+		validator, err := k.GetValidator(ctx, address)
+		if err != nil {
+			return nil, err
+		}
 
 		validators[i] = validator
 		i++
 	}
 
-	return validators[:i] // trim
+	return validators[:i], nil // trim
 }

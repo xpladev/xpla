@@ -12,6 +12,7 @@ import "amino/amino.proto";
 
 // Msg defines the reawrd Msg service.
 service Msg {
+  option (cosmos.msg.v1.service) = true;
   // MsgFundRewardPool defines a method to allow an account to directly
   // fund the reward pool.
   rpc FundRewardPool(MsgFundRewardPool) returns (MsgFundRewardPoolResponse);

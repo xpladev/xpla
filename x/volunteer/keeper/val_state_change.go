@@ -1,11 +1,16 @@
 package keeper
 
 import (
+	"context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k Keeper) VolunteerValidatorCommissionProcess(ctx sdk.Context) error {
-	volunteerValidators := k.GetVolunteerValidators(ctx)
+func (k Keeper) VolunteerValidatorCommissionProcess(ctx context.Context) error {
+	volunteerValidators, err := k.GetVolunteerValidators(ctx)
+	if err != nil {
+		return err
+	}
 
 	for strValAddr, _ := range volunteerValidators {
 		valAddr, err := sdk.ValAddressFromBech32(strValAddr)

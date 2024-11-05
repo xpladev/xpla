@@ -1,6 +1,8 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -45,10 +47,10 @@ func (msg MsgFundRewardPool) GetSignBytes() []byte {
 // ValidateBasic performs basic MsgFundRewardPool message validation.
 func (msg MsgFundRewardPool) ValidateBasic() error {
 	if !msg.Amount.IsValid() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
 	}
 	if msg.Depositor == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Depositor)
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Depositor)
 	}
 
 	return nil
@@ -63,7 +65,7 @@ func (msg *MsgUpdateParams) GetSigners() []sdk.AccAddress {
 // ValidateBasic does a sanity check of the provided data
 func (msg *MsgUpdateParams) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
-		return sdkerrors.Wrap(err, "Invalid authority address")
+		return errorsmod.Wrap(err, "Invalid authority address")
 	}
 
 	return msg.Params.ValidateBasic()

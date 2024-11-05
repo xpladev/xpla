@@ -7,12 +7,12 @@
 #   docker run --rm -it --env-file=path/to/.env --name xpla-localnet xpladev/xpla
 
 ### BUILD
-FROM golang:1.21-alpine3.17 AS build
+FROM golang:1.23-alpine AS build
 
 # Create appuser.
 RUN adduser -D -g '' valiuser
 # Install required binaries
-RUN apk add --update --no-cache zip git make cmake build-base linux-headers musl-dev libc-dev
+RUN apk add --update --no-cache zip git make cmake build-base linux-headers musl-dev libc-dev binutils-gold
 
 WORKDIR /
 RUN git clone --depth 1 https://github.com/microsoft/mimalloc; cd mimalloc; mkdir build; cd build; cmake ..; make -j$(nproc); make install
@@ -23,11 +23,11 @@ WORKDIR /workspace
 # Copy source files
 COPY . .
 # Download dependencies and CosmWasm libwasmvm if found.
-RUN set -eux; \    
+RUN set -eux; \
     export ARCH=$(uname -m); \
     WASM_VERSION=$(go list -mod=readonly -m all | grep github.com/CosmWasm/wasmvm | awk '{print $2}'); \
     if [ ! -z "${WASM_VERSION}" ]; then \
-      wget -O /lib/libwasmvm_muslc.a https://github.com/CosmWasm/wasmvm/releases/download/${WASM_VERSION}/libwasmvm_muslc.${ARCH}.a; \      
+      wget -O /lib/libwasmvm_muslc.${ARCH}.a https://github.com/CosmWasm/wasmvm/releases/download/${WASM_VERSION}/libwasmvm_muslc.${ARCH}.a; \
     fi; \
     go mod download;
 

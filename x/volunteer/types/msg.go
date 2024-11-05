@@ -1,6 +1,9 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -75,7 +78,7 @@ func (msg MsgRegisterVolunteerValidator) ValidateBasic() error {
 		return err
 	}
 	if !sdk.AccAddress(valAddr).Equals(delAddr) {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "validator address is invalid")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator address is invalid")
 	}
 
 	if msg.Pubkey == nil {
@@ -83,11 +86,11 @@ func (msg MsgRegisterVolunteerValidator) ValidateBasic() error {
 	}
 
 	if !msg.Amount.IsValid() || !msg.Amount.IsPositive() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid delegation amount")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "invalid delegation amount")
 	}
 
 	if msg.ValidatorDescription == (stakingtypes.Description{}) {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
 	}
 
 	return nil
@@ -103,11 +106,11 @@ func (p MsgRegisterVolunteerValidator) ToCreateValidator() stakingtypes.MsgCreat
 	return stakingtypes.MsgCreateValidator{
 		ValidatorAddress:  p.ValidatorAddress,
 		DelegatorAddress:  p.DelegatorAddress,
-		MinSelfDelegation: sdk.OneInt(),
+		MinSelfDelegation: sdkmath.OneInt(),
 		Pubkey:            p.Pubkey,
 		Value:             p.Amount,
 		Description:       p.ValidatorDescription,
-		Commission:        stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.ZeroDec()),
+		Commission:        stakingtypes.NewCommissionRates(sdkmath.LegacyOneDec(), sdkmath.LegacyOneDec(), sdkmath.LegacyZeroDec()),
 	}
 }
 

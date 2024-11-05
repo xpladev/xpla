@@ -35,7 +35,7 @@ ifeq ($(LEDGER_ENABLED),true)
     ifeq ($(GCCEXE),)
       $(error gcc.exe not installed for ledger support, please install or set LEDGER_ENABLED=false)
     else
-      build_tags += ledger
+      build_tags += ledger cgo
     endif
   else
     UNAME_S = $(shell uname -s)
@@ -46,7 +46,7 @@ ifeq ($(LEDGER_ENABLED),true)
       ifeq ($(GCC),)
         $(error gcc not installed for ledger support, please install or set LEDGER_ENABLED=false)
       else
-        build_tags += ledger
+        build_tags += ledger cgo
       endif
     endif
   endif
@@ -141,7 +141,8 @@ build-release-arm64: go.sum $(BUILDDIR)/
 
 .PHONY: test
 test: go.sum
-	go test -short ./...
+	go clean -testcache
+	go test -short -p 1 ./...
 
 go.sum: go.mod
 	@go mod verify
@@ -150,7 +151,7 @@ go.sum: go.mod
 ###############################################################################
 ###                                Protobuf                                 ###
 ###############################################################################
-PROTO_VERSION=0.11.6
+PROTO_VERSION=0.13.0
 PROTO_BUILDER_IMAGE=ghcr.io/cosmos/proto-builder:$(PROTO_VERSION)
 PROTO_FORMATTER_IMAGE=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace --user 0 $(PROTO_BUILDER_IMAGE)
 
@@ -170,3 +171,7 @@ proto-swagger-gen:
 
 proto-lint:
 	$(PROTO_FORMATTER_IMAGE) buf lint --error-format=json
+
+proto-update-deps:
+	@echo "Updating Protobuf dependencies"
+	$(DOCKER) run --rm -v $(CURDIR)/proto:/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE) buf mod update
