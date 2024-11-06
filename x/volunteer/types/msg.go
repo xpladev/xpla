@@ -4,6 +4,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 
+	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -52,7 +53,7 @@ func (msg MsgRegisterVolunteerValidator) GetSigners() []sdk.AccAddress {
 }
 
 func (msg MsgRegisterVolunteerValidator) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(legacy.Cdc.MustMarshalJSON(&msg))
 }
 
 func (msg MsgRegisterVolunteerValidator) ValidateBasic() error {
@@ -124,7 +125,7 @@ func (msg MsgUnregisterVolunteerValidator) GetSigners() []sdk.AccAddress {
 }
 
 func (msg MsgUnregisterVolunteerValidator) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(legacy.Cdc.MustMarshalJSON(&msg))
 }
 
 func (msg MsgUnregisterVolunteerValidator) ValidateBasic() error {
