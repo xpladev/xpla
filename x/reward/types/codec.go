@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,8 +10,10 @@ import (
 )
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgFundRewardPool{}, "xpladev/MsgFundRewardPool", nil)
-	cdc.RegisterConcrete(&MsgUpdateParams{}, "xpladev/reward/MsgUpdateParams", nil)
+	legacy.RegisterAminoMsg(cdc, &MsgFundRewardPool{}, "xpladev/MsgFundRewardPool")
+	legacy.RegisterAminoMsg(cdc, &MsgUpdateParams{}, "xpladev/x/reward/MsgUpdateParams")
+
+	cdc.RegisterConcrete(Params{}, "xpladev/x/reward/Params", nil)
 }
 
 func RegisterInterfaces(registry types.InterfaceRegistry) {
