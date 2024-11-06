@@ -10,10 +10,13 @@ import (
 )
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&RegisterVolunteerValidatorProposal{}, "xpladev/RegisterVolunteerValidatorProposal", nil)
-	cdc.RegisterConcrete(&UnregisterVolunteerValidatorProposal{}, "xpladev/UnregisterVolunteerValidatorProposal", nil)
 	legacy.RegisterAminoMsg(cdc, &MsgRegisterVolunteerValidator{}, "xpladev/MsgRegisterVolunteerValidator")
 	legacy.RegisterAminoMsg(cdc, &MsgUnregisterVolunteerValidator{}, "xpladev/MsgUnregisterVolunteerValidator")
+
+	cdc.RegisterConcrete(&RegisterVolunteerValidatorProposal{}, "xpladev/RegisterVolunteerValidatorProposal", nil)
+	cdc.RegisterConcrete(&RegisterVolunteerValidatorProposalWithDeposit{}, "xpladev/RegisterVolunteerValidatorProposalWithDeposit", nil)
+	cdc.RegisterConcrete(&UnregisterVolunteerValidatorProposal{}, "xpladev/UnregisterVolunteerValidatorProposal", nil)
+	cdc.RegisterConcrete(&UnregisterVolunteerValidatorProposalWithDeposit{}, "xpladev/UnregisterVolunteerValidatorProposalWithDeposit", nil)
 }
 
 func RegisterInterfaces(registry types.InterfaceRegistry) {
