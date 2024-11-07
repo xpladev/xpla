@@ -4,7 +4,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -41,19 +40,6 @@ func NewMsgRegisterVolunteerValidator(title, description string, delAddr sdk.Acc
 		ValidatorAddress:     valAddr.String(),
 		Pubkey:               pkAny,
 	}, nil
-}
-
-func (msg MsgRegisterVolunteerValidator) Route() string { return RouterKey }
-
-func (msg MsgRegisterVolunteerValidator) Type() string { return TypeMsgRegisterVolunteerValidator }
-
-func (msg MsgRegisterVolunteerValidator) GetSigners() []sdk.AccAddress {
-	authority, _ := sdk.AccAddressFromBech32(msg.Authority)
-	return []sdk.AccAddress{authority}
-}
-
-func (msg MsgRegisterVolunteerValidator) GetSignBytes() []byte {
-	return sdk.MustSortJSON(legacy.Cdc.MustMarshalJSON(&msg))
 }
 
 func (msg MsgRegisterVolunteerValidator) ValidateBasic() error {
@@ -113,19 +99,6 @@ func (p MsgRegisterVolunteerValidator) ToCreateValidator() stakingtypes.MsgCreat
 		Description:       p.ValidatorDescription,
 		Commission:        stakingtypes.NewCommissionRates(sdkmath.LegacyOneDec(), sdkmath.LegacyOneDec(), sdkmath.LegacyZeroDec()),
 	}
-}
-
-func (msg MsgUnregisterVolunteerValidator) Route() string { return RouterKey }
-
-func (msg MsgUnregisterVolunteerValidator) Type() string { return TypeMsgUnregisterVolunteerValidator }
-
-func (msg MsgUnregisterVolunteerValidator) GetSigners() []sdk.AccAddress {
-	authority, _ := sdk.AccAddressFromBech32(msg.Authority)
-	return []sdk.AccAddress{authority}
-}
-
-func (msg MsgUnregisterVolunteerValidator) GetSignBytes() []byte {
-	return sdk.MustSortJSON(legacy.Cdc.MustMarshalJSON(&msg))
 }
 
 func (msg MsgUnregisterVolunteerValidator) ValidateBasic() error {

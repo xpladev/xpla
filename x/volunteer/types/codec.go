@@ -31,7 +31,3 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgUnregisterVolunteerValidator{},
 	)
 }
-
-func init() {
-	RegisterLegacyAminoCodec(legacy.Cdc)
-}
