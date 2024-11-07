@@ -3,6 +3,8 @@ package v1_7
 import (
 	store "cosmossdk.io/store/types"
 
+	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
+
 	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
@@ -16,7 +18,9 @@ var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
-		Added: []string{},
+		Added: []string{
+			ratelimittypes.ModuleName,
+		},
 		Deleted: []string{
 			erc20types.ModuleName,
 		},
