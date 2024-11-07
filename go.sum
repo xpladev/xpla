@@ -1155,8 +1155,8 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/xpladev/cosmos-sdk v0.50.10-xpla h1:7ZLmg0tjYmsHZaRn5XJx1BcITB1fuGe6PwKANewKGSQ=
 github.com/xpladev/cosmos-sdk v0.50.10-xpla/go.mod h1:6Eesrx3ZE7vxBZWpK++30H+Uc7Q4ahQWCL7JKU/LEdU=
-github.com/xpladev/ethermint v0.23.0-xpla-4.0.20241031092909-fc29e2496310 h1:xj/dU1q9cg2FdzM4SF8HDEQ62k8S8fD8GisijRhw5MQ=
-github.com/xpladev/ethermint v0.23.0-xpla-4.0.20241031092909-fc29e2496310/go.mod h1:8Zb1vDEyjCo+xbyZqExLXdG7aOH8AYiL2jW0nPsMUOk=
+github.com/xpladev/ethermint v0.24.0-xpla-rc2 h1:js5wmBlxWt8myyxgb6T8gkBhwBq//D7a7eZJfOLu/JE=
+github.com/xpladev/ethermint v0.24.0-xpla-rc2/go.mod h1:8Zb1vDEyjCo+xbyZqExLXdG7aOH8AYiL2jW0nPsMUOk=
 github.com/xpladev/go-ethereum v1.10.26-xpla h1:tz9WTV9Fhhu9Xcpxo7RcXBygKcUbb5Zps4PBOVFgRqQ=
 github.com/xpladev/go-ethereum v1.10.26-xpla/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
 github.com/xpladev/ledger-cosmos-go v0.13.3-xpla h1:TG+QZ/sudMH2iPF+aJnYs+P9ua6k6KGxBS7Sa6XwjF4=
