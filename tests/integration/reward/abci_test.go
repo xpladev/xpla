@@ -99,8 +99,6 @@ func TestBeginBlocker(t *testing.T) {
 		})
 	}
 	input.Ctx = input.Ctx.WithVoteInfos(voteInfos)
-	// I don't know why this is needed, but set this for historical reason
-	input.Ctx = input.Ctx.WithProposer(testutil.Pks[0].Address().Bytes())
 
 	distribution.BeginBlocker(input.Ctx, input.DistrKeeper)
 	reward.BeginBlocker(input.Ctx, input.RewardKeeper, input.BankKeeper, input.StakingKeeper, input.DistrKeeper)

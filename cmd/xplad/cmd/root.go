@@ -143,9 +143,6 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			// XXX This is needed?
-			viper.Set(tmcli.HomeFlag, initClientCtx.HomeDir)
-
 			xplaTemplate, xplaAppConfig := initAppConfig()
 			customCometConfig := initCometConfig()
 
