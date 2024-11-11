@@ -152,12 +152,6 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	return BeginBlocker(ctx, am.keeper, am.bankKeeper, am.stakingKeeper, am.distKeeper)
 }
 
-// EndBlock returns the end blocker for the reward module. It returns no validator
-// updates.
-func (AppModule) EndBlock(_ context.Context) error {
-	return nil
-}
-
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 

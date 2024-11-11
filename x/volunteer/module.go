@@ -144,12 +144,6 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	return BeginBlocker(ctx, am.keeper)
 }
 
-// EndBlock returns the end blocker for the volunteer module. It returns no validator
-// updates.
-func (am AppModule) EndBlock(_ context.Context) error {
-	return nil
-}
-
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
