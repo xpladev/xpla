@@ -30,15 +30,17 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk 
 	totalRewards := map[string]sdk.Coin{}
 
 	sk.IterateDelegations(ctx, rewardDistributeAccount, func(index int64, delegation stakingtypes.DelegationI) (stop bool) {
-		valAddr, err := sk.ValidatorAddressCodec().StringToBytes(delegation.GetValidatorAddr())
-		if err != nil {
+		valAddr, e := sk.ValidatorAddressCodec().StringToBytes(delegation.GetValidatorAddr())
+		if e != nil {
+			err = e
 			return true
 		}
 
-		reward, err := dk.WithdrawDelegationRewards(ctx, rewardDistributeAccount, sdk.ValAddress(valAddr))
-		if err == disttypes.ErrEmptyDelegationDistInfo {
+		reward, e := dk.WithdrawDelegationRewards(ctx, rewardDistributeAccount, sdk.ValAddress(valAddr))
+		if e == disttypes.ErrEmptyDelegationDistInfo {
 			return false
-		} else if err != nil {
+		} else if e != nil {
+			err = e
 			return true
 		}
 
