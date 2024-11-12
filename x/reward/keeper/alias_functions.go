@@ -4,13 +4,12 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/xpladev/xpla/x/reward/types"
 )
 
 // GetRewardAccount returns the reward ModuleAccount
-func (k Keeper) GetRewardAccount(ctx context.Context) authtypes.ModuleAccountI {
+func (k Keeper) GetRewardAccount(ctx context.Context) sdk.ModuleAccountI {
 	return k.authKeeper.GetModuleAccount(ctx, types.ModuleName)
 }
 
