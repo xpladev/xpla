@@ -15,6 +15,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) {
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		panic(fmt.Errorf("error getting params %s", err))
+	}
 	return types.NewGenesisState(params)
 }

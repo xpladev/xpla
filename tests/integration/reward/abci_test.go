@@ -108,7 +108,9 @@ func TestBeginBlocker(t *testing.T) {
 	// 1. reward module account (0.018)
 	decPoolBalance, _ := sdkmath.LegacyNewDecFromStr("0.018")
 	poolBalance := decPoolBalance.MulInt(sdk.DefaultPowerReduction)
-	blockPerYear := int64(input.RewardKeeper.GetBlocksPerYear(input.Ctx))
+	uBlockPerYear, err := input.RewardKeeper.GetBlocksPerYear(input.Ctx)
+	require.NoError(t, err)
+	blockPerYear := int64(uBlockPerYear)
 	remainPoolBalance := poolBalance.MulInt64(blockPerYear - 1).QuoInt64(blockPerYear).Ceil()
 	require.Equal(
 		t, remainPoolBalance.TruncateInt(),
@@ -117,6 +119,7 @@ func TestBeginBlocker(t *testing.T) {
 
 	// 2. community pool balance (0.0711)
 	res, err := input.DistrKeeper.FeePool.Get(input.Ctx)
+	require.NoError(t, err)
 	communityPool, _ := res.CommunityPool.TruncateDecimal()
 	require.Equal(
 		t, "71100000000000000stake",
