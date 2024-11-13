@@ -15,13 +15,14 @@ import (
 )
 
 func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper) error {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	if params.RewardDistributeAccount == "" {
 		return nil
 	}
-
-	var err error = nil
 
 	total := params.TotalRate()
 
@@ -89,7 +90,10 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk 
 	}
 	rewardAccount := k.GetRewardAccount(ctx)
 	balances := bk.GetAllBalances(ctx, rewardAccount.GetAddress())
-	blockPerYear := k.GetBlocksPerYear(ctx)
+	blockPerYear, err := k.GetBlocksPerYear(ctx)
+	if err != nil {
+		return err
+	}
 	for index, balance := range balances {
 		balances[index].Amount = balance.Amount.Quo(sdkmath.NewInt(int64(blockPerYear)))
 	}

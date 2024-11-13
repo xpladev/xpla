@@ -6,15 +6,19 @@ import (
 	"github.com/xpladev/xpla/x/reward/types"
 )
 
-func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
+func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) {
 	store := k.storeService.OpenKVStore(ctx)
-	bz, _ := store.Get(types.ParamsKey)
-	if bz == nil {
-		return params
+	bz, err := store.Get(types.ParamsKey)
+	if err != nil {
+		return params, err
 	}
 
-	k.cdc.MustUnmarshal(bz, &params)
-	return params
+	if bz == nil {
+		return params, nil
+	}
+
+	err = k.cdc.Unmarshal(bz, &params)
+	return params, err
 }
 
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
@@ -29,12 +33,4 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	}
 
 	return store.Set(types.ParamsKey, bz)
-}
-
-func (k Keeper) GetReserveAccount(ctx context.Context) (reserveAccount string) {
-	return k.GetParams(ctx).ReserveAccount
-}
-
-func (k Keeper) GetRewardDistributeAccount(ctx context.Context) (rewardDistributeAccount string) {
-	return k.GetParams(ctx).RewardDistributeAccount
 }
