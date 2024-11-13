@@ -17,7 +17,9 @@ APPNAME := xplad
 LEDGER_ENABLED ?= true
 TM_VERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::') # grab everything after the space in "github.com/cometbft/cometbft v0.34.7"
 BUILDDIR ?= $(CURDIR)/build
-GO_VERSION ?= "1.19"
+GO_SYSTEM_VERSION = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1-2)
+REQUIRE_GO_VERSION = 1.23
+GO_VERSION ?= "$(REQUIRE_GO_VERSION)"
 
 # for dockerized protobuf tools
 DOCKER := $(shell which docker)
@@ -87,14 +89,20 @@ ifeq (,$(findstring nostrip,$(CUSTOM_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
 endif
 
+check_version:
+ifneq ($(GO_SYSTEM_VERSION),$(REQUIRE_GO_VERSION))
+	@echo "ERROR: Go version $(REQUIRE_GO_VERSION) is required for $(VERSION) of xpla, but system has $(GO_SYSTEM_VERSION)."
+	exit 1
+endif
+
 all: install
 
 .PHONY: install
-install: go.sum
+install: check_version go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/xplad
 
 .PHONY: build
-build: go.sum
+build: check_version go.sum
 	go build -mod=readonly $(BUILD_FLAGS) -o build/xplad ./cmd/xplad
 
 build-release: build/linux/amd64 build/linux/arm64
