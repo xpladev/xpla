@@ -3,6 +3,8 @@ package staking
 import (
 	"context"
 
+	"cosmossdk.io/core/appmodule"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -15,7 +17,9 @@ import (
 )
 
 var (
-	_ module.AppModule = staking.AppModule{}
+	_ module.AppModule          = staking.AppModule{}
+	_ module.HasABCIEndBlock    = AppModule{}
+	_ appmodule.HasBeginBlocker = AppModule{}
 )
 
 type AppModule struct {
