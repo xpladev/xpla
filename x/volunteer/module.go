@@ -26,11 +26,12 @@ import (
 const ConsensusVersion = 2
 
 var (
-	_ module.AppModuleBasic     = AppModuleBasic{}
-	_ module.AppModule          = AppModule{}
-	_ module.HasGenesis         = AppModule{}
-	_ module.HasServices        = AppModule{}
-	_ appmodule.HasBeginBlocker = AppModule{}
+	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ module.AppModule           = AppModule{}
+	_ module.HasGenesis          = AppModule{}
+	_ module.HasServices         = AppModule{}
+	_ module.HasConsensusVersion = AppModule{}
+	_ appmodule.HasBeginBlocker  = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the volunteer module.
