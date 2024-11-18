@@ -26,6 +26,7 @@ service Msg {
 // MsgFundRewardPool allows an account to directly
 // fund the reward pool.
 message MsgFundRewardPool {
+  option (cosmos.msg.v1.signer) = "depositor";
   option (amino.name) = "xpladev/MsgFundRewardPool";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
@@ -36,7 +37,7 @@ message MsgFundRewardPool {
     (amino.encoding) = "legacy_coins",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
-  string depositor = 2;
+  string depositor = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 }
 
 // MsgFundRewardPoolResponse defines the Msg/FundRewardPool response type.
