@@ -60,6 +60,7 @@ import (
 
 	evmapi "github.com/xpladev/ethermint/api/ethermint/evm/v1"
 	ethenc "github.com/xpladev/ethermint/encoding/codec"
+	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
@@ -164,6 +165,8 @@ func NewXplaApp(
 
 	ethenc.RegisterLegacyAminoCodec(legacyAmino)
 	ethenc.RegisterInterfaces(interfaceRegistry)
+	// Set erc20 registry for backwards compatibility
+	erc20types.RegisterInterfaces(interfaceRegistry)
 
 	// App Opts
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
