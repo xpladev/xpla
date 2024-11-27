@@ -65,6 +65,7 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -79,6 +80,7 @@ import (
 	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 
+	"github.com/xpladev/xpla/precompile"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
@@ -576,6 +578,16 @@ func NewAppKeeper(
 		appKeepers.DistrKeeper,
 		appKeepers.MintKeeper,
 		govModAddress,
+	)
+
+	// Register the precompiled contracts
+	precompile.RegistPrecompiledContract(
+		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+		stakingkeeper.NewMsgServerImpl(appKeepers.StakingKeeper.Keeper),
+		distrkeeper.NewMsgServerImpl(appKeepers.DistrKeeper),
+		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
+		appKeepers.WasmKeeper,
 	)
 
 	return appKeepers
