@@ -13,8 +13,8 @@ const (
 )
 
 var (
-	_ sdk.Msg                            = (*MsgFundRewardPool)(nil)
-	_ sdk.Msg                            = (*MsgUpdateParams)(nil)
+	_ sdk.Msg = (*MsgFundRewardPool)(nil)
+	_ sdk.Msg = (*MsgUpdateParams)(nil)
 )
 
 // NewMsgFundRewardPool returns a new MsgFundRewardPool with a sender and
