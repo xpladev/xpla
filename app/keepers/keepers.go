@@ -48,7 +48,6 @@ import (
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -78,6 +77,7 @@ import (
 	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
+	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
@@ -94,7 +94,7 @@ type AppKeepers struct {
 
 	// keepers
 	AccountKeeper    xplaauthkeeper.AccountKeeper
-	BankKeeper       bankkeeper.Keeper
+	BankKeeper       xplabankkeeper.Keeper
 	CapabilityKeeper *capabilitykeeper.Keeper
 	StakingKeeper    *xplastakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
@@ -208,7 +208,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[crisistypes.StoreKey]),
 		invCheckPeriod,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		authtypes.FeeCollectorName,
 		govModAddress,
 		appKeepers.AccountKeeper.AddressCodec(),
@@ -223,15 +223,6 @@ func NewAppKeeper(
 		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		govModAddress,
-	)
-
-	appKeepers.BankKeeper = bankkeeper.NewBaseKeeper(
-		appCodec,
-		runtime.NewKVStoreService(appKeepers.keys[banktypes.StoreKey]),
-		appKeepers.AccountKeeper,
-		blockedAddress,
-		govModAddress,
-		logger,
 	)
 
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
@@ -251,7 +242,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[stakingtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		govModAddress,
 		&appKeepers.VolunteerKeeper,
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
@@ -263,7 +254,7 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[minttypes.StoreKey]),
 		appKeepers.StakingKeeper,
 		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		authtypes.FeeCollectorName,
 		govModAddress,
 	)
@@ -272,7 +263,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[distrtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		authtypes.FeeCollectorName,
 		govModAddress,
@@ -331,7 +322,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[govtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.DistrKeeper,
 		bApp.MsgServiceRouter(),
@@ -370,7 +361,7 @@ func NewAppKeeper(
 		appCodec, appKeepers.keys[ibcfeetypes.StoreKey],
 		appKeepers.IBCKeeper.ChannelKeeper, // may be replaced with IBC middleware
 		appKeepers.IBCKeeper.ChannelKeeper,
-		appKeepers.IBCKeeper.PortKeeper, appKeepers.AccountKeeper, appKeepers.BankKeeper,
+		appKeepers.IBCKeeper.PortKeeper, appKeepers.AccountKeeper, &appKeepers.BankKeeper,
 	)
 
 	// ICA Host keeper
@@ -396,7 +387,7 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[ratelimittypes.StoreKey]), // StoreKey
 		appKeepers.GetSubspace(ratelimittypes.ModuleName),                   // param Subspace
 		govModAddress, // authority
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		appKeepers.IBCKeeper.ChannelKeeper, // ChannelKeeper
 		appKeepers.IBCFeeKeeper,            // ICS4Wrapper
 	)
@@ -421,7 +412,7 @@ func NewAppKeeper(
 		nil, // Will be zero-value here. Reference is set later on with SetTransferKeeper.
 		appKeepers.IBCKeeper.ChannelKeeper,
 		appKeepers.DistrKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		appKeepers.RatelimitKeeper, // ICS4Wrapper
 		govModAddress,
 	)
@@ -434,7 +425,7 @@ func NewAppKeeper(
 		appKeepers.IBCKeeper.ChannelKeeper,
 		appKeepers.IBCKeeper.PortKeeper,
 		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		appKeepers.ScopedTransferKeeper,
 		govModAddress,
 	)
@@ -480,7 +471,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		distrkeeper.NewQuerier(appKeepers.DistrKeeper),
 		appKeepers.IBCFeeKeeper,
@@ -558,11 +549,21 @@ func NewAppKeeper(
 		appKeepers.tkeys[evmtypes.TransientKey],
 		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
 		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
+		&appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.FeeMarketKeeper,
 		evmTrace,
 		appKeepers.GetSubspace(evmtypes.ModuleName),
+	)
+
+	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(appKeepers.keys[banktypes.StoreKey]),
+		appKeepers.AccountKeeper,
+		blockedAddress,
+		govModAddress,
+		logger,
+		appKeepers.EvmKeeper,
 	)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
