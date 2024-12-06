@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1types "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -29,6 +31,7 @@ import (
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
+	xplabanktypes "github.com/xpladev/xpla/x/bank/types"
 	volunteerValType "github.com/xpladev/xpla/x/volunteer/types"
 
 	// evmtypes "github.com/xpladev/ethermint/x/evm/types"
@@ -1679,6 +1682,102 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	assert.NoError(t.T(), err)
 
 	assert.Equal(t.T(), amt, resp)
+}
+
+func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
+	// Prepare parameters
+	erc20TokenContract := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, "/")
+
+	// Check balance before sending
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	reqWallet1 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet1.CosmosWalletInfo.ByteAddress.String(),
+		Denom:   denom,
+	}
+
+	reqWallet2 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet2.CosmosWalletInfo.ByteAddress.String(),
+		Denom:   denom,
+	}
+
+	resWallet1, err := client.Balance(ctx, reqWallet1)
+	wallet1Balance := resWallet1.Balance.Amount
+	assert.NoError(t.T(), err)
+
+	expectedWallet1Amount, ok := sdkmath.NewIntFromString("90000000000000000000")
+	assert.True(t.T(), ok)
+	assert.Equal(t.T(), wallet1Balance, expectedWallet1Amount)
+
+	resWallet2, err := client.Balance(ctx, reqWallet2)
+	assert.NoError(t.T(), err)
+	wallet2Balance := resWallet2.Balance.Amount
+	assert.Equal(t.T(), wallet2Balance, sdkmath.NewIntFromUint64(10000000000000000000))
+
+	// Send erc20 with xplabank
+	sendMsg := banktypes.NewMsgSend(
+		t.UserWallet1.CosmosWalletInfo.ByteAddress,
+		t.UserWallet2.CosmosWalletInfo.ByteAddress,
+		sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(1))),
+	)
+
+	txhash, err := t.UserWallet1.CosmosWalletInfo.SendTx(ChainID, sendMsg, false)
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
+
+	// wallet1 balance should be decreased
+	resWallet1, err = client.Balance(ctx, reqWallet1)
+	afterWallet1Balance := resWallet1.Balance.Amount
+	assert.NoError(t.T(), err)
+	assert.True(t.T(), wallet1Balance.GT(afterWallet1Balance))
+
+	// wallet2 balacne should be 1 increased
+	resWallet2, err = client.Balance(ctx, reqWallet2)
+	assert.NoError(t.T(), err)
+	wallet2Balance = resWallet2.Balance.Amount
+	assert.Equal(t.T(), wallet2Balance, sdkmath.NewIntFromUint64(10000000000000000001))
+
+	// check with evm call
+	tokenInterface, err := NewTokenInterface(t.TokenAddress, t.EthClient)
+	assert.NoError(t.T(), err)
+
+	callOpt := &abibind.CallOpts{}
+	resp, err := tokenInterface.BalanceOf(callOpt, t.UserWallet2.EthAddress)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), wallet2Balance.BigInt(), resp)
+}
+
+func (t *EVMIntegrationTestSuite) Test05_TotalSupplyErc20WithXplaBank() {
+	// Prepare parameters
+	erc20TokenContract := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, "/")
+
+	// Query erc20 total-supply with xplabank
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	req := &banktypes.QuerySupplyOfRequest{
+		Denom: denom,
+	}
+	cosmosRes, err := client.SupplyOf(ctx, req)
+	assert.NoError(t.T(), err)
+
+	// Query erc20 total-supply with evm call
+	tokenInterface, err := NewTokenInterface(t.TokenAddress, t.EthClient)
+	assert.NoError(t.T(), err)
+
+	callOpt := &abibind.CallOpts{}
+	evmRes, err := tokenInterface.TotalSupply(callOpt)
+	assert.NoError(t.T(), err)
+
+	// compare the results
+	assert.Equal(t.T(), cosmosRes.Amount.Amount.BigInt(), evmRes)
 }
 
 // Wrote and tried to test triggering EVM by MsgEthereumTx
