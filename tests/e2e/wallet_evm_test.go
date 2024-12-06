@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	ethereum "github.com/ethereum/go-ethereum"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -83,10 +84,20 @@ func (e *EVMWalletInfo) SendTx(client *web3.Client, to ethcommon.Address, ethAmo
 		return ethcommon.Hash{}, err
 	}
 
+	gas, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
+		GasPrice: big.NewInt(int64(xplaGasPriceInt)),
+		Gas:      0,
+		Value:    big.NewInt(0),
+		Data:     txData,
+	})
+	if err != nil {
+		return ethcommon.Hash{}, err
+	}
+
 	txStruct := &ethtypes.LegacyTx{
 		Nonce:    e.Nonce,
 		GasPrice: big.NewInt(int64(xplaGasPriceInt)),
-		Gas:      uint64(xplaCodeGasLimit),
+		Gas:      gas,
 		Value:    big.NewInt(0),
 		Data:     txData,
 	}

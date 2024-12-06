@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktype "github.com/cosmos/cosmos-sdk/types"
@@ -100,7 +101,7 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 	return ret, nil
 }
 
-func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, gasLimit int64, isEVM bool) (string, error) {
+func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, isEVM bool) (string, error) {
 	w.Lock()
 	defer w.Unlock()
 	var err error
@@ -114,9 +115,6 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, g
 			err = errors.Wrap(err, "SendTx, set msgs")
 			return "", err
 		}
-
-		txBuilder.SetGasLimit(uint64(gasLimit))
-		txBuilder.SetFeeAmount(sdktype.NewCoins(fee))
 	} else {
 		convertedMsg := msg.(*evmtypes.MsgEthereumTx)
 
@@ -127,16 +125,11 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, g
 		}
 	}
 
-	defaultSignMode, err := authsigning.APISignModeToInternal(w.EncCfg.TxConfig.SignModeHandler().DefaultMode())
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, APISignModeToInternal")
-		return "", err
-	}
-
+	// sign
 	sigV2 := signing.SignatureV2{
 		PubKey: w.PrivKey.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  defaultSignMode,
+			SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
 			Signature: nil,
 		},
 		Sequence: w.Sequence,
@@ -155,7 +148,7 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, g
 	}
 
 	sigV2, err = tx.SignWithPrivKey(
-		context.Background(), defaultSignMode, signerData, txBuilder, w.PrivKey, w.EncCfg.TxConfig, w.Sequence)
+		context.Background(), signing.SignMode_SIGN_MODE_DIRECT, signerData, txBuilder, w.PrivKey, w.EncCfg.TxConfig, w.Sequence)
 	if err != nil {
 		err = errors.Wrap(err, "SendTx, do sign")
 		return "", err
@@ -169,11 +162,44 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, fee sdktype.Coin, g
 
 	txBytes, err := w.EncCfg.TxConfig.TxEncoder()(txBuilder.GetTx())
 	if err != nil {
+		err = errors.Wrap(err, "SendTx, tx byte encode for simulate")
+		return "", err
+	}
+
+	// simulate tx
+	queryTxClient := txtype.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+	res, err := queryTxClient.Simulate(context.Background(), &txtype.SimulateRequest{
+		TxBytes: txBytes,
+	})
+	if err != nil {
+		err = errors.Wrap(err, "SendTx, tx simulate")
+		return "", err
+	}
+
+	gasLimit := uint64(gasAdjustment.MulInt64(int64(res.GasInfo.GasUsed)).TruncateInt64())
+	txBuilder.SetGasLimit(gasLimit)
+	feeAmt := sdkmath.LegacyNewDec(int64(gasLimit)).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+	fee := sdktype.NewCoin(xplatypes.DefaultDenom, feeAmt.RoundInt())
+	txBuilder.SetFeeAmount(sdktype.NewCoins(fee))
+
+	// sign
+	sigV2, err = tx.SignWithPrivKey(
+		context.Background(), signing.SignMode_SIGN_MODE_DIRECT, signerData, txBuilder, w.PrivKey, w.EncCfg.TxConfig, w.Sequence)
+	if err != nil {
+		err = errors.Wrap(err, "SendTx, do sign")
+		return "", err
+	}
+
+	err = txBuilder.SetSignatures(sigV2)
+
+	// broadcast tx
+	txBytes, err = w.EncCfg.TxConfig.TxEncoder()(txBuilder.GetTx())
+	if err != nil {
 		err = errors.Wrap(err, "SendTx, tx byte encode")
 		return "", err
 	}
 
-	txHash, err := BroadcastTx(desc.ServiceConn, w.ChainId, txBytes, txtype.BroadcastMode_BROADCAST_MODE_ASYNC)
+	txHash, err := BroadcastTx(desc.ServiceConn, w.ChainId, txBytes, txtype.BroadcastMode_BROADCAST_MODE_SYNC)
 	if err != nil {
 		err = errors.Wrap(err, "SendTx, tx broadcast")
 		return "", err
@@ -247,16 +273,6 @@ func GetAccountNumber(conn *grpc.ClientConn, chainId, address string) (uint64, u
 }
 
 func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode txtype.BroadcastMode) (string, error) {
-	queryTxClient := txtype.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
-
-	_, err := queryTxClient.Simulate(context.Background(), &txtype.SimulateRequest{
-		TxBytes: txBytes,
-	})
-
-	if err != nil {
-		return "", err
-	}
-
 	client := txtype.NewServiceClient(desc.ServiceConn)
 
 	if currtestingenv := os.Getenv("GOLANG_TESTING"); currtestingenv != "true" {
@@ -268,6 +284,10 @@ func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode txt
 		if err != nil {
 			err = errors.Wrap(err, "broadcastTx")
 			return "", err
+		}
+
+		if res.TxResponse.Code != 0 {
+			return "", errors.Errorf("Tx failed with code %d", res.TxResponse.Code)
 		}
 
 		return res.TxResponse.TxHash, nil
