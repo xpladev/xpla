@@ -188,9 +188,14 @@ func txCheck(txHash string) error {
 
 	for i := 0; i < 20; i++ {
 		txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
-		_, err = txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txHash})
 
+		var res *txtypes.GetTxResponse
+		res, err = txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txHash})
 		if err == nil {
+			if res.TxResponse.Code != 0 {
+				return fmt.Errorf("Tx failed with code %d", res.TxResponse.Code)
+			}
+
 			return nil
 		}
 
@@ -214,10 +219,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, ti
 			return err
 		}
 
-		feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-		fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-		txhash, err := proposerWallet.SendTx(ChainID, msg, fee, xplaProposalGasLimit, false)
+		txhash, err := proposerWallet.SendTx(ChainID, msg, false)
 		if txhash != "" && err == nil {
 			fmt.Println("Tx sent:", txhash)
 		} else {
@@ -263,10 +265,8 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, ti
 
 			eg.Go(func() error {
 				voteMsg := govv1beta1type.NewMsgVote(addr.ByteAddress, proposalId, govv1beta1type.OptionYes)
-				feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-				fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
-				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+				txhash, err := addr.SendTx(ChainID, voteMsg, false)
 				if txhash != "" && err == nil {
 					fmt.Println(addr.StringAddress, "voted to the proposal", proposalId, "as tx", txhash, "err:", err)
 				} else {

@@ -163,10 +163,7 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 		coin,
 	)
 
-	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
+	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, false)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -207,9 +204,7 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 		WASMByteCode: contractBytes,
 	}
 
-	feeAmt := sdkmath.LegacyNewDec(xplaCodeGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, fee, xplaCodeGasLimit, false)
+	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, false)
 
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
@@ -252,10 +247,7 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 		Msg:    initMsg,
 	}
 
-	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, fee, xplaGeneralGasLimit, false)
+	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, false)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -322,10 +314,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 		Msg:      transferMsg,
 	}
 
-	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, fee, xplaGeneralGasLimit, false)
+	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, false)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -479,11 +468,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				coin,
 			)
-
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, delegationMsg, false)
 			assert.NoError(t.T(), err)
 
 		}
@@ -499,10 +484,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, false)
 			assert.Error(t.T(), err)
 
 			queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
@@ -530,10 +512,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, false)
 			assert.NoError(t.T(), err)
 		}
 
@@ -549,10 +528,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.UserWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.UserWallet1.SendTx(ChainID, redelegationMsg, false)
 			if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
 				fmt.Println("Expected failure is occurred.")
 			} else {
@@ -572,10 +548,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, false)
 			assert.NoError(t.T(), err)
 		}
 	}
@@ -673,10 +646,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, txErr = t.UserWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+			txhash, txErr = t.UserWallet1.SendTx(ChainID, proposalMsg, false)
 		}
 
 		// Assertion
@@ -924,10 +894,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
+			txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
@@ -1068,10 +1035,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.VolunteerValidatorWallet1.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
+			txhash, err := t.VolunteerValidatorWallet1.SendTx(ChainID, createValidatorMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
@@ -1219,10 +1183,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress).String())
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
@@ -1429,10 +1390,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress).String())
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
