@@ -2,15 +2,21 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
+	"cosmossdk.io/collections"
 	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // HasAccount implements AccountKeeperI.
 func (ak AccountKeeper) HasAccount(ctx context.Context, addr sdk.AccAddress) bool {
-	addr = ak.getSliceAddress(ctx, addr)
+	addr, err := ak.getSliceAddress(ctx, addr)
+	if err != nil {
+		return false
+	}
 	has, err := ak.Accounts.Has(ctx, addr)
 	if err != nil {
 		return false
@@ -21,7 +27,10 @@ func (ak AccountKeeper) HasAccount(ctx context.Context, addr sdk.AccAddress) boo
 
 // GetAccount implements AccountKeeperI.
 func (ak AccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) (acc sdk.AccountI) {
-	addr = ak.getSliceAddress(ctx, addr)
+	addr, err := ak.getSliceAddress(ctx, addr)
+	if err != nil {
+		panic(err)
+	}
 	return ak.AccountKeeper.GetAccount(ctx, addr)
 }
 
@@ -45,11 +54,14 @@ func (ak AccountKeeper) SetAccount(ctx context.Context, acc sdk.AccountI) {
 	ak.AccountKeeper.SetAccount(ctx, acc)
 }
 
-func (ak AccountKeeper) getSliceAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccAddress {
+func (ak AccountKeeper) getSliceAddress(ctx context.Context, addr sdk.AccAddress) (sdk.AccAddress, error) {
 	originalAddress, err := ak.SliceAddresses.Get(ctx, addr)
 	if err != nil {
-		return addr
+		if errors.Is(err, collections.ErrNotFound) {
+			return addr, nil
+		}
+		return nil, err
 	}
 
-	return originalAddress
+	return originalAddress, nil
 }
