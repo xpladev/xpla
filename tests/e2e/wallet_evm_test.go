@@ -85,9 +85,11 @@ func (e *EVMWalletInfo) SendTx(client *web3.Client, to ethcommon.Address, ethAmo
 	}
 
 	gas, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
+		From:     e.EthAddress,
+		To:       &to,
 		GasPrice: big.NewInt(int64(xplaGasPriceInt)),
 		Gas:      0,
-		Value:    big.NewInt(0),
+		Value:    ethAmount,
 		Data:     txData,
 	})
 	if err != nil {
@@ -95,10 +97,11 @@ func (e *EVMWalletInfo) SendTx(client *web3.Client, to ethcommon.Address, ethAmo
 	}
 
 	txStruct := &ethtypes.LegacyTx{
-		Nonce:    e.Nonce,
+		To:       &to,
+		Nonce:    e.CosmosWalletInfo.Sequence,
 		GasPrice: big.NewInt(int64(xplaGasPriceInt)),
 		Gas:      gas,
-		Value:    big.NewInt(0),
+		Value:    ethAmount,
 		Data:     txData,
 	}
 
@@ -116,6 +119,9 @@ func (e *EVMWalletInfo) SendTx(client *web3.Client, to ethcommon.Address, ethAmo
 		err = errors.Wrap(err, "SendTx, SendTransaction")
 		return ethcommon.Hash{}, err
 	}
+
+	e.CosmosWalletInfo.Sequence += 1
+	e.Nonce += 1
 
 	return signedTx.Hash(), nil
 }
