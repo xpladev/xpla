@@ -208,7 +208,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[crisistypes.StoreKey]),
 		invCheckPeriod,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		authtypes.FeeCollectorName,
 		govModAddress,
 		appKeepers.AccountKeeper.AddressCodec(),
@@ -223,6 +223,15 @@ func NewAppKeeper(
 		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		govModAddress,
+	)
+
+	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(appKeepers.keys[banktypes.StoreKey]),
+		appKeepers.AccountKeeper,
+		blockedAddress,
+		govModAddress,
+		logger,
 	)
 
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
@@ -242,7 +251,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[stakingtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		govModAddress,
 		&appKeepers.VolunteerKeeper,
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
@@ -254,7 +263,7 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[minttypes.StoreKey]),
 		appKeepers.StakingKeeper,
 		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		authtypes.FeeCollectorName,
 		govModAddress,
 	)
@@ -263,7 +272,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[distrtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		authtypes.FeeCollectorName,
 		govModAddress,
@@ -322,7 +331,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[govtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.DistrKeeper,
 		bApp.MsgServiceRouter(),
@@ -361,7 +370,7 @@ func NewAppKeeper(
 		appCodec, appKeepers.keys[ibcfeetypes.StoreKey],
 		appKeepers.IBCKeeper.ChannelKeeper, // may be replaced with IBC middleware
 		appKeepers.IBCKeeper.ChannelKeeper,
-		appKeepers.IBCKeeper.PortKeeper, appKeepers.AccountKeeper, &appKeepers.BankKeeper,
+		appKeepers.IBCKeeper.PortKeeper, appKeepers.AccountKeeper, appKeepers.BankKeeper,
 	)
 
 	// ICA Host keeper
@@ -387,7 +396,7 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[ratelimittypes.StoreKey]), // StoreKey
 		appKeepers.GetSubspace(ratelimittypes.ModuleName),                   // param Subspace
 		govModAddress, // authority
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		appKeepers.IBCKeeper.ChannelKeeper, // ChannelKeeper
 		appKeepers.IBCFeeKeeper,            // ICS4Wrapper
 	)
@@ -412,7 +421,7 @@ func NewAppKeeper(
 		nil, // Will be zero-value here. Reference is set later on with SetTransferKeeper.
 		appKeepers.IBCKeeper.ChannelKeeper,
 		appKeepers.DistrKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		appKeepers.RatelimitKeeper, // ICS4Wrapper
 		govModAddress,
 	)
@@ -425,7 +434,7 @@ func NewAppKeeper(
 		appKeepers.IBCKeeper.ChannelKeeper,
 		appKeepers.IBCKeeper.PortKeeper,
 		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		appKeepers.ScopedTransferKeeper,
 		govModAddress,
 	)
@@ -471,7 +480,7 @@ func NewAppKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
 		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		distrkeeper.NewQuerier(appKeepers.DistrKeeper),
 		appKeepers.IBCFeeKeeper,
@@ -549,22 +558,14 @@ func NewAppKeeper(
 		appKeepers.tkeys[evmtypes.TransientKey],
 		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
 		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
+		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.FeeMarketKeeper,
 		evmTrace,
 		appKeepers.GetSubspace(evmtypes.ModuleName),
 	)
-
-	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(appKeepers.keys[banktypes.StoreKey]),
-		appKeepers.AccountKeeper,
-		blockedAddress,
-		govModAddress,
-		logger,
-		appKeepers.EvmKeeper,
-	)
+	// This should execute after evmkeeper has initiate.
+	appKeepers.BankKeeper.SetEvmKeeper(appKeepers.EvmKeeper)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
 		appCodec,
