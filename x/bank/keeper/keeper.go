@@ -42,6 +42,10 @@ func NewKeeper(
 	}
 }
 
+func (k *Keeper) SetEvmKeeper(ek types.EvmKeeper) {
+	k.ek = ek
+	k.bek = NewBaseErc20Keeper(k.ak, ek)
+}
 func (k Keeper) GetBalance(goCtx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
