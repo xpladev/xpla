@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
+	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+
+	corestoretypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
-	tmlog "github.com/cometbft/cometbft/libs/log"
+	tmlog "cosmossdk.io/log"
+	//storetypes "cosmossdk.io/store/types"
+	txsigning "cosmossdk.io/x/tx/signing"
+
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	ibcante "github.com/cosmos/ibc-go/v7/modules/core/ante"
-	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	evmante "github.com/xpladev/ethermint/app/ante"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
@@ -25,32 +26,30 @@ import (
 	volunteerante "github.com/xpladev/xpla/x/volunteer/ante"
 )
 
-// HandlerOptions extend the SDK's AnteHandler opts by requiring the IBC
+// HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
 // channel keeper.
 type HandlerOptions struct {
-	Cdc                    codec.BinaryCodec
-	AccountKeeper          evmtypes.AccountKeeper
-	BankKeeper             evmtypes.BankKeeper
-	IBCKeeper              *ibckeeper.Keeper
-	EvmKeeper              evmante.EVMKeeper
-	FeegrantKeeper         authante.FeegrantKeeper
-	VolunteerKeeper        volunteerante.VolunteerKeeper
 	ExtensionOptionChecker authante.ExtensionOptionChecker
-	SignModeHandler        authsigning.SignModeHandler
+	FeegrantKeeper         authante.FeegrantKeeper
+	SignModeHandler        *txsigning.HandlerMap
 	SigGasConsumer         authante.SignatureVerificationGasConsumer
-	FeeMarketKeeper        evmante.FeeMarketKeeper
-	MaxTxGasWanted         uint64
-	TxFeeChecker           authante.TxFeeChecker
 
-	BypassMinFeeMsgTypes []string
-	TxCounterStoreKey    storetypes.StoreKey
-	WasmKeeper           *wasmkeeper.Keeper
-	WasmConfig           wasmTypes.WasmConfig
+	AccountKeeper         evmtypes.AccountKeeper
+	BankKeeper            evmtypes.BankKeeper
+	Codec                 codec.BinaryCodec
+	IBCKeeper             *ibckeeper.Keeper
+	EvmKeeper             evmante.EVMKeeper
+	VolunteerKeeper       volunteerante.VolunteerKeeper
+	BypassMinFeeMsgTypes  []string
+	FeeMarketKeeper       evmante.FeeMarketKeeper
+	MaxTxGasWanted        uint64
+	TxFeeChecker          authante.TxFeeChecker
+	TXCounterStoreService corestoretypes.KVStoreService
+	WasmConfig            *wasmtypes.WasmConfig
 }
 
 var disabledAuthzMsgs = []string{
 	sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
-	sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
 }
 
 // NewAnteHandler returns an 'AnteHandler' that will run actions before a tx is sent to a module's handler.
@@ -62,7 +61,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "bank keeper is required for AnteHandler")
 	}
 	if opts.SignModeHandler == nil {
-		return nil, errorsmod.Wrap(errortypes.ErrLogic, "sign mode handler is required for ante builder")
+		return nil, errorsmod.Wrap(errortypes.ErrLogic, "sign mode handler is required for AnteHandler")
 	}
 	if opts.IBCKeeper == nil {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "IBC keeper is required for AnteHandler")
@@ -74,7 +73,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "Feegrant keeper is required for AnteHandler")
 	}
 	if opts.FeeMarketKeeper == nil {
-		return nil, errorsmod.Wrap(errortypes.ErrLogic, "Feemarket keeper is required for AnteHandler")
+		return nil, errorsmod.Wrap(errortypes.ErrLogic, "FeeMarket keeper is required for AnteHandler")
 	}
 	if opts.VolunteerKeeper == nil {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "staking keeper is required for AnteHandler")
@@ -125,7 +124,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 }
 
 func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
-	var sigGasConsumer = opts.SigGasConsumer
+	sigGasConsumer := opts.SigGasConsumer
 	if sigGasConsumer == nil {
 		sigGasConsumer = SigVerificationGasConsumer
 	}
@@ -136,10 +135,9 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		evmante.NewAuthzLimiterDecorator(disabledAuthzMsgs),
 		volunteerante.NewRejectDelegateVolunteerValidatorDecorator(opts.VolunteerKeeper),
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
-		authante.NewExtensionOptionsDecorator(opts.ExtensionOptionChecker),
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
-		wasmkeeper.NewCountTXDecorator(opts.TxCounterStoreKey),
-		wasmkeeper.NewGasRegisterDecorator(opts.WasmKeeper.GetGasRegister()),
+		wasmkeeper.NewCountTXDecorator(opts.TXCounterStoreService),
+		authante.NewExtensionOptionsDecorator(opts.ExtensionOptionChecker),
 		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes),
 		authante.NewValidateBasicDecorator(),
 		authante.NewTxTimeoutHeightDecorator(),
@@ -150,7 +148,7 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
 		authante.NewSigGasConsumeDecorator(opts.AccountKeeper, sigGasConsumer),
 		authante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
-		authante.NewIncrementSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator
+		authante.NewIncrementSequenceDecorator(opts.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(opts.IBCKeeper),
 		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
 	}

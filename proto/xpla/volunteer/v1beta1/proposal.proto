@@ -21,14 +21,15 @@ message RegisterVolunteerValidatorProposal {
   string title = 1;
   string description = 2;
   cosmos.staking.v1beta1.Description validator_description = 3
-      [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   string delegator_address = 4
       [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
   string validator_address = 5
       [ (gogoproto.moretags) = "yaml:\"validator_address\"" ];
   google.protobuf.Any pubkey = 6
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
-  cosmos.base.v1beta1.Coin amount = 7 [ (gogoproto.nullable) = false ];
+  cosmos.base.v1beta1.Coin amount = 7
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 // RegisterVolunteerValidatorProposalWithDeposit
@@ -42,14 +43,15 @@ message RegisterVolunteerValidatorProposalWithDeposit {
   string title = 1;
   string description = 2;
   cosmos.staking.v1beta1.Description validator_description = 3
-      [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   string delegator_address = 4
       [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
   string validator_address = 5
       [ (gogoproto.moretags) = "yaml:\"validator_address\"" ];
   google.protobuf.Any pubkey = 6
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
-  cosmos.base.v1beta1.Coin amount = 7 [ (gogoproto.nullable) = false ];
+  cosmos.base.v1beta1.Coin amount = 7
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   string deposit = 8;
 }
 

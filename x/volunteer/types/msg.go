@@ -1,6 +1,9 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -39,19 +42,6 @@ func NewMsgRegisterVolunteerValidator(title, description string, delAddr sdk.Acc
 	}, nil
 }
 
-func (msg MsgRegisterVolunteerValidator) Route() string { return RouterKey }
-
-func (msg MsgRegisterVolunteerValidator) Type() string { return TypeMsgRegisterVolunteerValidator }
-
-func (msg MsgRegisterVolunteerValidator) GetSigners() []sdk.AccAddress {
-	authority, _ := sdk.AccAddressFromBech32(msg.Authority)
-	return []sdk.AccAddress{authority}
-}
-
-func (msg MsgRegisterVolunteerValidator) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
-}
-
 func (msg MsgRegisterVolunteerValidator) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid authority address: %s", err)
@@ -75,7 +65,7 @@ func (msg MsgRegisterVolunteerValidator) ValidateBasic() error {
 		return err
 	}
 	if !sdk.AccAddress(valAddr).Equals(delAddr) {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "validator address is invalid")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator address is invalid")
 	}
 
 	if msg.Pubkey == nil {
@@ -83,11 +73,11 @@ func (msg MsgRegisterVolunteerValidator) ValidateBasic() error {
 	}
 
 	if !msg.Amount.IsValid() || !msg.Amount.IsPositive() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid delegation amount")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "invalid delegation amount")
 	}
 
 	if msg.ValidatorDescription == (stakingtypes.Description{}) {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
 	}
 
 	return nil
@@ -103,25 +93,12 @@ func (p MsgRegisterVolunteerValidator) ToCreateValidator() stakingtypes.MsgCreat
 	return stakingtypes.MsgCreateValidator{
 		ValidatorAddress:  p.ValidatorAddress,
 		DelegatorAddress:  p.DelegatorAddress,
-		MinSelfDelegation: sdk.OneInt(),
+		MinSelfDelegation: sdkmath.OneInt(),
 		Pubkey:            p.Pubkey,
 		Value:             p.Amount,
 		Description:       p.ValidatorDescription,
-		Commission:        stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.ZeroDec()),
+		Commission:        stakingtypes.NewCommissionRates(sdkmath.LegacyOneDec(), sdkmath.LegacyOneDec(), sdkmath.LegacyZeroDec()),
 	}
-}
-
-func (msg MsgUnregisterVolunteerValidator) Route() string { return RouterKey }
-
-func (msg MsgUnregisterVolunteerValidator) Type() string { return TypeMsgUnregisterVolunteerValidator }
-
-func (msg MsgUnregisterVolunteerValidator) GetSigners() []sdk.AccAddress {
-	authority, _ := sdk.AccAddressFromBech32(msg.Authority)
-	return []sdk.AccAddress{authority}
-}
-
-func (msg MsgUnregisterVolunteerValidator) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg MsgUnregisterVolunteerValidator) ValidateBasic() error {

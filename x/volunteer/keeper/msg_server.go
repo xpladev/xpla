@@ -5,7 +5,6 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/xpladev/xpla/x/volunteer/types"
@@ -32,7 +31,7 @@ func (k msgServer) RegisterVolunteerValidator(goCtx context.Context, req *types.
 		return nil, err
 	}
 
-	if _, found := k.stakingKeeper.GetValidator(ctx, valAddress); found {
+	if _, err = k.stakingKeeper.GetValidator(ctx, valAddress); err == nil {
 		return nil, stakingtypes.ErrValidatorOwnerExists
 	}
 
@@ -57,13 +56,13 @@ func (k msgServer) UnregisterVolunteerValidator(goCtx context.Context, req *type
 		return nil, err
 	}
 
-	_, found := k.GetVolunteerValidator(ctx, valAddress)
-	if !found {
-		return nil, errorsmod.Wrapf(errors.ErrNotFound, `volunteer validator (%s)`, valAddress.String())
+	_, err = k.GetVolunteerValidator(ctx, valAddress)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, `volunteer validator (%s)`, valAddress.String())
 	}
 
-	if validator, found := k.stakingKeeper.GetValidator(ctx, valAddress); found {
-		_, err := k.stakingKeeper.Undelegate(ctx, sdk.AccAddress(valAddress), valAddress, validator.DelegatorShares)
+	if validator, err := k.stakingKeeper.GetValidator(ctx, valAddress); err == nil {
+		_, _, err := k.stakingKeeper.Undelegate(ctx, sdk.AccAddress(valAddress), valAddress, validator.DelegatorShares)
 		if err != nil {
 			return nil, err
 		}

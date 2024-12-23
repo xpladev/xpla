@@ -3,6 +3,8 @@ package types_test
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -16,9 +18,9 @@ func TestMsgFundRewardPool(t *testing.T) {
 		depositorAddr sdk.AccAddress
 		expectPass    bool
 	}{
-		{sdk.NewCoins(sdk.NewCoin("stake", sdk.OneInt())), sdk.AccAddress(make([]byte, 20)), true},
-		{sdk.NewCoins(sdk.NewCoin("stake", sdk.OneInt())), sdk.AccAddress{}, false},
-		{sdk.Coins{sdk.Coin{Denom: "1", Amount: sdk.OneInt()}}, sdk.AccAddress(make([]byte, 20)), false},
+		{sdk.NewCoins(sdk.NewCoin("stake", sdkmath.OneInt())), sdk.AccAddress(make([]byte, 20)), true},
+		{sdk.NewCoins(sdk.NewCoin("stake", sdkmath.OneInt())), sdk.AccAddress{}, false},
+		{sdk.Coins{sdk.Coin{Denom: "1", Amount: sdkmath.OneInt()}}, sdk.AccAddress(make([]byte, 20)), false},
 	}
 
 	for i, tc := range tests {
