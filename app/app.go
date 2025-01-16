@@ -68,7 +68,7 @@ import (
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	"github.com/xpladev/xpla/app/upgrades/v1_7"
+	"github.com/xpladev/xpla/app/upgrades/v1_8"
 	"github.com/xpladev/xpla/docs"
 
 	protov2 "google.golang.org/protobuf/proto"
@@ -79,7 +79,7 @@ var (
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_7.Upgrade,
+		v1_8.Upgrade,
 	}
 )
 
