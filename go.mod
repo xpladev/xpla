@@ -261,7 +261,7 @@ replace (
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 
 	// xpla features
-	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.10.26-xpla
+	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.10.27-0.20241101091644-9889bb150ee0
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409

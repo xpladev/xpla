@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,6 +29,10 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
+
+	"github.com/ethereum/go-ethereum/common"
+	commontypes "github.com/ethereum/go-ethereum/core/types"
+	web3 "github.com/ethereum/go-ethereum/ethclient"
 )
 
 // copied from Tendermint type
@@ -203,6 +208,27 @@ func txCheck(txHash string) error {
 	}
 
 	return err
+}
+
+func txCheckEvm(client *web3.Client, txHash common.Hash) (*commontypes.Receipt, error) {
+	var err error
+	var isPending bool
+
+	for i := 0; i < 20; i++ {
+		res, err := client.TransactionReceipt(context.Background(), txHash)
+		if err == nil {
+
+			return res, nil
+		}
+
+		time.Sleep(time.Second / 5)
+	}
+
+	if isPending {
+		return nil, fmt.Errorf("Pending tx : %s", txHash.String())
+	}
+
+	return nil, err
 }
 
 func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, title, description string, proposerWallet *WalletInfo, voters []*WalletInfo) error {
@@ -403,4 +429,35 @@ func makeUpdateParamMaxValidators(conn *grpc.ClientConn, maxValidators uint32) (
 	}
 
 	return msg, nil
+}
+
+func getContractAddressByBlockResultFromHeight(height big.Int) (common.Address, error) {
+	txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+	res, err := txClient.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{Query: fmt.Sprintf("tx.height=%s", height.String())})
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	for _, txRes := range res.TxResponses {
+		for _, event := range txRes.Events {
+			if event.Type != "instantiate" {
+				continue
+			}
+
+			for _, attr := range event.Attributes {
+				if attr.Key != "_contract_address" {
+					continue
+				}
+
+				contractAddr, err := sdk.AccAddressFromBech32(attr.Value)
+				if err != nil {
+					return common.Address{}, err
+				}
+
+				return common.BytesToAddress(contractAddr.Bytes()), nil
+			}
+		}
+	}
+
+	return common.Address{}, fmt.Errorf("Contract address not found")
 }
