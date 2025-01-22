@@ -48,7 +48,6 @@ import (
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -78,6 +77,7 @@ import (
 	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
+	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
@@ -94,7 +94,7 @@ type AppKeepers struct {
 
 	// keepers
 	AccountKeeper    xplaauthkeeper.AccountKeeper
-	BankKeeper       bankkeeper.Keeper
+	BankKeeper       xplabankkeeper.Keeper
 	CapabilityKeeper *capabilitykeeper.Keeper
 	StakingKeeper    *xplastakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
@@ -225,7 +225,7 @@ func NewAppKeeper(
 		govModAddress,
 	)
 
-	appKeepers.BankKeeper = bankkeeper.NewBaseKeeper(
+	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[banktypes.StoreKey]),
 		appKeepers.AccountKeeper,
@@ -564,6 +564,8 @@ func NewAppKeeper(
 		evmTrace,
 		appKeepers.GetSubspace(evmtypes.ModuleName),
 	)
+	// This should execute after evmkeeper has initiate.
+	appKeepers.BankKeeper.SetEvmKeeper(appKeepers.EvmKeeper)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
 		appCodec,

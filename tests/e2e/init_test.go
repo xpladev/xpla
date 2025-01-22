@@ -9,6 +9,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 	xplatype "github.com/xpladev/xpla/types"
+
+	sdkmath "cosmossdk.io/math"
 )
 
 const (
@@ -18,13 +20,12 @@ const (
 	validatorActiveBlocks = 3
 	downtimeJailDuration  = 20
 
-	xplaGeneralGasLimit  int64 = 300000
-	xplaCodeGasLimit     int64 = 5000000
-	xplaProposalGasLimit int64 = 500000
-	xplaGasPrice               = "8500000000"
+	xplaGasPrice = "8500000000"
 )
 
 var (
+	gasAdjustment = sdkmath.LegacyNewDecWithPrec(15, 1)
+
 	logger    *log.Logger
 	desc      *ServiceDesc
 	marshaler *codec.ProtoCodec
