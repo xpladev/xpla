@@ -73,11 +73,11 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	etherminttypes "github.com/xpladev/ethermint/types"
-	ethermintauthkeeper "github.com/xpladev/ethermint/x/auth/keeper"
 	evmkeeper "github.com/xpladev/ethermint/x/evm/keeper"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	feemarketkeeper "github.com/xpladev/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
+	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
 
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
@@ -93,7 +93,7 @@ type AppKeepers struct {
 	memKeys map[string]*storetypes.MemoryStoreKey
 
 	// keepers
-	AccountKeeper    ethermintauthkeeper.AccountKeeper
+	AccountKeeper    xplaauthkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper *capabilitykeeper.Keeper
 	StakingKeeper    *xplastakingkeeper.Keeper
@@ -215,7 +215,7 @@ func NewAppKeeper(
 	)
 
 	// Add normal keepers
-	appKeepers.AccountKeeper = ethermintauthkeeper.NewAccountKeeper(
+	appKeepers.AccountKeeper = xplaauthkeeper.NewAccountKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[authtypes.StoreKey]),
 		etherminttypes.ProtoAccount,
