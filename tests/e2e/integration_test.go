@@ -30,6 +30,7 @@ import (
 
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
 	pstaking "github.com/xpladev/xpla/precompile/staking"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
@@ -1977,7 +1978,7 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 	res, err := txCheckEvm(t.EthClient, resBiz)
 	assert.NoError(t.T(), err)
 
-	contractAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
+	_, contractAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
 	assert.NoError(t.T(), err)
 
 	// query token info
@@ -2042,6 +2043,84 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 	assert.True(t.T(), exist)
 
 	assert.Equal(t.T(), `{"balance":"1"}`, string(cw20Balance))
+}
+
+func (t *EVMIntegrationTestSuite) Test10_GetCosmwasmAddress() {
+	// common address
+	queryXplaAddressAbi, err := pauth.ABI.Pack(string(pauth.AssociatedAddress), t.UserWallet1.EthAddress)
+	assert.NoError(t.T(), err)
+
+	encodedXplaAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet1.EthAddress,
+		To:         &pauth.Address,
+		Data:       queryXplaAddressAbi,
+		Gas:        0,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+	assert.NoError(t.T(), err)
+
+	resXplaAddress, err := pauth.ABI.Unpack(string(pauth.AssociatedAddress), encodedXplaAddress)
+	assert.NoError(t.T(), err)
+
+	xplaAddress := resXplaAddress[0].([]byte)
+
+	assert.NoError(t.T(), err)
+	assert.Equal(t.T(), t.UserWallet1.CosmosWalletInfo.StringAddress, string(xplaAddress))
+
+	// contract address
+	initMsg := []byte(fmt.Sprintf(`
+		{
+			"name": "testtoken",
+			"symbol": "TKN",
+			"decimals": 6,
+			"initial_balances": [
+				{
+					"address": "%s",
+					"amount": "100000000"
+				}
+			]
+		}
+	`, t.UserWallet1.CosmosWalletInfo.StringAddress))
+
+	instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, xplatypes.DefaultDenom, big.NewInt(0))
+	assert.NoError(t.T(), err)
+
+	resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
+	assert.NoError(t.T(), err)
+
+	res, err := txCheckEvm(t.EthClient, resBiz)
+	assert.NoError(t.T(), err)
+
+	contractXplaAddress, contractEvmAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
+	assert.NoError(t.T(), err)
+
+	queryXplaContractAddressAbi, err := pauth.ABI.Pack(string(pauth.AssociatedAddress), contractEvmAddress)
+	assert.NoError(t.T(), err)
+
+	encodedXplaContractAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet1.EthAddress,
+		To:         &pauth.Address,
+		Data:       queryXplaContractAddressAbi,
+		Gas:        0,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+
+	assert.NoError(t.T(), err)
+
+	resXplaContractAddress, err := pauth.ABI.Unpack(string(pauth.AssociatedAddress), encodedXplaContractAddress)
+	assert.NoError(t.T(), err)
+
+	xplaContractAddress := resXplaContractAddress[0].([]byte)
+
+	assert.Equal(t.T(), contractXplaAddress.String(), string(xplaContractAddress))
 }
 
 // Wrote and tried to test triggering EVM by MsgEthereumTx

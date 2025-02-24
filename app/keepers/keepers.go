@@ -588,6 +588,7 @@ func NewAppKeeper(
 		distrkeeper.NewMsgServerImpl(appKeepers.DistrKeeper),
 		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
 		appKeepers.WasmKeeper,
+		appKeepers.AccountKeeper,
 	)
 
 	return appKeepers
