@@ -2047,7 +2047,7 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 
 func (t *EVMIntegrationTestSuite) Test10_GetCosmwasmAddress() {
 	// common address
-	queryXplaAddressAbi, err := pauth.ABI.Pack(string(pauth.AssociatedAddress), t.UserWallet1.EthAddress)
+	queryXplaAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), t.UserWallet1.EthAddress)
 	assert.NoError(t.T(), err)
 
 	encodedXplaAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
@@ -2063,7 +2063,7 @@ func (t *EVMIntegrationTestSuite) Test10_GetCosmwasmAddress() {
 	}, nil)
 	assert.NoError(t.T(), err)
 
-	resXplaAddress, err := pauth.ABI.Unpack(string(pauth.AssociatedAddress), encodedXplaAddress)
+	resXplaAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaAddress)
 	assert.NoError(t.T(), err)
 
 	xplaAddress := resXplaAddress[0].([]byte)
@@ -2098,7 +2098,7 @@ func (t *EVMIntegrationTestSuite) Test10_GetCosmwasmAddress() {
 	contractXplaAddress, contractEvmAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
 	assert.NoError(t.T(), err)
 
-	queryXplaContractAddressAbi, err := pauth.ABI.Pack(string(pauth.AssociatedAddress), contractEvmAddress)
+	queryXplaContractAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), contractEvmAddress)
 	assert.NoError(t.T(), err)
 
 	encodedXplaContractAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
@@ -2115,7 +2115,7 @@ func (t *EVMIntegrationTestSuite) Test10_GetCosmwasmAddress() {
 
 	assert.NoError(t.T(), err)
 
-	resXplaContractAddress, err := pauth.ABI.Unpack(string(pauth.AssociatedAddress), encodedXplaContractAddress)
+	resXplaContractAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaContractAddress)
 	assert.NoError(t.T(), err)
 
 	xplaContractAddress := resXplaContractAddress[0].([]byte)

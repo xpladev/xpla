@@ -8,5 +8,5 @@ IAuth constant AUTH_CONTRACT = IAuth(
 );
 
 interface IAuth {
-    function associatedAddress(address evmAddress) external view returns (bytes calldata addr);
+    function account(address evmAddress) external view returns (bytes calldata addr);
 }
