@@ -7,7 +7,7 @@
 				"type": "address"
 			}
 		],
-		"name": "associatedAddress",
+		"name": "account",
 		"outputs": [
 			{
 				"internalType": "bytes",

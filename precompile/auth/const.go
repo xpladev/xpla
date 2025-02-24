@@ -8,5 +8,5 @@ const (
 type MethodAuth string
 
 const (
-	AssociatedAddress MethodAuth = "associatedAddress"
+	Account MethodAuth = "account"
 )

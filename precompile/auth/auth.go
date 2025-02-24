@@ -62,14 +62,14 @@ func (p PrecompiledAuth) Run(evm *vm.EVM, input []byte) ([]byte, error) {
 	ctx := evm.StateDB.(*statedb.StateDB).GetContext()
 
 	switch MethodAuth(abiMethod.Name) {
-	case AssociatedAddress:
-		return p.associatedAddress(ctx, abiMethod, args)
+	case Account:
+		return p.account(ctx, abiMethod, args)
 	default:
 		return nil, errors.New("method not found")
 	}
 }
 
-func (p PrecompiledAuth) associatedAddress(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledAuth) account(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
 	address, err := util.GetAccAddress(args[0])
 	if err != nil {
 		return nil, err
