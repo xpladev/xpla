@@ -1,0 +1,21 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "evmAddress",
+				"type": "address"
+			}
+		],
+		"name": "associatedAddress",
+		"outputs": [
+			{
+				"internalType": "bytes",
+				"name": "addr",
+				"type": "bytes"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]

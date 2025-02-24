@@ -431,11 +431,11 @@ func makeUpdateParamMaxValidators(conn *grpc.ClientConn, maxValidators uint32) (
 	return msg, nil
 }
 
-func getContractAddressByBlockResultFromHeight(height big.Int) (common.Address, error) {
+func getContractAddressByBlockResultFromHeight(height big.Int) (sdk.AccAddress, common.Address, error) {
 	txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
 	res, err := txClient.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{Query: fmt.Sprintf("tx.height=%s", height.String())})
 	if err != nil {
-		return common.Address{}, err
+		return nil, common.Address{}, err
 	}
 
 	for _, txRes := range res.TxResponses {
@@ -451,13 +451,13 @@ func getContractAddressByBlockResultFromHeight(height big.Int) (common.Address, 
 
 				contractAddr, err := sdk.AccAddressFromBech32(attr.Value)
 				if err != nil {
-					return common.Address{}, err
+					return nil, common.Address{}, err
 				}
 
-				return common.BytesToAddress(contractAddr.Bytes()), nil
+				return contractAddr.Bytes(), common.BytesToAddress(contractAddr.Bytes()), nil
 			}
 		}
 	}
 
-	return common.Address{}, fmt.Errorf("Contract address not found")
+	return nil, common.Address{}, fmt.Errorf("Contract address not found")
 }
