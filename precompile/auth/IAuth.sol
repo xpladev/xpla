@@ -8,5 +8,14 @@ IAuth constant AUTH_CONTRACT = IAuth(
 );
 
 interface IAuth {
-    function account(address evmAddress) external view returns (bytes calldata addr);
+    // function accountAddressByID(uint accountId) external view returns (string calldata stringAddress);
+    // function accounts(address evmAddress) external view returns (string[] calldata stringAddress);
+    function account(address evmAddress) external view returns (string calldata stringAddress);
+    // function params() external view returns (...);
+    // function moduleAccounts() external view returns (string[] calldata stringAddresses);
+    function moduleAccountByName(string calldata name) external view returns (string calldata stringAddress);
+    function bech32Prefix() external view returns (string calldata prefix);
+    function addressBytesToString(address evmAddress) external view returns (string calldata stringAddress);
+    function addressStringToBytes(string calldata stringAddress) external view returns (address byteAddress);
+    // function accountInfo(address evmAddress) external view returns (...);
 }

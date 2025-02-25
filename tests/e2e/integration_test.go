@@ -2045,82 +2045,188 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 	assert.Equal(t.T(), `{"balance":"1"}`, string(cw20Balance))
 }
 
-func (t *EVMIntegrationTestSuite) Test10_GetCosmwasmAddress() {
-	// common address
-	queryXplaAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), t.UserWallet1.EthAddress)
-	assert.NoError(t.T(), err)
+func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
+	t.Run("account(address evmAddress)", func() {
+		// common address
+		queryXplaAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), t.UserWallet1.EthAddress)
+		assert.NoError(t.T(), err)
 
-	encodedXplaAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
-		From:       t.UserWallet1.EthAddress,
-		To:         &pauth.Address,
-		Data:       queryXplaAddressAbi,
-		Gas:        0,
-		GasPrice:   nil,
-		Value:      nil,
-		GasFeeCap:  nil,
-		GasTipCap:  nil,
-		AccessList: nil,
-	}, nil)
-	assert.NoError(t.T(), err)
+		encodedXplaAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryXplaAddressAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+		assert.NoError(t.T(), err)
 
-	resXplaAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaAddress)
-	assert.NoError(t.T(), err)
+		resXplaAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaAddress)
+		assert.NoError(t.T(), err)
 
-	xplaAddress := resXplaAddress[0].([]byte)
+		xplaAddress := resXplaAddress[0].(string)
 
-	assert.NoError(t.T(), err)
-	assert.Equal(t.T(), t.UserWallet1.CosmosWalletInfo.StringAddress, string(xplaAddress))
+		assert.NoError(t.T(), err)
+		assert.Equal(t.T(), t.UserWallet1.CosmosWalletInfo.StringAddress, xplaAddress)
 
-	// contract address
-	initMsg := []byte(fmt.Sprintf(`
-		{
-			"name": "testtoken",
-			"symbol": "TKN",
-			"decimals": 6,
-			"initial_balances": [
-				{
-					"address": "%s",
-					"amount": "100000000"
-				}
-			]
-		}
-	`, t.UserWallet1.CosmosWalletInfo.StringAddress))
+		// contract address
+		initMsg := []byte(fmt.Sprintf(`
+			{
+				"name": "testtoken",
+				"symbol": "TKN",
+				"decimals": 6,
+				"initial_balances": [
+					{
+						"address": "%s",
+						"amount": "100000000"
+					}
+				]
+			}
+		`, t.UserWallet1.CosmosWalletInfo.StringAddress))
 
-	instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, xplatypes.DefaultDenom, big.NewInt(0))
-	assert.NoError(t.T(), err)
+		instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, xplatypes.DefaultDenom, big.NewInt(0))
+		assert.NoError(t.T(), err)
 
-	resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
-	assert.NoError(t.T(), err)
+		resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
+		assert.NoError(t.T(), err)
 
-	res, err := txCheckEvm(t.EthClient, resBiz)
-	assert.NoError(t.T(), err)
+		res, err := txCheckEvm(t.EthClient, resBiz)
+		assert.NoError(t.T(), err)
 
-	contractXplaAddress, contractEvmAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
-	assert.NoError(t.T(), err)
+		contractXplaAddress, contractEvmAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
+		assert.NoError(t.T(), err)
 
-	queryXplaContractAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), contractEvmAddress)
-	assert.NoError(t.T(), err)
+		queryXplaContractAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), contractEvmAddress)
+		assert.NoError(t.T(), err)
 
-	encodedXplaContractAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
-		From:       t.UserWallet1.EthAddress,
-		To:         &pauth.Address,
-		Data:       queryXplaContractAddressAbi,
-		Gas:        0,
-		GasPrice:   nil,
-		Value:      nil,
-		GasFeeCap:  nil,
-		GasTipCap:  nil,
-		AccessList: nil,
-	}, nil)
+		encodedXplaContractAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryXplaContractAddressAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
 
-	assert.NoError(t.T(), err)
+		assert.NoError(t.T(), err)
 
-	resXplaContractAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaContractAddress)
-	assert.NoError(t.T(), err)
+		resXplaContractAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaContractAddress)
+		assert.NoError(t.T(), err)
 
-	xplaContractAddress := resXplaContractAddress[0].([]byte)
+		xplaContractAddress := resXplaContractAddress[0].(string)
 
-	assert.Equal(t.T(), contractXplaAddress.String(), string(xplaContractAddress))
+		assert.Equal(t.T(), contractXplaAddress.String(), xplaContractAddress)
+	})
+
+	t.Run("moduleAccountByName(string calldata name)", func() {
+		queryModuleAccountByNameAbi, err := pauth.ABI.Pack(string(pauth.ModuleAccountByName), "distribution")
+		assert.NoError(t.T(), err)
+
+		encodedModuleAccountByName, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryModuleAccountByNameAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+
+		assert.NoError(t.T(), err)
+
+		resModuleAccountByName, err := pauth.ABI.Unpack(string(pauth.ModuleAccountByName), encodedModuleAccountByName)
+		assert.NoError(t.T(), err)
+
+		moduleAccountAddress := resModuleAccountByName[0].(string)
+
+		assert.NotEqual(t.T(), "", moduleAccountAddress)
+	})
+
+	t.Run("bech32Prefix()", func() {
+		queryBech32PrefixAbi, err := pauth.ABI.Pack(string(pauth.Bech32Prefix))
+		assert.NoError(t.T(), err)
+
+		encodedBech32Prefix, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryBech32PrefixAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+
+		assert.NoError(t.T(), err)
+
+		resBech32Prefix, err := pauth.ABI.Unpack(string(pauth.Bech32Prefix), encodedBech32Prefix)
+		assert.NoError(t.T(), err)
+
+		bech32Prefix := resBech32Prefix[0].(string)
+
+		assert.Equal(t.T(), xplatypes.Bech32MainPrefix, bech32Prefix)
+	})
+
+	t.Run("addressBytesToString(address evmAddress)", func() {
+		queryAddressByteToString, err := pauth.ABI.Pack(string(pauth.AddressBytesToString), t.UserWallet1.EthAddress)
+		assert.NoError(t.T(), err)
+
+		encodedAddressByteToString, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryAddressByteToString,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+
+		assert.NoError(t.T(), err)
+
+		resAddressByteToString, err := pauth.ABI.Unpack(string(pauth.AddressBytesToString), encodedAddressByteToString)
+		assert.NoError(t.T(), err)
+
+		address := resAddressByteToString[0].(string)
+
+		assert.Equal(t.T(), t.UserWallet1.CosmosWalletInfo.StringAddress, address)
+	})
+
+	t.Run("addressStringToBytes(string calldata stringAddress)", func() {
+		queryAddressStringToByte, err := pauth.ABI.Pack(string(pauth.AddressStringToBytes), t.UserWallet1.CosmosWalletInfo.StringAddress)
+		assert.NoError(t.T(), err)
+
+		encodedAddressByteToString, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryAddressStringToByte,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+
+		assert.NoError(t.T(), err)
+
+		resAddressStringToByte, err := pauth.ABI.Unpack(string(pauth.AddressStringToBytes), encodedAddressByteToString)
+		assert.NoError(t.T(), err)
+
+		byteAddress := resAddressStringToByte[0].(ethcommon.Address)
+
+		assert.Equal(t.T(), t.UserWallet1.EthAddress, byteAddress)
+	})
 }
 
 // Wrote and tried to test triggering EVM by MsgEthereumTx
