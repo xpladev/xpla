@@ -8,5 +8,9 @@ const (
 type MethodAuth string
 
 const (
-	Account MethodAuth = "account"
+	Account              MethodAuth = "account"
+	ModuleAccountByName  MethodAuth = "moduleAccountByName"
+	Bech32Prefix         MethodAuth = "bech32Prefix"
+	AddressBytesToString MethodAuth = "addressBytesToString"
+	AddressStringToBytes MethodAuth = "addressStringToBytes"
 )

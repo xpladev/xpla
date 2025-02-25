@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,6 +14,7 @@ import (
 	"github.com/xpladev/ethermint/x/evm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
+	xplatypes "github.com/xpladev/xpla/types"
 )
 
 var _ vm.PrecompiledContract = PrecompiledAuth{}
@@ -64,6 +66,14 @@ func (p PrecompiledAuth) Run(evm *vm.EVM, input []byte) ([]byte, error) {
 	switch MethodAuth(abiMethod.Name) {
 	case Account:
 		return p.account(ctx, abiMethod, args)
+	case ModuleAccountByName:
+		return p.moduleAccountByName(ctx, abiMethod, args)
+	case Bech32Prefix:
+		return p.bech32Prefix(ctx, abiMethod, args)
+	case AddressBytesToString:
+		return p.addressBytesToString(ctx, abiMethod, args)
+	case AddressStringToBytes:
+		return p.addressStringToBytes(ctx, abiMethod, args)
 	default:
 		return nil, errors.New("method not found")
 	}
@@ -81,9 +91,50 @@ func (p PrecompiledAuth) account(ctx sdk.Context, method *abi.Method, args []int
 		account := p.ak.GetAccount(ctx, address)
 		strAddress = account.GetAddress().String()
 	} else {
-		// should be address type
-		strAddress = address.String()
+		// cannot query
+		strAddress = ""
 	}
 
-	return method.Outputs.Pack([]byte(strAddress))
+	return method.Outputs.Pack(strAddress)
+}
+
+func (p PrecompiledAuth) moduleAccountByName(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+	moduleName, err := util.GetString(args[0])
+	if err != nil {
+		return nil, err
+	}
+
+	account := p.ak.GetModuleAccount(ctx, moduleName)
+	if account == nil {
+		return method.Outputs.Pack("")
+	} else {
+		return method.Outputs.Pack(account.GetAddress().String())
+	}
+}
+
+func (p PrecompiledAuth) bech32Prefix(_ sdk.Context, method *abi.Method, _ []interface{}) ([]byte, error) {
+	return method.Outputs.Pack(xplatypes.Bech32MainPrefix)
+}
+
+func (p PrecompiledAuth) addressBytesToString(_ sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+	address, err := util.GetAccAddress(args[0])
+	if err != nil {
+		return nil, err
+	}
+
+	return method.Outputs.Pack(address.String())
+}
+
+func (p PrecompiledAuth) addressStringToBytes(_ sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+	stringAddress, err := util.GetString(args[0])
+	if err != nil {
+		return nil, err
+	}
+
+	byteAddress, err := sdk.AccAddressFromBech32(stringAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	return method.Outputs.Pack(ethcommon.BytesToAddress(byteAddress.Bytes()))
 }
