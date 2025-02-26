@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	cosmossdk.io/api v0.7.6
-	cosmossdk.io/client/v2 v2.0.0-beta.1
+	cosmossdk.io/client/v2 v2.0.0-beta.7
 	cosmossdk.io/core v0.12.0
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.4.1
@@ -19,7 +19,7 @@ require (
 	github.com/cometbft/cometbft v0.38.12
 	github.com/cosmos/cosmos-db v1.1.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
-	github.com/cosmos/cosmos-sdk v0.50.10
+	github.com/cosmos/cosmos-sdk v0.50.11
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 v8.0.2
 	github.com/cosmos/ibc-apps/modules/rate-limiting/v8 v8.0.0
