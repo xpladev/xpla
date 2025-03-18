@@ -12,7 +12,10 @@ var _ types.QueryServer = Keeper{}
 // Params queries params of reward module
 func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return &types.QueryParamsResponse{Params: params}, nil
 }

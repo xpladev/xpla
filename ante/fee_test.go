@@ -1,21 +1,24 @@
 package ante_test
 
 import (
+	sdkmath "cosmossdk.io/math"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibcchanneltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcchanneltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
 
 	"github.com/xpladev/xpla/ante"
 )
 
 func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
-	s.SetupTest()
 	s.txBuilder = s.clientCtx.TxConfig.NewTxBuilder()
 
-	s.app.FeeMarketKeeper.SetParams(s.ctx, feemarkettypes.NewParams(true, 8, 2, 0, 0, sdk.NewDec(200), sdk.MustNewDecFromStr("1.5")))
+	s.app.FeeMarketKeeper.SetParams(s.ctx, feemarkettypes.NewParams(true, 8, 2, 0, 0, sdkmath.LegacyNewDec(200), sdkmath.LegacyMustNewDecFromStr("1.5")))
 
 	mpd := ante.NewMinGasPriceDecorator(
 		s.app.FeeMarketKeeper,
@@ -40,7 +43,7 @@ func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
 	s.Require().NoError(err)
 
 	// Set high gas price so standard test fee fails
-	feeAmt := sdk.NewDecCoinFromDec("uatom", sdk.NewDec(200).Quo(sdk.NewDec(100000)))
+	feeAmt := sdk.NewDecCoinFromDec("uatom", sdkmath.LegacyNewDec(200).Quo(sdkmath.LegacyNewDec(100000)))
 	minGasPrice := []sdk.DecCoin{feeAmt}
 	s.ctx = s.ctx.WithMinGasPrices(minGasPrice).WithIsCheckTx(true)
 

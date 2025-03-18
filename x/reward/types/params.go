@@ -5,6 +5,8 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -14,9 +16,9 @@ const (
 )
 
 var (
-	DefaultRateFeePool       = sdk.NewDecWithPrec(20, 2) // 20%
-	DefaultRateCommunityPool = sdk.NewDecWithPrec(80, 2) // 80%
-	DefaultRateReserve       = sdk.NewDecWithPrec(0, 2)  // 0%
+	DefaultRateFeePool       = sdkmath.LegacyNewDecWithPrec(20, 2) // 20%
+	DefaultRateCommunityPool = sdkmath.LegacyNewDecWithPrec(80, 2) // 80%
+	DefaultRateReserve       = sdkmath.LegacyNewDecWithPrec(0, 2)  // 0%
 )
 
 // DefaultParams returns default reward parameters
@@ -35,13 +37,13 @@ func (p Params) String() string {
 	return string(out)
 }
 
-func (p Params) TotalRate() sdk.Dec {
+func (p Params) TotalRate() sdkmath.LegacyDec {
 	return p.CommunityPoolRate.Add(p.FeePoolRate).Add(p.ReserveRate)
 }
 
 // ValidateBasic performs basic validation on reward parameters.
 func (p Params) ValidateBasic() error {
-	if p.ReserveAccount == "" && p.ReserveRate.GT(sdk.ZeroDec()) {
+	if p.ReserveAccount == "" && p.ReserveRate.GT(sdkmath.LegacyZeroDec()) {
 		return fmt.Errorf("reserve account must be set up for reserve compensation")
 	}
 
@@ -63,7 +65,7 @@ func (p Params) ValidateBasic() error {
 		)
 	}
 
-	if p.TotalRate().GT(sdk.OneDec()) {
+	if p.TotalRate().GT(sdkmath.LegacyOneDec()) {
 		return fmt.Errorf(
 			"sum of fee pool, community pool and reserve cannot be greater than one: %s", p.TotalRate(),
 		)
@@ -73,7 +75,7 @@ func (p Params) ValidateBasic() error {
 }
 
 func validateFeePoolRate(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(sdkmath.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid fee pool rate parameter type: %T", i)
 	}
@@ -84,7 +86,7 @@ func validateFeePoolRate(i interface{}) error {
 	if v.IsNegative() {
 		return fmt.Errorf("fee pool rate must be positive: %s", v)
 	}
-	if v.GT(sdk.OneDec()) {
+	if v.GT(sdkmath.LegacyOneDec()) {
 		return fmt.Errorf("fee pool rate too large: %s", v)
 	}
 
@@ -92,7 +94,7 @@ func validateFeePoolRate(i interface{}) error {
 }
 
 func validateCommunityPoolRate(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(sdkmath.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid community pool rate parameter type: %T", i)
 	}
@@ -103,7 +105,7 @@ func validateCommunityPoolRate(i interface{}) error {
 	if v.IsNegative() {
 		return fmt.Errorf("community pool rate must be positive: %s", v)
 	}
-	if v.GT(sdk.OneDec()) {
+	if v.GT(sdkmath.LegacyOneDec()) {
 		return fmt.Errorf("community pool rate too large: %s", v)
 	}
 
@@ -111,7 +113,7 @@ func validateCommunityPoolRate(i interface{}) error {
 }
 
 func validateReserveRate(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(sdkmath.LegacyDec)
 	if !ok {
 		return fmt.Errorf("reserve rate parameter type: %T", i)
 	}
@@ -122,7 +124,7 @@ func validateReserveRate(i interface{}) error {
 	if v.IsNegative() {
 		return fmt.Errorf("reserve rate must be positive: %s", v)
 	}
-	if v.GT(sdk.OneDec()) {
+	if v.GT(sdkmath.LegacyOneDec()) {
 		return fmt.Errorf("reserve rate too large: %s", v)
 	}
 

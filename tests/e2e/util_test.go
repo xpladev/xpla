@@ -11,7 +11,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -198,37 +200,22 @@ func txCheck(txHash string) error {
 	return err
 }
 
-func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdktypes.Msg, proposalContent govv1beta1type.Content, proposerWallet *WalletInfo, voters []*WalletInfo) error {
+func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, title, description string, proposerWallet *WalletInfo, voters []*WalletInfo) error {
 	proposalId := uint64(0)
 
 	{
 		fmt.Println("Proposal apply")
 
-		var msg sdktypes.Msg
+		var msg sdk.Msg
 		var err error
-		if len(proposalMsgs) > 0 {
-			msg, err = govv1type.NewMsgSubmitProposal(proposalMsgs, sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))), proposerWallet.ByteAddress.String(), "", proposalContent.GetTitle(), proposalContent.GetDescription())
-			if err != nil {
-				return err
-			}
 
-		} else {
-			msg, err = govv1beta1type.NewMsgSubmitProposal(
-				proposalContent,
-				sdktypes.NewCoins(sdktypes.NewCoin(xplatypes.DefaultDenom, sdktypes.NewInt(10000000))),
-				proposerWallet.ByteAddress,
-			)
-			if err != nil {
-				return err
-			}
-		}
-
+		msg, err = govv1type.NewMsgSubmitProposal(proposalMsgs, sdk.NewCoins(sdk.NewCoin(xplatypes.DefaultDenom, sdkmath.NewInt(10000000))), proposerWallet.ByteAddress.String(), "", title, description, false)
 		if err != nil {
 			return err
 		}
 
-		feeAmt := sdktypes.NewDec(xplaProposalGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-		fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+		feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+		fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 		txhash, err := proposerWallet.SendTx(ChainID, msg, fee, xplaProposalGasLimit, false)
 		if txhash != "" && err == nil {
@@ -276,8 +263,8 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdktypes.Ms
 
 			eg.Go(func() error {
 				voteMsg := govv1beta1type.NewMsgVote(addr.ByteAddress, proposalId, govv1beta1type.OptionYes)
-				feeAmt := sdktypes.NewDec(xplaGeneralGasLimit).Mul(sdktypes.MustNewDecFromStr(xplaGasPrice))
-				fee := sdktypes.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
+				feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
+				fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
 				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
 				if txhash != "" && err == nil {
@@ -362,7 +349,7 @@ func checkValidatorVoted(conn *grpc.ClientConn, validatorAddress bytes.HexBytes)
 	return false, nil
 }
 
-func getValidatorBondingState(conn *grpc.ClientConn, addr sdktypes.ValAddress) (stakingtype.BondStatus, error) {
+func getValidatorBondingState(conn *grpc.ClientConn, addr sdk.ValAddress) (stakingtype.BondStatus, error) {
 	client := stakingtype.NewQueryClient(conn)
 
 	resp, err := client.Validator(
@@ -377,7 +364,7 @@ func getValidatorBondingState(conn *grpc.ClientConn, addr sdktypes.ValAddress) (
 	return resp.Validator.Status, nil
 }
 
-func makeUpdateParamMaxValidators(conn *grpc.ClientConn, maxValidators uint32) (sdktypes.Msg, error) {
+func makeUpdateParamMaxValidators(conn *grpc.ClientConn, maxValidators uint32) (sdk.Msg, error) {
 	stakingQueryClient := stakingtype.NewQueryClient(conn)
 	resStakingParams, err := stakingQueryClient.Params(context.Background(), &stakingtype.QueryParamsRequest{})
 	if err != nil {
@@ -409,7 +396,7 @@ func makeUpdateParamMaxValidators(conn *grpc.ClientConn, maxValidators uint32) (
 		return nil, err
 	}
 
-	var msg sdktypes.Msg
+	var msg sdk.Msg
 	err = marshaler.UnmarshalInterface(m, &msg)
 	if err != nil {
 		return nil, err

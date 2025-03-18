@@ -1,21 +1,27 @@
 package reward
 
 import (
-	abci "github.com/cometbft/cometbft/abci/types"
+	"context"
+
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	"github.com/xpladev/xpla/x/reward/keeper"
 	"github.com/xpladev/xpla/x/reward/types"
-
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper) {
-	params := k.GetParams(ctx)
+func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper) error {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	if params.RewardDistributeAccount == "" {
-		return
+		return nil
 	}
 
 	total := params.TotalRate()
@@ -25,13 +31,18 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, 
 	totalRewards := map[string]sdk.Coin{}
 
 	sk.IterateDelegations(ctx, rewardDistributeAccount, func(index int64, delegation stakingtypes.DelegationI) (stop bool) {
-		validator := delegation.GetValidatorAddr()
+		valAddr, e := sk.ValidatorAddressCodec().StringToBytes(delegation.GetValidatorAddr())
+		if e != nil {
+			err = e
+			return true
+		}
 
-		reward, err := dk.WithdrawDelegationRewards(ctx, rewardDistributeAccount, validator)
-		if err == disttypes.ErrEmptyDelegationDistInfo {
+		reward, e := dk.WithdrawDelegationRewards(ctx, rewardDistributeAccount, sdk.ValAddress(valAddr))
+		if e == disttypes.ErrEmptyDelegationDistInfo {
 			return false
-		} else if err != nil {
-			panic(err)
+		} else if e != nil {
+			err = e
+			return true
 		}
 
 		for _, coin := range reward {
@@ -49,6 +60,9 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, 
 
 		return false
 	})
+	if err != nil {
+		return err
+	}
 
 	feePoolRewards := sdk.NewCoins()
 	communityPoolRewards := sdk.NewCoins()
@@ -68,31 +82,34 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, 
 
 	// fee pool
 	if len(feePoolRewards) > 0 {
-		err := bk.SendCoinsFromAccountToModule(ctx, rewardDistributeAccount, types.ModuleName, feePoolRewards)
+		err = bk.SendCoinsFromAccountToModule(ctx, rewardDistributeAccount, types.ModuleName, feePoolRewards)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 	}
 	rewardAccount := k.GetRewardAccount(ctx)
 	balances := bk.GetAllBalances(ctx, rewardAccount.GetAddress())
-	blockPerYear := k.GetBlocksPerYear(ctx)
+	blockPerYear, err := k.GetBlocksPerYear(ctx)
+	if err != nil {
+		return err
+	}
 	for index, balance := range balances {
-		balances[index].Amount = balance.Amount.Quo(sdk.NewInt(int64(blockPerYear)))
+		balances[index].Amount = balance.Amount.Quo(sdkmath.NewInt(int64(blockPerYear)))
 	}
 
 	if !balances.IsZero() {
-		err := bk.SendCoinsFromModuleToModule(ctx, types.ModuleName, authtypes.FeeCollectorName, balances)
+		err = bk.SendCoinsFromModuleToModule(ctx, types.ModuleName, authtypes.FeeCollectorName, balances)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
 	// community
 	if len(communityPoolRewards) > 0 {
-		err := dk.FundCommunityPool(ctx, communityPoolRewards, rewardDistributeAccount)
+		err = dk.FundCommunityPool(ctx, communityPoolRewards, rewardDistributeAccount)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
@@ -101,4 +118,6 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper, 
 		reserveAccount := sdk.MustAccAddressFromBech32(params.ReserveAccount)
 		bk.SendCoins(ctx, rewardDistributeAccount, reserveAccount, reserveRewards)
 	}
+
+	return nil
 }

@@ -1,29 +1,44 @@
 package app
 
 import (
-	"github.com/CosmWasm/wasmd/x/wasm"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	pfmrouter "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
+	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	ratelimit "github.com/cosmos/ibc-apps/modules/rate-limiting/v8"
+	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
+	"github.com/cosmos/ibc-go/modules/capability"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	ica "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts"
+	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
+	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee"
+	ibcfeetypes "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
+	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v8/modules/core"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
+	"cosmossdk.io/x/evidence"
+	evidencetypes "cosmossdk.io/x/evidence/types"
+	"cosmossdk.io/x/feegrant"
+	feegrantmodule "cosmossdk.io/x/feegrant/module"
+	"cosmossdk.io/x/upgrade"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
@@ -35,39 +50,21 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
-	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	router "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
-	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
-	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
-	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
-	ibcfee "github.com/cosmos/ibc-go/v7/modules/apps/29-fee"
-	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
-	"github.com/cosmos/ibc-go/v7/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v7/modules/core"
-	ibcclientclient "github.com/cosmos/ibc-go/v7/modules/core/02-client/client"
-	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	ethermintauth "github.com/xpladev/ethermint/x/auth"
-	"github.com/xpladev/ethermint/x/erc20"
-	erc20client "github.com/xpladev/ethermint/x/erc20/client"
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
 	"github.com/xpladev/ethermint/x/evm"
 	evmtypes "github.com/xpladev/ethermint/x/evm/types"
 	"github.com/xpladev/ethermint/x/feemarket"
 	feemarkettypes "github.com/xpladev/ethermint/x/feemarket/types"
-	xplaparams "github.com/xpladev/xpla/app/params"
+
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastaking "github.com/xpladev/xpla/x/staking"
 	"github.com/xpladev/xpla/x/volunteer"
-	volunteerclient "github.com/xpladev/xpla/x/volunteer/client"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
@@ -84,71 +81,21 @@ var maccPerms = map[string][]string{
 	ibcfeetypes.ModuleName:         nil,
 	wasmtypes.ModuleName:           {authtypes.Burner},
 	evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
-	erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	rewardtypes.ModuleName:         nil,
 }
 
-func getGovProposalHandlers() []govclient.ProposalHandler {
-	govProposalHandlers := volunteerclient.ProposalHandler
-
-	return append(govProposalHandlers, []govclient.ProposalHandler{
-		upgradeclient.LegacyProposalHandler,
-		upgradeclient.LegacyCancelProposalHandler,
-		ibcclientclient.UpdateClientProposalHandler,
-		ibcclientclient.UpgradeProposalHandler,
-		erc20client.RegisterCoinProposalHandler,
-		erc20client.RegisterERC20ProposalHandler,
-		erc20client.ToggleTokenConversionProposalHandler,
-	}...)
-}
-
-// ModuleBasics defines the module BasicManager is in charge of setting up basic,
-// non-dependant module elements, such as codec registration
-// and genesis verification.
-var ModuleBasics = module.NewBasicManager(
-	auth.AppModuleBasic{},
-	genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
-	bank.AppModuleBasic{},
-	capability.AppModuleBasic{},
-	staking.AppModuleBasic{},
-	mint.AppModuleBasic{},
-	distr.AppModuleBasic{},
-	gov.NewAppModuleBasic(getGovProposalHandlers()),
-	params.AppModuleBasic{},
-	crisis.AppModuleBasic{},
-	slashing.AppModuleBasic{},
-	feegrantmodule.AppModuleBasic{},
-	authzmodule.AppModuleBasic{},
-	consensus.AppModuleBasic{},
-	ibc.AppModuleBasic{},
-	ibctm.AppModuleBasic{},
-	ibcfee.AppModuleBasic{},
-	upgrade.AppModuleBasic{},
-	evidence.AppModuleBasic{},
-	transfer.AppModuleBasic{},
-	router.AppModuleBasic{},
-	ica.AppModuleBasic{},
-	erc20.AppModuleBasic{},
-	wasm.AppModuleBasic{},
-	evm.AppModuleBasic{},
-	feemarket.AppModuleBasic{},
-	reward.AppModuleBasic{},
-	volunteer.AppModuleBasic{},
-)
-
 func appModules(
 	app *XplaApp,
-	encodingConfig xplaparams.EncodingConfig,
+	appCodec codec.Codec,
+	txConfig client.TxEncodingConfig,
 	skipGenesisInvariants bool,
 ) []module.AppModule {
-	appCodec := encodingConfig.Codec
-
 	return []module.AppModule{
 		genutil.NewAppModule(
 			app.AccountKeeper,
 			app.StakingKeeper,
-			app.BaseApp.DeliverTx,
-			encodingConfig.TxConfig,
+			app,
+			txConfig,
 		),
 		ethermintauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
@@ -156,72 +103,137 @@ func appModules(
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		xplastaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		upgrade.NewAppModule(app.UpgradeKeeper),
+		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		consensus.NewAppModule(appCodec, app.AppKeepers.ConsensusParamsKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
+		ibctm.NewAppModule(),
 		params.NewAppModule(app.ParamsKeeper),
-		transfer.NewAppModule(app.TransferKeeper),
-		ibcfee.NewAppModule(app.IBCFeeKeeper),
-		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
-		router.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
+		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
+		ibcfee.NewAppModule(app.IBCFeeKeeper),
+		transfer.NewAppModule(app.TransferKeeper),
+		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
+		pfmrouter.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
+		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
 		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
-		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 	}
 }
 
-// orderBeginBlockers Tell the app's module manager how to set the order of
-// BeginBlockers, which are run at the beginning of every block.
+// ModuleBasics defines the module BasicManager that is in charge of setting up basic,
+// non-dependant module elements, such as codec registration
+// and genesis verification.
+func newBasicManagerFromManager(app *XplaApp) module.BasicManager {
+	basicManager := module.NewBasicManagerFromManager(
+		app.mm,
+		map[string]module.AppModuleBasic{
+			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+			govtypes.ModuleName: gov.NewAppModuleBasic(
+				[]govclient.ProposalHandler{},
+			),
+		})
+	basicManager.RegisterLegacyAminoCodec(app.legacyAmino)
+	basicManager.RegisterInterfaces(app.interfaceRegistry)
+	return basicManager
+}
+
+// simulationModules returns modules for simulation manager
+// define the order of the modules for deterministic simulations
+func simulationModules(
+	app *XplaApp,
+	appCodec codec.Codec,
+	_ bool,
+) []module.AppModuleSimulation {
+	return []module.AppModuleSimulation{
+		ethermintauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
+		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
+		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
+		xplastaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
+		params.NewAppModule(app.ParamsKeeper),
+		evidence.NewAppModule(app.EvidenceKeeper),
+		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+		wasm.NewAppModule(appCodec, &app.AppKeepers.WasmKeeper, app.AppKeepers.StakingKeeper, app.AppKeepers.AccountKeeper, app.AppKeepers.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
+		ibc.NewAppModule(app.IBCKeeper),
+		transfer.NewAppModule(app.TransferKeeper),
+		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
+	}
+}
+
+/*
+orderBeginBlockers tells the app's module manager how to set the order of
+BeginBlockers, which are run at the beginning of every block.
+
+Interchain Security Requirements:
+During begin block slashing happens after distr.BeginBlocker so that
+there is nothing left over in the validator fee pool, so as to keep the
+CanWithdrawInvariant invariant.
+NOTE: staking module is required if HistoricalEntries param > 0
+NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
+*/
+
 func orderBeginBlockers() []string {
 	return []string{
-		// upgrades should be run first
-		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		crisistypes.ModuleName,
-		govtypes.ModuleName,
+		minttypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		distrtypes.ModuleName,
-		slashingtypes.ModuleName,
-		minttypes.ModuleName,
-		genutiltypes.ModuleName,
-		evidencetypes.ModuleName,
-		authz.ModuleName,
-		feegrant.ModuleName,
-		paramstypes.ModuleName,
+		govtypes.ModuleName,
+		crisistypes.ModuleName,
 		ibcexported.ModuleName,
-		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		pfmroutertypes.ModuleName,
+		ratelimittypes.ModuleName,
 		ibcfeetypes.ModuleName,
+		genutiltypes.ModuleName,
+		authz.ModuleName,
+		feegrant.ModuleName,
+		paramstypes.ModuleName,
+		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
 }
 
+/*
+Interchain Security Requirements:
+- provider.EndBlock gets validator updates from the staking module;
+thus, staking.EndBlock must be executed before provider.EndBlock;
+- creating a new consumer chain requires the following order,
+CreateChildClient(), staking.EndBlock, provider.EndBlock;
+thus, gov.EndBlock must be executed before staking.EndBlock
+*/
 func orderEndBlockers() []string {
 	return []string{
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		feegrant.ModuleName,
-		authz.ModuleName,
+		ibcexported.ModuleName,
+		ibctransfertypes.ModuleName,
+		icatypes.ModuleName,
+		pfmroutertypes.ModuleName,
+		ratelimittypes.ModuleName,
 		capabilitytypes.ModuleName,
+		ibcfeetypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -229,53 +241,57 @@ func orderEndBlockers() []string {
 		minttypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
+		authz.ModuleName,
+		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
-		ibcexported.ModuleName,
 		consensusparamtypes.ModuleName,
-		ibctransfertypes.ModuleName,
-		icatypes.ModuleName,
-		pfmroutertypes.ModuleName,
-		ibcfeetypes.ModuleName,
 		wasmtypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
 }
 
+/*
+NOTE: The genutils module must occur after staking so that pools are
+properly initialized with tokens from genesis accounts.
+NOTE: The genutils module must also occur after auth so that it can access the params from auth.
+NOTE: Capability module must occur first so that it can initialize any capabilities
+so that other modules that want to create or claim capabilities afterwards in InitChain
+can do so safely.
+*/
 func orderInitBlockers() []string {
 	return []string{
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
+		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
-		govtypes.ModuleName,
 		minttypes.ModuleName,
 		crisistypes.ModuleName,
-		evidencetypes.ModuleName,
-		feegrant.ModuleName,
-		authz.ModuleName,
 		// evm module denomination is used by the fees module, in AnteHandle
 		evmtypes.ModuleName,
 		// feemarket module needs to be initialized before genutil module,
 		// gentx transactions use MinGasPriceDecorator.AnteHandle
 		feemarkettypes.ModuleName,
 		genutiltypes.ModuleName,
-		ibcexported.ModuleName,
-		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibcexported.ModuleName,
 		icatypes.ModuleName,
-		pfmroutertypes.ModuleName,
 		ibcfeetypes.ModuleName,
+		evidencetypes.ModuleName,
+		authz.ModuleName,
+		feegrant.ModuleName,
+		pfmroutertypes.ModuleName,
+		ratelimittypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
+		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}

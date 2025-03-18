@@ -13,18 +13,21 @@ message Params {
 
   string fee_pool_rate = 1 [
     (gogoproto.moretags) = "yaml:\"fee_pool_rate\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable) = false
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
   string community_pool_rate = 2 [
     (gogoproto.moretags) = "yaml:\"community_pool_rate\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable) = false
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
   string reserve_rate = 3 [
     (gogoproto.moretags) = "yaml:\"reserve_rate\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable) = false
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
   string reserve_account = 4;
   string reward_distribute_account = 5;

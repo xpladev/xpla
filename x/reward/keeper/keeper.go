@@ -1,20 +1,22 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/core/store"
+	"cosmossdk.io/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 
 	"github.com/xpladev/xpla/x/reward/types"
 )
 
 type Keeper struct {
-	storeKey storetypes.StoreKey
-	cdc      codec.BinaryCodec
+	storeService store.KVStoreService
+	cdc          codec.BinaryCodec
 	// the address capable of executing a MsgUpdateParams message. Typically, this
 	// should be the x/gov module account.
 	authority string
@@ -23,12 +25,13 @@ type Keeper struct {
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
 	distKeeper    types.DistributionKeeper
-	mintKeeper    types.MintKeeper
+	// XXX Can I use whole mintkeeper here?
+	mintKeeper mintkeeper.Keeper
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec, key storetypes.StoreKey,
-	ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper, mk types.MintKeeper,
+	cdc codec.BinaryCodec, storeService store.KVStoreService,
+	ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, dk types.DistributionKeeper, mk mintkeeper.Keeper,
 	authority string,
 ) Keeper {
 	// ensure reward module account is set
@@ -37,7 +40,7 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:      key,
+		storeService:  storeService,
 		cdc:           cdc,
 		authKeeper:    ak,
 		bankKeeper:    bk,
@@ -54,14 +57,15 @@ func (k Keeper) GetAuthority() string {
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+types.ModuleName)
+func (k Keeper) Logger(ctx context.Context) log.Logger {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // FundRewardPool allows an account to directly fund the reward pool fund.
 // The amount is added to the reward pool account
 // An error is returned if the amount cannot be sent to the module account.
-func (k Keeper) FundRewardPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error {
+func (k Keeper) FundRewardPool(ctx context.Context, amount sdk.Coins, sender sdk.AccAddress) error {
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, amount); err != nil {
 		return err
 	}

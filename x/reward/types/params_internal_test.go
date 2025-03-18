@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 )
 
 func Test_validateAuxFuncs(t *testing.T) {
@@ -18,10 +18,10 @@ func Test_validateAuxFuncs(t *testing.T) {
 		wantErr bool
 	}{
 		{"wrong type", args{10.5}, true},
-		{"empty sdk.Dec", args{sdk.Dec{}}, true},
-		{"negative", args{sdk.NewDec(-1)}, true},
-		{"one dec", args{sdk.NewDec(1)}, false},
-		{"two dec", args{sdk.NewDec(2)}, true},
+		{"empty dec", args{sdkmath.LegacyDec{}}, true},
+		{"negative dec", args{sdkmath.LegacyNewDec(-1)}, true},
+		{"one dec", args{sdkmath.LegacyNewDec(1)}, false},
+		{"two dec", args{sdkmath.LegacyNewDec(2)}, true},
 	}
 	for _, tt := range tests {
 		tt := tt

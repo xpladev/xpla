@@ -17,7 +17,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) {
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	volunteerValidators := k.GetVolunteerValidators(ctx)
+	volunteerValidators, err := k.GetVolunteerValidators(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	state := []*types.VolunteerValidator{}
 	for valAddress, validator := range volunteerValidators {

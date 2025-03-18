@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,22 +15,25 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 	}
 
 	// check to see if the pubkey or sender has been registered before
-	if _, found := k.stakingKeeper.GetValidator(ctx, valAddr); found {
+	if _, err := k.stakingKeeper.GetValidator(ctx, valAddr); err == nil {
 		return stakingtypes.ErrValidatorOwnerExists
 	}
 
 	pk, ok := msg.Pubkey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptostakingtypes.PubKey, got %T", pk)
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", pk)
 	}
 
-	if _, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.GetConsAddress(pk)); found {
+	if _, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.GetConsAddress(pk)); err == nil {
 		return stakingtypes.ErrValidatorPubKeyExists
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
 	if msg.Value.Denom != bondDenom {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", msg.Value.Denom, bondDenom,
 		)
 	}
@@ -39,7 +43,7 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 	}
 
 	cp := ctx.ConsensusParams()
-	if cp != nil && cp.Validator != nil {
+	if cp.Validator != nil {
 		pkType := pk.Type()
 		hasKeyType := false
 		for _, keyType := range cp.Validator.PubKeyTypes {
@@ -49,14 +53,14 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 			}
 		}
 		if !hasKeyType {
-			return sdkerrors.Wrapf(
+			return errorsmod.Wrapf(
 				stakingtypes.ErrValidatorPubKeyTypeNotSupported,
 				"got: %s, expected: %s", pk.Type(), cp.Validator.PubKeyTypes,
 			)
 		}
 	}
 
-	validator, err := stakingtypes.NewValidator(valAddr, pk, msg.Description)
+	validator, err := stakingtypes.NewValidator(valAddr.String(), pk, msg.Description)
 	if err != nil {
 		return err
 	}
@@ -77,12 +81,25 @@ func (k Keeper) CreateValidator(ctx sdk.Context, msg stakingtypes.MsgCreateValid
 
 	validator.MinSelfDelegation = msg.MinSelfDelegation
 
-	k.stakingKeeper.SetValidator(ctx, validator)
-	k.stakingKeeper.SetValidatorByConsAddr(ctx, validator)
-	k.stakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
+	err = k.stakingKeeper.SetValidator(ctx, validator)
+	if err != nil {
+		return err
+	}
+	err = k.stakingKeeper.SetValidatorByConsAddr(ctx, validator)
+	if err != nil {
+		return err
+	}
+	err = k.stakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
+	if err != nil {
+		return err
+	}
 
 	// call the after-creation hook
-	if err := k.stakingKeeper.Hooks().AfterValidatorCreated(ctx, validator.GetOperator()); err != nil {
+	valBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+	if err != nil {
+		return err
+	}
+	if err := k.stakingKeeper.Hooks().AfterValidatorCreated(ctx, valBz); err != nil {
 		return err
 	}
 
