@@ -12,8 +12,8 @@ interface IBank {
     function send(
         address fromAddress,
         address toAddress,
-        string calldata denom,
-        uint256 amount
+        string[] calldata denom,
+        uint256[] calldata amount
     ) external returns (bool success);
 
     // Queries
