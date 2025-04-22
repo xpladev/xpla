@@ -15,7 +15,7 @@ RUN adduser -D -g '' valiuser
 RUN apk add --update --no-cache zip git make cmake build-base linux-headers musl-dev libc-dev binutils-gold
 
 WORKDIR /
-RUN git clone --depth 1 https://github.com/microsoft/mimalloc; cd mimalloc; mkdir build; cd build; cmake ..; make -j$(nproc); make install
+RUN git clone --depth 1 --branch v3.0.1 https://github.com/microsoft/mimalloc; cd mimalloc; mkdir build; cd build; cmake ..; make -j$(nproc); make install
 ENV MIMALLOC_RESERVE_HUGE_OS_PAGES=4
 
 
