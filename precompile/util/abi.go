@@ -59,10 +59,32 @@ func GetBigInt(src interface{}) (sdkmath.Int, error) {
 	return sdkmath.NewIntFromBigInt(res), nil
 }
 
+func GetBigIntArray(src interface{}) ([]sdkmath.Int, error) {
+	res, ok := src.([]*big.Int)
+	if !ok {
+		return nil, errors.New("invalid big int")
+	}
+
+	ret := []sdkmath.Int{}
+	for _, i := range res {
+		bi := sdkmath.NewIntFromBigInt(i)
+		ret = append(ret, bi)
+	}
+	return ret, nil
+}
+
 func GetString(src interface{}) (string, error) {
 	res, ok := src.(string)
 	if !ok {
 		return "", errors.New("invalid string")
+	}
+	return res, nil
+}
+
+func GetStringArray(src interface{}) ([]string, error) {
+	res, ok := src.([]string)
+	if !ok {
+		return nil, errors.New("invalid string array")
 	}
 	return res, nil
 }
