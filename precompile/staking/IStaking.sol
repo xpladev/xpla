@@ -7,27 +7,29 @@ IStaking constant STAKING_CONTRACT = IStaking(
     STAKING_PRECOMPILE_ADDRESS
 );
 
+struct Coin {
+    string denom;
+    uint256 amount;
+}
+
 interface IStaking {
     // Transactions
     function delegate(
         address delegatorAddress,
         address validatorAddress,
-        string memory denom,
-        uint256 amount
+        Coin calldata coin
     ) external returns (bool success);
 
     function beginRedelegate(
         address delegatorAddress,
         address validatorSrcAddress,
         address validatorDstAddress,
-        string memory denom,
-        uint256 amount
+        Coin calldata coin
     ) external returns (uint256 completionTime);
 
     function undelegate(
         address delegatorAddress,
         address validatorAddress,
-        string memory denom,
-        uint256 amount
+        Coin calldata coin
     ) external returns (uint256 completionTime);
 }

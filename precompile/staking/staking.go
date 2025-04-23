@@ -89,17 +89,10 @@ func (p PrecompiledStaking) delegate(ctx sdk.Context, sender common.Address, met
 		return nil, err
 	}
 
-	denom, err := util.GetString(args[2])
+	coin, err := util.GetCoin(args[2])
 	if err != nil {
 		return nil, err
 	}
-
-	amount, err := util.GetBigInt(args[3])
-	if err != nil {
-		return nil, err
-	}
-
-	coin := sdk.NewCoin(denom, amount)
 
 	msg := stakingtypes.NewMsgDelegate(
 		delegatorAddress.String(),
@@ -136,17 +129,10 @@ func (p PrecompiledStaking) beginRedelegate(ctx sdk.Context, sender common.Addre
 		return nil, err
 	}
 
-	denom, err := util.GetString(args[3])
+	coin, err := util.GetCoin(args[3])
 	if err != nil {
 		return nil, err
 	}
-
-	amount, err := util.GetBigInt(args[4])
-	if err != nil {
-		return nil, err
-	}
-
-	coin := sdk.NewCoin(denom, amount)
 
 	msg := stakingtypes.NewMsgBeginRedelegate(
 		delegatorAddress.String(),
@@ -179,17 +165,10 @@ func (p PrecompiledStaking) undelegate(ctx sdk.Context, sender common.Address, m
 		return nil, err
 	}
 
-	denom, err := util.GetString(args[2])
+	coin, err := util.GetCoin(args[2])
 	if err != nil {
 		return nil, err
 	}
-
-	amount, err := util.GetBigInt(args[3])
-	if err != nil {
-		return nil, err
-	}
-
-	coin := sdk.NewCoin(denom, amount)
 
 	msg := stakingtypes.NewMsgUndelegate(
 		delegatorAddress.String(),

@@ -1930,8 +1930,12 @@ func (t *EVMIntegrationTestSuite) Test08_DelegationWithPrecompiledStaking() {
 
 	// delegate with precompiled contract
 	delegationAmount := big.NewInt(1000000000000000000)
+	fund := precompiletype.Coin{
+		Denom:  xplatypes.DefaultDenom,
+		Amount: delegationAmount,
+	}
 
-	delegationAbi, err := pstaking.ABI.Pack(string(pstaking.Delegate), t.UserWallet1.EthAddress, t.ValidatorWallet1.EthAddress, xplatypes.DefaultDenom, delegationAmount)
+	delegationAbi, err := pstaking.ABI.Pack(string(pstaking.Delegate), t.UserWallet1.EthAddress, t.ValidatorWallet1.EthAddress, fund)
 	assert.NoError(t.T(), err)
 
 	txhash, err := t.UserWallet1.SendTx(t.EthClient, pstaking.Address, big.NewInt(0), delegationAbi)
