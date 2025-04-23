@@ -1,7 +1,5 @@
 package wasm
 
-import "errors"
-
 const (
 	hexAddress = "0x1000000000000000000000000000000000000004"
 	abiFile    = "IWasm.abi"
@@ -16,8 +14,4 @@ const (
 	MigrateContract      MethodWasm = "migrateContract"
 
 	SmartContractState MethodWasm = "smartContractState"
-)
-
-var (
-	ErrorDifferentAssetLength = errors.New("length of denom and amount are different")
 )

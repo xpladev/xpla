@@ -33,6 +33,7 @@ import (
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
 	pstaking "github.com/xpladev/xpla/precompile/staking"
+	precompiletype "github.com/xpladev/xpla/precompile/util"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplatypes "github.com/xpladev/xpla/types"
 	xplabanktypes "github.com/xpladev/xpla/x/bank/types"
@@ -1879,7 +1880,13 @@ func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
 
 	// send with precompiled contract
 	sendAmount := big.NewInt(1)
-	sendAbi, err := pbank.ABI.Pack(string(pbank.Send), t.UserWallet1.EthAddress, t.UserWallet2.EthAddress, []string{xplatypes.DefaultDenom}, []*big.Int{sendAmount})
+	zeroFund := []precompiletype.Coin{
+		{
+			Denom:  xplatypes.DefaultDenom,
+			Amount: sendAmount,
+		},
+	}
+	sendAbi, err := pbank.ABI.Pack(string(pbank.Send), t.UserWallet1.EthAddress, t.UserWallet2.EthAddress, zeroFund)
 	assert.NoError(t.T(), err)
 
 	hash, err := t.UserWallet1.SendTx(t.EthClient, pbank.Address, big.NewInt(0), sendAbi)
@@ -1969,7 +1976,13 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 		}
 	`, t.UserWallet1.CosmosWalletInfo.StringAddress))
 
-	instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, []string{xplatypes.DefaultDenom}, []*big.Int{big.NewInt(0)})
+	zeroFund := []precompiletype.Coin{
+		{
+			Denom:  xplatypes.DefaultDenom,
+			Amount: big.NewInt(0),
+		},
+	}
+	instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, zeroFund)
 	assert.NoError(t.T(), err)
 
 	resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
@@ -2009,7 +2022,7 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 	// send cw20 with precompiled contract
 	sendMsg := []byte(fmt.Sprintf(`{"transfer":{"recipient":"%s","amount":"1"}}`, t.UserWallet2.CosmosWalletInfo.StringAddress))
 
-	sendAbi, err := pwasm.ABI.Pack(string(pwasm.ExecuteContract), t.UserWallet1.EthAddress, contractAddress, sendMsg, []string{xplatypes.DefaultDenom}, []*big.Int{big.NewInt(0)})
+	sendAbi, err := pwasm.ABI.Pack(string(pwasm.ExecuteContract), t.UserWallet1.EthAddress, contractAddress, sendMsg, zeroFund)
 	assert.NoError(t.T(), err)
 
 	txhash, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), sendAbi)
@@ -2087,7 +2100,13 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 			}
 		`, t.UserWallet1.CosmosWalletInfo.StringAddress))
 
-		instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, []string{xplatypes.DefaultDenom}, []*big.Int{big.NewInt(0)})
+		zeroFund := []precompiletype.Coin{
+			{
+				Denom:  xplatypes.DefaultDenom,
+				Amount: big.NewInt(0),
+			},
+		}
+		instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, zeroFund)
 		assert.NoError(t.T(), err)
 
 		resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)

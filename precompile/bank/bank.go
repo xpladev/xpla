@@ -117,27 +117,12 @@ func (p PrecompiledBank) send(ctx sdk.Context, sender common.Address, method *ab
 		return nil, err
 	}
 
-	denoms, err := util.GetStringArray(args[2])
+	coins, err := util.GetCoins(args[2])
 	if err != nil {
 		return nil, err
 	}
 
-	amounts, err := util.GetBigIntArray(args[3])
-	if err != nil {
-		return nil, err
-	}
-
-	if len(denoms) != len(amounts) {
-		return nil, ErrorDifferentAssetLength
-	}
-
-	coins := []sdk.Coin{}
-	for i, _ := range denoms {
-		coin := sdk.NewCoin(denoms[i], amounts[i])
-		coins = append(coins, coin)
-	}
-
-	err = p.bk.SendCoins(ctx, fromAddress, toAddress, sdk.NewCoins(coins...))
+	err = p.bk.SendCoins(ctx, fromAddress, toAddress, coins)
 	if err != nil {
 		return nil, err
 	}

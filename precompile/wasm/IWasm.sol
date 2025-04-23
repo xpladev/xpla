@@ -7,6 +7,11 @@ IWasm constant WASM_CONTRACT = IWasm(
     WASM_PRECOMPILE_ADDRESS
 );
 
+struct Coin {
+    string denom;
+    uint256 amount;
+}
+
 interface IWasm {
     // Transactions
     function instantiateContract(
@@ -15,8 +20,7 @@ interface IWasm {
         uint256 codeId,
         string calldata label,
         bytes calldata msg,
-        string[] calldata denom,
-        uint256[] calldata amount
+        Coin[] memory coins
     ) external returns (address contractAddress, bytes calldata data);
     function instantiateContract2(
         address sender,
@@ -24,8 +28,7 @@ interface IWasm {
         uint256 codeId,
         string calldata label,
         bytes calldata msg,
-        string[] calldata denom,
-        uint256[] calldata amount,
+        Coin[] memory coins,
         bytes calldata salt,
         bool fixMsg
     ) external returns (address contractAddress, bytes calldata data);
@@ -33,8 +36,7 @@ interface IWasm {
         address sender,
         address contractAddress,
         bytes calldata msg,
-        string[] calldata denom,
-        uint256[] calldata amount
+        Coin[] memory coins
     ) external returns (bytes calldata data);
     function migrateContract(
         address sender,

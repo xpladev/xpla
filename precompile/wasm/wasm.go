@@ -116,24 +116,9 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Addr
 		return nil, err
 	}
 
-	denoms, err := util.GetStringArray(args[5])
+	coins, err := util.GetCoins(args[5])
 	if err != nil {
 		return nil, err
-	}
-
-	amounts, err := util.GetBigIntArray(args[6])
-	if err != nil {
-		return nil, err
-	}
-
-	if len(denoms) != len(amounts) {
-		return nil, ErrorDifferentAssetLength
-	}
-
-	coins := []sdk.Coin{}
-	for i, _ := range denoms {
-		coin := sdk.NewCoin(denoms[i], amounts[i])
-		coins = append(coins, coin)
 	}
 
 	instantiateMsg := &wasmtypes.MsgInstantiateContract{
@@ -142,7 +127,7 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Addr
 		CodeID: codeId.Uint64(),
 		Label:  label,
 		Msg:    msg,
-		Funds:  sdk.NewCoins(coins...),
+		Funds:  coins,
 	}
 
 	res, err := p.wms.InstantiateContract(ctx, instantiateMsg)
@@ -191,32 +176,17 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Add
 		return nil, err
 	}
 
-	denoms, err := util.GetStringArray(args[5])
+	coins, err := util.GetCoins(args[5])
 	if err != nil {
 		return nil, err
 	}
 
-	amounts, err := util.GetBigIntArray(args[6])
+	salt, err := util.GetByteArray(args[6])
 	if err != nil {
 		return nil, err
 	}
 
-	if len(denoms) != len(amounts) {
-		return nil, ErrorDifferentAssetLength
-	}
-
-	coins := []sdk.Coin{}
-	for i, _ := range denoms {
-		coin := sdk.NewCoin(denoms[i], amounts[i])
-		coins = append(coins, coin)
-	}
-
-	salt, err := util.GetByteArray(args[7])
-	if err != nil {
-		return nil, err
-	}
-
-	fixMsg, err := util.GetBool(args[8])
+	fixMsg, err := util.GetBool(args[7])
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +197,7 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Add
 		CodeID: codeId.Uint64(),
 		Label:  label,
 		Msg:    msg,
-		Funds:  sdk.NewCoins(coins...),
+		Funds:  coins,
 		Salt:   salt,
 		FixMsg: fixMsg,
 	}
@@ -269,31 +239,16 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, sender common.Address,
 		return nil, err
 	}
 
-	denoms, err := util.GetStringArray(args[3])
+	coins, err := util.GetCoins(args[3])
 	if err != nil {
 		return nil, err
-	}
-
-	amounts, err := util.GetBigIntArray(args[4])
-	if err != nil {
-		return nil, err
-	}
-
-	if len(denoms) != len(amounts) {
-		return nil, ErrorDifferentAssetLength
-	}
-
-	coins := []sdk.Coin{}
-	for i, _ := range denoms {
-		coin := sdk.NewCoin(denoms[i], amounts[i])
-		coins = append(coins, coin)
 	}
 
 	executeMsg := &wasmtypes.MsgExecuteContract{
 		Sender:   fromAddress.String(),
 		Contract: contractAccount.GetAddress().String(),
 		Msg:      msg,
-		Funds:    sdk.NewCoins(coins...),
+		Funds:    coins,
 	}
 
 	res, err := p.wms.ExecuteContract(ctx, executeMsg)

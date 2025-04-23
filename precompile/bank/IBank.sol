@@ -7,13 +7,17 @@ IBank constant BANK_CONTRACT = IBank(
     BANK_PRECOMPILE_ADDRESS
 );
 
+struct Coin {
+    string denom;
+    uint256 amount;
+}
+
 interface IBank {
     // Transactions
     function send(
         address fromAddress,
         address toAddress,
-        string[] calldata denom,
-        uint256[] calldata amount
+        Coin[] memory coins
     ) external returns (bool success);
 
     // Queries

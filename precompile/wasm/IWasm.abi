@@ -17,14 +17,21 @@
 				"type": "bytes"
 			},
 			{
-				"internalType": "string[]",
-				"name": "denom",
-				"type": "string[]"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "amount",
-				"type": "uint256[]"
+				"components": [
+					{
+						"internalType": "string",
+						"name": "denom",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct Coin[]",
+				"name": "coins",
+				"type": "tuple[]"
 			}
 		],
 		"name": "executeContract",
@@ -66,14 +73,21 @@
 				"type": "bytes"
 			},
 			{
-				"internalType": "string[]",
-				"name": "denom",
-				"type": "string[]"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "amount",
-				"type": "uint256[]"
+				"components": [
+					{
+						"internalType": "string",
+						"name": "denom",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct Coin[]",
+				"name": "coins",
+				"type": "tuple[]"
 			}
 		],
 		"name": "instantiateContract",
@@ -120,14 +134,21 @@
 				"type": "bytes"
 			},
 			{
-				"internalType": "string[]",
-				"name": "denom",
-				"type": "string[]"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "amount",
-				"type": "uint256[]"
+				"components": [
+					{
+						"internalType": "string",
+						"name": "denom",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct Coin[]",
+				"name": "coins",
+				"type": "tuple[]"
 			},
 			{
 				"internalType": "bytes",

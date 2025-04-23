@@ -5,6 +5,7 @@ import (
 	"embed"
 	"errors"
 	"math/big"
+	"reflect"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,6 +17,11 @@ import (
 const (
 	argsOffset = 4
 )
+
+type Coin struct {
+	Denom  string   `json:"denom"`
+	Amount *big.Int `json:"amount"`
+}
 
 func LoadABI(fs embed.FS, fileName string) (abi.ABI, error) {
 	abiBz, err := fs.ReadFile(fileName)
@@ -59,32 +65,10 @@ func GetBigInt(src interface{}) (sdkmath.Int, error) {
 	return sdkmath.NewIntFromBigInt(res), nil
 }
 
-func GetBigIntArray(src interface{}) ([]sdkmath.Int, error) {
-	res, ok := src.([]*big.Int)
-	if !ok {
-		return nil, errors.New("invalid big int")
-	}
-
-	ret := []sdkmath.Int{}
-	for _, i := range res {
-		bi := sdkmath.NewIntFromBigInt(i)
-		ret = append(ret, bi)
-	}
-	return ret, nil
-}
-
 func GetString(src interface{}) (string, error) {
 	res, ok := src.(string)
 	if !ok {
 		return "", errors.New("invalid string")
-	}
-	return res, nil
-}
-
-func GetStringArray(src interface{}) ([]string, error) {
-	res, ok := src.([]string)
-	if !ok {
-		return nil, errors.New("invalid string array")
 	}
 	return res, nil
 }
@@ -95,6 +79,56 @@ func GetByteArray(src interface{}) ([]byte, error) {
 		return []byte{}, errors.New("invalid byte array")
 	}
 	return res, nil
+}
+
+func GetCoin(src interface{}) (sdk.Coin, error) {
+	val := reflect.ValueOf(src)
+	if val.Kind() != reflect.Struct {
+		return sdk.Coin{}, errors.New("invalid coin / struct")
+	}
+
+	denomField := val.FieldByName("Denom")
+	amountField := val.FieldByName("Amount")
+
+	if !denomField.IsValid() || !amountField.IsValid() {
+		return sdk.Coin{}, errors.New("invalid coin / field")
+	}
+
+	denom, ok := denomField.Interface().(string)
+	if !ok {
+		return sdk.Coin{}, errors.New("invalid coin / denom")
+	}
+
+	amount, ok := amountField.Interface().(*big.Int)
+	if !ok {
+		return sdk.Coin{}, errors.New("invalid coin / amount")
+	}
+
+	return sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount)), nil
+}
+
+func GetCoins(src interface{}) (sdk.Coins, error) {
+	val := reflect.ValueOf(src)
+	inputType := reflect.TypeOf(src)
+
+	if inputType.Kind() != reflect.Slice && inputType.Kind() != reflect.Array {
+		return nil, errors.New("invalid coins / not array-like input")
+	}
+
+	coins := make([]sdk.Coin, 0, val.Len())
+
+	for i := 0; i < val.Len(); i++ {
+		item := val.Index(i)
+
+		coin, err := GetCoin(item.Interface())
+		if err != nil {
+			return nil, err
+		}
+
+		coins = append(coins, coin)
+	}
+
+	return sdk.NewCoins(coins...), nil
 }
 
 func ValidateSigner(sender sdk.AccAddress, caller common.Address) error {
