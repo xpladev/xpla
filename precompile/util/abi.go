@@ -18,11 +18,6 @@ const (
 	argsOffset = 4
 )
 
-type Coin struct {
-	Denom  string   `json:"denom"`
-	Amount *big.Int `json:"amount"`
-}
-
 func LoadABI(fs embed.FS, fileName string) (abi.ABI, error) {
 	abiBz, err := fs.ReadFile(fileName)
 	if err != nil {

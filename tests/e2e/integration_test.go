@@ -33,7 +33,6 @@ import (
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
 	pstaking "github.com/xpladev/xpla/precompile/staking"
-	precompiletype "github.com/xpladev/xpla/precompile/util"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplatypes "github.com/xpladev/xpla/types"
 	xplabanktypes "github.com/xpladev/xpla/x/bank/types"
@@ -1008,6 +1007,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			maxValidators += 1
 
 			msg, err := makeUpdateParamMaxValidators(desc.GetConnectionWithContext(context.Background()), maxValidators)
+			assert.NoError(t.T(), err)
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
@@ -1712,10 +1712,6 @@ func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 	wallet1Balance := resWallet1.Balance.Amount
 	assert.NoError(t.T(), err)
 
-	resWallet2, err := client.Balance(ctx, reqWallet2)
-	assert.NoError(t.T(), err)
-	wallet2Balance := resWallet2.Balance.Amount
-
 	// Send erc20 with xplabank
 	sendMsg := banktypes.NewMsgSend(
 		t.UserWallet1.CosmosWalletInfo.ByteAddress,
@@ -1737,9 +1733,9 @@ func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 	assert.True(t.T(), wallet1Balance.GT(afterWallet1Balance))
 
 	// wallet2 balacne should be 1 increased
-	resWallet2, err = client.Balance(ctx, reqWallet2)
+	resWallet2, err := client.Balance(ctx, reqWallet2)
 	assert.NoError(t.T(), err)
-	wallet2Balance = resWallet2.Balance.Amount
+	wallet2Balance := resWallet2.Balance.Amount
 	assert.Equal(t.T(), wallet2Balance, sdkmath.NewIntFromUint64(10000000000000000001))
 
 	// check with evm call
@@ -1880,7 +1876,7 @@ func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
 
 	// send with precompiled contract
 	sendAmount := big.NewInt(1)
-	zeroFund := []precompiletype.Coin{
+	zeroFund := []Coin{
 		{
 			Denom:  xplatypes.DefaultDenom,
 			Amount: sendAmount,
@@ -1930,7 +1926,7 @@ func (t *EVMIntegrationTestSuite) Test08_DelegationWithPrecompiledStaking() {
 
 	// delegate with precompiled contract
 	delegationAmount := big.NewInt(1000000000000000000)
-	fund := precompiletype.Coin{
+	fund := Coin{
 		Denom:  xplatypes.DefaultDenom,
 		Amount: delegationAmount,
 	}
@@ -1980,7 +1976,7 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 		}
 	`, t.UserWallet1.CosmosWalletInfo.StringAddress))
 
-	zeroFund := []precompiletype.Coin{
+	zeroFund := []Coin{
 		{
 			Denom:  xplatypes.DefaultDenom,
 			Amount: big.NewInt(0),
@@ -2001,6 +1997,7 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 	// query token info
 	queryMsg := []byte(fmt.Sprintf(`{"token_info":{}}`))
 	queryAbi, err := pwasm.ABI.Pack(string(pwasm.SmartContractState), contractAddress, queryMsg)
+	assert.NoError(t.T(), err)
 
 	resTokenInfoBiz, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
 		From:       t.UserWallet1.EthAddress,
@@ -2104,7 +2101,7 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 			}
 		`, t.UserWallet1.CosmosWalletInfo.StringAddress))
 
-		zeroFund := []precompiletype.Coin{
+		zeroFund := []Coin{
 			{
 				Denom:  xplatypes.DefaultDenom,
 				Amount: big.NewInt(0),
