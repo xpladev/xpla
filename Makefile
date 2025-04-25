@@ -183,3 +183,16 @@ proto-lint:
 proto-update-deps:
 	@echo "Updating Protobuf dependencies"
 	$(DOCKER) run --rm -v $(CURDIR)/proto:/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE) buf mod update
+
+###############################################################################
+###                          Precompiled contract                           ###
+###############################################################################
+
+# TODO: precompiled interface should be changed as a NPM package
+abi-gen:
+	cd precompile && \
+	solc --abi --pretty-json --overwrite -o auth auth/IAuth.sol && \
+	solc --abi --pretty-json --overwrite -o bank bank/IBank.sol && \
+	solc --abi --pretty-json --overwrite -o distribution distribution/IDistribution.sol && \
+	solc --abi --pretty-json --overwrite -o staking staking/IStaking.sol && \
+	solc --abi --pretty-json --overwrite -o wasm wasm/IWasm.sol
