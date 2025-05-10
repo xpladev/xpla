@@ -116,12 +116,7 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Addr
 		return nil, err
 	}
 
-	denom, err := util.GetString(args[5])
-	if err != nil {
-		return nil, err
-	}
-
-	amount, err := util.GetBigInt(args[6])
+	coins, err := util.GetCoins(args[5])
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +127,7 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Addr
 		CodeID: codeId.Uint64(),
 		Label:  label,
 		Msg:    msg,
-		Funds:  sdk.NewCoins(sdk.NewCoin(denom, amount)),
+		Funds:  coins,
 	}
 
 	res, err := p.wms.InstantiateContract(ctx, instantiateMsg)
@@ -181,22 +176,17 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Add
 		return nil, err
 	}
 
-	denom, err := util.GetString(args[5])
+	coins, err := util.GetCoins(args[5])
 	if err != nil {
 		return nil, err
 	}
 
-	amount, err := util.GetBigInt(args[6])
+	salt, err := util.GetByteArray(args[6])
 	if err != nil {
 		return nil, err
 	}
 
-	salt, err := util.GetByteArray(args[7])
-	if err != nil {
-		return nil, err
-	}
-
-	fixMsg, err := util.GetBool(args[8])
+	fixMsg, err := util.GetBool(args[7])
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +197,7 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Add
 		CodeID: codeId.Uint64(),
 		Label:  label,
 		Msg:    msg,
-		Funds:  sdk.NewCoins(sdk.NewCoin(denom, amount)),
+		Funds:  coins,
 		Salt:   salt,
 		FixMsg: fixMsg,
 	}
@@ -249,12 +239,7 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, sender common.Address,
 		return nil, err
 	}
 
-	denom, err := util.GetString(args[3])
-	if err != nil {
-		return nil, err
-	}
-
-	amount, err := util.GetBigInt(args[4])
+	coins, err := util.GetCoins(args[3])
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +248,7 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, sender common.Address,
 		Sender:   fromAddress.String(),
 		Contract: contractAccount.GetAddress().String(),
 		Msg:      msg,
-		Funds:    sdk.NewCoins(sdk.NewCoin(denom, amount)),
+		Funds:    coins,
 	}
 
 	res, err := p.wms.ExecuteContract(ctx, executeMsg)

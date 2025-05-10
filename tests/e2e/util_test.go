@@ -42,6 +42,11 @@ type PVKey struct {
 	PrivKey tmcrypto.PrivKey `json:"priv_key"`
 }
 
+type Coin struct {
+	Denom  string   `json:"denom"`
+	Amount *big.Int `json:"amount"`
+}
+
 func walletSetup() (
 	userWallet1, userWallet2,
 	validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4, validatorWallet5,
