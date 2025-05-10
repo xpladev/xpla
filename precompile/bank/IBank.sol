@@ -14,7 +14,7 @@ interface IBank {
     function send(
         address fromAddress,
         address toAddress,
-        Coin[] memory funds
+        Coin[] memory amount
     ) external returns (bool success);
 
     // Queries
