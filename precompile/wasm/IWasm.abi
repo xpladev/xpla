@@ -30,7 +30,7 @@
           }
         ],
         "internalType": "struct Coin[]",
-        "name": "funds",
+        "name": "amount",
         "type": "tuple[]"
       }
     ],
@@ -86,7 +86,7 @@
           }
         ],
         "internalType": "struct Coin[]",
-        "name": "funds",
+        "name": "amount",
         "type": "tuple[]"
       }
     ],
@@ -147,7 +147,7 @@
           }
         ],
         "internalType": "struct Coin[]",
-        "name": "funds",
+        "name": "amount",
         "type": "tuple[]"
       },
       {

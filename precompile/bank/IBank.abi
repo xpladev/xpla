@@ -49,7 +49,7 @@
           }
         ],
         "internalType": "struct Coin[]",
-        "name": "funds",
+        "name": "amount",
         "type": "tuple[]"
       }
     ],

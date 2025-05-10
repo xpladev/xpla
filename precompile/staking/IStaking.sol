@@ -14,19 +14,19 @@ interface IStaking {
     function delegate(
         address delegatorAddress,
         address validatorAddress,
-        Coin calldata fund
+        Coin calldata amount
     ) external returns (bool success);
 
     function beginRedelegate(
         address delegatorAddress,
         address validatorSrcAddress,
         address validatorDstAddress,
-        Coin calldata fund
+        Coin calldata amount
     ) external returns (uint256 completionTime);
 
     function undelegate(
         address delegatorAddress,
         address validatorAddress,
-        Coin calldata fund
+        Coin calldata amount
     ) external returns (uint256 completionTime);
 }

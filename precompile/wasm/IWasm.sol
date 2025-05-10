@@ -17,7 +17,7 @@ interface IWasm {
         uint256 codeId,
         string calldata label,
         bytes calldata msg,
-        Coin[] memory funds
+        Coin[] memory amount
     ) external returns (address contractAddress, bytes calldata data);
     function instantiateContract2(
         address sender,
@@ -25,7 +25,7 @@ interface IWasm {
         uint256 codeId,
         string calldata label,
         bytes calldata msg,
-        Coin[] memory funds,
+        Coin[] memory amount,
         bytes calldata salt,
         bool fixMsg
     ) external returns (address contractAddress, bytes calldata data);
@@ -33,7 +33,7 @@ interface IWasm {
         address sender,
         address contractAddress,
         bytes calldata msg,
-        Coin[] memory funds
+        Coin[] memory amount
     ) external returns (bytes calldata data);
     function migrateContract(
         address sender,

@@ -30,7 +30,7 @@
           }
         ],
         "internalType": "struct Coin",
-        "name": "fund",
+        "name": "amount",
         "type": "tuple"
       }
     ],
@@ -71,7 +71,7 @@
           }
         ],
         "internalType": "struct Coin",
-        "name": "fund",
+        "name": "amount",
         "type": "tuple"
       }
     ],
@@ -112,7 +112,7 @@
           }
         ],
         "internalType": "struct Coin",
-        "name": "fund",
+        "name": "amount",
         "type": "tuple"
       }
     ],
