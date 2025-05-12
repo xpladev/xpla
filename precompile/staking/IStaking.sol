@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {Coin} from "../util/Structs.sol";
+
 address constant STAKING_PRECOMPILE_ADDRESS = 0x1000000000000000000000000000000000000002;
 
 IStaking constant STAKING_CONTRACT = IStaking(
@@ -12,22 +14,19 @@ interface IStaking {
     function delegate(
         address delegatorAddress,
         address validatorAddress,
-        string memory denom,
-        uint256 amount
+        Coin calldata amount
     ) external returns (bool success);
 
     function beginRedelegate(
         address delegatorAddress,
         address validatorSrcAddress,
         address validatorDstAddress,
-        string memory denom,
-        uint256 amount
+        Coin calldata amount
     ) external returns (uint256 completionTime);
 
     function undelegate(
         address delegatorAddress,
         address validatorAddress,
-        string memory denom,
-        uint256 amount
+        Coin calldata amount
     ) external returns (uint256 completionTime);
 }

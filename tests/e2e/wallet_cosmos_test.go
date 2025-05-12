@@ -65,10 +65,6 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 
 	genFunc := ethhd.EthSecp256k1.Generate()
 	privKey = genFunc(privBytes)
-	if err != nil {
-		err = errors.Wrap(err, "NewWalletInfo, rootkey -> privkey")
-		return nil, err
-	}
 	pubKey = privKey.PubKey()
 
 	byteAddress = sdktype.AccAddress(pubKey.Address())
@@ -191,6 +187,10 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, isEVM bool) (string
 	}
 
 	err = txBuilder.SetSignatures(sigV2)
+	if err != nil {
+		err = errors.Wrap(err, "SendTx, set signature")
+		return "", err
+	}
 
 	// broadcast tx
 	txBytes, err = w.EncCfg.TxConfig.TxEncoder()(txBuilder.GetTx())

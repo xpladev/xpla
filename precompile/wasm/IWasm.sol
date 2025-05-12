@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {Coin} from "../util/Structs.sol";
+
 address constant WASM_PRECOMPILE_ADDRESS = 0x1000000000000000000000000000000000000004;
 
 IWasm constant WASM_CONTRACT = IWasm(
@@ -15,8 +17,7 @@ interface IWasm {
         uint256 codeId,
         string calldata label,
         bytes calldata msg,
-        string calldata denom,
-        uint256 amount
+        Coin[] memory funds
     ) external returns (address contractAddress, bytes calldata data);
     function instantiateContract2(
         address sender,
@@ -24,8 +25,7 @@ interface IWasm {
         uint256 codeId,
         string calldata label,
         bytes calldata msg,
-        string calldata denom,
-        uint256 amount,
+        Coin[] memory funds,
         bytes calldata salt,
         bool fixMsg
     ) external returns (address contractAddress, bytes calldata data);
@@ -33,8 +33,7 @@ interface IWasm {
         address sender,
         address contractAddress,
         bytes calldata msg,
-        string calldata denom,
-        uint256 amount
+        Coin[] memory funds
     ) external returns (bytes calldata data);
     function migrateContract(
         address sender,

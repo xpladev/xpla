@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {Coin} from "../util/Structs.sol";
+
 address constant BANK_PRECOMPILE_ADDRESS = 0x1000000000000000000000000000000000000001;
 
 IBank constant BANK_CONTRACT = IBank(
@@ -12,8 +14,7 @@ interface IBank {
     function send(
         address fromAddress,
         address toAddress,
-        string calldata denom,
-        uint256 amount
+        Coin[] memory amount
     ) external returns (bool success);
 
     // Queries
