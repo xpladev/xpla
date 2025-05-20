@@ -260,6 +260,30 @@ func NewAppKeeper(
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
 
+	// Create Ethermint keepers
+	appKeepers.FeeMarketKeeper = feemarketkeeper.NewKeeper(
+		appCodec,
+		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
+		runtime.NewKVStoreService(appKeepers.keys[feemarkettypes.StoreKey]),
+		appKeepers.tkeys[feemarkettypes.TransientKey],
+		appKeepers.GetSubspace(feemarkettypes.ModuleName),
+	)
+
+	appKeepers.EvmKeeper = evmkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(appKeepers.keys[evmtypes.StoreKey]),
+		appKeepers.tkeys[evmtypes.TransientKey],
+		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
+		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+		appKeepers.StakingKeeper,
+		appKeepers.FeeMarketKeeper,
+		evmTrace,
+		appKeepers.GetSubspace(evmtypes.ModuleName),
+	)
+	// This should execute after evmkeeper has initiate.
+	appKeepers.BankKeeper.SetEvmKeeper(appKeepers.EvmKeeper)
+
 	appKeepers.MintKeeper = mintkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[minttypes.StoreKey]),
@@ -544,30 +568,6 @@ func NewAppKeeper(
 		AddRoute(wasmtypes.ModuleName, wasmStack)
 
 	appKeepers.IBCKeeper.SetRouter(ibcRouter)
-
-	// Create Ethermint keepers
-	appKeepers.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		appCodec,
-		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
-		runtime.NewKVStoreService(appKeepers.keys[feemarkettypes.StoreKey]),
-		appKeepers.tkeys[feemarkettypes.TransientKey],
-		appKeepers.GetSubspace(feemarkettypes.ModuleName),
-	)
-
-	appKeepers.EvmKeeper = evmkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(appKeepers.keys[evmtypes.StoreKey]),
-		appKeepers.tkeys[evmtypes.TransientKey],
-		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
-		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
-		appKeepers.StakingKeeper,
-		appKeepers.FeeMarketKeeper,
-		evmTrace,
-		appKeepers.GetSubspace(evmtypes.ModuleName),
-	)
-	// This should execute after evmkeeper has initiate.
-	appKeepers.BankKeeper.SetEvmKeeper(appKeepers.EvmKeeper)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
 		appCodec,
