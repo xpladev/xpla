@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/xpladev/xpla/x/bank/types"
 )
 
@@ -19,10 +18,9 @@ var _ bankkeeper.Keeper = (*Keeper)(nil)
 type Keeper struct {
 	bankkeeper.BaseKeeper
 
-	bek BaseEvmKeeper
+	bek BaseErc20Keeper
 
 	ak banktypes.AccountKeeper
-	ek types.EvmKeeper
 }
 
 func NewKeeper(
@@ -36,21 +34,19 @@ func NewKeeper(
 ) Keeper {
 	return Keeper{
 		BaseKeeper: bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
-		bek:        BaseEvmKeeper{},
+		bek:        BaseErc20Keeper{},
 		ak:         ak,
-		ek:         nil,
 	}
 }
 
 // SetEvmKeeper should run after the EvmKeeper is initialized.
 // NewKeeper and SetEvmKeeper is a pair. These must be executed together.
 func (k *Keeper) SetEvmKeeper(ek types.EvmKeeper) {
-	k.ek = ek
-	k.bek = NewBaseErc20Keeper(k.ak, ek)
-
-	if k.ek == nil {
+	if ek == nil {
 		panic(errors.New("EVM Keeper cannot be nil!"))
 	}
+
+	k.bek = NewBaseErc20Keeper(ek)
 }
 
 func (k Keeper) GetBalance(goCtx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
@@ -69,13 +65,7 @@ func (k Keeper) GetSupply(goCtx context.Context, denom string) sdk.Coin {
 
 	tokenType, address := types.ParseDenom(denom)
 	if tokenType == types.Erc20 {
-		tokenContractAddress := common.HexToAddress(address)
-		totalSupply, err := k.bek.erc20keeper.QueryTotalSupply(ctx, tokenContractAddress)
-		if err != nil {
-			panic(err)
-		}
-
-		return sdk.NewCoin(denom, totalSupply)
+		return k.bek.GetSupply(goCtx, address)
 	}
 
 	return k.BaseKeeper.GetSupply(ctx, denom)
