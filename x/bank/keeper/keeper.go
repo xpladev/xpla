@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"errors"
 
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
@@ -31,22 +30,13 @@ func NewKeeper(
 
 	authority string,
 	logger log.Logger,
+	ek types.EvmKeeper,
 ) Keeper {
 	return Keeper{
 		BaseKeeper: bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
-		bek:        BaseErc20Keeper{},
+		bek:        NewBaseErc20Keeper(ek),
 		ak:         ak,
 	}
-}
-
-// SetEvmKeeper should run after the EvmKeeper is initialized.
-// NewKeeper and SetEvmKeeper is a pair. These must be executed together.
-func (k *Keeper) SetEvmKeeper(ek types.EvmKeeper) {
-	if ek == nil {
-		panic(errors.New("EVM Keeper cannot be nil!"))
-	}
-
-	k.bek = NewBaseErc20Keeper(ek)
 }
 
 func (k Keeper) GetBalance(goCtx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
