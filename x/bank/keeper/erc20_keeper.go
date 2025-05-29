@@ -30,10 +30,10 @@ func (k *BaseErc20Keeper) GetSupply(goCtx context.Context, contractAddress strin
 	tokenContractAddress := common.HexToAddress(contractAddress)
 	totalSupply, err := k.erc20keeper.QueryTotalSupply(ctx, tokenContractAddress)
 	if err != nil {
-		return sdk.NewCoin(types.ERC20+"/"+contractAddress, sdkmath.NewInt(0))
+		return types.NewErc20Coin(contractAddress, sdkmath.NewInt(0))
 	}
 
-	return sdk.NewCoin(types.ERC20+"/"+contractAddress, totalSupply)
+	return types.NewErc20Coin(contractAddress, totalSupply)
 }
 
 type Erc20SendKeeper struct {
@@ -75,6 +75,6 @@ func (e *Erc20ViewKeeper) GetBalance(goCtx context.Context, addr sdk.AccAddress,
 		panic(err)
 	}
 
-	return sdk.NewCoin(types.ERC20+"/"+hexErc20Address, amount)
+	return types.NewErc20Coin(hexErc20Address, amount)
 
 }

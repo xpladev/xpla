@@ -29,15 +29,15 @@ func (k BaseCw20Keeper) GetSupply(goCtx context.Context, contractAddress string)
 	tokenContractAddress := sdk.MustAccAddressFromBech32(contractAddress)
 	tokenInfo, err := k.cw20keeper.QueryTokenInfo(ctx, tokenContractAddress)
 	if err != nil {
-		return sdk.NewCoin(types.CW20+"/"+contractAddress, sdkmath.ZeroInt())
+		return types.NewCw20Coin(contractAddress, sdkmath.ZeroInt())
 	}
 
 	totalSupply, ok := sdkmath.NewIntFromString(string(tokenInfo.TotalSupply))
 	if !ok {
-		return sdk.NewCoin(types.CW20+"/"+contractAddress, sdkmath.ZeroInt())
+		return types.NewCw20Coin(contractAddress, sdkmath.ZeroInt())
 	}
 
-	return sdk.NewCoin(types.CW20+"/"+contractAddress, totalSupply)
+	return types.NewCw20Coin(contractAddress, totalSupply)
 }
 
 type Cw20SendKeeper struct {
@@ -86,13 +86,13 @@ func (e Cw20ViewKeeper) GetBalance(goCtx context.Context, addr sdk.AccAddress, c
 	}
 	balanceResp, err := e.cw20keeper.QueryBalance(ctx, contractAddress, balanceReq)
 	if err != nil {
-		return sdk.NewCoin(types.CW20+"/"+cw20Address, sdkmath.ZeroInt())
+		return types.NewCw20Coin(cw20Address, sdkmath.ZeroInt())
 	}
 
 	amount, ok := sdkmath.NewIntFromString(string(balanceResp.Balance))
 	if !ok {
-		return sdk.NewCoin(types.CW20+"/"+cw20Address, sdkmath.ZeroInt())
+		return types.NewCw20Coin(cw20Address, sdkmath.ZeroInt())
 	}
 
-	return sdk.NewCoin(types.CW20+"/"+cw20Address, amount)
+	return types.NewCw20Coin(cw20Address, amount)
 }
