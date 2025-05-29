@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,7 +37,7 @@ func (k Keeper) Balance(ctx context.Context, req *banktypes.QueryBalanceRequest)
 // SpendableBalanceByDenom implements a gRPC query handler for retrieving an account's
 // spendable balance for a specific denom.
 // Copyed from cosmos-sdk/x/bank/keeper/grpc_query.go
-func (k Keeper) SpendableBalanceByDenom(ctx context.Context, req *types.QuerySpendableBalanceByDenomRequest) (*types.QuerySpendableBalanceByDenomResponse, error) {
+func (k Keeper) SpendableBalanceByDenom(ctx context.Context, req *banktypes.QuerySpendableBalanceByDenomRequest) (*banktypes.QuerySpendableBalanceByDenomResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -56,7 +55,7 @@ func (k Keeper) SpendableBalanceByDenom(ctx context.Context, req *types.QuerySpe
 
 	spendable := k.SpendableCoin(sdkCtx, addr, req.Denom)
 
-	return &types.QuerySpendableBalanceByDenomResponse{Balance: &spendable}, nil
+	return &banktypes.QuerySpendableBalanceByDenomResponse{Balance: &spendable}, nil
 }
 
 // SupplyOf implements the Query/SupplyOf gRPC method
@@ -73,5 +72,5 @@ func (k Keeper) SupplyOf(c context.Context, req *banktypes.QuerySupplyOfRequest)
 	ctx := sdk.UnwrapSDKContext(c)
 	supply := k.GetSupply(ctx, req.Denom)
 
-	return &types.QuerySupplyOfResponse{Amount: sdk.NewCoin(req.Denom, supply.Amount)}, nil
+	return &banktypes.QuerySupplyOfResponse{Amount: sdk.NewCoin(req.Denom, supply.Amount)}, nil
 }

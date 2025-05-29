@@ -1,6 +1,11 @@
 package types
 
-import "strings"
+import (
+	"strings"
+
+	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
 
 const (
 	ERC20 = "erc20"
@@ -14,6 +19,14 @@ const (
 	Erc20
 	Cw20
 )
+
+func NewCw20Coin(contractAddress string, amount sdkmath.Int) sdk.Coin {
+	return sdk.NewCoin(CW20+"/"+contractAddress, amount)
+}
+
+func NewErc20Coin(contractAddress string, amount sdkmath.Int) sdk.Coin {
+	return sdk.NewCoin(ERC20+"/"+contractAddress, amount)
+}
 
 func ParseDenom(denom string) (TokenType, string) {
 	res := strings.Split(denom, "/")
