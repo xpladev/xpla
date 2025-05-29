@@ -566,6 +566,8 @@ func NewAppKeeper(
 		govModAddress,
 		logger,
 		appKeepers.EvmKeeper,
+		appKeepers.WasmKeeper,
+		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
 	)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
