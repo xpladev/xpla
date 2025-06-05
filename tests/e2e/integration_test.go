@@ -354,6 +354,122 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 	assert.Equal(t.T(), "50000000", amtResp.Balance)
 }
 
+func (t *WASMIntegrationTestSuite) Test05_SendCw20WithXplaBank() {
+	// Prepare parameters
+	cw20ContractAddress := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, "/")
+
+	// check balance before sending
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	reqWallet1 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet1.StringAddress,
+		Denom:   denom,
+	}
+
+	reqWallet2 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet2.StringAddress,
+		Denom:   denom,
+	}
+
+	resWallet1, err := client.Balance(ctx, reqWallet1)
+	assert.NoError(t.T(), err)
+	wallet1Balance := resWallet1.Balance.Amount
+
+	resWallet2, err := client.Balance(ctx, reqWallet2)
+	assert.NoError(t.T(), err)
+	wallet2Balance := resWallet2.Balance.Amount
+
+	// Send cw20 with xplabank
+	sendMsg := banktypes.NewMsgSend(
+		t.UserWallet1.ByteAddress,
+		t.UserWallet2.ByteAddress,
+		sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(1))),
+	)
+
+	txhash, err := t.UserWallet1.SendTx(ChainID, sendMsg, false)
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
+
+	// wallet1 balance should be decreased
+	resWallet1, err = client.Balance(ctx, reqWallet1)
+	afterWallet1Balance := resWallet1.Balance.Amount
+	assert.NoError(t.T(), err)
+	assert.Equal(t.T(), wallet1Balance.Sub(sdkmath.NewInt(1)), afterWallet1Balance)
+
+	// wallet2 balacne should be 1 increased
+	resWallet2, err = client.Balance(ctx, reqWallet2)
+	afterWallet2Balance := resWallet2.Balance.Amount
+	assert.NoError(t.T(), err)
+	assert.Equal(t.T(), wallet2Balance.Add(sdkmath.NewInt(1)), afterWallet2Balance)
+
+	// check with cw20 call
+	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	queryStr := []byte(fmt.Sprintf(`{
+		"balance": {
+			"address": "%s"
+		}
+	}`, t.UserWallet2.StringAddress))
+
+	tokenResp, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
+		Address:   t.TokenAddress,
+		QueryData: queryStr,
+	})
+
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), tokenResp)
+
+	type AmtResp struct {
+		Balance string `json:"balance"`
+	}
+
+	amtResp := &AmtResp{}
+	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), afterWallet2Balance.String(), amtResp.Balance)
+}
+
+func (t *WASMIntegrationTestSuite) Test06_TotalSupplyCw20WithXplaBank() {
+	// Prepare parameters
+	cw20ContractAddress := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, "/")
+
+	//  Query cw2- total-supply with xplabank
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	req := &banktypes.QuerySupplyOfRequest{
+		Denom: denom,
+	}
+	supply, err := client.SupplyOf(ctx, req)
+	assert.NoError(t.T(), err)
+
+	// check with cw20 call
+	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	rawQueryData, err := json.Marshal(map[string]any{"token_info": xplabanktypes.QueryMsg_TokenInfo{}})
+	assert.NoError(t.T(), err)
+
+	rawResponseData, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
+		Address:   t.TokenAddress,
+		QueryData: rawQueryData,
+	})
+	assert.NoError(t.T(), err)
+
+	var response xplabanktypes.TokenInfoResponse
+	err = json.Unmarshal(rawResponseData.Data, &response)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), supply.Amount.Amount.String(), string(response.TotalSupply))
+
+}
+
 func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnregistryDelegation() {
 	amt := sdkmath.NewInt(1000000000000000000)
 

@@ -3,25 +3,37 @@ package keeper
 import (
 	"context"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	types "github.com/xpladev/xpla/x/bank/types"
 )
 
-type BaseEvmKeeper struct {
+type BaseErc20Keeper struct {
 	Erc20SendKeeper
 }
 
-func NewBaseErc20Keeper(ak banktypes.AccountKeeper, ek types.EvmKeeper) BaseEvmKeeper {
+func NewBaseErc20Keeper(ek types.EvmKeeper) BaseErc20Keeper {
 	erc20keeper := NewErc20Keeper(ek)
-	return BaseEvmKeeper{
+	return BaseErc20Keeper{
 		Erc20SendKeeper: Erc20SendKeeper{
 			Erc20ViewKeeper: Erc20ViewKeeper{erc20keeper: erc20keeper},
 			erc20keeper:     erc20keeper,
 		},
 	}
+}
+
+func (k *BaseErc20Keeper) GetSupply(goCtx context.Context, contractAddress string) sdk.Coin {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	tokenContractAddress := common.HexToAddress(contractAddress)
+	totalSupply, err := k.erc20keeper.QueryTotalSupply(ctx, tokenContractAddress)
+	if err != nil {
+		return types.NewErc20Coin(contractAddress, sdkmath.NewInt(0))
+	}
+
+	return types.NewErc20Coin(contractAddress, totalSupply)
 }
 
 type Erc20SendKeeper struct {
@@ -63,6 +75,6 @@ func (e *Erc20ViewKeeper) GetBalance(goCtx context.Context, addr sdk.AccAddress,
 		panic(err)
 	}
 
-	return sdk.NewCoin(types.ERC20+"/"+hexErc20Address, amount)
+	return types.NewErc20Coin(hexErc20Address, amount)
 
 }
