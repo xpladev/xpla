@@ -17,9 +17,9 @@ tendermint_dir=$(go list -f '{{ .Dir }}' -m github.com/cometbft/cometbft)
 cosmos_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-proto)
 cosmos_sdk_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-sdk)
 wasm_dir=$(go list -f '{{ .Dir }}' -m github.com/CosmWasm/wasmd)
-ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v8)
-ethermint_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/ethermint)
-pfm=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8)
+ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v10)
+ethermint_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/evm)
+pfm=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10)
 xpla_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/xpla)
 
 # move the vendor folder back to ./vendor

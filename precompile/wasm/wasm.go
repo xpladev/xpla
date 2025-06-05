@@ -4,13 +4,16 @@ import (
 	"embed"
 	"errors"
 
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/xpladev/ethermint/x/evm/statedb"
+	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
 
@@ -28,6 +31,7 @@ var (
 )
 
 type PrecompiledWasm struct {
+	cmn.Precompile
 	ak  AccountKeeper
 	wms WasmMsgServer
 	wk  WasmKeeper
@@ -42,11 +46,19 @@ func init() {
 }
 
 func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) PrecompiledWasm {
-	return PrecompiledWasm{
+	p := PrecompiledWasm{
+		Precompile: cmn.Precompile{
+			ABI:                  ABI,
+			KvGasConfig:          storetypes.GasConfig{},
+			TransientKVGasConfig: storetypes.GasConfig{},
+		},
 		ak:  ak,
 		wms: wms,
 		wk:  wk,
 	}
+	p.SetAddress(common.HexToAddress(hexAddress))
+
+	return p
 }
 
 func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
@@ -54,8 +66,11 @@ func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
 	return 0
 }
 
-func (p PrecompiledWasm) Run(evm *vm.EVM, input []byte) ([]byte, error) {
-	method, argsBz := util.SplitInput(input)
+func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	if contract.Gas < wasmtypes.DefaultInstanceCost {
+		return nil, errors.New("insufficient gas")
+	}
+	method, argsBz := util.SplitInput(contract.Input)
 
 	abiMethod, err := ABI.MethodById(method)
 	if err != nil {

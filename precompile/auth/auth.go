@@ -4,6 +4,8 @@ import (
 	"embed"
 	"errors"
 
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -11,7 +13,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/xpladev/ethermint/x/evm/statedb"
+	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
 	xplatypes "github.com/xpladev/xpla/types"
@@ -28,6 +31,7 @@ var (
 )
 
 type PrecompiledAuth struct {
+	cmn.Precompile
 	ak AccountKeeper
 }
 
@@ -40,7 +44,17 @@ func init() {
 }
 
 func NewPrecompiledAuth(ak AccountKeeper) PrecompiledAuth {
-	return PrecompiledAuth{ak}
+	p := PrecompiledAuth{
+		Precompile: cmn.Precompile{
+			ABI:                  ABI,
+			KvGasConfig:          storetypes.GasConfig{},
+			TransientKVGasConfig: storetypes.GasConfig{},
+		},
+		ak: ak,
+	}
+	p.SetAddress(common.HexToAddress(hexAddress))
+
+	return p
 }
 
 func (p PrecompiledAuth) RequiredGas(input []byte) uint64 {
@@ -48,8 +62,8 @@ func (p PrecompiledAuth) RequiredGas(input []byte) uint64 {
 	return 0
 }
 
-func (p PrecompiledAuth) Run(evm *vm.EVM, input []byte) ([]byte, error) {
-	method, argsBz := util.SplitInput(input)
+func (p PrecompiledAuth) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	method, argsBz := util.SplitInput(contract.Input)
 
 	abiMethod, err := ABI.MethodById(method)
 	if err != nil {

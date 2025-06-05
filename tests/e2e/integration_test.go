@@ -1728,7 +1728,6 @@ func (i *EVMIntegrationTestSuite) TeardownTest() {}
 
 func (t *EVMIntegrationTestSuite) Test01_CheckBalance() {
 	resp, err := t.EthClient.BalanceAt(context.Background(), t.UserWallet1.EthAddress, nil)
-
 	assert.NoError(t.T(), err)
 
 	expectedInt := new(big.Int)
@@ -1744,7 +1743,8 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	networkId, err := t.EthClient.NetworkID(context.Background())
 	assert.NoError(t.T(), err)
 
-	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	assert.NoError(t.T(), err)
 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
 	assert.NoError(t.T(), err)
 
@@ -1754,7 +1754,8 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	strbin, err := os.ReadFile(filepath.Join(".", "misc", "token.sol.bin"))
 	assert.NoError(t.T(), err)
 
-	binbyte, _ := hex.DecodeString(string(strbin))
+	binbyte, err := hex.DecodeString(string(strbin))
+	assert.NoError(t.T(), err)
 
 	parsedAbi, err := TokenInterfaceMetaData.GetAbi()
 	assert.NoError(t.T(), err)
@@ -1783,7 +1784,8 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	multiplier, _ := new(big.Int).SetString("1000000000000000000", 10)
 	amt := new(big.Int).Mul(big.NewInt(10), multiplier)
 
-	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	assert.NoError(t.T(), err)
 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
 	assert.NoError(t.T(), err)
 
@@ -1826,8 +1828,8 @@ func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 	}
 
 	resWallet1, err := client.Balance(ctx, reqWallet1)
-	wallet1Balance := resWallet1.Balance.Amount
 	assert.NoError(t.T(), err)
+	wallet1Balance := resWallet1.Balance.Amount
 
 	// Send erc20 with xplabank
 	sendMsg := banktypes.NewMsgSend(
@@ -1845,8 +1847,8 @@ func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 
 	// wallet1 balance should be decreased
 	resWallet1, err = client.Balance(ctx, reqWallet1)
-	afterWallet1Balance := resWallet1.Balance.Amount
 	assert.NoError(t.T(), err)
+	afterWallet1Balance := resWallet1.Balance.Amount
 	assert.True(t.T(), wallet1Balance.GT(afterWallet1Balance))
 
 	// wallet2 balacne should be 1 increased
@@ -1894,7 +1896,6 @@ func (t *EVMIntegrationTestSuite) Test05_TotalSupplyErc20WithXplaBank() {
 }
 
 func (t *EVMIntegrationTestSuite) Test06_CheckSupplyWithPrecompiledBank() {
-
 	// abi supply
 	supplyAbi, err := pbank.ABI.Pack(string(pbank.Supply), xplatypes.DefaultDenom)
 	assert.NoError(t.T(), err)
@@ -2201,7 +2202,6 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 
 		xplaAddress := resXplaAddress[0].(string)
 
-		assert.NoError(t.T(), err)
 		assert.Equal(t.T(), t.UserWallet1.CosmosWalletInfo.StringAddress, xplaAddress)
 
 		// contract address
@@ -2251,7 +2251,6 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 			GasTipCap:  nil,
 			AccessList: nil,
 		}, nil)
-
 		assert.NoError(t.T(), err)
 
 		resXplaContractAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaContractAddress)
@@ -2277,7 +2276,6 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 			GasTipCap:  nil,
 			AccessList: nil,
 		}, nil)
-
 		assert.NoError(t.T(), err)
 
 		resModuleAccountByName, err := pauth.ABI.Unpack(string(pauth.ModuleAccountByName), encodedModuleAccountByName)
@@ -2303,7 +2301,6 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 			GasTipCap:  nil,
 			AccessList: nil,
 		}, nil)
-
 		assert.NoError(t.T(), err)
 
 		resBech32Prefix, err := pauth.ABI.Unpack(string(pauth.Bech32Prefix), encodedBech32Prefix)
@@ -2329,7 +2326,6 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 			GasTipCap:  nil,
 			AccessList: nil,
 		}, nil)
-
 		assert.NoError(t.T(), err)
 
 		resAddressByteToString, err := pauth.ABI.Unpack(string(pauth.AddressBytesToString), encodedAddressByteToString)
@@ -2355,7 +2351,6 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 			GasTipCap:  nil,
 			AccessList: nil,
 		}, nil)
-
 		assert.NoError(t.T(), err)
 
 		resAddressStringToByte, err := pauth.ABI.Unpack(string(pauth.AddressStringToBytes), encodedAddressByteToString)

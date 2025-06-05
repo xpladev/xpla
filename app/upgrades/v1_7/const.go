@@ -3,9 +3,9 @@ package v1_7
 import (
 	store "cosmossdk.io/store/types"
 
-	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
+	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/types"
 
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
+	erc20types "github.com/cosmos/evm/x/erc20/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
 )

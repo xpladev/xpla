@@ -10,7 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	ethermintante "github.com/xpladev/ethermint/app/ante"
+	evmanteinterfaces "github.com/cosmos/evm/ante/interfaces"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 )
 
 const maxBypassMinFeeMsgGasUsage = uint64(1_000_000)
@@ -23,11 +24,11 @@ const maxBypassMinFeeMsgGasUsage = uint64(1_000_000)
 type MinGasPriceDecorator struct {
 	BypassMinFeeMsgTypes []string
 
-	feesKeeper ethermintante.FeeMarketKeeper
-	evmKeeper  ethermintante.EVMKeeper
+	feesKeeper evmanteinterfaces.FeeMarketKeeper
+	evmKeeper  evmanteinterfaces.EVMKeeper
 }
 
-func NewMinGasPriceDecorator(fk ethermintante.FeeMarketKeeper, ek ethermintante.EVMKeeper, bypassMsgTypes []string) MinGasPriceDecorator {
+func NewMinGasPriceDecorator(fk evmanteinterfaces.FeeMarketKeeper, ek evmanteinterfaces.EVMKeeper, bypassMsgTypes []string) MinGasPriceDecorator {
 	return MinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek, BypassMinFeeMsgTypes: bypassMsgTypes}
 }
 
@@ -41,7 +42,7 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	gas := feeTx.GetGas()
 	msgs := feeTx.GetMsgs()
 
-	evmDenom := mpd.evmKeeper.GetParams(ctx).EvmDenom
+	evmDenom := evmtypes.GetEVMCoinDenom()
 	minGasPrices := sdk.DecCoins{
 		{
 			Denom:  evmDenom,

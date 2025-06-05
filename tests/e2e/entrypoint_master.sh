@@ -74,7 +74,7 @@ done
 
 # 6. Replace params
 sed -i 's/"bond_denom": "stake"/"bond_denom": "axpla"/g' $XPLAHOME/config/genesis.json
-sed -i 's/"evm_denom": "aphoton",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"evm_denom": "",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom": "stake",/"denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"max_gas": "-1"/"max_gas": "50000000000"/g' $XPLAHOME/config/genesis.json

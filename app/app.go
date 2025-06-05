@@ -10,6 +10,8 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/ethereum/go-ethereum/core/vm"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmos "github.com/cometbft/cometbft/libs/os"
@@ -17,6 +19,7 @@ import (
 
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/gogoproto/proto"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -58,10 +61,10 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
-	evmapi "github.com/xpladev/ethermint/api/ethermint/evm/v1"
-	ethenc "github.com/xpladev/ethermint/encoding/codec"
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
-	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	ethenc "github.com/cosmos/evm/encoding/codec"
+	cosmosevmutils "github.com/cosmos/evm/utils"
+	erc20types "github.com/cosmos/evm/x/erc20/types"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
@@ -70,8 +73,9 @@ import (
 	"github.com/xpladev/xpla/app/upgrades"
 	"github.com/xpladev/xpla/app/upgrades/v1_8"
 	"github.com/xpladev/xpla/docs"
+	xplatypes "github.com/xpladev/xpla/types"
 
-	protov2 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var (
@@ -90,7 +94,7 @@ var (
 
 var (
 	// TODO: after test, take this values from appOpts
-	evmMaxGasWanted uint64 = 500000 //ethermintconfig.DefaultMaxTxGasWanted
+	evmMaxGasWanted uint64 = 500000 //legacy from ethermintconfig.DefaultMaxTxGasWanted
 )
 
 // XplaApp extends an ABCI application, but with most of its parameters exported.
@@ -147,12 +151,11 @@ func NewXplaApp(
 		ValidatorAddressCodec: address.Bech32Codec{
 			Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
 		},
+		// apply custom GetSigners for MsgEthereumTx
+		CustomGetSigners: map[protoreflect.FullName]signing.GetSignersFunc{
+			evmtypes.MsgEthereumTxCustomGetSigner.MsgType: evmtypes.MsgEthereumTxCustomGetSigner.Fn,
+		},
 	}
-	// apply custom GetSigners for MsgEthereumTx
-	signingOptions.DefineCustomGetSigners(
-		protov2.MessageName(&evmapi.MsgEthereumTx{}),
-		evmtypes.GetSignersV2,
-	)
 	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles:     proto.HybridResolver,
 		SigningOptions: signingOptions,
@@ -184,6 +187,13 @@ func NewXplaApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
+	// initialize the Cosmos EVM application configuration
+	if bApp.ChainID() != "" {
+		if err := xplatypes.EvmAppOptions(bApp.ChainID()); err != nil {
+			panic(err)
+		}
+	}
+
 	app := &XplaApp{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
@@ -210,9 +220,14 @@ func NewXplaApp(
 		wasmOpts,
 	)
 
+	// Create IBC Tendermint Light Client Stack
+	clientKeeper := app.AppKeepers.IBCKeeper.ClientKeeper
+	tmLightClientModule := ibctm.NewLightClientModule(appCodec, clientKeeper.GetStoreProvider())
+	clientKeeper.AddRoute(ibctm.ModuleName, &tmLightClientModule)
+
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(appModules(app, appCodec, txConfig, skipGenesisInvariants)...)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, skipGenesisInvariants, tmLightClientModule)...)
 	app.ModuleBasics = newBasicManagerFromManager(app)
 
 	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
@@ -240,7 +255,6 @@ func NewXplaApp(
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
-	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	// Tell the app's module manager how to set the order of BeginBlockers, which are run at the beginning of every block.
 	app.mm.SetOrderBeginBlockers(orderBeginBlockers()...)
 
@@ -249,9 +263,6 @@ func NewXplaApp(
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
 	// NOTE: The genutils module must also occur after auth so that it can access the params from auth.
-	// NOTE: Capability module must occur first so that it can initialize any capabilities
-	// so that other modules that want to create or claim capabilities afterwards in InitChain
-	// can do so safely.
 	app.mm.SetOrderInitGenesis(orderInitBlockers()...)
 
 	// Uncomment if you want to set a custom migration order here.
@@ -285,7 +296,7 @@ func NewXplaApp(
 	app.MountTransientStores(app.GetTransientStoreKey())
 	app.MountMemoryStores(app.GetMemoryStoreKey())
 
-	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
+	wasmConfig, err := wasm.ReadNodeConfig(appOpts)
 	if err != nil {
 		panic("error while reading wasm config: " + err.Error())
 	}
@@ -417,6 +428,15 @@ func (app *XplaApp) ModuleAccountAddrs() map[string]bool {
 func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	// remove module accounts that are ALLOWED to received funds
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
+	blockedPrecompilesHex := evmtypes.AvailableStaticPrecompiles
+	for _, addr := range vm.PrecompiledAddressesBerlin {
+		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
+	}
+
+	for _, precompile := range blockedPrecompilesHex {
+		modAccAddrs[cosmosevmutils.EthHexToCosmosAddr(precompile).String()] = true
+	}
 
 	return modAccAddrs
 }
