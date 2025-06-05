@@ -21,8 +21,8 @@ import (
 
 	cosmwasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
-	ethhd "github.com/xpladev/ethermint/crypto/hd"
-	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	ethhd "github.com/cosmos/evm/crypto/hd"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
 )
@@ -262,7 +262,7 @@ func GetAccountNumber(conn *grpc.ClientConn, chainId, address string) (uint64, u
 		return 0, 0, err
 	}
 
-	var baseAccount authtypes.ModuleAccount
+	var baseAccount authtypes.BaseAccount
 	err = baseAccount.Unmarshal(res.Account.Value)
 	if err != nil {
 		err = errors.Wrap(err, "GetAccountNumber, unmarshalling")
