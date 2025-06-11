@@ -74,6 +74,8 @@ import (
 	protov2 "google.golang.org/protobuf/proto"
 )
 
+const appName = "Xpla"
+
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
