@@ -69,8 +69,6 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
-	erc20keeper "github.com/cosmos/evm/x/erc20/keeper"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
 	feemarketkeeper "github.com/cosmos/evm/x/feemarket/keeper"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	vmkeeper "github.com/cosmos/evm/x/vm/keeper"
@@ -118,7 +116,6 @@ type AppKeepers struct {
 	RatelimitKeeper ratelimitkeeper.Keeper
 
 	// xpla modules
-	Erc20Keeper     erc20keeper.Keeper
 	EvmKeeper       *vmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
 
@@ -495,6 +492,8 @@ func NewAppKeeper(
 		appKeepers.tkeys[feemarkettypes.TransientKey],
 	)
 
+	// W/A for avoiding evm hook panic by erc20 keeper
+	var mockErc20Keeper MockErc20Keeper = MockErc20Keeper{}
 	appKeepers.EvmKeeper = vmkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[vmtypes.StoreKey],
@@ -504,19 +503,8 @@ func NewAppKeeper(
 		&appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.FeeMarketKeeper,
-		&appKeepers.Erc20Keeper,
+		mockErc20Keeper,
 		evmTrace,
-	)
-
-	appKeepers.Erc20Keeper = erc20keeper.NewKeeper(
-		appKeepers.keys[erc20types.StoreKey],
-		appCodec,
-		authtypes.NewModuleAddress(govtypes.ModuleName),
-		appKeepers.AccountKeeper,
-		&appKeepers.BankKeeper,
-		appKeepers.EvmKeeper,
-		appKeepers.StakingKeeper,
-		nil,
 	)
 
 	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
@@ -587,7 +575,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(pfmroutertypes.ModuleName)
 	paramsKeeper.Subspace(ratelimittypes.ModuleName).WithKeyTable(ratelimittypes.ParamKeyTable())
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
-	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
 	paramsKeeper.Subspace(vmtypes.ModuleName).WithKeyTable(vmtypes.ParamKeyTable())
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())

@@ -50,8 +50,6 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
-	"github.com/cosmos/evm/x/erc20"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
 	"github.com/cosmos/evm/x/feemarket"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	evm "github.com/cosmos/evm/x/vm"
@@ -79,7 +77,6 @@ var maccPerms = map[string][]string{
 	wasmtypes.ModuleName:           {authtypes.Burner},
 	evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 	feemarkettypes.ModuleName:      nil,
-	erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	rewardtypes.ModuleName:         nil,
 }
 
@@ -120,7 +117,6 @@ func appModules(
 		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
-		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper.AccountKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 	}
@@ -204,7 +200,6 @@ func orderBeginBlockers() []string {
 		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
@@ -243,7 +238,6 @@ func orderEndBlockers() []string {
 		wasmtypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
-		erc20types.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
 	}
@@ -269,7 +263,6 @@ func orderInitBlockers() []string {
 		// feemarket module needs to be initialized before genutil module,
 		// gentx transactions use MinGasPriceDecorator.AnteHandle
 		feemarkettypes.ModuleName,
-		erc20types.ModuleName,
 		genutiltypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
