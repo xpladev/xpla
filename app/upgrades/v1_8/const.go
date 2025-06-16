@@ -8,6 +8,7 @@ import (
 
 const (
 	UpgradeName = "v1_8"
+	IbcFeeStoreKey = "feeibc"
 )
 
 var Upgrade = upgrades.Upgrade{
@@ -15,5 +16,9 @@ var Upgrade = upgrades.Upgrade{
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{},
+		Renamed: nil,
+		Deleted: []string{
+			IbcFeeStoreKey,
+		},
 	},
 }

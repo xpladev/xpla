@@ -66,6 +66,8 @@ import (
 	erc20types "github.com/cosmos/evm/x/erc20/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
+	ethermintsecp256k1 "github.com/xpladev/ethermint/crypto/ethsecp256k1"
+	ethermintenc "github.com/xpladev/ethermint/encoding/codec"
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
@@ -170,6 +172,10 @@ func NewXplaApp(
 	ethenc.RegisterInterfaces(interfaceRegistry)
 	// Set erc20 registry for backwards compatibility
 	erc20types.RegisterInterfaces(interfaceRegistry)
+	// Set ethermint registry for backwards compatibility
+	ethermintenc.RegisterInterfaces(interfaceRegistry)
+	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PubKey{}, ethermintsecp256k1.PubKeyName, nil)
+	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PrivKey{}, ethermintsecp256k1.PrivKeyName, nil)
 
 	// App Opts
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
