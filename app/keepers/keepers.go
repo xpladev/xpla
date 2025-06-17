@@ -7,6 +7,9 @@ import (
 	pfmrouter "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	pfmrouterkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	ibchooks "github.com/cosmos/ibc-apps/modules/ibc-hooks/v8"
+	ibchookskeeper "github.com/cosmos/ibc-apps/modules/ibc-hooks/v8/keeper"
+	ibchookstypes "github.com/cosmos/ibc-apps/modules/ibc-hooks/v8/types"
 	ratelimit "github.com/cosmos/ibc-apps/modules/rate-limiting/v8"
 	ratelimitkeeper "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/keeper"
 	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
@@ -116,9 +119,11 @@ type AppKeepers struct {
 	FeeGrantKeeper        feegrantkeeper.Keeper
 	AuthzKeeper           authzkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
+	ContractKeeper        wasmtypes.ContractOpsKeeper
 
 	PFMRouterKeeper *pfmrouterkeeper.Keeper
 	RatelimitKeeper ratelimitkeeper.Keeper
+	IBCHooksKeeper  ibchookskeeper.Keeper
 
 	IBCFeeKeeper ibcfeekeeper.Keeper
 
@@ -432,6 +437,10 @@ func NewAppKeeper(
 		govModAddress,
 	)
 
+	appKeepers.IBCHooksKeeper = ibchookskeeper.NewKeeper(
+		appKeepers.keys[ibchookstypes.StoreKey],
+	)
+
 	// Must be called on PFMRouter AFTER TransferKeeper initialized
 	appKeepers.PFMRouterKeeper.SetTransferKeeper(appKeepers.TransferKeeper)
 
@@ -489,6 +498,7 @@ func NewAppKeeper(
 		govModAddress,
 		wasmOpts...,
 	)
+	appKeepers.ContractKeeper = wasmkeeper.NewDefaultPermissionKeeper(appKeepers.WasmKeeper)
 
 	// Middleware Stacks
 
@@ -515,6 +525,10 @@ func NewAppKeeper(
 	)
 	transferStack = ratelimit.NewIBCMiddleware(appKeepers.RatelimitKeeper, transferStack)
 	transferStack = ibcfee.NewIBCMiddleware(transferStack, appKeepers.IBCFeeKeeper)
+
+	ics20WasmHooks := ibchooks.NewWasmHooks(&appKeepers.IBCHooksKeeper, &appKeepers.WasmKeeper, sdk.GetConfig().GetBech32AccountAddrPrefix())
+	hooksICS4Wrapper := ibchooks.NewICS4Middleware(appKeepers.IBCKeeper.ChannelKeeper, ics20WasmHooks)
+	transferStack = ibchooks.NewIBCMiddleware(transferStack, &hooksICS4Wrapper)
 
 	// Create ICAHost Stack
 	var icaHostStack porttypes.IBCModule = icahost.NewIBCModule(appKeepers.ICAHostKeeper)

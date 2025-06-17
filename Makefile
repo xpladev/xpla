@@ -196,3 +196,15 @@ abi-gen:
 	solc --abi --pretty-json --overwrite -o distribution distribution/IDistribution.sol && \
 	solc --abi --pretty-json --overwrite -o staking staking/IStaking.sol && \
 	solc --abi --pretty-json --overwrite -o wasm wasm/IWasm.sol
+
+###############################################################################
+###                                Docker                                   ###
+###############################################################################
+get-heighliner:
+	go install github.com/strangelove-ventures/heighliner@latest
+local-image:
+ifeq (,$(shell which heighliner))
+	echo 'heighliner' binary not found. Consider running `make get-heighliner`
+else
+	heighliner build -c $(NAME) --local --no-cache --dockerfile cosmos --build-target "make install" --pre-build "apk add --update --no-cache binutils-gold && ln -s /lib/libwasmvm_muslc.aarch64.a /lib/libwasmvm.aarch64.a" --binaries "/go/bin/xplad"
+endif

@@ -3,6 +3,8 @@ package app
 import (
 	pfmrouter "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	ibchooks "github.com/cosmos/ibc-apps/modules/ibc-hooks/v8"
+	ibchookstypes "github.com/cosmos/ibc-apps/modules/ibc-hooks/v8/types"
 	ratelimit "github.com/cosmos/ibc-apps/modules/rate-limiting/v8"
 	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
 	"github.com/cosmos/ibc-go/modules/capability"
@@ -112,6 +114,7 @@ func appModules(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
 		ibctm.NewAppModule(),
+		ibchooks.NewAppModule(app.AccountKeeper.AccountKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
@@ -206,6 +209,7 @@ func orderBeginBlockers() []string {
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		ibchookstypes.ModuleName,
 		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
@@ -246,6 +250,7 @@ func orderEndBlockers() []string {
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		ibchookstypes.ModuleName,
 		wasmtypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
@@ -291,6 +296,7 @@ func orderInitBlockers() []string {
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		ibchookstypes.ModuleName,
 		wasmtypes.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
