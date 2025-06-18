@@ -20,7 +20,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
-	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
 	cosmosante "github.com/cosmos/evm/ante/cosmos"
 	evmante "github.com/cosmos/evm/ante/evm"
@@ -140,7 +139,6 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		// disable the Msg types that cannot be included on an authz.MsgExec msgs field
 		cosmosante.NewAuthzLimiterDecorator(
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
-			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		volunteerante.NewRejectDelegateVolunteerValidatorDecorator(opts.VolunteerKeeper),
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
