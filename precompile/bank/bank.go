@@ -4,13 +4,16 @@ import (
 	"embed"
 	"errors"
 
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/xpladev/ethermint/x/evm/statedb"
+	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
 )
@@ -26,6 +29,7 @@ var (
 )
 
 type PrecompiledBank struct {
+	cmn.Precompile
 	bk BankKeeper
 }
 
@@ -38,16 +42,28 @@ func init() {
 }
 
 func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
-	return PrecompiledBank{bk: bk}
+	p := PrecompiledBank{
+		Precompile: cmn.Precompile{
+			ABI:                  ABI,
+			KvGasConfig:          storetypes.GasConfig{},
+			TransientKVGasConfig: storetypes.GasConfig{},
+		},
+		bk: bk,
+	}
+	p.SetAddress(common.HexToAddress(hexAddress))
+
+	return p
 }
+
+func (p PrecompiledBank) Address() common.Address { return Address }
 
 func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
 	// Implement the method as needed
 	return 0
 }
 
-func (p PrecompiledBank) Run(evm *vm.EVM, input []byte) ([]byte, error) {
-	method, argsBz := util.SplitInput(input)
+func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	method, argsBz := util.SplitInput(contract.Input)
 
 	abiMethod, err := ABI.MethodById(method)
 	if err != nil {

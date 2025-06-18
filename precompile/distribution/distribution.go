@@ -6,6 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -13,7 +15,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	"github.com/xpladev/ethermint/x/evm/statedb"
+	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
 )
@@ -29,6 +32,7 @@ var (
 )
 
 type PrecompiledDistribution struct {
+	cmn.Precompile
 	dk DistributionKeeper
 }
 
@@ -41,16 +45,28 @@ func init() {
 }
 
 func NewPrecompiledDistribution(dk DistributionKeeper) PrecompiledDistribution {
-	return PrecompiledDistribution{dk: dk}
+	p := PrecompiledDistribution{
+		Precompile: cmn.Precompile{
+			ABI:                  ABI,
+			KvGasConfig:          storetypes.GasConfig{},
+			TransientKVGasConfig: storetypes.GasConfig{},
+		},
+		dk: dk,
+	}
+	p.SetAddress(common.HexToAddress(hexAddress))
+
+	return p
 }
+
+func (p PrecompiledDistribution) Address() common.Address { return Address }
 
 func (p PrecompiledDistribution) RequiredGas(input []byte) uint64 {
 	// Implement the method as needed
 	return 0
 }
 
-func (p PrecompiledDistribution) Run(evm *vm.EVM, input []byte) ([]byte, error) {
-	method, argsBz := util.SplitInput(input)
+func (p PrecompiledDistribution) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	method, argsBz := util.SplitInput(contract.Input)
 
 	abiMethod, err := ABI.MethodById(method)
 	if err != nil {

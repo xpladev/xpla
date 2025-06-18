@@ -15,7 +15,8 @@ import (
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/xpladev/ethermint/crypto/ethsecp256k1"
+	"github.com/cosmos/evm/crypto/ethsecp256k1"
+	ethermintethsecp256k1 "github.com/xpladev/ethermint/crypto/ethsecp256k1"
 )
 
 var _ authante.SignatureVerificationGasConsumer = SigVerificationGasConsumer
@@ -43,6 +44,10 @@ func SigVerificationGasConsumer(
 
 	case *ethsecp256k1.PubKey:
 		meter.ConsumeGas(secp256k1VerifyCost, "ante verify: eth_secp256k1")
+		return nil
+
+	case *ethermintethsecp256k1.PubKey:
+		meter.ConsumeGas(secp256k1VerifyCost, "ante verify: ethermint_secp256k1")
 		return nil
 
 	case *ed25519.PubKey:

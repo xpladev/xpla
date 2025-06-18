@@ -5,12 +5,16 @@ import (
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	common "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 )
 
 // TestErcKeeper defines the expected interface for the ERC20 module.

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,9 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
-	"github.com/xpladev/ethermint/crypto/hd"
-	ethermint "github.com/xpladev/ethermint/types"
-	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	"github.com/cosmos/evm/crypto/hd"
 )
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
@@ -84,19 +81,8 @@ contain valid denominations.
 			}
 
 			// create concrete account type based on input parameters
-			var genAccount authtypes.GenesisAccount
-
 			balances := banktypes.Balance{Address: addr.String(), Coins: coins.Sort()}
 			baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
-
-			genAccount = &ethermint.EthAccount{
-				BaseAccount: baseAccount,
-				CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
-			}
-
-			if err := genAccount.Validate(); err != nil {
-				return fmt.Errorf("failed to validate new genesis account: %w", err)
-			}
 
 			genFile := config.GenesisFile()
 			appState, genDoc, err := genutiltypes.GenesisStateFromGenFile(genFile)
@@ -117,7 +103,7 @@ contain valid denominations.
 
 			// Add the new account to the set of genesis accounts and sanitize the
 			// accounts afterwards.
-			accs = append(accs, genAccount)
+			accs = append(accs, baseAccount)
 			accs = authtypes.SanitizeGenesisAccounts(accs)
 
 			genAccs, err := authtypes.PackAccounts(accs)
