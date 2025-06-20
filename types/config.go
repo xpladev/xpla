@@ -36,7 +36,7 @@ const (
 	// default value
 	DefaultBaseDenom    = "axpla"
 	DefaultDisplayDenom = "xpla"
-	DefaultChainID      = "test_9999"
+	DefaultChainID      = "localtest_1"
 )
 
 // cosmosEVMActivators defines a map of opcode modifiers associated
@@ -94,6 +94,9 @@ var ChainsCoinInfo = map[string]evmtypes.EvmCoinInfo{
 // for the Cosmos EVM chain.
 func EvmAppOptions(chainID string) error {
 	if sealed {
+		return nil
+	}
+	if chainID == "" { // for standalone cmd case
 		return nil
 	}
 
