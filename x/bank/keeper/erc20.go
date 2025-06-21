@@ -1,30 +1,49 @@
 package keeper
 
 import (
-	_ "embed"
+	"embed"
 	"encoding/json"
-	"errors"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	"github.com/cosmos/evm/server/config"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
+	precompileutil "github.com/xpladev/xpla/precompile/util"
 	"github.com/xpladev/xpla/x/bank/types"
 )
 
-//go:embed ERC20Contract.json
-var erc20JSON []byte
+const abiFile = "ERC20.abi"
+
+var (
+	ABI = abi.ABI{}
+
+	//go:embed ERC20.abi
+	abiFS embed.FS
+)
 
 type Erc20Keeper struct {
 	ek types.EvmKeeper
+}
+
+func init() {
+	var err error
+	ABI, err = precompileutil.LoadABI(abiFS, abiFile)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func NewErc20Keeper(ek types.EvmKeeper) Erc20Keeper {
@@ -36,10 +55,7 @@ func NewErc20Keeper(ek types.EvmKeeper) Erc20Keeper {
 func (k Erc20Keeper) QueryTotalSupply(ctx sdk.Context, contractAddress common.Address) (sdkmath.Int, error) {
 	moduleAddress := common.BytesToAddress(authtypes.NewModuleAddress(banktypes.ModuleName).Bytes())
 
-	// XXX
-	erc20contract, err := LoadERC20Contract()
-	//data, err := evmtypes.ERC20Contract.ABI.Pack(types.GetErc20Method(types.TotalSupply))
-	data, err := erc20contract.ABI.Pack(types.GetErc20Method(types.TotalSupply))
+	data, err := ABI.Pack(types.GetErc20Method(types.TotalSupply))
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
@@ -49,8 +65,7 @@ func (k Erc20Keeper) QueryTotalSupply(ctx sdk.Context, contractAddress common.Ad
 		return sdkmath.ZeroInt(), err
 	}
 
-	//unpacked, err := evmtypes.ERC20Contract.ABI.Unpack(types.GetErc20Method(types.TotalSupply), res)
-	unpacked, err := erc20contract.ABI.Unpack(types.GetErc20Method(types.TotalSupply), res)
+	unpacked, err := ABI.Unpack(types.GetErc20Method(types.TotalSupply), res)
 	if err != nil || len(unpacked) == 0 {
 		return sdkmath.ZeroInt(), err
 	}
@@ -69,10 +84,7 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 	moduleAddress := common.BytesToAddress(authtypes.NewModuleAddress(banktypes.ModuleName).Bytes())
 	ethAccount := common.BytesToAddress(account.Bytes())
 
-	// XXX
-	erc20contract, err := LoadERC20Contract()
-	//data, err := evmtypes.CompiledContract.ABI.Pack(types.GetErc20Method(types.BalanceOf), ethAccount)
-	data, err := erc20contract.ABI.Pack(types.GetErc20Method(types.BalanceOf), ethAccount)
+	data, err := ABI.Pack(types.GetErc20Method(types.BalanceOf), ethAccount)
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
@@ -82,8 +94,7 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 		return sdkmath.ZeroInt(), err
 	}
 
-	//unpacked, err := evmtypes.ERC20Contract.ABI.Unpack(types.GetErc20Method(types.BalanceOf), res)
-	unpacked, err := erc20contract.ABI.Unpack(types.GetErc20Method(types.BalanceOf), res)
+	unpacked, err := ABI.Unpack(types.GetErc20Method(types.BalanceOf), res)
 	if err != nil || len(unpacked) == 0 {
 		return sdkmath.ZeroInt(), err
 	}
@@ -102,10 +113,7 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 	ethSender := common.BytesToAddress(sender.Bytes())
 	ethTo := common.BytesToAddress(to.Bytes())
 
-	// XXX
-	erc20contract, err := LoadERC20Contract()
-	//data, err := evmtypes.ERC20Contract.ABI.Pack(types.GetErc20Method(types.Transfer), ethTo, amount)
-	data, err := erc20contract.ABI.Pack(types.GetErc20Method(types.Transfer), ethTo, amount)
+	data, err := ABI.Pack(types.GetErc20Method(types.Transfer), ethTo, amount)
 	if err != nil {
 		return err
 	}
@@ -115,8 +123,7 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 		return err
 	}
 
-	//unpacked, err := evmtypes.ERC20Contract.ABI.Unpack(types.GetErc20Method(types.Transfer), res)
-	unpacked, err := erc20contract.ABI.Unpack(types.GetErc20Method(types.Transfer), res)
+	unpacked, err := ABI.Unpack(types.GetErc20Method(types.Transfer), res)
 	if err != nil {
 		return err
 	}
@@ -182,19 +189,4 @@ func (bek Erc20Keeper) callEVM(
 	}
 
 	return res.Ret, nil
-}
-
-func LoadERC20Contract() (evmtypes.CompiledContract, error) {
-	var contract evmtypes.CompiledContract
-
-	err := json.Unmarshal(erc20JSON, &contract)
-	if err != nil {
-		return evmtypes.CompiledContract{}, err
-	}
-
-	if len(contract.Bin) == 0 {
-		return evmtypes.CompiledContract{}, errors.New("got empty binary data for contract")
-	}
-
-	return contract, nil
 }
