@@ -68,6 +68,7 @@ import (
 
 	ethermintsecp256k1 "github.com/xpladev/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/ethermint/encoding/codec"
+
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
@@ -75,6 +76,7 @@ import (
 	"github.com/xpladev/xpla/app/upgrades"
 	"github.com/xpladev/xpla/app/upgrades/v1_8"
 	"github.com/xpladev/xpla/docs"
+	xplaprecompile "github.com/xpladev/xpla/precompile"
 	xplatypes "github.com/xpladev/xpla/types"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -433,11 +435,16 @@ func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[s
 	// remove module accounts that are ALLOWED to received funds
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
+	// initialize precompile addresses to block
 	blockedPrecompilesHex := evmtypes.AvailableStaticPrecompiles
 	for _, addr := range vm.PrecompiledAddressesBerlin {
 		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
 	}
+	for _, addr := range xplaprecompile.PrecompiledAddressesXpla {
+		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
+	}
 
+	// add precompile addresses to block address
 	for _, precompile := range blockedPrecompilesHex {
 		modAccAddrs[cosmosevmutils.EthHexToCosmosAddr(precompile).String()] = true
 	}
