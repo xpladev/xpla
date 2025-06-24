@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -14,7 +15,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	tmos "github.com/cometbft/cometbft/libs/os"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	dbm "github.com/cosmos/cosmos-db"
@@ -40,7 +40,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -54,7 +53,6 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -112,8 +110,6 @@ type XplaApp struct { // nolint: golint
 	appCodec          codec.Codec
 	txConfig          client.TxConfig
 	interfaceRegistry types.InterfaceRegistry
-
-	invCheckPeriod uint
 
 	// the module manager
 	mm           *module.Manager
@@ -180,10 +176,6 @@ func NewXplaApp(
 	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PubKey{}, ethermintsecp256k1.PubKeyName, nil)
 	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PrivKey{}, ethermintsecp256k1.PrivKeyName, nil)
 
-	// App Opts
-	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
-	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
-
 	bApp := baseapp.NewBaseApp(
 		appName,
 		logger,
@@ -207,7 +199,6 @@ func NewXplaApp(
 		txConfig:          txConfig,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
-		invCheckPeriod:    invCheckPeriod,
 	}
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
@@ -221,7 +212,6 @@ func NewXplaApp(
 		app.BlockedModuleAccountAddrs(moduleAccountAddresses),
 		skipUpgradeHeights,
 		homePath,
-		invCheckPeriod,
 		logger,
 		appOpts,
 		wasmOpts,
@@ -234,7 +224,7 @@ func NewXplaApp(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(appModules(app, appCodec, txConfig, skipGenesisInvariants, tmLightClientModule)...)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, tmLightClientModule)...)
 	app.ModuleBasics = newBasicManagerFromManager(app)
 
 	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
@@ -256,6 +246,7 @@ func NewXplaApp(
 	// NOTE: upgrade module is required to be prioritized
 	app.mm.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
+		authtypes.ModuleName,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -275,7 +266,6 @@ func NewXplaApp(
 	// Uncomment if you want to set a custom migration order here.
 	// app.mm.SetOrderMigrations(custom order)
 
-	app.mm.RegisterInvariants(app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	err = app.mm.RegisterServices(app.configurator)
 	if err != nil {
@@ -294,7 +284,7 @@ func NewXplaApp(
 	//
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
 	// transactions
-	app.sm = module.NewSimulationManager(simulationModules(app, appCodec, skipGenesisInvariants)...)
+	app.sm = module.NewSimulationManager(simulationModules(app, appCodec)...)
 
 	app.sm.RegisterStoreDecoders()
 
@@ -365,13 +355,13 @@ func NewXplaApp(
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
-			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
+			panic(fmt.Sprintf("failed to load latest version: %s", err))
 		}
 
 		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
 
 		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
-			tmos.Exit(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
+			panic(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
 		}
 	}
 
@@ -468,6 +458,12 @@ func (app *XplaApp) LegacyAmino() *codec.LegacyAmino {
 func (app *XplaApp) AppCodec() codec.Codec {
 	return app.appCodec
 }
+
+// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
+func (app *XplaApp) DefaultGenesis() map[string]json.RawMessage {
+       return app.ModuleBasics.DefaultGenesis(app.appCodec)
+}
+
 
 // InterfaceRegistry returns Xpla's InterfaceRegistry
 func (app *XplaApp) InterfaceRegistry() types.InterfaceRegistry {
