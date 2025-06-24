@@ -1,8 +1,8 @@
 module github.com/xpladev/xpla
 
-go 1.23.6
+go 1.23.8
 
-toolchain go1.23.7
+toolchain go1.24.3
 
 require (
 	cosmossdk.io/api v0.7.6
