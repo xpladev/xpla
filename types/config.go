@@ -96,10 +96,6 @@ func EvmAppOptions(chainID string) error {
 	if sealed {
 		return nil
 	}
-	if chainID == "" { // for standalone cmd case
-		return nil
-	}
-
 	id := strings.Split(chainID, "-")[0]
 	coinInfo, found := ChainsCoinInfo[id]
 	if !found {

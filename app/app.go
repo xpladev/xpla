@@ -145,6 +145,7 @@ func NewXplaApp(
 	homePath string,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
+	evmAppOptions xplatypes.EVMOptionsFn,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *XplaApp {
 	legacyAmino := codec.NewLegacyAmino()
@@ -196,7 +197,7 @@ func NewXplaApp(
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
 	// initialize the Cosmos EVM application configuration
-	if err := xplatypes.EvmAppOptions(bApp.ChainID()); err != nil {
+	if err := evmAppOptions(bApp.ChainID()); err != nil {
 		panic(err)
 	}
 

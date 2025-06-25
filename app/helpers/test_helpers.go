@@ -30,6 +30,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	xplaapp "github.com/xpladev/xpla/app"
+	xplatypes "github.com/xpladev/xpla/types"
 )
 
 // SimAppChainID hardcoded chainID for simulation
@@ -136,6 +137,7 @@ func setup(chainid string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		xplaapp.DefaultNodeHome,
 		appOptions,
 		emptyWasmOpts,
+		xplatypes.EvmAppOptions,
 		baseapp.SetChainID(chainid),
 	)
 	return app, app.ModuleBasics.DefaultGenesis(app.AppCodec())
