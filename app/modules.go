@@ -112,7 +112,7 @@ func appModules(
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
 		pfmrouter.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
 		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
+		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.AccountKeeper.AddressCodec()),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),

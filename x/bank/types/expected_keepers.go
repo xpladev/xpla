@@ -10,7 +10,7 @@ import (
 
 	common "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/core/tracing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -26,7 +26,7 @@ type TestErcKeeper interface {
 
 // TestErcKeeper defines the expected interface for the ERC20 module.
 type EvmKeeper interface {
-	ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evmtypes.MsgEthereumTxResponse, error)
+	ApplyMessage(ctx sdk.Context, msg core.Message, tracer *tracing.Hooks, commit bool) (*evmtypes.MsgEthereumTxResponse, error)
 	EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*evmtypes.EstimateGasResponse, error)
 	GetNonce(ctx sdk.Context, addr common.Address) uint64
 }

@@ -188,8 +188,12 @@ func NewXplaApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
+	evmChainId, err := xplatypes.EvmChainId(bApp.ChainID())
+	if err != nil {
+		panic(err)
+	}
 	// initialize the Cosmos EVM application configuration
-	if err := evmAppOptions(bApp.ChainID()); err != nil {
+	if err := evmAppOptions(evmChainId); err != nil {
 		panic(err)
 	}
 

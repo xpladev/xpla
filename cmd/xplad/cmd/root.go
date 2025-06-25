@@ -219,9 +219,7 @@ func initRootCmd(rootCmd *cobra.Command,
 	ac := appCreator{}
 
 	rootCmd.AddCommand(
-		evmclient.ValidateChainID(
-			genutilcli.InitCmd(basicManager, xpla.DefaultNodeHome),
-		),
+		genutilcli.InitCmd(basicManager, xpla.DefaultNodeHome),
 		// XXX check this needed
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome, genutiltypes.DefaultMessageValidator, txConfig.SigningContext().ValidatorAddressCodec()),
 		genutilcli.GenTxCmd(basicManager, txConfig, banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome, txConfig.SigningContext().ValidatorAddressCodec()),
