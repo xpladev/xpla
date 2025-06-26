@@ -50,6 +50,7 @@ import (
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -60,6 +61,7 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	ethenc "github.com/cosmos/evm/encoding/codec"
+	"github.com/cosmos/evm/ethereum/eip712"
 	cosmosevmutils "github.com/cosmos/evm/utils"
 	erc20types "github.com/cosmos/evm/x/erc20/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
@@ -183,15 +185,21 @@ func NewXplaApp(
 		txConfig.TxDecoder(),
 		baseAppOptions...)
 
+	evmChainId, err := xplatypes.EvmChainId(bApp.ChainID())
+	if err != nil {
+		panic(err)
+	}
+
+	// This is needed for the EIP712 txs because currently is using
+	// the deprecated method legacytx.StdSignBytes
+	legacytx.RegressionTestingAminoCodec = legacyAmino
+	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainId)
+
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
-	evmChainId, err := xplatypes.EvmChainId(bApp.ChainID())
-	if err != nil {
-		panic(err)
-	}
 	// initialize the Cosmos EVM application configuration
 	if err := evmAppOptions(evmChainId); err != nil {
 		panic(err)
