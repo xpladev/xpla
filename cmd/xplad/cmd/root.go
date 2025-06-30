@@ -195,6 +195,7 @@ func initAppConfig() (string, interface{}) {
 
 	customAppConfig.StateSync.SnapshotInterval = 1000
 	customAppConfig.StateSync.SnapshotKeepRecent = 10
+	customAppConfig.EVM.EVMChainID = 37
 
 	return params.CustomConfigTemplate(customAppTemplate), params.CustomAppConfig{
 		Config: customAppConfig,
