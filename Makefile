@@ -206,5 +206,5 @@ local-image:
 ifeq (,$(shell which heighliner))
 	echo 'heighliner' binary not found. Consider running `make get-heighliner`
 else
-	heighliner build -c $(NAME) --local --no-cache --dockerfile cosmos --build-target "make install" --pre-build "apk add --update --no-cache binutils-gold && ln -s /lib/libwasmvm_muslc.aarch64.a /lib/libwasmvm.aarch64.a" --binaries "/go/bin/xplad"
+	DOCKER_BUILDKIT=1 heighliner build -c $(NAME) --local --no-cache --dockerfile cosmos --build-target "make install" --pre-build "apk add --update --no-cache binutils-gold && ln -s /lib/libwasmvm_muslc.aarch64.a /lib/libwasmvm.aarch64.a" --binaries "/go/bin/xplad"
 endif
