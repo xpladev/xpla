@@ -16,9 +16,9 @@ var PrecompiledAddressesXpla = []common.Address{
 }
 
 func RegistPrecompiledContract(ak pwasm.AccountKeeper, bk pbank.BankKeeper, sk pstaking.StakingKeeper, dk pdistribution.DistributionKeeper, wms pwasm.WasmMsgServer, wk pwasm.WasmKeeper, authAk pauth.AccountKeeper) {
-	vm.PrecompiledContractsBerlin[pbank.Address] = pbank.NewPrecompiledBank(bk)
-	vm.PrecompiledContractsBerlin[pstaking.Address] = pstaking.NewPrecompiledStaking(sk)
-	vm.PrecompiledContractsBerlin[pdistribution.Address] = pdistribution.NewPrecompiledDistribution(dk)
-	vm.PrecompiledContractsBerlin[pwasm.Address] = pwasm.NewPrecompiledWasm(ak, wms, wk)
-	vm.PrecompiledContractsBerlin[pauth.Address] = pauth.NewPrecompiledAuth(authAk)
+	vm.PrecompiledContractsPrague[pbank.Address] = pbank.NewPrecompiledBank(bk)
+	vm.PrecompiledContractsPrague[pstaking.Address] = pstaking.NewPrecompiledStaking(sk)
+	vm.PrecompiledContractsPrague[pdistribution.Address] = pdistribution.NewPrecompiledDistribution(dk)
+	vm.PrecompiledContractsPrague[pwasm.Address] = pwasm.NewPrecompiledWasm(ak, wms, wk)
+	vm.PrecompiledContractsPrague[pauth.Address] = pauth.NewPrecompiledAuth(authAk)
 }
