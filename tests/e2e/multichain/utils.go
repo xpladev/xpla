@@ -16,8 +16,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	ethenc "github.com/xpladev/ethermint/encoding/codec"
 )
 
@@ -101,9 +99,6 @@ func XplaChainSpec(
 }
 
 func StartXplaChain(t *testing.T, ctx context.Context, version []ibc.DockerImage) (*cosmos.CosmosChain, *client.Client) {
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount("xpla", "xplapub")
-
 	rep := testreporter.NewNopReporter()
 	eRep := rep.RelayerExecReporter(t)
 
@@ -183,9 +178,6 @@ func (s *IBCChainSetup) CreateChannel(ctx context.Context, srcPortName, destPort
 }
 
 func StartXplaChainAndSimdWithIBC(t *testing.T, ctx context.Context, version []ibc.DockerImage) *IBCChainSetup {
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount("xpla", "xplapub")
-
 	rep := testreporter.NewNopReporter()
 	eRep := rep.RelayerExecReporter(t)
 
