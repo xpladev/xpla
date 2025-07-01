@@ -1,8 +1,6 @@
 package types
 
 import (
-	"strings"
-
 	"cosmossdk.io/math"
 
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -24,19 +22,10 @@ func SetConfig() {
 }
 
 const (
-	// base chain ids for xpla network
+	// base chain coin info for xpla network
 	XplaBaseDenom    = "axpla"
 	XplaDisplayDenom = "xpla"
-
-	// base chain ids for xpla network
-	XplaMainnetChainID   = "dimension_37"
-	XplaTestnetChainID   = "cube_47"
-	XplaHypercubeChainID = "hypercube_270"
-
-	// default value
-	DefaultBaseDenom    = "axpla"
-	DefaultDisplayDenom = "xpla"
-	DefaultChainID      = "localtest_1"
+	XplaDecimals     = evmtypes.EighteenDecimals
 )
 
 // cosmosEVMActivators defines a map of opcode modifiers associated
@@ -60,46 +49,18 @@ func NoOpEVMOptions(_ string) error {
 
 var sealed = false
 
-// ChainsCoinInfo is a map of the chain id and its corresponding EvmCoinInfo
-// that allows initializing the app with different coin info based on the
-// chain id
-var ChainsCoinInfo = map[string]evmtypes.EvmCoinInfo{
-	XplaMainnetChainID: {
-		Denom:         XplaBaseDenom,
-		ExtendedDenom: XplaBaseDenom,
-		DisplayDenom:  XplaDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
-	},
-	XplaTestnetChainID: {
-		Denom:         XplaBaseDenom,
-		ExtendedDenom: XplaBaseDenom,
-		DisplayDenom:  XplaDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
-	},
-	XplaHypercubeChainID: {
-		Denom:         XplaBaseDenom,
-		ExtendedDenom: XplaBaseDenom,
-		DisplayDenom:  XplaDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
-	},
-	DefaultChainID: {
-		Denom:         DefaultBaseDenom,
-		ExtendedDenom: DefaultBaseDenom,
-		DisplayDenom:  DefaultDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
-	},
-}
-
 // EvmAppOptions allows to setup the global configuration
 // for the Cosmos EVM chain.
 func EvmAppOptions(chainID string) error {
 	if sealed {
 		return nil
 	}
-	id := strings.Split(chainID, "-")[0]
-	coinInfo, found := ChainsCoinInfo[id]
-	if !found {
-		coinInfo, _ = ChainsCoinInfo[DefaultChainID]
+
+	coinInfo := evmtypes.EvmCoinInfo{
+		Denom:         XplaBaseDenom,
+		ExtendedDenom: XplaBaseDenom,
+		DisplayDenom:  XplaDisplayDenom,
+		Decimals:      XplaDecimals,
 	}
 
 	// set the denom info for the chain
