@@ -26,12 +26,12 @@ import (
 	"github.com/xpladev/xpla/x/bank/types"
 )
 
-const abiFile = "ERC20.abi"
+const abiFile = "IERC20.abi"
 
 var (
 	ABI = abi.ABI{}
 
-	//go:embed ERC20.abi
+	//go:embed IERC20.abi
 	abiFS embed.FS
 )
 
