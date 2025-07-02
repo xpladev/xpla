@@ -3,6 +3,7 @@ package multichain
 import (
 	"context"
 	"testing"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/moby/moby/client"
@@ -17,11 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	ethenc "github.com/xpladev/ethermint/encoding/codec"
+
+	xplbanktypes "github.com/xpladev/xpla/x/bank/types"
 )
 
 const (
 	wallet  = "xpla"
-	denom   = "axpla"
+	Denom   = "axpla"
 	display = "XPLA"
 
 	minGasPrice = "280000000000"
@@ -50,27 +53,38 @@ func XplaChainSpec(
 ) *interchaintest.ChainSpec {
 
 	genesis := []cosmos.GenesisKV{
-		cosmos.NewGenesisKV("app_state.gov.params.voting_period", "1m"),
-		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", denom),
-		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.amount", "1"),
-		cosmos.NewGenesisKV("app_state.gov.params.expedited_min_deposit.0.denom", denom),
-		cosmos.NewGenesisKV("app_state.gov.params.expedited_min_deposit.0.amount", "1"),
+		cosmos.NewGenesisKV("app_state.gov.params.voting_period", "10s"),
+		cosmos.NewGenesisKV("app_state.gov.params.max_deposit_period", "10s"),
+		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", Denom),
+		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.amount", "10000000"),
+		cosmos.NewGenesisKV("app_state.gov.params.expedited_min_deposit.0.denom", Denom),
+		cosmos.NewGenesisKV("app_state.gov.params.expedited_min_deposit.0.amount", "10000000"),
 
-		cosmos.NewGenesisKV("app_state.mint.params.mint_denom", denom),
+		cosmos.NewGenesisKV("app_state.mint.params.mint_denom", Denom),
 		cosmos.NewGenesisKV("app_state.mint.minter.inflation", "0.000000000000000000"),
 		cosmos.NewGenesisKV("app_state.mint.params.inflation_rate_change", "0.000000000000000000"),
 		cosmos.NewGenesisKV("app_state.mint.params.inflation_min", "0.000000000000000000"),
 		cosmos.NewGenesisKV("app_state.mint.params.inflation_max", "0.000000000000000000"),
 
+		// Consensus timeouts for faster block production
+		cosmos.NewGenesisKV("consensus.params.timeout_propose", "500ms"),
+		cosmos.NewGenesisKV("consensus.params.timeout_propose_delta", "200ms"),
+		cosmos.NewGenesisKV("consensus.params.timeout_prevote", "200ms"),
+		cosmos.NewGenesisKV("consensus.params.timeout_prevote_delta", "200ms"),
+		cosmos.NewGenesisKV("consensus.params.timeout_precommit", "500ms"),
+		cosmos.NewGenesisKV("consensus.params.timeout_precommit_delta", "500ms"),
+		cosmos.NewGenesisKV("consensus.params.timeout_commit", "1s"),
+
 		cosmos.NewGenesisKV("consensus.params.block.max_gas", "50000000000"),
-		cosmos.NewGenesisKV("app_state.evm.params.evm_denom", denom),
+		cosmos.NewGenesisKV("app_state.evm.params.evm_denom", Denom),
 		cosmos.NewGenesisKV("app_state.feemarket.params.min_gas_price", minGasPrice),
 
-		cosmos.NewGenesisKV("app_state.crisis.constant_fee.denom", denom),
+		cosmos.NewGenesisKV("app_state.crisis.constant_fee.denom", Denom),
 	}
 
 	encoding := wasm.WasmEncoding()
 	ethenc.RegisterInterfaces(encoding.InterfaceRegistry)
+	xplbanktypes.RegisterInterfaces(encoding.InterfaceRegistry)
 
 	return &interchaintest.ChainSpec{
 		Name:          "xpla_1",
@@ -83,9 +97,9 @@ func XplaChainSpec(
 			Images:           version,
 			Bin:              "xplad",
 			Bech32Prefix:     wallet,
-			Denom:            denom,
+			Denom:            Denom,
 			CoinType:         "60",
-			GasPrices:        minGasPrice + denom,
+			GasPrices:        minGasPrice + Denom,
 			GasAdjustment:    1.5,
 			TrustingPeriod:   "168h0m0s",
 			ModifyGenesis:    cosmos.ModifyGenesis(genesis),
@@ -265,4 +279,25 @@ func StartXplaChainAndSimdWithIBC(t *testing.T, ctx context.Context, version []i
 		ibcPathName: ibcPathName,
 		eRep:        eRep,
 	}
+}
+
+// WaitForBlocks waits for the specified number of blocks to be produced
+func WaitForBlocks(ctx context.Context, chain *cosmos.CosmosChain, numBlocks int) error {
+	initialHeight, err := chain.Height(ctx)
+	if err != nil {
+		return err
+	}
+
+	targetHeight := initialHeight + int64(numBlocks)
+	for {
+		currentHeight, err := chain.Height(ctx)
+		if err != nil {
+			return err
+		}
+		if currentHeight >= targetHeight {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return nil
 }
