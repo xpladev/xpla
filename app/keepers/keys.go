@@ -61,7 +61,7 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 		consensusparamtypes.StoreKey,
 		// CosmWasm keys
 		wasmtypes.StoreKey,
-		// ethermint keys
+		// evm keys
 		evmtypes.StoreKey,
 		feemarkettypes.StoreKey,
 		// XPLA keys

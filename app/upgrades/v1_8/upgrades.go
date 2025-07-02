@@ -17,7 +17,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	etherminttypes "github.com/xpladev/ethermint/types"
+	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
 
 	"github.com/xpladev/xpla/app/keepers"
 	authkeeper "github.com/xpladev/xpla/x/auth/keeper"

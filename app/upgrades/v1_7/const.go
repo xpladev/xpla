@@ -5,7 +5,7 @@ import (
 
 	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/types"
 
-	erc20types "github.com/cosmos/evm/x/erc20/types"
+	erc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
 )

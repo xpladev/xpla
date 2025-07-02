@@ -63,11 +63,11 @@ import (
 	ethenc "github.com/cosmos/evm/encoding/codec"
 	"github.com/cosmos/evm/ethereum/eip712"
 	cosmosevmutils "github.com/cosmos/evm/utils"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
-	ethermintsecp256k1 "github.com/xpladev/ethermint/crypto/ethsecp256k1"
-	ethermintenc "github.com/xpladev/ethermint/encoding/codec"
+	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
+	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
+	erc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
