@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -37,6 +36,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/ledger"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/server"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -49,19 +49,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibcchanneltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibcchanneltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
-	ethermintclient "github.com/xpladev/ethermint/client"
-	"github.com/xpladev/ethermint/client/debug"
-	"github.com/xpladev/ethermint/crypto/ethsecp256k1"
-	"github.com/xpladev/ethermint/crypto/hd"
-	ethermintserver "github.com/xpladev/ethermint/server"
-	evmcfg "github.com/xpladev/ethermint/server/config"
+	evmclient "github.com/cosmos/evm/client"
+	"github.com/cosmos/evm/client/debug"
+	"github.com/cosmos/evm/crypto/ethsecp256k1"
+	"github.com/cosmos/evm/crypto/hd"
+	evmserver "github.com/cosmos/evm/server"
+	evmcfg "github.com/cosmos/evm/server/config"
 
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"
@@ -84,6 +84,7 @@ func NewRootCmd() *cobra.Command {
 		tempDir,
 		initAppOptions,
 		xpla.EmptyWasmOptions,
+		xplatypes.NoOpEVMOptions,
 	)
 	defer func() {
 		if err := tempApplication.Close(); err != nil {
@@ -185,17 +186,19 @@ func initCometConfig() *tmcfg.Config {
 }
 
 func initAppConfig() (string, interface{}) {
-	customAppTemplate, customAppConfig := evmcfg.AppConfig(xplatypes.DefaultDenom)
-	srvCfg, ok := customAppConfig.(evmcfg.Config)
-	if !ok {
-		panic(fmt.Errorf("unknown app config type %T", customAppConfig))
+	customAppConfig := evmcfg.Config{
+		Config:  *serverconfig.DefaultConfig(),
+		EVM:     *evmcfg.DefaultEVMConfig(),
+		JSONRPC: *evmcfg.DefaultJSONRPCConfig(),
+		TLS:     *evmcfg.DefaultTLSConfig(),
 	}
+	customAppTemplate := serverconfig.DefaultConfigTemplate + evmcfg.DefaultEVMConfigTemplate
 
-	srvCfg.StateSync.SnapshotInterval = 1000
-	srvCfg.StateSync.SnapshotKeepRecent = 10
+	customAppConfig.StateSync.SnapshotInterval = 1000
+	customAppConfig.StateSync.SnapshotKeepRecent = 10
 
 	return params.CustomConfigTemplate(customAppTemplate), params.CustomAppConfig{
-		Config: srvCfg,
+		Config: customAppConfig,
 		BypassMinFeeMsgTypes: []string{
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgRecvPacket{}),
 			sdk.MsgTypeURL(&ibcchanneltypes.MsgAcknowledgement{}),
@@ -217,7 +220,7 @@ func initRootCmd(rootCmd *cobra.Command,
 	ac := appCreator{}
 
 	rootCmd.AddCommand(
-		ethermintclient.ValidateChainID(
+		evmclient.ValidateChainID(
 			genutilcli.InitCmd(basicManager, xpla.DefaultNodeHome),
 		),
 		// XXX check this needed
@@ -233,7 +236,7 @@ func initRootCmd(rootCmd *cobra.Command,
 		snapshot.Cmd(ac.newApp),
 	)
 
-	ethermintserver.AddCommands(rootCmd, ethermintserver.NewDefaultStartOptions(ac.newApp, xpla.DefaultNodeHome), ac.appExport, addModuleInitFlags)
+	evmserver.AddCommands(rootCmd, evmserver.NewDefaultStartOptions(ac.newApp, xpla.DefaultNodeHome), ac.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
@@ -242,7 +245,7 @@ func initRootCmd(rootCmd *cobra.Command,
 		// genesisCommand(txConfig, basicManager),
 		queryCommand(),
 		txCommand(basicManager),
-		ethermintclient.KeyCommands(xpla.DefaultNodeHome),
+		evmclient.KeyCommands(xpla.DefaultNodeHome, true),
 	)
 }
 
@@ -250,7 +253,7 @@ func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
 	wasm.AddModuleInitFlags(startCmd)
 
-	// min-gas-price follows ethermint/feemarket module
+	// min-gas-price follows evm/feemarket module
 	startCmd.Flags().Set(server.FlagMinGasPrices, sdkmath.ZeroInt().String()+xplatypes.DefaultDenom)
 }
 
@@ -398,6 +401,7 @@ func (a appCreator) newApp(
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		appOpts,
 		wasmOpts,
+		xplatypes.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -442,6 +446,7 @@ func (a appCreator) appExport(
 		homePath,
 		appOpts,
 		emptyWasmOpts,
+		xplatypes.EvmAppOptions,
 	)
 
 	if height != -1 {
