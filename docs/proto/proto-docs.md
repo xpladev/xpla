@@ -4,6 +4,12 @@
 
 ## Table of Contents
 
+- [xpla/bank/v1beta1/tx.proto](#xpla/bank/v1beta1/tx.proto)
+    - [MsgBurn](#xpla.bank.v1beta1.MsgBurn)
+    - [MsgBurnResponse](#xpla.bank.v1beta1.MsgBurnResponse)
+  
+    - [Msg](#xpla.bank.v1beta1.Msg)
+  
 - [xpla/reward/v1beta1/reward.proto](#xpla/reward/v1beta1/reward.proto)
     - [Params](#xpla.reward.v1beta1.Params)
   
@@ -53,6 +59,58 @@
     - [Msg](#xpla.volunteer.v1beta1.Msg)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="xpla/bank/v1beta1/tx.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/bank/v1beta1/tx.proto
+
+
+
+<a name="xpla.bank.v1beta1.MsgBurn"></a>
+
+### MsgBurn
+MsgBurn represents a message to burn coins from an account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authority` | [string](#string) |  | authority is the address of the governance account. |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated |  |
+
+
+
+
+
+
+<a name="xpla.bank.v1beta1.MsgBurnResponse"></a>
+
+### MsgBurnResponse
+MsgBurnResponse defines the Msg/Burn response type.
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="xpla.bank.v1beta1.Msg"></a>
+
+### Msg
+Msg defines the XPLA bank burn service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `Burn` | [MsgBurn](#xpla.bank.v1beta1.MsgBurn) | [MsgBurnResponse](#xpla.bank.v1beta1.MsgBurnResponse) | Burn defines a method for burning coins from an account. | |
+
+ <!-- end services -->
 
 
 

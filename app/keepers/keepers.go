@@ -296,12 +296,6 @@ func NewAppKeeper(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	appKeepers.GovKeeper.SetLegacyRouter(govRouter)
 
-	appKeepers.GovKeeper = appKeepers.GovKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-		// register governance hooks
-		),
-	)
-
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[evidencetypes.StoreKey]),
@@ -515,6 +509,12 @@ func NewAppKeeper(
 		appKeepers.DistrKeeper,
 		appKeepers.MintKeeper,
 		govModAddress,
+	)
+
+	appKeepers.GovKeeper = appKeepers.GovKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(
+			xplabankkeeper.NewGovHooksForBank(appKeepers.BankKeeper, govkeeper.NewQueryServer(appKeepers.GovKeeper)),
+		),
 	)
 
 	// Register the precompiled contracts

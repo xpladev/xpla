@@ -17,6 +17,8 @@ var _ bankkeeper.Keeper = (*Keeper)(nil)
 type Keeper struct {
 	bankkeeper.BaseKeeper
 
+	cdc codec.BinaryCodec
+
 	bek BaseErc20Keeper
 	bck BaseCw20Keeper
 
@@ -36,6 +38,7 @@ func NewKeeper(
 ) Keeper {
 	return Keeper{
 		BaseKeeper: bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
+		cdc:        cdc,
 		bek:        NewBaseErc20Keeper(ek),
 		bck:        NewBaseCw20Keeper(wk, wmk),
 		ak:         ak,
