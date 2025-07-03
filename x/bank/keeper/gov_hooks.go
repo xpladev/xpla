@@ -29,20 +29,19 @@ func (h BankGovHooks) AfterProposalSubmission(ctx context.Context, proposalID ui
 		return err
 	}
 
+	proposer, err := sdk.AccAddressFromBech32(res.Proposal.Proposer)
+	if err != nil {
+		return err
+	}
+
 	for _, msg := range res.Proposal.Messages {
 		msgBurn, err := types.UnpackMsgBurn(h.bankKeeper.cdc, msg)
 		if err != nil {
-			// only execute when MsgBurn
+			// Skip if not MsgBurn
 			continue
 		}
 
-		proposer, err := sdk.AccAddressFromBech32(res.Proposal.Proposer)
-		if err != nil {
-			return err
-		}
-
-		err = h.bankKeeper.SendCoinsFromAccountToModule(ctx, proposer, govtypes.ModuleName, msgBurn.Amount)
-		if err != nil {
+		if err := h.bankKeeper.SendCoinsFromAccountToModule(ctx, proposer, govtypes.ModuleName, msgBurn.Amount); err != nil {
 			return err
 		}
 	}
@@ -62,6 +61,28 @@ func (h BankGovHooks) AfterProposalVote(ctx context.Context, proposalID uint64, 
 
 // AfterProposalFailedMinDeposit implements govtypes.GovHooks
 func (h BankGovHooks) AfterProposalFailedMinDeposit(ctx context.Context, proposalID uint64) error {
+	res, err := h.govKeeper.Proposal(ctx, &govv1types.QueryProposalRequest{ProposalId: proposalID})
+	if err != nil {
+		return err
+	}
+
+	proposer, err := sdk.AccAddressFromBech32(res.Proposal.Proposer)
+	if err != nil {
+		return err
+	}
+
+	for _, msg := range res.Proposal.Messages {
+		msgBurn, err := types.UnpackMsgBurn(h.bankKeeper.cdc, msg)
+		if err != nil {
+			// Skip if not MsgBurn
+			continue
+		}
+
+		if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, govtypes.ModuleName, proposer, msgBurn.Amount); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -72,25 +93,24 @@ func (h BankGovHooks) AfterProposalVotingPeriodEnded(ctx context.Context, propos
 		return err
 	}
 
-	// Only process if proposal was rejected (status is ProposalStatus_PROPOSAL_STATUS_PASSED)
+	// Only process if proposal was rejected
 	if res.Proposal.Status == govv1types.ProposalStatus_PROPOSAL_STATUS_PASSED {
 		return nil
+	}
+
+	proposer, err := sdk.AccAddressFromBech32(res.Proposal.Proposer)
+	if err != nil {
+		return err
 	}
 
 	for _, msg := range res.Proposal.Messages {
 		msgBurn, err := types.UnpackMsgBurn(h.bankKeeper.cdc, msg)
 		if err != nil {
-			// only execute when MsgBurn
+			// Skip if not MsgBurn
 			continue
 		}
 
-		proposer, err := sdk.AccAddressFromBech32(res.Proposal.Proposer)
-		if err != nil {
-			return err
-		}
-
-		err = h.bankKeeper.SendCoinsFromModuleToAccount(ctx, govtypes.ModuleName, proposer, msgBurn.Amount)
-		if err != nil {
+		if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, govtypes.ModuleName, proposer, msgBurn.Amount); err != nil {
 			return err
 		}
 	}
