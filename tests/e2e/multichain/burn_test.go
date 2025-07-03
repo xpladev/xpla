@@ -17,12 +17,20 @@ import (
 )
 
 var (
-	denom            = multichain.Denom
-	burnAmount       = sdk.NewCoin(denom, sdkmath.NewInt(1_000_000_000_000_000_000))
-	depositAmount    = sdk.NewCoin(denom, sdkmath.NewInt(10_000_000))
-	govAddress       string
-	validatorKeyName = "validator"
+	denom                = multichain.Denom
+	defaultBurnAmount    = sdk.NewCoin(denom, sdkmath.NewInt(1_000_000_000_000_000_000))
+	defaultDepositAmount = sdk.NewCoin(denom, sdkmath.NewInt(10_000_000))
+	lessDepositAmount    = sdk.NewCoin(denom, sdkmath.NewInt(100_000))
+	govAddress           string
+	validatorKeyName     = "validator"
 )
+
+type testResult struct {
+	proposal            *govv1types.Proposal
+	status              govv1types.ProposalStatus
+	diffSupplyBalance   sdkmath.Int
+	diffProposerBalance sdkmath.Int
+}
 
 func TestMsgBurn(t *testing.T) {
 	if testing.Short() {
@@ -38,18 +46,90 @@ func TestMsgBurn(t *testing.T) {
 
 	govAddress, _ = chain.AuthQueryModuleAddress(ctx, govtypes.ModuleName)
 
-	t.Run("Proposal Success", func(t *testing.T) {
-		testMsgBurnProposal(t, ctx, chain, user, govv1types.VoteOption_VOTE_OPTION_YES)
-	})
-	t.Run("Proposal Rejection", func(t *testing.T) {
-		testMsgBurnProposal(t, ctx, chain, user, govv1types.VoteOption_VOTE_OPTION_NO)
-	})
-	t.Run("Proposal Veto", func(t *testing.T) {
-		testMsgBurnProposal(t, ctx, chain, user, govv1types.VoteOption_VOTE_OPTION_NO_WITH_VETO)
-	})
+	tests := []struct {
+		title         string
+		depositAmount sdk.Coin
+		voteOpt       govv1types.VoteOption
+		expected      testResult
+	}{
+		{
+			"MsgBurn proposal, Vote YES",
+			defaultDepositAmount,
+			govv1types.VoteOption_VOTE_OPTION_YES,
+			testResult{
+				status:              govv1types.ProposalStatus_PROPOSAL_STATUS_PASSED,
+				diffSupplyBalance:   defaultBurnAmount.Amount,
+				diffProposerBalance: defaultDepositAmount.Amount,
+			},
+		},
+		{
+			"MsgBurn proposal, Vote NO",
+			defaultDepositAmount,
+			govv1types.VoteOption_VOTE_OPTION_NO,
+			testResult{
+				status:              govv1types.ProposalStatus_PROPOSAL_STATUS_REJECTED,
+				diffSupplyBalance:   sdkmath.ZeroInt(),
+				diffProposerBalance: defaultDepositAmount.Amount.Add(defaultBurnAmount.Amount),
+			},
+		},
+		{
+			"MsgBurn proposal, Vote ABSTAIN",
+			defaultDepositAmount,
+			govv1types.VoteOption_VOTE_OPTION_ABSTAIN,
+			testResult{
+				status:              govv1types.ProposalStatus_PROPOSAL_STATUS_REJECTED,
+				diffSupplyBalance:   sdkmath.ZeroInt(),
+				diffProposerBalance: defaultDepositAmount.Amount.Add(defaultBurnAmount.Amount),
+			},
+		},
+		{
+			"MsgBurn proposal, Vote UNSPECIFIED",
+			defaultDepositAmount,
+			govv1types.VoteOption_VOTE_OPTION_UNSPECIFIED,
+			testResult{
+				status:              govv1types.ProposalStatus_PROPOSAL_STATUS_REJECTED,
+				diffSupplyBalance:   sdkmath.ZeroInt(),
+				diffProposerBalance: defaultDepositAmount.Amount.Add(defaultBurnAmount.Amount),
+			},
+		},
+		{
+			"MsgBurn proposal, Vote NO_WITH_VETO",
+			defaultDepositAmount,
+			govv1types.VoteOption_VOTE_OPTION_NO_WITH_VETO,
+			testResult{
+				status:              govv1types.ProposalStatus_PROPOSAL_STATUS_REJECTED,
+				diffSupplyBalance:   defaultDepositAmount.Amount,
+				diffProposerBalance: defaultBurnAmount.Amount,
+			},
+		},
+		{
+			"MsgBurn proposal, Vote UNSPECIFIED, less deposit",
+			lessDepositAmount,
+			govv1types.VoteOption_VOTE_OPTION_UNSPECIFIED,
+			testResult{
+				diffSupplyBalance:   sdkmath.ZeroInt(),
+				diffProposerBalance: lessDepositAmount.Amount.Add(defaultBurnAmount.Amount),
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run("Proposal "+tc.voteOpt.String(), func(t *testing.T) {
+			actual := testMsgBurnProposal(t, ctx, chain, user, tc.title, tc.depositAmount, tc.voteOpt)
+
+			if tc.depositAmount.Equal(lessDepositAmount) {
+				assert.Nil(t, actual.proposal)
+			} else {
+				assert.Equal(t, tc.expected.status, actual.proposal.Status)
+			}
+
+			assert.Equal(t, tc.expected.diffSupplyBalance.String(), actual.diffSupplyBalance.String())
+			assert.Equal(t, tc.expected.diffProposerBalance.String(), actual.diffProposerBalance.String())
+		})
+	}
 }
 
-func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain, user ibc.Wallet, voteOpt govv1types.VoteOption) {
+func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain, user ibc.Wallet, title string, depositAmount sdk.Coin, voteOpt govv1types.VoteOption) testResult {
 	denom := chain.Config().Denom
 	initialProposerBalance, _ := chain.GetBalance(ctx, user.FormattedAddress(), denom)
 	initialGovBalance, _ := chain.GetBalance(ctx, govAddress, denom)
@@ -60,10 +140,10 @@ func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.Cosmos
 
 	msgBurn := &banktypes.MsgBurn{
 		Authority: govAddress,
-		Amount:    sdk.NewCoins(burnAmount),
+		Amount:    sdk.NewCoins(defaultBurnAmount),
 	}
 
-	proposalID, err := submitProposal(ctx, chain, user, []cosmos.ProtoMessage{msgBurn}, "Test MsgBurn "+voteOpt.String(), "Testing MsgBurn proposal")
+	proposalID, err := submitProposal(ctx, chain, user, []cosmos.ProtoMessage{msgBurn}, depositAmount, title, "Testing MsgBurn proposal")
 	assert.NoError(t, err)
 
 	processingProposerBalance, _ := chain.GetBalance(ctx, user.FormattedAddress(), denom)
@@ -73,9 +153,9 @@ func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.Cosmos
 	t.Logf("After Submission - Proposer: %s, Gov: %s, Supply: %s",
 		processingProposerBalance.String(), processingGovBalance.String(), processingSupply.String())
 
-	assert.True(t, processingProposerBalance.Add(burnAmount.Amount).Add(depositAmount.Amount).LT(initialProposerBalance))
+	assert.True(t, processingProposerBalance.Add(defaultBurnAmount.Amount).Add(depositAmount.Amount).LT(initialProposerBalance))
 	assert.Equal(t, initialSupply.String(), processingSupply.String())
-	assert.Equal(t, initialGovBalance.Add(depositAmount.Amount).Add(burnAmount.Amount).String(), processingGovBalance.String())
+	assert.Equal(t, initialGovBalance.Add(depositAmount.Amount).Add(defaultBurnAmount.Amount).String(), processingGovBalance.String())
 
 	err = voteOnProposal(ctx, chain, validatorKeyName, proposalID, voteOpt)
 	assert.NoError(t, err)
@@ -88,31 +168,19 @@ func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.Cosmos
 	finalSupply, _ := chain.BankQueryTotalSupplyOf(ctx, denom)
 	finalGovBalance, _ := chain.GetBalance(ctx, govAddress, denom)
 
-	t.Logf("Final State - Proposer: %s, Gov: %s, Supply: %s, Proposal Status: %s",
-		finalProposerBalance.String(), finalGovBalance.String(), finalSupply.String(), prop.Status.String())
+	t.Logf("Final State - Proposer: %s, Gov: %s, Supply: %s",
+		finalProposerBalance.String(), finalGovBalance.String(), finalSupply.String())
 
-	switch voteOpt {
-	case govv1types.VoteOption_VOTE_OPTION_YES:
-		assert.Equal(t, govv1types.ProposalStatus_PROPOSAL_STATUS_PASSED, prop.Status)
-		assert.Equal(t, initialSupply.Sub(burnAmount).String(), finalSupply.String())
-		assert.Equal(t, processingProposerBalance.Add(depositAmount.Amount).String(), finalProposerBalance.String())
-		assert.Equal(t, processingGovBalance.Sub(depositAmount.Amount).Sub(burnAmount.Amount).String(), finalGovBalance.String())
+	assert.Equal(t, finalGovBalance, sdkmath.ZeroInt())
 
-	case govv1types.VoteOption_VOTE_OPTION_NO:
-		assert.Equal(t, govv1types.ProposalStatus_PROPOSAL_STATUS_REJECTED, prop.Status)
-		assert.Equal(t, initialSupply.String(), finalSupply.String())
-		assert.Equal(t, processingProposerBalance.Add(depositAmount.Amount).Add(burnAmount.Amount).String(), finalProposerBalance.String())
-		assert.Equal(t, processingGovBalance.Sub(depositAmount.Amount).Sub(burnAmount.Amount).String(), finalGovBalance.String())
-
-	case govv1types.VoteOption_VOTE_OPTION_NO_WITH_VETO:
-		assert.Equal(t, govv1types.ProposalStatus_PROPOSAL_STATUS_REJECTED, prop.Status)
-		assert.Equal(t, initialSupply.Sub(depositAmount).String(), finalSupply.String())
-		assert.Equal(t, processingProposerBalance.Add(burnAmount.Amount).String(), finalProposerBalance.String())
-		assert.Equal(t, processingGovBalance.Sub(depositAmount.Amount).Sub(burnAmount.Amount).String(), finalGovBalance.String())
+	return testResult{
+		proposal:            prop,
+		diffSupplyBalance:   initialSupply.Amount.Sub(finalSupply.Amount),
+		diffProposerBalance: finalProposerBalance.Sub(processingProposerBalance),
 	}
 }
 
-func submitProposal(ctx context.Context, chain *cosmos.CosmosChain, proposer ibc.Wallet, messages []cosmos.ProtoMessage, title, description string) (uint64, error) {
+func submitProposal(ctx context.Context, chain *cosmos.CosmosChain, proposer ibc.Wallet, messages []cosmos.ProtoMessage, depositAmount sdk.Coin, title, description string) (uint64, error) {
 	proposal, err := chain.BuildProposal(
 		messages,
 		title,
