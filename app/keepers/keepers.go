@@ -484,6 +484,7 @@ func NewAppKeeper(
 		appCodec,
 		appKeepers.keys[vmtypes.StoreKey],
 		appKeepers.tkeys[vmtypes.TransientKey],
+		appKeepers.keys,
 		authtypes.NewModuleAddress(govtypes.ModuleName), //govModAddress,
 		appKeepers.AccountKeeper,
 		&appKeepers.BankKeeper,
