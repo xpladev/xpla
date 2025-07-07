@@ -473,9 +473,8 @@ func (app *XplaApp) AppCodec() codec.Codec {
 
 // DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
 func (app *XplaApp) DefaultGenesis() map[string]json.RawMessage {
-       return app.ModuleBasics.DefaultGenesis(app.appCodec)
+	return app.ModuleBasics.DefaultGenesis(app.appCodec)
 }
-
 
 // InterfaceRegistry returns Xpla's InterfaceRegistry
 func (app *XplaApp) InterfaceRegistry() types.InterfaceRegistry {
