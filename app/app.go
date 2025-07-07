@@ -561,6 +561,7 @@ func (app *XplaApp) setUpgradeHandlers() {
 				app.mm,
 				app.configurator,
 				&app.AppKeepers,
+				app.appCodec,
 			),
 		)
 	}
