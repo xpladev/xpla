@@ -27,7 +27,7 @@ if [ -d $temp_dir ]; then
   mv ./$temp_dir ./vendor
 fi
 # XXX We will get rid of erc20 proto files on ethermint, so I remove erc20 files on this list temporary.
-proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $ethermint_dir/proto $pfm/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq | grep -v evmos)
+proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $ethermint_dir/proto $pfm/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq | grep -v erc20 | grep -v precisebank)
 for dir in $proto_dirs; do
   # generate swagger files (filter query files)
   query_file=$(find "${dir}" -maxdepth 1 \( -not \( -path '*/autocli/*' -o -path '*/group/*' -o -path '*/orm/*' -o -path '*/nft/*' \) \) \( -name 'query.proto' -o -name 'service.proto' \))
