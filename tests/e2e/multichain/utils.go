@@ -6,18 +6,18 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	interchaintest "github.com/cosmos/interchaintest/v10"
+	"github.com/cosmos/interchaintest/v10/chain/cosmos"
+	"github.com/cosmos/interchaintest/v10/chain/cosmos/wasm"
+	"github.com/cosmos/interchaintest/v10/ibc"
+	"github.com/cosmos/interchaintest/v10/testreporter"
 	"github.com/moby/moby/client"
-	interchaintest "github.com/strangelove-ventures/interchaintest/v8"
-	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
-	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos/wasm"
-	"github.com/strangelove-ventures/interchaintest/v8/ibc"
-	"github.com/strangelove-ventures/interchaintest/v8/testreporter"
 
 	"go.uber.org/zap/zaptest"
 
 	"github.com/stretchr/testify/assert"
 
-	ethenc "github.com/xpladev/ethermint/encoding/codec"
+	ethenc "github.com/cosmos/evm/encoding/codec"
 
 	xplbanktypes "github.com/xpladev/xpla/x/bank/types"
 )
@@ -78,8 +78,9 @@ func XplaChainSpec(
 		cosmos.NewGenesisKV("consensus.params.block.max_gas", "50000000000"),
 		cosmos.NewGenesisKV("app_state.evm.params.evm_denom", Denom),
 		cosmos.NewGenesisKV("app_state.feemarket.params.min_gas_price", minGasPrice),
-
-		cosmos.NewGenesisKV("app_state.crisis.constant_fee.denom", Denom),
+		cosmos.NewGenesisKV("app_state.feemarket.params.base_fee_change_denominator", 1),
+		cosmos.NewGenesisKV("app_state.feemarket.params.elasticity_multiplier", 1),
+		cosmos.NewGenesisKV("app_state.feemarket.params.base_fee", minGasPrice),
 	}
 
 	encoding := wasm.WasmEncoding()
