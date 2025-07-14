@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/collections"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -23,6 +24,9 @@ type Keeper struct {
 	bck BaseCw20Keeper
 
 	ak banktypes.AccountKeeper
+
+	OngoingBurnProposals   collections.Map[uint64, types.BurnProposal]
+	SchemaForBurnProposals collections.Schema
 }
 
 func NewKeeper(
@@ -36,12 +40,22 @@ func NewKeeper(
 	wk types.WasmKeeper,
 	wmk types.WasmMsgServer,
 ) Keeper {
+	sb := collections.NewSchemaBuilder(storeService)
+	ongoingBurnProposals := collections.NewMap(sb, types.OngoingBurnProposalsPrefix, "ongoing_burn_proposals", collections.Uint64Key, codec.CollValue[types.BurnProposal](cdc))
+
+	burnSchema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+
 	return Keeper{
-		BaseKeeper: bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
-		cdc:        cdc,
-		bek:        NewBaseErc20Keeper(ek),
-		bck:        NewBaseCw20Keeper(wk, wmk),
-		ak:         ak,
+		BaseKeeper:             bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
+		cdc:                    cdc,
+		bek:                    NewBaseErc20Keeper(ek),
+		bck:                    NewBaseCw20Keeper(wk, wmk),
+		ak:                     ak,
+		OngoingBurnProposals:   ongoingBurnProposals,
+		SchemaForBurnProposals: burnSchema,
 	}
 }
 
@@ -118,7 +132,7 @@ func (k Keeper) IsSendEnabledCoins(ctx context.Context, coins ...sdk.Coin) error
 // SpendableCoin returns the balance of specific denomination of spendable coins
 // for an account by address. If the account has no spendable coin, a zero Coin
 // is returned.
-// Copyed from cosmos-sdk/x/bank/keeper/view.go
+// Copied from cosmos-sdk/x/bank/keeper/view.go
 func (k Keeper) SpendableCoin(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	balance := k.GetBalance(ctx, addr, denom)
 	locked := k.LockedCoins(ctx, addr)

@@ -114,7 +114,7 @@ func TestMsgBurn(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run("Proposal "+tc.voteOpt.String(), func(t *testing.T) {
+		t.Run(tc.title, func(t *testing.T) {
 			actual := testMsgBurnProposal(t, ctx, chain, user, tc.title, tc.depositAmount, tc.voteOpt)
 
 			if tc.depositAmount.Equal(lessDepositAmount) {

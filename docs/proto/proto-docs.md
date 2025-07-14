@@ -4,6 +4,9 @@
 
 ## Table of Contents
 
+- [xpla/bank/v1beta1/bank.proto](#xpla/bank/v1beta1/bank.proto)
+    - [BurnProposal](#xpla.bank.v1beta1.BurnProposal)
+  
 - [xpla/bank/v1beta1/tx.proto](#xpla/bank/v1beta1/tx.proto)
     - [MsgBurn](#xpla.bank.v1beta1.MsgBurn)
     - [MsgBurnResponse](#xpla.bank.v1beta1.MsgBurnResponse)
@@ -59,6 +62,38 @@
     - [Msg](#xpla.volunteer.v1beta1.Msg)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="xpla/bank/v1beta1/bank.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/bank/v1beta1/bank.proto
+
+
+
+<a name="xpla.bank.v1beta1.BurnProposal"></a>
+
+### BurnProposal
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `proposer` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
 
 
 
