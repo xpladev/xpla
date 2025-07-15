@@ -21,7 +21,7 @@ require (
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.53.2
-	github.com/cosmos/evm v1.0.0-rc2.0.20250701042626-e6fe094b61c5
+	github.com/cosmos/evm v1.0.0-rc2.0.20250714143549-66dd661d1c51
 	github.com/cosmos/evm/evmd v0.0.0-20250701042626-e6fe094b61c5
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 v10.1.0
