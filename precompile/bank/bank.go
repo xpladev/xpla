@@ -116,7 +116,7 @@ func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 	return bz, nil
 }
 
-func (PrecompiledBank) IsTransaction(method *abi.Method) bool {
+func (p PrecompiledBank) IsTransaction(method *abi.Method) bool {
 	switch MethodBank(method.Name) {
 	case Send:
 		return true
