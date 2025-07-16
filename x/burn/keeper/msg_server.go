@@ -7,24 +7,24 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/xpladev/xpla/x/bank/types"
+	"github.com/xpladev/xpla/x/burn/types"
 )
 
-type xplaMsgServer struct {
+type msgServer struct {
 	Keeper
 }
 
-var _ types.MsgServer = xplaMsgServer{}
+var _ types.MsgServer = msgServer{}
 
-// NewXplaMsgServerImpl returns an implementation of the XPLA bank MsgServer interface
+// NewMsgServerImpl returns an implementation of the burn MsgServer interface
 // for the provided Keeper.
-func NewXplaMsgServerImpl(keeper Keeper) types.MsgServer {
-	return &xplaMsgServer{
+func NewMsgServerImpl(keeper Keeper) types.MsgServer {
+	return &msgServer{
 		Keeper: keeper}
 }
 
-// Burn implements XPLA bank MsgServer for burning coins.
-func (k xplaMsgServer) Burn(goCtx context.Context, req *types.MsgBurn) (*types.MsgBurnResponse, error) {
+// Burn implements burn MsgServer for burning coins.
+func (k msgServer) Burn(goCtx context.Context, req *types.MsgBurn) (*types.MsgBurnResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if k.GetAuthority() != req.Authority {
@@ -37,7 +37,7 @@ func (k xplaMsgServer) Burn(goCtx context.Context, req *types.MsgBurn) (*types.M
 	}
 
 	// Burn the coins from gov module account
-	err := k.BurnCoins(ctx, govtypes.ModuleName, req.Amount)
+	err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, req.Amount)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to burn coins")
 	}

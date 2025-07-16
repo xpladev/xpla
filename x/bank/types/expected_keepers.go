@@ -4,7 +4,6 @@ import (
 	"context"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	govv1types "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	common "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -26,8 +25,4 @@ type WasmMsgServer interface {
 
 type WasmKeeper interface {
 	QuerySmart(ctx context.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
-}
-
-type GovKeeper interface {
-	Proposal(ctx context.Context, req *govv1types.QueryProposalRequest) (*govv1types.QueryProposalResponse, error)
 }

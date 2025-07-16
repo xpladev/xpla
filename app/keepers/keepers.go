@@ -75,6 +75,8 @@ import (
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 
 	"github.com/xpladev/xpla/precompile"
+	burnkeeper "github.com/xpladev/xpla/x/burn/keeper"
+	burntypes "github.com/xpladev/xpla/x/burn/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
@@ -118,6 +120,7 @@ type AppKeepers struct {
 
 	RewardKeeper    rewardkeeper.Keeper
 	VolunteerKeeper volunteerkeeper.Keeper
+	BurnKeeper      burnkeeper.Keeper
 }
 
 var (
@@ -511,9 +514,17 @@ func NewAppKeeper(
 		govModAddress,
 	)
 
+	appKeepers.BurnKeeper = burnkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(appKeepers.keys[burntypes.StoreKey]),
+		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+		govModAddress,
+	)
+
 	appKeepers.GovKeeper = appKeepers.GovKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-			xplabankkeeper.NewGovHooksForBank(appKeepers.BankKeeper, govkeeper.NewQueryServer(appKeepers.GovKeeper)),
+			burnkeeper.NewGovHooksForBurn(appKeepers.BurnKeeper, appKeepers.BankKeeper, govkeeper.NewQueryServer(appKeepers.GovKeeper)),
 		),
 	)
 

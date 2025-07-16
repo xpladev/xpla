@@ -13,7 +13,7 @@ import (
 	"github.com/cosmos/interchaintest/v10/ibc"
 	"github.com/stretchr/testify/assert"
 	"github.com/xpladev/xpla/tests/e2e/multichain"
-	banktypes "github.com/xpladev/xpla/x/bank/types"
+	burntypes "github.com/xpladev/xpla/x/burn/types"
 )
 
 var (
@@ -22,6 +22,7 @@ var (
 	defaultDepositAmount = sdk.NewCoin(denom, sdkmath.NewInt(10_000_000))
 	lessDepositAmount    = sdk.NewCoin(denom, sdkmath.NewInt(100_000))
 	govAddress           string
+	burnModuleAddress    string
 	validatorKeyName     = "validator"
 )
 
@@ -44,6 +45,7 @@ func TestMsgBurn(t *testing.T) {
 	xplaUsers := interchaintest.GetAndFundTestUsers(t, ctx, "default", xplaDefaultBalance, chain)
 	user := xplaUsers[0]
 
+	burnModuleAddress, _ = chain.AuthQueryModuleAddress(ctx, burntypes.ModuleName)
 	govAddress, _ = chain.AuthQueryModuleAddress(ctx, govtypes.ModuleName)
 
 	tests := []struct {
@@ -132,13 +134,14 @@ func TestMsgBurn(t *testing.T) {
 func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain, user ibc.Wallet, title string, depositAmount sdk.Coin, voteOpt govv1types.VoteOption) testResult {
 	denom := chain.Config().Denom
 	initialProposerBalance, _ := chain.GetBalance(ctx, user.FormattedAddress(), denom)
+	initialBurnModuleBalance, _ := chain.GetBalance(ctx, burnModuleAddress, denom)
 	initialGovBalance, _ := chain.GetBalance(ctx, govAddress, denom)
 	initialSupply, _ := chain.BankQueryTotalSupplyOf(ctx, denom)
 
-	t.Logf("Initial State - Proposer: %s, Gov: %s, Supply: %s",
-		initialProposerBalance.String(), initialGovBalance.String(), initialSupply.String())
+	t.Logf("Initial State - Proposer: %s, Gov Module: %s, Burn Module: %s, Supply: %s",
+		initialProposerBalance.String(), initialGovBalance.String(), initialBurnModuleBalance.String(), initialSupply.String())
 
-	msgBurn := &banktypes.MsgBurn{
+	msgBurn := &burntypes.MsgBurn{
 		Authority: govAddress,
 		Amount:    sdk.NewCoins(defaultBurnAmount),
 	}
@@ -148,14 +151,16 @@ func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.Cosmos
 
 	processingProposerBalance, _ := chain.GetBalance(ctx, user.FormattedAddress(), denom)
 	processingSupply, _ := chain.BankQueryTotalSupplyOf(ctx, denom)
+	processingBurnModuleBalance, _ := chain.GetBalance(ctx, burnModuleAddress, denom)
 	processingGovBalance, _ := chain.GetBalance(ctx, govAddress, denom)
 
-	t.Logf("After Submission - Proposer: %s, Gov: %s, Supply: %s",
-		processingProposerBalance.String(), processingGovBalance.String(), processingSupply.String())
+	t.Logf("After Submission - Proposer: %s, Gov Module: %s, Burn Module: %s, Supply: %s",
+		processingProposerBalance.String(), processingGovBalance.String(), processingBurnModuleBalance.String(), processingSupply.String())
 
 	assert.True(t, processingProposerBalance.Add(defaultBurnAmount.Amount).Add(depositAmount.Amount).LT(initialProposerBalance))
 	assert.Equal(t, initialSupply.String(), processingSupply.String())
-	assert.Equal(t, initialGovBalance.Add(depositAmount.Amount).Add(defaultBurnAmount.Amount).String(), processingGovBalance.String())
+	assert.Equal(t, initialBurnModuleBalance.Add(defaultBurnAmount.Amount).String(), processingBurnModuleBalance.String())
+	assert.Equal(t, initialGovBalance.Add(depositAmount.Amount).String(), processingGovBalance.String())
 
 	err = voteOnProposal(ctx, chain, validatorKeyName, proposalID, voteOpt)
 	assert.NoError(t, err)
@@ -166,12 +171,14 @@ func testMsgBurnProposal(t *testing.T, ctx context.Context, chain *cosmos.Cosmos
 	prop, _ := chain.GovQueryProposalV1(ctx, proposalID)
 	finalProposerBalance, _ := chain.GetBalance(ctx, user.FormattedAddress(), denom)
 	finalSupply, _ := chain.BankQueryTotalSupplyOf(ctx, denom)
+	finalBurnModuleBalance, _ := chain.GetBalance(ctx, burnModuleAddress, denom)
 	finalGovBalance, _ := chain.GetBalance(ctx, govAddress, denom)
 
-	t.Logf("Final State - Proposer: %s, Gov: %s, Supply: %s",
-		finalProposerBalance.String(), finalGovBalance.String(), finalSupply.String())
+	t.Logf("Final State - Proposer: %s, Gov Module: %s, Burn Module: %s, Supply: %s",
+		finalProposerBalance.String(), finalGovBalance.String(), finalBurnModuleBalance.String(), finalSupply.String())
 
-	assert.Equal(t, finalGovBalance, sdkmath.ZeroInt())
+	assert.Equal(t, sdkmath.ZeroInt(), finalBurnModuleBalance)
+	assert.Equal(t, sdkmath.ZeroInt(), finalGovBalance)
 
 	return testResult{
 		proposal:            prop,

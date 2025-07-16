@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 )
 
-// RegisterLegacyAminoCodec registers the necessary x/bank interfaces and concrete types
+// RegisterLegacyAminoCodec registers the necessary x/burn interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgBurn{}, "xpladev/MsgBurn")

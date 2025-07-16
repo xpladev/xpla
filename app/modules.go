@@ -55,7 +55,9 @@ import (
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	xplaauth "github.com/xpladev/xpla/x/auth"
 	xplabank "github.com/xpladev/xpla/x/bank"
+	burntypes "github.com/xpladev/xpla/x/burn/types"
 
+	"github.com/xpladev/xpla/x/burn"
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastaking "github.com/xpladev/xpla/x/staking"
@@ -77,6 +79,7 @@ var maccPerms = map[string][]string{
 	evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 	feemarkettypes.ModuleName:      nil,
 	rewardtypes.ModuleName:         nil,
+	burntypes.ModuleName:           {authtypes.Burner},
 }
 
 func appModules(
@@ -116,6 +119,7 @@ func appModules(
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
+		burn.NewAppModule(appCodec, app.BurnKeeper),
 	}
 }
 
@@ -197,6 +201,7 @@ func orderBeginBlockers() []string {
 		evmtypes.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
+		burntypes.ModuleName,
 	}
 }
 
@@ -235,6 +240,7 @@ func orderEndBlockers() []string {
 		feemarkettypes.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
+		burntypes.ModuleName,
 	}
 }
 
@@ -273,5 +279,6 @@ func orderInitBlockers() []string {
 		wasmtypes.ModuleName,
 		rewardtypes.ModuleName,
 		volunteertypes.ModuleName,
+		burntypes.ModuleName,
 	}
 }

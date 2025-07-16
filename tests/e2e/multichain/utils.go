@@ -19,7 +19,7 @@ import (
 
 	ethenc "github.com/cosmos/evm/encoding/codec"
 
-	xplbanktypes "github.com/xpladev/xpla/x/bank/types"
+	burntypes "github.com/xpladev/xpla/x/burn/types"
 )
 
 const (
@@ -85,7 +85,7 @@ func XplaChainSpec(
 
 	encoding := wasm.WasmEncoding()
 	ethenc.RegisterInterfaces(encoding.InterfaceRegistry)
-	xplbanktypes.RegisterInterfaces(encoding.InterfaceRegistry)
+	burntypes.RegisterInterfaces(encoding.InterfaceRegistry)
 
 	return &interchaintest.ChainSpec{
 		Name:          "xpla_1",

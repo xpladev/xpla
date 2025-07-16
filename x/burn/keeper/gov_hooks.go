@@ -7,20 +7,21 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1types "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
-	"github.com/xpladev/xpla/x/bank/types"
+	"github.com/xpladev/xpla/x/burn/types"
 )
 
 var _ govtypes.GovHooks = BankGovHooks{}
 
 // BankGovHooks implements govtypes.GovHooks
 type BankGovHooks struct {
-	bankKeeper Keeper
+	keeper     Keeper
+	bankKeeper types.BankKeeper
 	govKeeper  types.GovKeeper
 }
 
 // NewGovHooksForBank creates new gov hooks for bank keeper
-func NewGovHooksForBank(bk Keeper, gk types.GovKeeper) BankGovHooks {
-	return BankGovHooks{bankKeeper: bk, govKeeper: gk}
+func NewGovHooksForBurn(k Keeper, bk types.BankKeeper, gk types.GovKeeper) BankGovHooks {
+	return BankGovHooks{keeper: k, bankKeeper: bk, govKeeper: gk}
 }
 
 // AfterProposalSubmission implements govtypes.GovHooks
@@ -36,22 +37,23 @@ func (h BankGovHooks) AfterProposalSubmission(ctx context.Context, proposalID ui
 	}
 
 	for _, msg := range res.Proposal.Messages {
-		msgBurn, err := types.UnpackMsgBurn(h.bankKeeper.cdc, msg)
+		msgBurn, err := types.UnpackMsgBurn(h.keeper.cdc, msg)
 		if err != nil {
 			// Skip if not MsgBurn
 			continue
 		}
 
 		burnProposal := types.BurnProposal{
-			Proposer: proposer.String(),
-			Amount:   msgBurn.Amount,
+			ProposalId: proposalID,
+			Proposer:   proposer.String(),
+			Amount:     msgBurn.Amount,
 		}
 
-		if err := h.bankKeeper.OngoingBurnProposals.Set(ctx, proposalID, burnProposal); err != nil {
+		if err := h.keeper.OngoingBurnProposals.Set(ctx, proposalID, burnProposal); err != nil {
 			return err
 		}
 
-		if err := h.bankKeeper.SendCoinsFromAccountToModule(ctx, proposer, govtypes.ModuleName, msgBurn.Amount); err != nil {
+		if err := h.bankKeeper.SendCoinsFromAccountToModule(ctx, proposer, types.ModuleName, msgBurn.Amount); err != nil {
 			return err
 		}
 	}
@@ -71,13 +73,13 @@ func (h BankGovHooks) AfterProposalVote(ctx context.Context, proposalID uint64, 
 
 // AfterProposalFailedMinDeposit implements govtypes.GovHooks
 func (h BankGovHooks) AfterProposalFailedMinDeposit(ctx context.Context, proposalID uint64) error {
-	has, err := h.bankKeeper.OngoingBurnProposals.Has(ctx, proposalID)
+	has, err := h.keeper.OngoingBurnProposals.Has(ctx, proposalID)
 	if err != nil || !has {
 		// Skip if not MsgBurn
 		return nil
 	}
 
-	burnProposal, err := h.bankKeeper.OngoingBurnProposals.Get(ctx, proposalID)
+	burnProposal, err := h.keeper.OngoingBurnProposals.Get(ctx, proposalID)
 	if err != nil {
 		return err
 	}
@@ -87,11 +89,11 @@ func (h BankGovHooks) AfterProposalFailedMinDeposit(ctx context.Context, proposa
 		return err
 	}
 
-	if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, govtypes.ModuleName, proposer, burnProposal.Amount); err != nil {
+	if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, proposer, burnProposal.Amount); err != nil {
 		return err
 	}
 
-	if err := h.bankKeeper.OngoingBurnProposals.Remove(ctx, proposalID); err != nil {
+	if err := h.keeper.OngoingBurnProposals.Remove(ctx, proposalID); err != nil {
 		return err
 	}
 
@@ -101,7 +103,7 @@ func (h BankGovHooks) AfterProposalFailedMinDeposit(ctx context.Context, proposa
 // AfterProposalVotingPeriodEnded implements govtypes.GovHooks
 func (h BankGovHooks) AfterProposalVotingPeriodEnded(ctx context.Context, proposalID uint64) error {
 	// Check if this is a burn proposal first
-	has, err := h.bankKeeper.OngoingBurnProposals.Has(ctx, proposalID)
+	has, err := h.keeper.OngoingBurnProposals.Has(ctx, proposalID)
 	if err != nil || !has {
 		// Skip if not MsgBurn
 		return nil
@@ -113,7 +115,7 @@ func (h BankGovHooks) AfterProposalVotingPeriodEnded(ctx context.Context, propos
 		return err
 	}
 
-	if err := h.bankKeeper.OngoingBurnProposals.Remove(ctx, proposalID); err != nil {
+	if err := h.keeper.OngoingBurnProposals.Remove(ctx, proposalID); err != nil {
 		return err
 	}
 
@@ -130,13 +132,13 @@ func (h BankGovHooks) AfterProposalVotingPeriodEnded(ctx context.Context, propos
 
 	// Find the burn amount from the proposal messages
 	for _, msg := range res.Proposal.Messages {
-		msgBurn, err := types.UnpackMsgBurn(h.bankKeeper.cdc, msg)
+		msgBurn, err := types.UnpackMsgBurn(h.keeper.cdc, msg)
 		if err != nil {
 			// Skip if not MsgBurn
 			continue
 		}
 
-		if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, govtypes.ModuleName, proposer, msgBurn.Amount); err != nil {
+		if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, proposer, msgBurn.Amount); err != nil {
 			return err
 		}
 	}
