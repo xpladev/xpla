@@ -195,4 +195,6 @@ abi-gen:
 	solc --abi --pretty-json --overwrite -o bank bank/IBank.sol && \
 	solc --abi --pretty-json --overwrite -o distribution distribution/IDistribution.sol && \
 	solc --abi --pretty-json --overwrite -o staking staking/IStaking.sol && \
-	solc --abi --pretty-json --overwrite -o wasm wasm/IWasm.sol
+	solc --abi --pretty-json --overwrite -o wasm wasm/IWasm.sol && \
+	cd ../x/bank/keeper && \
+	solc --abi --pretty-json --overwrite -o . ./IERC20.sol
