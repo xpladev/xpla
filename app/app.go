@@ -65,10 +65,6 @@ import (
 	cosmosevmutils "github.com/cosmos/evm/utils"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
-	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
-	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
-	erc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
-
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
@@ -76,6 +72,10 @@ import (
 	"github.com/xpladev/xpla/app/upgrades"
 	"github.com/xpladev/xpla/app/upgrades/v1_8"
 	"github.com/xpladev/xpla/docs"
+	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
+	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
+	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
+	erc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
 	xplaprecompile "github.com/xpladev/xpla/precompile"
 	xplatypes "github.com/xpladev/xpla/types"
 
@@ -185,9 +185,13 @@ func NewXplaApp(
 		txConfig.TxDecoder(),
 		baseAppOptions...)
 
-	evmChainId, err := xplatypes.EvmChainId(bApp.ChainID())
-	if err != nil {
-		panic(err)
+	evmChainId := uint64(0)
+	if bApp.ChainID() != "" { // ignore standalone cmd case
+		bigintChainId, err := etherminttypes.ParseChainID(bApp.ChainID())
+		if err != nil {
+			panic(err)
+		}
+		evmChainId = bigintChainId.Uint64()
 	}
 
 	// This is needed for the EIP712 txs because currently is using
