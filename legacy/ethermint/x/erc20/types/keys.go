@@ -2,7 +2,7 @@ package types
 
 const (
 	// module name
-	ModuleName = "erc20"
+	ModuleName = "_erc20"
 
 	// StoreKey to be used when creating the KVStore
 	StoreKey = ModuleName

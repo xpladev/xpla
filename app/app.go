@@ -75,7 +75,9 @@ import (
 	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
 	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
-	erc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
+	legacyerc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
+	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
+	legacyfeemarkettypes "github.com/xpladev/xpla/legacy/ethermint/x/feemarket/types"
 	xplaprecompile "github.com/xpladev/xpla/precompile"
 	xplatypes "github.com/xpladev/xpla/types"
 
@@ -171,12 +173,13 @@ func NewXplaApp(
 
 	ethenc.RegisterLegacyAminoCodec(legacyAmino)
 	ethenc.RegisterInterfaces(interfaceRegistry)
-	// Set erc20 registry for backwards compatibility
-	erc20types.RegisterInterfaces(interfaceRegistry)
-	// Set ethermint registry for backwards compatibility
+	// Set legacy ethermint registries for backwards compatibility
 	ethermintenc.RegisterInterfaces(interfaceRegistry)
 	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PubKey{}, ethermintsecp256k1.PubKeyName, nil)
 	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PrivKey{}, ethermintsecp256k1.PrivKeyName, nil)
+	legacyevmtypes.RegisterInterfaces(interfaceRegistry)
+	legacyfeemarkettypes.RegisterInterfaces(interfaceRegistry)
+	legacyerc20types.RegisterInterfaces(interfaceRegistry)
 
 	bApp := baseapp.NewBaseApp(
 		appName,
