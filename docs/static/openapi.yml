@@ -2398,7 +2398,7 @@ components:
                                             type: integer
                                         title: PartsetHeader
                                         type: object
-                                    title: BlockID
+                                    title: prev block info
                                     type: object
                                   last_commit_hash:
                                     format: byte
@@ -2983,7 +2983,7 @@ components:
                                                 type: integer
                                             title: PartsetHeader
                                             type: object
-                                        title: BlockID
+                                        title: prev block info
                                         type: object
                                       last_commit_hash:
                                         format: byte
@@ -3131,7 +3131,7 @@ components:
                           type: integer
                       title: PartsetHeader
                       type: object
-                  title: BlockID
+                  title: prev block info
                   type: object
                 last_commit_hash:
                   format: byte
@@ -3580,7 +3580,7 @@ components:
                                                 type: integer
                                             title: PartsetHeader
                                             type: object
-                                        title: BlockID
+                                        title: prev block info
                                         type: object
                                       last_commit_hash:
                                         format: byte
@@ -4169,7 +4169,7 @@ components:
                                                 type: integer
                                             title: PartsetHeader
                                             type: object
-                                        title: BlockID
+                                        title: prev block info
                                         type: object
                                       last_commit_hash:
                                         format: byte
@@ -4317,7 +4317,7 @@ components:
                           type: integer
                       title: PartsetHeader
                       type: object
-                  title: BlockID
+                  title: prev block info
                   type: object
                 last_commit_hash:
                   format: byte
@@ -4766,7 +4766,7 @@ components:
                                                 type: integer
                                             title: PartsetHeader
                                             type: object
-                                        title: BlockID
+                                        title: prev block info
                                         type: object
                                       last_commit_hash:
                                         format: byte
@@ -5446,190 +5446,6 @@ components:
         denom:
           type: string
       type: object
-    cosmos.circuit.v1.AccountResponse:
-      description: AccountResponse is the response type for the Query/Account RPC method.
-      properties:
-        permission:
-          description: |-
-            Permissions are the permissions that an account has to trip
-            or reset the circuit breaker.
-          properties:
-            level:
-              default: LEVEL_NONE_UNSPECIFIED
-              description: level is the level of permissions granted to this account.
-              enum:
-                - LEVEL_NONE_UNSPECIFIED
-                - LEVEL_SOME_MSGS
-                - LEVEL_ALL_MSGS
-                - LEVEL_SUPER_ADMIN
-              type: string
-            limit_type_urls:
-              description: >-
-                limit_type_urls is used with LEVEL_SOME_MSGS to limit the lists
-                of Msg type
-
-                URLs that the account can trip. It is an error to use
-                limit_type_urls with
-
-                a level other than LEVEL_SOME_MSGS.
-              items:
-                type: string
-              type: array
-          type: object
-      type: object
-    cosmos.circuit.v1.AccountsResponse:
-      description: AccountsResponse is the response type for the Query/Accounts RPC method.
-      properties:
-        accounts:
-          items:
-            properties:
-              address:
-                type: string
-              permissions:
-                description: |-
-                  Permissions are the permissions that an account has to trip
-                  or reset the circuit breaker.
-                properties:
-                  level:
-                    default: LEVEL_NONE_UNSPECIFIED
-                    description: level is the level of permissions granted to this account.
-                    enum:
-                      - LEVEL_NONE_UNSPECIFIED
-                      - LEVEL_SOME_MSGS
-                      - LEVEL_ALL_MSGS
-                      - LEVEL_SUPER_ADMIN
-                    type: string
-                  limit_type_urls:
-                    description: >-
-                      limit_type_urls is used with LEVEL_SOME_MSGS to limit the
-                      lists of Msg type
-
-                      URLs that the account can trip. It is an error to use
-                      limit_type_urls with
-
-                      a level other than LEVEL_SOME_MSGS.
-                    items:
-                      type: string
-                    type: array
-                type: object
-            title: >-
-              GenesisAccountPermissions is the account permissions for the
-              circuit breaker in genesis
-            type: object
-          type: array
-        pagination:
-          description: pagination defines the pagination in the response.
-          properties:
-            next_key:
-              description: |-
-                next_key is the key to be passed to PageRequest.key to
-                query the next page most efficiently. It will be empty if
-                there are no more results.
-              format: byte
-              type: string
-            total:
-              format: uint64
-              title: >-
-                total is total number of results available if
-                PageRequest.count_total
-
-                was set, its value is undefined otherwise
-              type: string
-          type: object
-      type: object
-    cosmos.circuit.v1.DisabledListResponse:
-      description: >-
-        DisabledListResponse is the response type for the Query/DisabledList RPC
-        method.
-      properties:
-        disabled_list:
-          items:
-            type: string
-          type: array
-      type: object
-    cosmos.circuit.v1.GenesisAccountPermissions:
-      properties:
-        address:
-          type: string
-        permissions:
-          description: |-
-            Permissions are the permissions that an account has to trip
-            or reset the circuit breaker.
-          properties:
-            level:
-              default: LEVEL_NONE_UNSPECIFIED
-              description: level is the level of permissions granted to this account.
-              enum:
-                - LEVEL_NONE_UNSPECIFIED
-                - LEVEL_SOME_MSGS
-                - LEVEL_ALL_MSGS
-                - LEVEL_SUPER_ADMIN
-              type: string
-            limit_type_urls:
-              description: >-
-                limit_type_urls is used with LEVEL_SOME_MSGS to limit the lists
-                of Msg type
-
-                URLs that the account can trip. It is an error to use
-                limit_type_urls with
-
-                a level other than LEVEL_SOME_MSGS.
-              items:
-                type: string
-              type: array
-          type: object
-      title: >-
-        GenesisAccountPermissions is the account permissions for the circuit
-        breaker in genesis
-      type: object
-    cosmos.circuit.v1.Permissions:
-      description: |-
-        Permissions are the permissions that an account has to trip
-        or reset the circuit breaker.
-      properties:
-        level:
-          default: LEVEL_NONE_UNSPECIFIED
-          description: level is the level of permissions granted to this account.
-          enum:
-            - LEVEL_NONE_UNSPECIFIED
-            - LEVEL_SOME_MSGS
-            - LEVEL_ALL_MSGS
-            - LEVEL_SUPER_ADMIN
-          type: string
-        limit_type_urls:
-          description: >-
-            limit_type_urls is used with LEVEL_SOME_MSGS to limit the lists of
-            Msg type
-
-            URLs that the account can trip. It is an error to use
-            limit_type_urls with
-
-            a level other than LEVEL_SOME_MSGS.
-          items:
-            type: string
-          type: array
-      type: object
-    cosmos.circuit.v1.Permissions.Level:
-      default: LEVEL_NONE_UNSPECIFIED
-      description: |-
-        Level is the permission level.
-
-         - LEVEL_NONE_UNSPECIFIED: LEVEL_NONE_UNSPECIFIED indicates that the account will have no circuit
-        breaker permissions.
-         - LEVEL_SOME_MSGS: LEVEL_SOME_MSGS indicates that the account will have permission to
-        trip or reset the circuit breaker for some Msg type URLs. If this level
-        is chosen, a non-empty list of Msg type URLs must be provided in
-        limit_type_urls.
-         - LEVEL_ALL_MSGS: LEVEL_ALL_MSGS indicates that the account can trip or reset the circuit
-        breaker for Msg's of all type URLs.
-         - LEVEL_SUPER_ADMIN: LEVEL_SUPER_ADMIN indicates that the account can take all circuit breaker
-        actions and can grant permissions to other accounts.
-      enum:
-        - LEVEL_NONE_UNSPECIFIED
-        - LEVEL_SOME_MSGS
-        - LEVEL_ALL_MSGS
-        - LEVEL_SUPER_ADMIN
-      type: string
     cosmos.consensus.v1.QueryParamsResponse:
       description: >-
         QueryParamsResponse defines the response type for querying x/consensus
@@ -5751,15 +5567,6 @@ components:
                   type: string
               type: object
           type: object
-      type: object
-    cosmos.counter.v1.QueryGetCountResponse:
-      description: >-
-        QueryGetCountResponse defines the response type for querying x/mock
-        count.
-      properties:
-        total_count:
-          format: int64
-          type: string
       type: object
     cosmos.crypto.multisig.v1beta1.CompactBitArray:
       description: >-
@@ -6183,214 +5990,6 @@ components:
         validator_period:
           format: uint64
           type: string
-      type: object
-    cosmos.epochs.v1beta1.EpochInfo:
-      description: |-
-        EpochInfo is a struct that describes the data going into
-        a timer defined by the x/epochs module.
-      properties:
-        current_epoch:
-          description: >-
-            current_epoch is the current epoch number, or in other words,
-
-            how many times has the timer 'ticked'.
-
-            The first tick (current_epoch=1) is defined as
-
-            the first block whose blocktime is greater than the EpochInfo
-            start_time.
-          format: int64
-          type: string
-        current_epoch_start_height:
-          format: int64
-          title: >-
-            current_epoch_start_height is the block height at which the current
-            epoch
-
-            started. (The block height at which the timer last ticked)
-          type: string
-        current_epoch_start_time:
-          description: >-
-            current_epoch_start_time describes the start time of the current
-            timer
-
-            interval. The interval is (current_epoch_start_time,
-
-            current_epoch_start_time + duration] When the timer ticks, this is
-            set to
-
-            current_epoch_start_time = last_epoch_start_time + duration only one
-            timer
-
-            tick for a given identifier can occur per block.
-
-
-            NOTE! The current_epoch_start_time may diverge significantly from
-            the
-
-            wall-clock time the epoch began at. Wall-clock time of epoch start
-            may be
-
-            >> current_epoch_start_time. Suppose current_epoch_start_time = 10,
-
-            duration = 5. Suppose the chain goes offline at t=14, and comes back
-            online
-
-            at t=30, and produces blocks at every successive time. (t=31, 32,
-            etc.)
-
-            * The t=30 block will start the epoch for (10, 15]
-
-            * The t=31 block will start the epoch for (15, 20]
-
-            * The t=32 block will start the epoch for (20, 25]
-
-            * The t=33 block will start the epoch for (25, 30]
-
-            * The t=34 block will start the epoch for (30, 35]
-
-            * The **t=36** block will start the epoch for (35, 40]
-          format: date-time
-          type: string
-        duration:
-          description: |-
-            duration is the time in between epoch ticks.
-            In order for intended behavior to be met, duration should
-            be greater than the chains expected block time.
-            Duration must be non-zero.
-          type: string
-        epoch_counting_started:
-          description: |-
-            epoch_counting_started is a boolean, that indicates whether this
-            epoch timer has began yet.
-          type: boolean
-        identifier:
-          description: identifier is a unique reference to this particular timer.
-          type: string
-        start_time:
-          description: >-
-            start_time is the time at which the timer first ever ticks.
-
-            If start_time is in the future, the epoch will not begin until the
-            start
-
-            time.
-          format: date-time
-          type: string
-      type: object
-    cosmos.epochs.v1beta1.QueryCurrentEpochResponse:
-      description: |-
-        QueryCurrentEpochResponse defines the gRPC response structure for
-        querying an epoch by its identifier.
-      properties:
-        current_epoch:
-          format: int64
-          type: string
-      type: object
-    cosmos.epochs.v1beta1.QueryEpochInfosResponse:
-      description: |-
-        QueryEpochInfosRequest defines the gRPC response structure for
-        querying all epoch info.
-      properties:
-        epochs:
-          items:
-            description: |-
-              EpochInfo is a struct that describes the data going into
-              a timer defined by the x/epochs module.
-            properties:
-              current_epoch:
-                description: >-
-                  current_epoch is the current epoch number, or in other words,
-
-                  how many times has the timer 'ticked'.
-
-                  The first tick (current_epoch=1) is defined as
-
-                  the first block whose blocktime is greater than the EpochInfo
-                  start_time.
-                format: int64
-                type: string
-              current_epoch_start_height:
-                format: int64
-                title: >-
-                  current_epoch_start_height is the block height at which the
-                  current epoch
-
-                  started. (The block height at which the timer last ticked)
-                type: string
-              current_epoch_start_time:
-                description: >-
-                  current_epoch_start_time describes the start time of the
-                  current timer
-
-                  interval. The interval is (current_epoch_start_time,
-
-                  current_epoch_start_time + duration] When the timer ticks,
-                  this is set to
-
-                  current_epoch_start_time = last_epoch_start_time + duration
-                  only one timer
-
-                  tick for a given identifier can occur per block.
-
-
-                  NOTE! The current_epoch_start_time may diverge significantly
-                  from the
-
-                  wall-clock time the epoch began at. Wall-clock time of epoch
-                  start may be
-
-                  >> current_epoch_start_time. Suppose current_epoch_start_time
-                  = 10,
-
-                  duration = 5. Suppose the chain goes offline at t=14, and
-                  comes back online
-
-                  at t=30, and produces blocks at every successive time. (t=31,
-                  32, etc.)
-
-                  * The t=30 block will start the epoch for (10, 15]
-
-                  * The t=31 block will start the epoch for (15, 20]
-
-                  * The t=32 block will start the epoch for (20, 25]
-
-                  * The t=33 block will start the epoch for (25, 30]
-
-                  * The t=34 block will start the epoch for (30, 35]
-
-                  * The **t=36** block will start the epoch for (35, 40]
-                format: date-time
-                type: string
-              duration:
-                description: |-
-                  duration is the time in between epoch ticks.
-                  In order for intended behavior to be met, duration should
-                  be greater than the chains expected block time.
-                  Duration must be non-zero.
-                type: string
-              epoch_counting_started:
-                description: >-
-                  epoch_counting_started is a boolean, that indicates whether
-                  this
-
-                  epoch timer has began yet.
-                type: boolean
-              identifier:
-                description: identifier is a unique reference to this particular timer.
-                type: string
-              start_time:
-                description: >-
-                  start_time is the time at which the timer first ever ticks.
-
-                  If start_time is in the future, the epoch will not begin until
-                  the start
-
-                  time.
-                format: date-time
-                type: string
-            type: object
-          type: array
       type: object
     cosmos.evidence.v1beta1.QueryAllEvidenceResponse:
       description: >-
@@ -9271,14 +8870,7 @@ components:
             type: object
           type: array
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -9464,14 +9056,7 @@ components:
         method.
       properties:
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -9662,14 +9247,7 @@ components:
       description: QueryVotesResponse is the response type for the Query/Votes RPC method.
       properties:
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -10015,155 +9593,6 @@ components:
           type: array
         subspace:
           type: string
-      type: object
-    cosmos.protocolpool.v1.ContinuousFund:
-      description: ContinuousFund defines the fields of continuous fund proposal.
-      properties:
-        expiry:
-          description: Optional, if expiry is set, removes the state object when expired.
-          format: date-time
-          type: string
-        percentage:
-          description: >-
-            Percentage is the percentage of funds to be allocated from Community
-            pool.
-          type: string
-        recipient:
-          description: Recipient is the address string of the account receiving funds.
-          type: string
-      type: object
-    cosmos.protocolpool.v1.Params:
-      description: Params defines the parameters for the protocolpool module.
-      properties:
-        distribution_frequency:
-          description: >-
-            DistributionFrequency is the frequency (in terms of blocks) that
-            funds are distributed out from the
-
-            x/protocolpool module.
-          format: uint64
-          type: string
-        enabled_distribution_denoms:
-          description: >-
-            EnabledDistributionDenoms lists the denoms that are allowed to be
-            distributed.
-
-            This is to avoid spending time distributing undesired tokens to
-            continuous funds and budgets.
-          items:
-            type: string
-          type: array
-      type: object
-    cosmos.protocolpool.v1.QueryCommunityPoolResponse:
-      description: >-
-        QueryCommunityPoolResponse is the response type for the
-        Query/CommunityPool
-
-        RPC method.
-      properties:
-        pool:
-          description: pool defines community pool's coins.
-          items:
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
-            properties:
-              amount:
-                type: string
-              denom:
-                type: string
-            type: object
-          type: array
-      type: object
-    cosmos.protocolpool.v1.QueryContinuousFundResponse:
-      description: >-
-        QueryUnclaimedBudgetResponse is the response type for the
-        Query/ContinuousFund
-
-        RPC method.
-      properties:
-        continuous_fund:
-          description: ContinuousFund defines the fields of continuous fund proposal.
-          properties:
-            expiry:
-              description: >-
-                Optional, if expiry is set, removes the state object when
-                expired.
-              format: date-time
-              type: string
-            percentage:
-              description: >-
-                Percentage is the percentage of funds to be allocated from
-                Community pool.
-              type: string
-            recipient:
-              description: Recipient is the address string of the account receiving funds.
-              type: string
-          type: object
-      type: object
-    cosmos.protocolpool.v1.QueryContinuousFundsResponse:
-      description: >-
-        QueryUnclaimedBudgetResponse is the response type for the
-        Query/ContinuousFunds
-
-        RPC method.
-      properties:
-        continuous_funds:
-          description: ContinuousFunds defines all continuous funds in state.
-          items:
-            description: ContinuousFund defines the fields of continuous fund proposal.
-            properties:
-              expiry:
-                description: >-
-                  Optional, if expiry is set, removes the state object when
-                  expired.
-                format: date-time
-                type: string
-              percentage:
-                description: >-
-                  Percentage is the percentage of funds to be allocated from
-                  Community pool.
-                type: string
-              recipient:
-                description: >-
-                  Recipient is the address string of the account receiving
-                  funds.
-                type: string
-            type: object
-          type: array
-      type: object
-    cosmos.protocolpool.v1.QueryParamsResponse:
-      description: >-
-        QueryParamsResponse is the response type for the Query/Params RPC
-        method.
-      properties:
-        params:
-          description: Params defines the parameters for the protocolpool module.
-          properties:
-            distribution_frequency:
-              description: >-
-                DistributionFrequency is the frequency (in terms of blocks) that
-                funds are distributed out from the
-
-                x/protocolpool module.
-              format: uint64
-              type: string
-            enabled_distribution_denoms:
-              description: >-
-                EnabledDistributionDenoms lists the denoms that are allowed to
-                be distributed.
-
-                This is to avoid spending time distributing undesired tokens to
-                continuous funds and budgets.
-              items:
-                type: string
-              type: array
-          type: object
       type: object
     cosmos.slashing.v1beta1.Params:
       description: Params represents the parameters used for by the slashing module.
@@ -10591,7 +10020,7 @@ components:
                       type: integer
                   title: PartsetHeader
                   type: object
-              title: BlockID
+              title: prev block info
               type: object
             last_commit_hash:
               format: byte
@@ -10928,14 +10357,7 @@ components:
             type: object
           type: array
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -10960,14 +10382,7 @@ components:
         Query/UnbondingDelegatorDelegations RPC method.
       properties:
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -11200,14 +10615,7 @@ components:
         Query/DelegatorValidators RPC method.
       properties:
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -11424,7 +10832,7 @@ components:
                           type: integer
                       title: PartsetHeader
                       type: object
-                  title: BlockID
+                  title: prev block info
                   type: object
                 last_commit_hash:
                   format: byte
@@ -11681,14 +11089,7 @@ components:
         method.
       properties:
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -11946,14 +11347,7 @@ components:
             type: object
           type: array
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -12134,14 +11528,7 @@ components:
         Query/ValidatorUnbondingDelegations RPC method.
       properties:
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -12218,14 +11605,7 @@ components:
     cosmos.staking.v1beta1.QueryValidatorsResponse:
       properties:
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination defines the pagination in the response.
           properties:
             next_key:
               description: |-
@@ -13846,7 +13226,7 @@ components:
                                                 type: integer
                                             title: PartsetHeader
                                             type: object
-                                        title: BlockID
+                                        title: prev block info
                                         type: object
                                       last_commit_hash:
                                         format: byte
@@ -13994,7 +13374,7 @@ components:
                           type: integer
                       title: PartsetHeader
                       type: object
-                  title: BlockID
+                  title: prev block info
                   type: object
                 last_commit_hash:
                   format: byte
@@ -19855,13 +19235,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: |-
         QueryChannelClientStateResponse is the Response type for the
@@ -19919,13 +19293,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: |-
         QueryChannelClientStateResponse is the Response type for the
@@ -20051,13 +19419,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       type: object
     ibc.core.channel.v1.QueryChannelsResponse:
@@ -20176,13 +19538,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: query block height
           type: object
         pagination:
           description: |-
@@ -20325,13 +19681,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: query block height
           type: object
         pagination:
           description: |-
@@ -20408,13 +19758,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: |-
         QuerySequenceResponse is the response type for the
@@ -20464,13 +19808,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: |-
         QueryNextSequenceSendResponse is the request type for the
@@ -20520,13 +19858,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: >-
         QueryPacketAcknowledgementResponse defines the client query response for
@@ -20601,13 +19933,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: query block height
           type: object
         pagination:
           description: |-
@@ -20684,13 +20010,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: >-
         QueryPacketCommitmentResponse defines the client query response for a
@@ -20765,13 +20085,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: query block height
           type: object
         pagination:
           description: |-
@@ -20844,13 +20158,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
         received:
           title: success flag for if receipt exists
@@ -20900,13 +20208,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: query block height
           type: object
         sequences:
           items:
@@ -20954,13 +20256,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: query block height
           type: object
         sequences:
           items:
@@ -21314,14 +20610,7 @@ components:
             freezing clients
           type: object
         pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
+          description: pagination response.
           properties:
             next_key:
               description: |-
@@ -22575,13 +21864,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was generated
           type: object
       title: |-
         QueryClientConnectionsResponse is the response type for the
@@ -22648,13 +21931,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: |-
         QueryConnectionClientStateResponse is the response type for the
@@ -22712,13 +21989,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       title: |-
         QueryConnectionConsensusStateResponse is the response type for the
@@ -22884,13 +22155,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: height at which the proof was retrieved
           type: object
       type: object
     ibc.core.connection.v1.QueryConnectionsResponse:
@@ -23021,13 +22286,7 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: >-
-            Height is a monotonically increasing data type
-
-            that can be compared against another Height for the purposes of
-            updating and
-
-            freezing clients
+          title: query block height
           type: object
         pagination:
           description: |-
@@ -23597,7 +22856,7 @@ components:
                                             type: integer
                                         title: PartsetHeader
                                         type: object
-                                    title: BlockID
+                                    title: prev block info
                                     type: object
                                   last_commit_hash:
                                     format: byte
@@ -23744,7 +23003,7 @@ components:
                       type: integer
                   title: PartsetHeader
                   type: object
-              title: BlockID
+              title: prev block info
               type: object
             last_commit_hash:
               format: byte
@@ -24554,7 +23813,7 @@ components:
                                   type: integer
                               title: PartsetHeader
                               type: object
-                          title: BlockID
+                          title: prev block info
                           type: object
                         last_commit_hash:
                           format: byte
@@ -24972,7 +24231,7 @@ components:
                                         type: integer
                                     title: PartsetHeader
                                     type: object
-                                title: BlockID
+                                title: prev block info
                                 type: object
                               last_commit_hash:
                                 format: byte
@@ -25154,7 +24413,7 @@ components:
                   type: integer
               title: PartsetHeader
               type: object
-          title: BlockID
+          title: prev block info
           type: object
         last_commit_hash:
           format: byte
@@ -25290,7 +24549,7 @@ components:
                           type: integer
                       title: PartsetHeader
                       type: object
-                  title: BlockID
+                  title: prev block info
                   type: object
                 last_commit_hash:
                   format: byte
@@ -25514,7 +24773,7 @@ components:
                               type: integer
                           title: PartsetHeader
                           type: object
-                      title: BlockID
+                      title: prev block info
                       type: object
                     last_commit_hash:
                       format: byte
@@ -25721,7 +24980,7 @@ components:
                       type: integer
                   title: PartsetHeader
                   type: object
-              title: BlockID
+              title: prev block info
               type: object
             last_commit_hash:
               format: byte
@@ -29492,7 +28751,7 @@ paths:
                                                           type: integer
                                                       title: PartsetHeader
                                                       type: object
-                                                  title: BlockID
+                                                  title: prev block info
                                                   type: object
                                                 last_commit_hash:
                                                   format: byte
@@ -29640,7 +28899,7 @@ paths:
                                     type: integer
                                 title: PartsetHeader
                                 type: object
-                            title: BlockID
+                            title: prev block info
                             type: object
                           last_commit_hash:
                             format: byte
@@ -30099,7 +29358,7 @@ paths:
                                                           type: integer
                                                       title: PartsetHeader
                                                       type: object
-                                                  title: BlockID
+                                                  title: prev block info
                                                   type: object
                                                 last_commit_hash:
                                                   format: byte
@@ -30740,7 +29999,7 @@ paths:
                                                           type: integer
                                                       title: PartsetHeader
                                                       type: object
-                                                  title: BlockID
+                                                  title: prev block info
                                                   type: object
                                                 last_commit_hash:
                                                   format: byte
@@ -30888,7 +30147,7 @@ paths:
                                     type: integer
                                 title: PartsetHeader
                                 type: object
-                            title: BlockID
+                            title: prev block info
                             type: object
                           last_commit_hash:
                             format: byte
@@ -31347,7 +30606,7 @@ paths:
                                                           type: integer
                                                       title: PartsetHeader
                                                       type: object
-                                                  title: BlockID
+                                                  title: prev block info
                                                   type: object
                                                 last_commit_hash:
                                                   format: byte
@@ -32104,292 +31363,6 @@ paths:
       summary: GetValidatorSetByHeight queries validator-set at a given height.
       tags:
         - cosmos/base/tendermint
-  /cosmos/circuit/v1/accounts:
-    get:
-      operationId: Accounts
-      parameters:
-        - description: |-
-            key is a value returned in PageResponse.next_key to begin
-            querying the next page most efficiently. Only one of offset or key
-            should be set.
-          in: query
-          name: pagination.key
-          required: false
-          schema:
-            format: byte
-            type: string
-        - description: >-
-            offset is a numeric offset that can be used when key is unavailable.
-
-            It is less efficient than using key. Only one of offset or key
-            should
-
-            be set.
-          in: query
-          name: pagination.offset
-          required: false
-          schema:
-            format: uint64
-            type: string
-        - description: >-
-            limit is the total number of results to be returned in the result
-            page.
-
-            If left empty it will default to a value to be set by each app.
-          in: query
-          name: pagination.limit
-          required: false
-          schema:
-            format: uint64
-            type: string
-        - description: >-
-            count_total is set to true  to indicate that the result set should
-            include
-
-            a count of the total number of items available for pagination in
-            UIs.
-
-            count_total is only respected when offset is used. It is ignored
-            when key
-
-            is set.
-          in: query
-          name: pagination.count_total
-          required: false
-          schema:
-            type: boolean
-        - description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-          in: query
-          name: pagination.reverse
-          required: false
-          schema:
-            type: boolean
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  AccountsResponse is the response type for the Query/Accounts
-                  RPC method.
-                properties:
-                  accounts:
-                    items:
-                      properties:
-                        address:
-                          type: string
-                        permissions:
-                          description: >-
-                            Permissions are the permissions that an account has
-                            to trip
-
-                            or reset the circuit breaker.
-                          properties:
-                            level:
-                              default: LEVEL_NONE_UNSPECIFIED
-                              description: >-
-                                level is the level of permissions granted to
-                                this account.
-                              enum:
-                                - LEVEL_NONE_UNSPECIFIED
-                                - LEVEL_SOME_MSGS
-                                - LEVEL_ALL_MSGS
-                                - LEVEL_SUPER_ADMIN
-                              type: string
-                            limit_type_urls:
-                              description: >-
-                                limit_type_urls is used with LEVEL_SOME_MSGS to
-                                limit the lists of Msg type
-
-                                URLs that the account can trip. It is an error
-                                to use limit_type_urls with
-
-                                a level other than LEVEL_SOME_MSGS.
-                              items:
-                                type: string
-                              type: array
-                          type: object
-                      title: >-
-                        GenesisAccountPermissions is the account permissions for
-                        the circuit breaker in genesis
-                      type: object
-                    type: array
-                  pagination:
-                    description: pagination defines the pagination in the response.
-                    properties:
-                      next_key:
-                        description: >-
-                          next_key is the key to be passed to PageRequest.key to
-
-                          query the next page most efficiently. It will be empty
-                          if
-
-                          there are no more results.
-                        format: byte
-                        type: string
-                      total:
-                        format: uint64
-                        title: >-
-                          total is total number of results available if
-                          PageRequest.count_total
-
-                          was set, its value is undefined otherwise
-                        type: string
-                    type: object
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: Account returns account permissions.
-      tags:
-        - cosmos/circuit/v1
-  /cosmos/circuit/v1/accounts/{address}:
-    get:
-      operationId: Account
-      parameters:
-        - in: path
-          name: address
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  AccountResponse is the response type for the Query/Account RPC
-                  method.
-                properties:
-                  permission:
-                    description: >-
-                      Permissions are the permissions that an account has to
-                      trip
-
-                      or reset the circuit breaker.
-                    properties:
-                      level:
-                        default: LEVEL_NONE_UNSPECIFIED
-                        description: >-
-                          level is the level of permissions granted to this
-                          account.
-                        enum:
-                          - LEVEL_NONE_UNSPECIFIED
-                          - LEVEL_SOME_MSGS
-                          - LEVEL_ALL_MSGS
-                          - LEVEL_SUPER_ADMIN
-                        type: string
-                      limit_type_urls:
-                        description: >-
-                          limit_type_urls is used with LEVEL_SOME_MSGS to limit
-                          the lists of Msg type
-
-                          URLs that the account can trip. It is an error to use
-                          limit_type_urls with
-
-                          a level other than LEVEL_SOME_MSGS.
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: Account returns account permissions.
-      tags:
-        - cosmos/circuit/v1
-  /cosmos/circuit/v1/disable_list:
-    get:
-      operationId: DisabledList
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  DisabledListResponse is the response type for the
-                  Query/DisabledList RPC method.
-                properties:
-                  disabled_list:
-                    items:
-                      type: string
-                    type: array
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: DisabledList returns a list of disabled message urls
-      tags:
-        - cosmos/circuit/v1
   /cosmos/consensus/v1/params:
     get:
       operationId: Params
@@ -33364,208 +32337,6 @@ paths:
       summary: ValidatorSlashes queries slash events of a validator.
       tags:
         - cosmos/distribution/v1beta1
-  /cosmos/epochs/v1beta1/current_epoch:
-    get:
-      operationId: CurrentEpoch
-      parameters:
-        - in: query
-          name: identifier
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryCurrentEpochResponse defines the gRPC response structure
-                  for
-
-                  querying an epoch by its identifier.
-                properties:
-                  current_epoch:
-                    format: int64
-                    type: string
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: CurrentEpoch provide current epoch of specified identifier
-      tags:
-        - cosmos/epochs/v1beta1
-  /cosmos/epochs/v1beta1/epochs:
-    get:
-      operationId: EpochInfos
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: |-
-                  QueryEpochInfosRequest defines the gRPC response structure for
-                  querying all epoch info.
-                properties:
-                  epochs:
-                    items:
-                      description: |-
-                        EpochInfo is a struct that describes the data going into
-                        a timer defined by the x/epochs module.
-                      properties:
-                        current_epoch:
-                          description: >-
-                            current_epoch is the current epoch number, or in
-                            other words,
-
-                            how many times has the timer 'ticked'.
-
-                            The first tick (current_epoch=1) is defined as
-
-                            the first block whose blocktime is greater than the
-                            EpochInfo start_time.
-                          format: int64
-                          type: string
-                        current_epoch_start_height:
-                          format: int64
-                          title: >-
-                            current_epoch_start_height is the block height at
-                            which the current epoch
-
-                            started. (The block height at which the timer last
-                            ticked)
-                          type: string
-                        current_epoch_start_time:
-                          description: >-
-                            current_epoch_start_time describes the start time of
-                            the current timer
-
-                            interval. The interval is (current_epoch_start_time,
-
-                            current_epoch_start_time + duration] When the timer
-                            ticks, this is set to
-
-                            current_epoch_start_time = last_epoch_start_time +
-                            duration only one timer
-
-                            tick for a given identifier can occur per block.
-
-
-                            NOTE! The current_epoch_start_time may diverge
-                            significantly from the
-
-                            wall-clock time the epoch began at. Wall-clock time
-                            of epoch start may be
-
-                            >> current_epoch_start_time. Suppose
-                            current_epoch_start_time = 10,
-
-                            duration = 5. Suppose the chain goes offline at
-                            t=14, and comes back online
-
-                            at t=30, and produces blocks at every successive
-                            time. (t=31, 32, etc.)
-
-                            * The t=30 block will start the epoch for (10, 15]
-
-                            * The t=31 block will start the epoch for (15, 20]
-
-                            * The t=32 block will start the epoch for (20, 25]
-
-                            * The t=33 block will start the epoch for (25, 30]
-
-                            * The t=34 block will start the epoch for (30, 35]
-
-                            * The **t=36** block will start the epoch for (35,
-                            40]
-                          format: date-time
-                          type: string
-                        duration:
-                          description: >-
-                            duration is the time in between epoch ticks.
-
-                            In order for intended behavior to be met, duration
-                            should
-
-                            be greater than the chains expected block time.
-
-                            Duration must be non-zero.
-                          type: string
-                        epoch_counting_started:
-                          description: >-
-                            epoch_counting_started is a boolean, that indicates
-                            whether this
-
-                            epoch timer has began yet.
-                          type: boolean
-                        identifier:
-                          description: >-
-                            identifier is a unique reference to this particular
-                            timer.
-                          type: string
-                        start_time:
-                          description: >-
-                            start_time is the time at which the timer first ever
-                            ticks.
-
-                            If start_time is in the future, the epoch will not
-                            begin until the start
-
-                            time.
-                          format: date-time
-                          type: string
-                      type: object
-                    type: array
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: EpochInfos provide running epochInfos
-      tags:
-        - cosmos/epochs/v1beta1
   /cosmos/evidence/v1beta1/evidence:
     get:
       operationId: AllEvidence
@@ -37840,16 +36611,7 @@ paths:
                   method.
                 properties:
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -38261,16 +37023,7 @@ paths:
                       type: object
                     type: array
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -38559,16 +37312,7 @@ paths:
                   RPC method.
                 properties:
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -39079,274 +37823,6 @@ paths:
         subspace.
       tags:
         - cosmos/params/v1beta1
-  /cosmos/protocolpool/v1/community_pool:
-    get:
-      operationId: CommunityPool
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryCommunityPoolResponse is the response type for the
-                  Query/CommunityPool
-
-                  RPC method.
-                properties:
-                  pool:
-                    description: pool defines community pool's coins.
-                    items:
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                      properties:
-                        amount:
-                          type: string
-                        denom:
-                          type: string
-                      type: object
-                    type: array
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: CommunityPool queries the community pool coins.
-      tags:
-        - cosmos/protocolpool/v1
-  /cosmos/protocolpool/v1/continuous_funds:
-    get:
-      operationId: ContinuousFunds
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryUnclaimedBudgetResponse is the response type for the
-                  Query/ContinuousFunds
-
-                  RPC method.
-                properties:
-                  continuous_funds:
-                    description: ContinuousFunds defines all continuous funds in state.
-                    items:
-                      description: >-
-                        ContinuousFund defines the fields of continuous fund
-                        proposal.
-                      properties:
-                        expiry:
-                          description: >-
-                            Optional, if expiry is set, removes the state object
-                            when expired.
-                          format: date-time
-                          type: string
-                        percentage:
-                          description: >-
-                            Percentage is the percentage of funds to be
-                            allocated from Community pool.
-                          type: string
-                        recipient:
-                          description: >-
-                            Recipient is the address string of the account
-                            receiving funds.
-                          type: string
-                      type: object
-                    type: array
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: ContinuousFunds queries all continuous funds in the store.
-      tags:
-        - cosmos/protocolpool/v1
-  /cosmos/protocolpool/v1/continuous_funds/{recipient}:
-    get:
-      operationId: ContinuousFund
-      parameters:
-        - description: >-
-            recipient is the recipient address to query unclaimed budget amount
-            for.
-          in: path
-          name: recipient
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryUnclaimedBudgetResponse is the response type for the
-                  Query/ContinuousFund
-
-                  RPC method.
-                properties:
-                  continuous_fund:
-                    description: >-
-                      ContinuousFund defines the fields of continuous fund
-                      proposal.
-                    properties:
-                      expiry:
-                        description: >-
-                          Optional, if expiry is set, removes the state object
-                          when expired.
-                        format: date-time
-                        type: string
-                      percentage:
-                        description: >-
-                          Percentage is the percentage of funds to be allocated
-                          from Community pool.
-                        type: string
-                      recipient:
-                        description: >-
-                          Recipient is the address string of the account
-                          receiving funds.
-                        type: string
-                    type: object
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: >-
-        ContinuousFund queries a continuous fund by the recipient is is
-        associated with.
-      tags:
-        - cosmos/protocolpool/v1
-  /cosmos/protocolpool/v1/params:
-    get:
-      operationId: Params
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryParamsResponse is the response type for the Query/Params
-                  RPC method.
-                properties:
-                  params:
-                    description: Params defines the parameters for the protocolpool module.
-                    properties:
-                      distribution_frequency:
-                        description: >-
-                          DistributionFrequency is the frequency (in terms of
-                          blocks) that funds are distributed out from the
-
-                          x/protocolpool module.
-                        format: uint64
-                        type: string
-                      enabled_distribution_denoms:
-                        description: >-
-                          EnabledDistributionDenoms lists the denoms that are
-                          allowed to be distributed.
-
-                          This is to avoid spending time distributing undesired
-                          tokens to continuous funds and budgets.
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: Params returns the total set of x/protocolpool parameters.
-      tags:
-        - cosmos/protocolpool/v1
   /cosmos/slashing/v1beta1/params:
     get:
       operationId: Params
@@ -39838,16 +38314,7 @@ paths:
                       type: object
                     type: array
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -39996,16 +38463,7 @@ paths:
                   method.
                 properties:
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -40279,16 +38737,7 @@ paths:
                   Query/UnbondingDelegatorDelegations RPC method.
                 properties:
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -40488,16 +38937,7 @@ paths:
                   Query/DelegatorValidators RPC method.
                 properties:
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -40987,7 +39427,7 @@ paths:
                                     type: integer
                                 title: PartsetHeader
                                 type: object
-                            title: BlockID
+                            title: prev block info
                             type: object
                           last_commit_hash:
                             format: byte
@@ -41423,16 +39863,7 @@ paths:
               schema:
                 properties:
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -41985,16 +40416,7 @@ paths:
                       type: object
                     type: array
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -42354,16 +40776,7 @@ paths:
                   Query/ValidatorUnbondingDelegations RPC method.
                 properties:
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination defines the pagination in the response.
                     properties:
                       next_key:
                         description: >-
@@ -45712,7 +44125,7 @@ paths:
                                                           type: integer
                                                       title: PartsetHeader
                                                       type: object
-                                                  title: BlockID
+                                                  title: prev block info
                                                   type: object
                                                 last_commit_hash:
                                                   format: byte
@@ -45860,7 +44273,7 @@ paths:
                                     type: integer
                                 title: PartsetHeader
                                 type: object
-                            title: BlockID
+                            title: prev block info
                             type: object
                           last_commit_hash:
                             format: byte
@@ -49848,13 +48261,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: query block height
                     type: object
                   pagination:
                     description: >-
@@ -50060,13 +48467,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 type: object
           description: A successful response.
@@ -50178,13 +48579,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: |-
                   QueryChannelClientStateResponse is the Response type for the
@@ -50308,13 +48703,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: |-
                   QueryChannelClientStateResponse is the Response type for the
@@ -50414,13 +48803,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: |-
                   QuerySequenceResponse is the response type for the
@@ -50520,13 +48903,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: |-
                   QueryNextSequenceSendResponse is the request type for the
@@ -50713,13 +49090,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: query block height
                     type: object
                   pagination:
                     description: >-
@@ -50860,13 +49231,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: >-
                   QueryPacketAcknowledgementResponse defines the client query
@@ -51048,13 +49413,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: query block height
                     type: object
                   pagination:
                     description: >-
@@ -51189,13 +49548,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: query block height
                     type: object
                   sequences:
                     items:
@@ -51306,13 +49659,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: query block height
                     type: object
                   sequences:
                     items:
@@ -51427,13 +49774,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: >-
                   QueryPacketCommitmentResponse defines the client query
@@ -51539,13 +49880,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                   received:
                     title: success flag for if receipt exists
@@ -51779,13 +50114,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: query block height
                     type: object
                   pagination:
                     description: >-
@@ -52382,16 +50711,7 @@ paths:
                       freezing clients
                     type: object
                   pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
+                    description: pagination response.
                     properties:
                       next_key:
                         description: >-
@@ -54215,13 +52535,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was generated
                     type: object
                 title: |-
                   QueryClientConnectionsResponse is the response type for the
@@ -54453,13 +52767,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: query block height
                     type: object
                   pagination:
                     description: >-
@@ -54680,13 +52988,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 type: object
           description: A successful response.
@@ -54792,13 +53094,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: >-
                   QueryConnectionClientStateResponse is the response type for
@@ -54914,13 +53210,7 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: >-
-                      Height is a monotonically increasing data type
-
-                      that can be compared against another Height for the
-                      purposes of updating and
-
-                      freezing clients
+                    title: height at which the proof was retrieved
                     type: object
                 title: >-
                   QueryConnectionConsensusStateResponse is the response type for
