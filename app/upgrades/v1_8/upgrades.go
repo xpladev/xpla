@@ -110,7 +110,7 @@ func migrateEvmParams(
 	cdc codec.BinaryCodec,
 ) error {
 	var (
-		paramsV7 v1_7evmtypes.Params
+		paramsV7 v1_7evmtypes.V7Params
 		params   vmtypes.Params
 	)
 
@@ -146,7 +146,7 @@ func migrateFeemarketParams(
 ) error {
 	var (
 		store    = ctx.KVStore(storeKey)
-		paramsV7 v1_7feemarkettypes.Params
+		paramsV7 v1_7feemarkettypes.V7Params
 		params   feemarkettypes.Params
 	)
 
