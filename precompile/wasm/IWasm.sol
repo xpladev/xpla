@@ -10,6 +10,50 @@ IWasm constant WASM_CONTRACT = IWasm(
 );
 
 interface IWasm {
+    // Events
+    /**
+     * @dev InstantiateContract defines an event emitted when a wasm contract is successfully
+     * instantiated via instantiateContract or instantiateContract2
+     * @param sender the address of the sender
+     * @param admin the address of the contract admin
+     * @param contractAddress the address of the instantiated contract
+     * @param codeId the id of contract
+     * @param label the label of contract
+     */
+    event InstantiateContract(
+        address indexed sender,
+        address indexed admin,
+        address indexed contractAddress,
+        uint256 codeId,
+        string label
+    );
+
+    /**
+     * @dev ExecuteContract defines an event emitted when a wasm contract is successfully
+     * executed via executeContract
+     * @param sender the address of the sender
+     * @param contractAddress the address of executed contract
+     * For the sake of brevity, detailed information such as `msg` and `funds` is omitted
+     */
+    event ExecuteContract(
+        address indexed sender,
+        address indexed contractAddress
+    );
+
+    /**
+     * @dev MigrateContract defines an event emitted when a wasm contract is successfully
+     * migrated via migrateContract
+     * @param sender the address of the sender
+     * @param contractAddress the address of migrated contract
+     * @param codeId changed code id
+     * For the sake of brevity, detailed information `msg` is omitted
+     */
+    event MigrateContract(
+        address indexed sender,
+        address indexed contractAddress,
+        uint256 codeId
+    );
+
     // Transactions
     function instantiateContract(
         address sender,

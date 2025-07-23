@@ -10,6 +10,18 @@ IBank constant BANK_CONTRACT = IBank(
 );
 
 interface IBank {
+    /**
+     * @dev Send defines an event emitted when coins are sended
+     * @param from the address of the sender
+     * @param to the address of the receiver
+     * @param amount the amount of sended coin
+     */
+    event Send(
+        address indexed from,
+        address indexed to,
+        Coin[] amount
+    );
+
     // Transactions
     function send(
         address fromAddress,

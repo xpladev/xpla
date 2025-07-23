@@ -98,13 +98,13 @@ func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 
 	switch MethodWasm(method.Name) {
 	case InstantiateContract:
-		bz, err = p.instantiateContract(ctx, evm.Origin, method, args)
+		bz, err = p.instantiateContract(ctx, stateDB, evm.Origin, method, args)
 	case InstantiateContract2:
-		bz, err = p.instantiateContract2(ctx, evm.Origin, method, args)
+		bz, err = p.instantiateContract2(ctx, stateDB, evm.Origin, method, args)
 	case ExecuteContract:
-		bz, err = p.executeContract(ctx, evm.Origin, method, args)
+		bz, err = p.executeContract(ctx, stateDB, evm.Origin, method, args)
 	case MigrateContract:
-		bz, err = p.migrateContract(ctx, evm.Origin, method, args)
+		bz, err = p.migrateContract(ctx, stateDB, evm.Origin, method, args)
 	case SmartContractState:
 		bz, err = p.smartContractState(ctx, method, args)
 	default:
@@ -129,14 +129,22 @@ func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 }
 
 func (PrecompiledWasm) IsTransaction(method *abi.Method) bool {
-	return false
+	switch MethodWasm(method.Name) {
+	case InstantiateContract,
+		InstantiateContract2,
+		ExecuteContract,
+		MigrateContract:
+		return true
+	default:
+		return false
+	}
 }
 
 func (p PrecompiledWasm) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("xpla evm extension", "wasm")
 }
 
-func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -193,10 +201,23 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Addr
 
 	contractAddress := common.BytesToAddress(cosmosContractAddress.Bytes())
 
+	err = p.EmitInstantiateContractEvent(
+		ctx,
+		stateDB,
+		sender,
+		common.BytesToAddress(admin.Bytes()),
+		contractAddress,
+		codeId.BigInt(),
+		label,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return method.Outputs.Pack(contractAddress, res.Data)
 }
 
-func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -265,10 +286,15 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Add
 
 	contractAddress := common.BytesToAddress(cosmosContractAddress.Bytes())
 
+	err = p.EmitInstantiateContractEvent(ctx, stateDB, sender, common.BytesToAddress(admin.Bytes()), contractAddress, codeId.BigInt(), label)
+	if err != nil {
+		return nil, err
+	}
+
 	return method.Outputs.Pack(contractAddress, res.Data)
 }
 
-func (p PrecompiledWasm) executeContract(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
 		return nil, err
@@ -307,10 +333,15 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, sender common.Address,
 		return nil, err
 	}
 
+	err = p.EmitExecuteContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()))
+	if err != nil {
+		return nil, err
+	}
+
 	return method.Outputs.Pack(res.Data)
 }
 
-func (p PrecompiledWasm) migrateContract(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -346,6 +377,11 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, sender common.Address,
 	}
 
 	res, err := p.wms.MigrateContract(ctx, migrateMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.EmitMigrateContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), codeId.BigInt())
 	if err != nil {
 		return nil, err
 	}

@@ -92,7 +92,7 @@ func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 	case Balance:
 		bz, err = p.balance(ctx, method, args)
 	case Send:
-		bz, err = p.send(ctx, evm.Origin, method, args)
+		bz, err = p.send(ctx, stateDB, evm.Origin, method, args)
 	case Supply:
 		bz, err = p.supplyOf(ctx, method, args)
 	default:
@@ -157,7 +157,7 @@ func (p PrecompiledBank) supplyOf(ctx sdk.Context, method *abi.Method, args []in
 	return method.Outputs.Pack(coin.Amount.BigInt())
 }
 
-func (p PrecompiledBank) send(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledBank) send(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -179,6 +179,11 @@ func (p PrecompiledBank) send(ctx sdk.Context, sender common.Address, method *ab
 	}
 
 	err = p.bk.SendCoins(ctx, fromAddress, toAddress, coins)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.EmitSendEvent(ctx, stateDB, common.BytesToAddress(fromAddress.Bytes()), common.BytesToAddress(toAddress.Bytes()), coins)
 	if err != nil {
 		return nil, err
 	}
