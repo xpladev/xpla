@@ -92,7 +92,7 @@ func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 	case Balance:
 		bz, err = p.balance(ctx, method, args)
 	case Send:
-		bz, err = p.send(ctx, stateDB, evm.Origin, method, args)
+		bz, err = p.send(ctx, stateDB, contract.Caller(), method, args)
 	case Supply:
 		bz, err = p.supplyOf(ctx, method, args)
 	default:

@@ -98,13 +98,13 @@ func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 
 	switch MethodWasm(method.Name) {
 	case InstantiateContract:
-		bz, err = p.instantiateContract(ctx, stateDB, evm.Origin, method, args)
+		bz, err = p.instantiateContract(ctx, stateDB, contract.Caller(), method, args)
 	case InstantiateContract2:
-		bz, err = p.instantiateContract2(ctx, stateDB, evm.Origin, method, args)
+		bz, err = p.instantiateContract2(ctx, stateDB, contract.Caller(), method, args)
 	case ExecuteContract:
-		bz, err = p.executeContract(ctx, stateDB, evm.Origin, method, args)
+		bz, err = p.executeContract(ctx, stateDB, contract.Caller(), method, args)
 	case MigrateContract:
-		bz, err = p.migrateContract(ctx, stateDB, evm.Origin, method, args)
+		bz, err = p.migrateContract(ctx, stateDB, contract.Caller(), method, args)
 	case SmartContractState:
 		bz, err = p.smartContractState(ctx, method, args)
 	default:
