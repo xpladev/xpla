@@ -26,7 +26,7 @@ if [ -d $temp_dir ]; then
   mv ./$temp_dir ./vendor
 fi
 
-proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $evm_dir/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq | grep -v erc20 | grep -v precisebank | grep -v circuit | grep -v counter | grep -v epochs | grep -v protocolpool)
+proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $evm_dir/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq | grep -v erc20 | grep -v precisebank | grep -v circuit | grep -v counter | grep -v epochs | grep -v protocolpool | grep -v lightclients)
 for dir in $proto_dirs; do
   # generate swagger files (filter query files)
   query_file=$(find "${dir}" -maxdepth 1 \( -not \( -path '*/autocli/*' -o -path '*/group/*' -o -path '*/orm/*' -o -path '*/nft/*' \) \) \( -name 'query.proto' -o -name 'service.proto' \))
@@ -70,10 +70,10 @@ for f in $files; do
     cp $f ./tmp-swagger-gen/_all/cosmwasm-$counter.json
   elif [[ "$f" =~ "xpla" ]]; then
     cp $f ./tmp-swagger-gen/_all/xpla-$counter.json
+  elif [[ "$f" =~ "ibc" ]]; then
+    cp $f ./tmp-swagger-gen/_all/ibc-$counter.json
   elif [[ "$f" =~ "cosmos" ]]; then
     cp $f ./tmp-swagger-gen/_all/cosmos-$counter.json
-  else
-    cp $f ./tmp-swagger-gen/_all/other-$counter.json
   fi
   ((counter++))
 done

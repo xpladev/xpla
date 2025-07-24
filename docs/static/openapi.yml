@@ -19235,7 +19235,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: |-
         QueryChannelClientStateResponse is the Response type for the
@@ -19293,7 +19299,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: |-
         QueryChannelClientStateResponse is the Response type for the
@@ -19419,7 +19431,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       type: object
     ibc.core.channel.v1.QueryChannelsResponse:
@@ -19538,7 +19556,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         pagination:
           description: |-
@@ -19681,7 +19705,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         pagination:
           description: |-
@@ -19758,7 +19788,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: |-
         QuerySequenceResponse is the response type for the
@@ -19808,7 +19844,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: |-
         QueryNextSequenceSendResponse is the request type for the
@@ -19858,7 +19900,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: >-
         QueryPacketAcknowledgementResponse defines the client query response for
@@ -19933,7 +19981,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         pagination:
           description: |-
@@ -20010,7 +20064,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: >-
         QueryPacketCommitmentResponse defines the client query response for a
@@ -20085,7 +20145,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         pagination:
           description: |-
@@ -20158,7 +20224,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         received:
           title: success flag for if receipt exists
@@ -20208,7 +20280,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         sequences:
           items:
@@ -20256,7 +20334,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         sequences:
           items:
@@ -20355,7 +20439,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: >-
         QueryNextSequenceSendResponse is the response type for the
@@ -20408,7 +20498,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       type: object
     ibc.core.channel.v2.QueryPacketAcknowledgementsResponse:
@@ -20473,7 +20569,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         pagination:
           description: |-
@@ -20553,7 +20655,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       type: object
     ibc.core.channel.v2.QueryPacketCommitmentsResponse:
@@ -20591,7 +20699,30 @@ components:
             type: object
           type: array
         height:
-          description: query block height.
+          description: >-
+            Normally the RevisionHeight is incremented at each height while
+            keeping
+
+            RevisionNumber the same. However some consensus algorithms may
+            choose to
+
+            reset the height in certain conditions e.g. hard forks,
+            state-machine
+
+            breaking changes In these cases, the RevisionNumber is incremented
+            so that
+
+            height continues to be monitonically increasing even as the
+            RevisionHeight
+
+            gets reset
+
+
+            Please note that json tags for generated Go code are overridden to
+            explicitly exclude the omitempty jsontag.
+
+            This enforces the Go json marshaller to always emit zero values for
+            both revision_number and revision_height.
           properties:
             revision_height:
               format: uint64
@@ -20610,7 +20741,14 @@ components:
             freezing clients
           type: object
         pagination:
-          description: pagination response.
+          description: |-
+            PageResponse is to be embedded in gRPC response messages where the
+            corresponding request message has used PageRequest.
+
+             message SomeResponse {
+                     repeated Bar results = 1;
+                     PageResponse page = 2;
+             }
           properties:
             next_key:
               description: |-
@@ -20672,7 +20810,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         received:
           title: success flag for if receipt exists
@@ -20714,7 +20858,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         sequences:
           items:
@@ -20762,7 +20912,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         sequences:
           items:
@@ -21864,7 +22020,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was generated
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: |-
         QueryClientConnectionsResponse is the response type for the
@@ -21931,7 +22093,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: |-
         QueryConnectionClientStateResponse is the response type for the
@@ -21989,7 +22157,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       title: |-
         QueryConnectionConsensusStateResponse is the response type for the
@@ -22155,7 +22329,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: height at which the proof was retrieved
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
       type: object
     ibc.core.connection.v1.QueryConnectionsResponse:
@@ -22286,7 +22466,13 @@ components:
               format: uint64
               title: the revision that the client is currently on
               type: string
-          title: query block height
+          title: >-
+            Height is a monotonically increasing data type
+
+            that can be compared against another Height for the purposes of
+            updating and
+
+            freezing clients
           type: object
         pagination:
           description: |-
@@ -22347,52 +22533,6 @@ components:
           type: array
         identifier:
           title: unique version identifier
-          type: string
-      type: object
-    ibc.lightclients.wasm.v1.QueryChecksumsResponse:
-      description: >-
-        QueryChecksumsResponse is the response type for the Query/Checksums RPC
-        method.
-      properties:
-        checksums:
-          description: >-
-            checksums is a list of the hex encoded checksums of all wasm codes
-            stored.
-          items:
-            type: string
-          type: array
-        pagination:
-          description: |-
-            PageResponse is to be embedded in gRPC response messages where the
-            corresponding request message has used PageRequest.
-
-             message SomeResponse {
-                     repeated Bar results = 1;
-                     PageResponse page = 2;
-             }
-          properties:
-            next_key:
-              description: |-
-                next_key is the key to be passed to PageRequest.key to
-                query the next page most efficiently. It will be empty if
-                there are no more results.
-              format: byte
-              type: string
-            total:
-              format: uint64
-              title: >-
-                total is total number of results available if
-                PageRequest.count_total
-
-                was set, its value is undefined otherwise
-              type: string
-          type: object
-      type: object
-    ibc.lightclients.wasm.v1.QueryCodeResponse:
-      description: QueryCodeResponse is the response type for the Query/Code RPC method.
-      properties:
-        data:
-          format: byte
           type: string
       type: object
     tendermint.abci.Event:
@@ -48261,7 +48401,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   pagination:
                     description: >-
@@ -48467,7 +48613,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 type: object
           description: A successful response.
@@ -48579,7 +48731,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: |-
                   QueryChannelClientStateResponse is the Response type for the
@@ -48703,7 +48861,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: |-
                   QueryChannelClientStateResponse is the Response type for the
@@ -48803,7 +48967,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: |-
                   QuerySequenceResponse is the response type for the
@@ -48903,7 +49073,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: |-
                   QueryNextSequenceSendResponse is the request type for the
@@ -49090,7 +49266,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   pagination:
                     description: >-
@@ -49231,7 +49413,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: >-
                   QueryPacketAcknowledgementResponse defines the client query
@@ -49413,7 +49601,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   pagination:
                     description: >-
@@ -49548,7 +49742,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   sequences:
                     items:
@@ -49659,7 +49859,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   sequences:
                     items:
@@ -49774,7 +49980,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: >-
                   QueryPacketCommitmentResponse defines the client query
@@ -49880,7 +50092,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   received:
                     title: success flag for if receipt exists
@@ -50114,7 +50332,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   pagination:
                     description: >-
@@ -50240,7 +50464,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: >-
                   QueryNextSequenceSendResponse is the response type for the
@@ -50418,7 +50648,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   pagination:
                     description: >-
@@ -50554,7 +50790,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 type: object
           description: A successful response.
@@ -50692,7 +50934,30 @@ paths:
                       type: object
                     type: array
                   height:
-                    description: query block height.
+                    description: >-
+                      Normally the RevisionHeight is incremented at each height
+                      while keeping
+
+                      RevisionNumber the same. However some consensus algorithms
+                      may choose to
+
+                      reset the height in certain conditions e.g. hard forks,
+                      state-machine
+
+                      breaking changes In these cases, the RevisionNumber is
+                      incremented so that
+
+                      height continues to be monitonically increasing even as
+                      the RevisionHeight
+
+                      gets reset
+
+
+                      Please note that json tags for generated Go code are
+                      overridden to explicitly exclude the omitempty jsontag.
+
+                      This enforces the Go json marshaller to always emit zero
+                      values for both revision_number and revision_height.
                     properties:
                       revision_height:
                         format: uint64
@@ -50711,7 +50976,16 @@ paths:
                       freezing clients
                     type: object
                   pagination:
-                    description: pagination response.
+                    description: >-
+                      PageResponse is to be embedded in gRPC response messages
+                      where the
+
+                      corresponding request message has used PageRequest.
+
+                       message SomeResponse {
+                               repeated Bar results = 1;
+                               PageResponse page = 2;
+                       }
                     properties:
                       next_key:
                         description: >-
@@ -50822,7 +51096,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   sequences:
                     items:
@@ -50925,7 +51205,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   sequences:
                     items:
@@ -51035,7 +51321,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 type: object
           description: A successful response.
@@ -51130,7 +51422,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   received:
                     title: success flag for if receipt exists
@@ -52535,7 +52833,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was generated
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: |-
                   QueryClientConnectionsResponse is the response type for the
@@ -52767,7 +53071,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: query block height
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                   pagination:
                     description: >-
@@ -52988,7 +53298,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 type: object
           description: A successful response.
@@ -53094,7 +53410,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: >-
                   QueryConnectionClientStateResponse is the response type for
@@ -53210,7 +53532,13 @@ paths:
                         format: uint64
                         title: the revision that the client is currently on
                         type: string
-                    title: height at which the proof was retrieved
+                    title: >-
+                      Height is a monotonically increasing data type
+
+                      that can be compared against another Height for the
+                      purposes of updating and
+
+                      freezing clients
                     type: object
                 title: >-
                   QueryConnectionConsensusStateResponse is the response type for
@@ -53306,195 +53634,6 @@ paths:
       summary: ConnectionParams queries all parameters of the ibc connection submodule.
       tags:
         - ibc/core/connection
-  /ibc/lightclients/wasm/v1/checksums:
-    get:
-      operationId: Checksums
-      parameters:
-        - description: |-
-            key is a value returned in PageResponse.next_key to begin
-            querying the next page most efficiently. Only one of offset or key
-            should be set.
-          in: query
-          name: pagination.key
-          required: false
-          schema:
-            format: byte
-            type: string
-        - description: >-
-            offset is a numeric offset that can be used when key is unavailable.
-
-            It is less efficient than using key. Only one of offset or key
-            should
-
-            be set.
-          in: query
-          name: pagination.offset
-          required: false
-          schema:
-            format: uint64
-            type: string
-        - description: >-
-            limit is the total number of results to be returned in the result
-            page.
-
-            If left empty it will default to a value to be set by each app.
-          in: query
-          name: pagination.limit
-          required: false
-          schema:
-            format: uint64
-            type: string
-        - description: >-
-            count_total is set to true  to indicate that the result set should
-            include
-
-            a count of the total number of items available for pagination in
-            UIs.
-
-            count_total is only respected when offset is used. It is ignored
-            when key
-
-            is set.
-          in: query
-          name: pagination.count_total
-          required: false
-          schema:
-            type: boolean
-        - description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-          in: query
-          name: pagination.reverse
-          required: false
-          schema:
-            type: boolean
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryChecksumsResponse is the response type for the
-                  Query/Checksums RPC method.
-                properties:
-                  checksums:
-                    description: >-
-                      checksums is a list of the hex encoded checksums of all
-                      wasm codes stored.
-                    items:
-                      type: string
-                    type: array
-                  pagination:
-                    description: >-
-                      PageResponse is to be embedded in gRPC response messages
-                      where the
-
-                      corresponding request message has used PageRequest.
-
-                       message SomeResponse {
-                               repeated Bar results = 1;
-                               PageResponse page = 2;
-                       }
-                    properties:
-                      next_key:
-                        description: >-
-                          next_key is the key to be passed to PageRequest.key to
-
-                          query the next page most efficiently. It will be empty
-                          if
-
-                          there are no more results.
-                        format: byte
-                        type: string
-                      total:
-                        format: uint64
-                        title: >-
-                          total is total number of results available if
-                          PageRequest.count_total
-
-                          was set, its value is undefined otherwise
-                        type: string
-                    type: object
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: Get all Wasm checksums
-      tags:
-        - ibc/lightclients/wasm
-  /ibc/lightclients/wasm/v1/checksums/{checksum}/code:
-    get:
-      operationId: Code
-      parameters:
-        - description: checksum is a hex encoded string of the code stored.
-          in: path
-          name: checksum
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryCodeResponse is the response type for the Query/Code RPC
-                  method.
-                properties:
-                  data:
-                    format: byte
-                    type: string
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: Get Wasm code for given checksum
-      tags:
-        - ibc/lightclients/wasm
   /xpla/reward/v1beta1/params:
     get:
       operationId: Params
