@@ -47,8 +47,8 @@ func NewPrecompiledAuth(ak AccountKeeper) PrecompiledAuth {
 	p := PrecompiledAuth{
 		Precompile: cmn.Precompile{
 			ABI:                  ABI,
-			KvGasConfig:          storetypes.GasConfig{},
-			TransientKVGasConfig: storetypes.GasConfig{},
+			KvGasConfig:          storetypes.KVGasConfig(),
+			TransientKVGasConfig: storetypes.TransientGasConfig(),
 		},
 		ak: ak,
 	}
