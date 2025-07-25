@@ -1,0 +1,20 @@
+syntax = "proto3";
+package xpla.burn.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/burn/types";
+
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+// BurnProposal defines a ongoingburn proposal
+message BurnProposal {
+  uint64 proposal_id = 1;
+  string proposer = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}

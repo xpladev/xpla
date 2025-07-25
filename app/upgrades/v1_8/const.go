@@ -4,6 +4,7 @@ import (
 	store "cosmossdk.io/store/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
+	burntypes "github.com/xpladev/xpla/x/burn/types"
 )
 
 const (
@@ -15,7 +16,9 @@ var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
-		Added:   []string{},
+		Added: []string{
+			burntypes.ModuleName,
+		},
 		Renamed: nil,
 		Deleted: []string{
 			IbcFeeStoreKey,

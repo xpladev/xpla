@@ -4,6 +4,26 @@
 
 ## Table of Contents
 
+- [xpla/burn/v1beta1/burn.proto](#xpla/burn/v1beta1/burn.proto)
+    - [BurnProposal](#xpla.burn.v1beta1.BurnProposal)
+  
+- [xpla/burn/v1beta1/genesis.proto](#xpla/burn/v1beta1/genesis.proto)
+    - [GenesisState](#xpla.burn.v1beta1.GenesisState)
+  
+- [xpla/burn/v1beta1/query.proto](#xpla/burn/v1beta1/query.proto)
+    - [QueryOngoingProposalRequest](#xpla.burn.v1beta1.QueryOngoingProposalRequest)
+    - [QueryOngoingProposalResponse](#xpla.burn.v1beta1.QueryOngoingProposalResponse)
+    - [QueryOngoingProposalsRequest](#xpla.burn.v1beta1.QueryOngoingProposalsRequest)
+    - [QueryOngoingProposalsResponse](#xpla.burn.v1beta1.QueryOngoingProposalsResponse)
+  
+    - [Query](#xpla.burn.v1beta1.Query)
+  
+- [xpla/burn/v1beta1/tx.proto](#xpla/burn/v1beta1/tx.proto)
+    - [MsgBurn](#xpla.burn.v1beta1.MsgBurn)
+    - [MsgBurnResponse](#xpla.burn.v1beta1.MsgBurnResponse)
+  
+    - [Msg](#xpla.burn.v1beta1.Msg)
+  
 - [xpla/reward/v1beta1/reward.proto](#xpla/reward/v1beta1/reward.proto)
     - [Params](#xpla.reward.v1beta1.Params)
   
@@ -53,6 +73,209 @@
     - [Msg](#xpla.volunteer.v1beta1.Msg)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="xpla/burn/v1beta1/burn.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/burn/v1beta1/burn.proto
+
+
+
+<a name="xpla.burn.v1beta1.BurnProposal"></a>
+
+### BurnProposal
+BurnProposal defines a ongoingburn proposal
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `proposal_id` | [uint64](#uint64) |  |  |
+| `proposer` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/burn/v1beta1/genesis.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/burn/v1beta1/genesis.proto
+
+
+
+<a name="xpla.burn.v1beta1.GenesisState"></a>
+
+### GenesisState
+GenesisState defines the bank module's genesis state.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `ongoing_burn_proposals` | [BurnProposal](#xpla.burn.v1beta1.BurnProposal) | repeated | ongoing_burn_proposals defines the ongoing burn proposals at genesis |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/burn/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/burn/v1beta1/query.proto
+
+
+
+<a name="xpla.burn.v1beta1.QueryOngoingProposalRequest"></a>
+
+### QueryOngoingProposalRequest
+QueryOngoingProposalRequest is the request type for the Query/OngoingProposal
+RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `proposal_id` | [uint64](#uint64) |  |  |
+
+
+
+
+
+
+<a name="xpla.burn.v1beta1.QueryOngoingProposalResponse"></a>
+
+### QueryOngoingProposalResponse
+QueryOngoingProposalResponse is the response type for the
+Query/OngoingProposal RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `proposer` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated |  |
+
+
+
+
+
+
+<a name="xpla.burn.v1beta1.QueryOngoingProposalsRequest"></a>
+
+### QueryOngoingProposalsRequest
+QueryOngoingProposalsRequest is the request type for the
+Query/OngoingProposals RPC method.
+
+
+
+
+
+
+<a name="xpla.burn.v1beta1.QueryOngoingProposalsResponse"></a>
+
+### QueryOngoingProposalsResponse
+QueryOngoingProposalsResponse is the response type for the
+Query/OngoingProposals RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `proposals` | [BurnProposal](#xpla.burn.v1beta1.BurnProposal) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="xpla.burn.v1beta1.Query"></a>
+
+### Query
+Query defines the gRPC querier service for burn module.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `OngoingProposals` | [QueryOngoingProposalsRequest](#xpla.burn.v1beta1.QueryOngoingProposalsRequest) | [QueryOngoingProposalsResponse](#xpla.burn.v1beta1.QueryOngoingProposalsResponse) | Query all ongoing burn proposals | GET|/xpla/burn/v1beta1/ongoing_proposals|
+| `OngoingProposal` | [QueryOngoingProposalRequest](#xpla.burn.v1beta1.QueryOngoingProposalRequest) | [QueryOngoingProposalResponse](#xpla.burn.v1beta1.QueryOngoingProposalResponse) | Query a specific ongoing burn proposal by ID | GET|/xpla/burn/v1beta1/ongoing_proposal|
+
+ <!-- end services -->
+
+
+
+<a name="xpla/burn/v1beta1/tx.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/burn/v1beta1/tx.proto
+
+
+
+<a name="xpla.burn.v1beta1.MsgBurn"></a>
+
+### MsgBurn
+MsgBurn represents a message to burn coins from an account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authority` | [string](#string) |  | authority is the address of the governance account. |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated |  |
+
+
+
+
+
+
+<a name="xpla.burn.v1beta1.MsgBurnResponse"></a>
+
+### MsgBurnResponse
+MsgBurnResponse defines the Msg/Burn response type.
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="xpla.burn.v1beta1.Msg"></a>
+
+### Msg
+Msg defines the burn service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `Burn` | [MsgBurn](#xpla.burn.v1beta1.MsgBurn) | [MsgBurnResponse](#xpla.burn.v1beta1.MsgBurnResponse) | Burn defines a method for burning coins from an account. | |
+
+ <!-- end services -->
 
 
 

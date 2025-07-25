@@ -115,7 +115,7 @@ func (k Keeper) IsSendEnabledCoins(ctx context.Context, coins ...sdk.Coin) error
 // SpendableCoin returns the balance of specific denomination of spendable coins
 // for an account by address. If the account has no spendable coin, a zero Coin
 // is returned.
-// Copyed from cosmos-sdk/x/bank/keeper/view.go
+// Copied from cosmos-sdk/x/bank/keeper/view.go
 func (k Keeper) SpendableCoin(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	balance := k.GetBalance(ctx, addr, denom)
 	locked := k.LockedCoins(ctx, addr)

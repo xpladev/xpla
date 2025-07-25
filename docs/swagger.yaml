@@ -11093,6 +11093,112 @@ paths:
           type: string
       tags:
         - cosmos/gov/v1beta1
+  /xpla/reward/v1beta1/params:
+    get:
+      summary: Params queries params of the reward module.
+      operationId: Params
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params defines the parameters of the module.
+                type: object
+                properties:
+                  fee_pool_rate:
+                    type: string
+                  community_pool_rate:
+                    type: string
+                  reserve_rate:
+                    type: string
+                  reserve_account:
+                    type: string
+                  reward_distribute_account:
+                    type: string
+            description: >-
+              QueryParamsResponse is the response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - xpla/reward/v1beta1
+  /xpla/reward/v1beta1/pool:
+    get:
+      summary: Pool queries the reward module pool coins.
+      operationId: Pool
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              pool:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                description: pool defines reward pool's coins.
+            description: |-
+              QueryPoolResponse is the response type for the Query/Pool
+              RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - xpla/reward/v1beta1
   /ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address:
     get:
       summary: >-
@@ -13683,21 +13789,110 @@ paths:
                       format: byte
       tags:
         - cosmos/base/node
-  /xpla/volunteer/v1beta1/validators:
+  /xpla/burn/v1beta1/ongoing_proposal:
     get:
-      summary: VolunteerValidators
-      operationId: VolunteerValidators
+      summary: Query a specific ongoing burn proposal by ID
+      operationId: OngoingProposal
       responses:
         '200':
           description: A successful response.
           schema:
             type: object
             properties:
-              volunteer_validators:
+              proposer:
+                type: string
+              amount:
                 type: array
                 items:
-                  type: string
-            title: QueryVolunteerValidatorsResponse
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+            description: |-
+              QueryOngoingProposalResponse is the response type for the
+              Query/OngoingProposal RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: proposal_id
+          in: query
+          required: false
+          type: string
+          format: uint64
+      tags:
+        - xpla/burn/v1beta1
+  /xpla/burn/v1beta1/ongoing_proposals:
+    get:
+      summary: Query all ongoing burn proposals
+      operationId: OngoingProposals
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              proposals:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    proposal_id:
+                      type: string
+                      format: uint64
+                    proposer:
+                      type: string
+                    amount:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
+
+
+                          NOTE: The amount field is an Int which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                  title: BurnProposal defines a ongoingburn proposal
+            description: |-
+              QueryOngoingProposalsResponse is the response type for the
+              Query/OngoingProposals RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -13721,7 +13916,7 @@ paths:
                       type: string
                       format: byte
       tags:
-        - xpla/volunteer/v1beta1
+        - xpla/burn/v1beta1
   /cosmos/consensus/v1/params:
     get:
       summary: Params queries the parameters of x/consensus module.
@@ -16734,33 +16929,21 @@ paths:
                       format: byte
       tags:
         - ibc/apps/interchain_accounts
-  /xpla/reward/v1beta1/params:
+  /xpla/volunteer/v1beta1/validators:
     get:
-      summary: Params queries params of the reward module.
-      operationId: Params
+      summary: VolunteerValidators
+      operationId: VolunteerValidators
       responses:
         '200':
           description: A successful response.
           schema:
             type: object
             properties:
-              params:
-                description: params defines the parameters of the module.
-                type: object
-                properties:
-                  fee_pool_rate:
-                    type: string
-                  community_pool_rate:
-                    type: string
-                  reserve_rate:
-                    type: string
-                  reserve_account:
-                    type: string
-                  reward_distribute_account:
-                    type: string
-            description: >-
-              QueryParamsResponse is the response type for the Query/Params RPC
-              method.
+              volunteer_validators:
+                type: array
+                items:
+                  type: string
+            title: QueryVolunteerValidatorsResponse
         default:
           description: An unexpected error response.
           schema:
@@ -16784,62 +16967,7 @@ paths:
                       type: string
                       format: byte
       tags:
-        - xpla/reward/v1beta1
-  /xpla/reward/v1beta1/pool:
-    get:
-      summary: Pool queries the reward module pool coins.
-      operationId: Pool
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              pool:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    denom:
-                      type: string
-                    amount:
-                      type: string
-                  description: >-
-                    Coin defines a token with a denomination and an amount.
-
-
-                    NOTE: The amount field is an Int which implements the custom
-                    method
-
-                    signatures required by gogoproto.
-                description: pool defines reward pool's coins.
-            description: |-
-              QueryPoolResponse is the response type for the Query/Pool
-              RPC method.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      tags:
-        - xpla/reward/v1beta1
+        - xpla/volunteer/v1beta1
   /cosmos/base/tendermint/v1beta1/abci_query:
     get:
       summary: >-
@@ -39985,6 +40113,59 @@ definitions:
         type: string
         description: weight is the vote weight associated with the vote option.
     description: WeightedVoteOption defines a unit of vote for vote split.
+  xpla.reward.v1beta1.Params:
+    type: object
+    properties:
+      fee_pool_rate:
+        type: string
+      community_pool_rate:
+        type: string
+      reserve_rate:
+        type: string
+      reserve_account:
+        type: string
+      reward_distribute_account:
+        type: string
+    description: Params defines the set of params for the reward module.
+  xpla.reward.v1beta1.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params defines the parameters of the module.
+        type: object
+        properties:
+          fee_pool_rate:
+            type: string
+          community_pool_rate:
+            type: string
+          reserve_rate:
+            type: string
+          reserve_account:
+            type: string
+          reward_distribute_account:
+            type: string
+    description: QueryParamsResponse is the response type for the Query/Params RPC method.
+  xpla.reward.v1beta1.QueryPoolResponse:
+    type: object
+    properties:
+      pool:
+        type: array
+        items:
+          type: object
+          properties:
+            denom:
+              type: string
+            amount:
+              type: string
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+        description: pool defines reward pool's coins.
+    description: |-
+      QueryPoolResponse is the response type for the Query/Pool
+      RPC method.
   ibc.applications.transfer.v1.Denom:
     type: object
     properties:
@@ -41838,14 +42019,85 @@ definitions:
         type: string
         format: byte
     description: StateResponse defines the response structure for the status of a node.
-  xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse:
+  xpla.burn.v1beta1.BurnProposal:
     type: object
     properties:
-      volunteer_validators:
+      proposal_id:
+        type: string
+        format: uint64
+      proposer:
+        type: string
+      amount:
         type: array
         items:
-          type: string
-    title: QueryVolunteerValidatorsResponse
+          type: object
+          properties:
+            denom:
+              type: string
+            amount:
+              type: string
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+    title: BurnProposal defines a ongoingburn proposal
+  xpla.burn.v1beta1.QueryOngoingProposalResponse:
+    type: object
+    properties:
+      proposer:
+        type: string
+      amount:
+        type: array
+        items:
+          type: object
+          properties:
+            denom:
+              type: string
+            amount:
+              type: string
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+    description: |-
+      QueryOngoingProposalResponse is the response type for the
+      Query/OngoingProposal RPC method.
+  xpla.burn.v1beta1.QueryOngoingProposalsResponse:
+    type: object
+    properties:
+      proposals:
+        type: array
+        items:
+          type: object
+          properties:
+            proposal_id:
+              type: string
+              format: uint64
+            proposer:
+              type: string
+            amount:
+              type: array
+              items:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                  amount:
+                    type: string
+                description: >-
+                  Coin defines a token with a denomination and an amount.
+
+
+                  NOTE: The amount field is an Int which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+          title: BurnProposal defines a ongoingburn proposal
+    description: |-
+      QueryOngoingProposalsResponse is the response type for the
+      Query/OngoingProposals RPC method.
   cosmos.consensus.v1.QueryParamsResponse:
     type: object
     properties:
@@ -43839,59 +44091,14 @@ definitions:
               allow_messages defines a list of sdk message typeURLs allowed to
               be executed on a host chain.
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
-  xpla.reward.v1beta1.Params:
+  xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse:
     type: object
     properties:
-      fee_pool_rate:
-        type: string
-      community_pool_rate:
-        type: string
-      reserve_rate:
-        type: string
-      reserve_account:
-        type: string
-      reward_distribute_account:
-        type: string
-    description: Params defines the set of params for the reward module.
-  xpla.reward.v1beta1.QueryParamsResponse:
-    type: object
-    properties:
-      params:
-        description: params defines the parameters of the module.
-        type: object
-        properties:
-          fee_pool_rate:
-            type: string
-          community_pool_rate:
-            type: string
-          reserve_rate:
-            type: string
-          reserve_account:
-            type: string
-          reward_distribute_account:
-            type: string
-    description: QueryParamsResponse is the response type for the Query/Params RPC method.
-  xpla.reward.v1beta1.QueryPoolResponse:
-    type: object
-    properties:
-      pool:
+      volunteer_validators:
         type: array
         items:
-          type: object
-          properties:
-            denom:
-              type: string
-            amount:
-              type: string
-          description: |-
-            Coin defines a token with a denomination and an amount.
-
-            NOTE: The amount field is an Int which implements the custom method
-            signatures required by gogoproto.
-        description: pool defines reward pool's coins.
-    description: |-
-      QueryPoolResponse is the response type for the Query/Pool
-      RPC method.
+          type: string
+    title: QueryVolunteerValidatorsResponse
   cosmos.base.tendermint.v1beta1.ABCIQueryResponse:
     type: object
     properties:

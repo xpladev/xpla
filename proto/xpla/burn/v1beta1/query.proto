@@ -1,0 +1,51 @@
+syntax = "proto3";
+package xpla.burn.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "xpla/burn/v1beta1/burn.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/xpladev/xpla/x/burn/types";
+
+// Query defines the gRPC querier service for burn module.
+service Query {
+  // Query all ongoing burn proposals
+  rpc OngoingProposals(QueryOngoingProposalsRequest)
+      returns (QueryOngoingProposalsResponse) {
+    option (google.api.http).get = "/xpla/burn/v1beta1/ongoing_proposals";
+  }
+
+  // Query a specific ongoing burn proposal by ID
+  rpc OngoingProposal(QueryOngoingProposalRequest)
+      returns (QueryOngoingProposalResponse) {
+    option (google.api.http).get = "/xpla/burn/v1beta1/ongoing_proposal";
+  }
+}
+
+// QueryOngoingProposalsRequest is the request type for the
+// Query/OngoingProposals RPC method.
+message QueryOngoingProposalsRequest {}
+
+// QueryOngoingProposalsResponse is the response type for the
+// Query/OngoingProposals RPC method.
+message QueryOngoingProposalsResponse {
+  repeated BurnProposal proposals = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryOngoingProposalRequest is the request type for the Query/OngoingProposal
+// RPC method.
+message QueryOngoingProposalRequest { uint64 proposal_id = 1; }
+
+// QueryOngoingProposalResponse is the response type for the
+// Query/OngoingProposal RPC method.
+message QueryOngoingProposalResponse {
+  string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  repeated cosmos.base.v1beta1.Coin amount = 2 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
