@@ -19,7 +19,7 @@ TM_VERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::') #
 BUILDDIR ?= $(CURDIR)/build
 GO_SYSTEM_VERSION = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1-2)
 REQUIRE_GO_VERSION = 1.23
-GO_VERSION ?= "$(REQUIRE_GO_VERSION)"
+GO_VERSION := $(shell cat go.mod | grep -E 'go [0-9].[0-9]+' | cut -d ' ' -f 2)
 
 # for dockerized protobuf tools
 DOCKER := $(shell which docker)
@@ -90,8 +90,8 @@ ifeq (,$(findstring nostrip,$(CUSTOM_BUILD_OPTIONS)))
 endif
 
 check_version:
-ifneq ($(GO_SYSTEM_VERSION),$(REQUIRE_GO_VERSION))
-	@echo "ERROR: Go version $(REQUIRE_GO_VERSION) is required for $(VERSION) of xpla, but system has $(GO_SYSTEM_VERSION)."
+ifneq ($(shell [ "$(GO_SYSTEM_VERSION)" \< "$(REQUIRE_GO_VERSION)" ] && echo true),)
+	@echo "ERROR: Minumum Go version $(REQUIRE_GO_VERSION) is required for $(VERSION) of xpla, but system has $(GO_SYSTEM_VERSION)."
 	exit 1
 endif
 
@@ -195,4 +195,6 @@ abi-gen:
 	solc --abi --pretty-json --overwrite -o bank bank/IBank.sol && \
 	solc --abi --pretty-json --overwrite -o distribution distribution/IDistribution.sol && \
 	solc --abi --pretty-json --overwrite -o staking staking/IStaking.sol && \
-	solc --abi --pretty-json --overwrite -o wasm wasm/IWasm.sol
+	solc --abi --pretty-json --overwrite -o wasm wasm/IWasm.sol && \
+	cd ../x/bank/keeper && \
+	solc --abi --pretty-json --overwrite -o . ./IERC20.sol

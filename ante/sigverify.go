@@ -16,7 +16,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/cosmos/evm/crypto/ethsecp256k1"
-	ethermintethsecp256k1 "github.com/xpladev/ethermint/crypto/ethsecp256k1"
+	ethermintethsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 )
 
 var _ authante.SignatureVerificationGasConsumer = SigVerificationGasConsumer

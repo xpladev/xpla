@@ -7,11 +7,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
-type MockErc20Keeper struct {}
+type MockErc20Keeper struct{}
 
 func (ek MockErc20Keeper) GetERC20PrecompileInstance(
-       ctx sdk.Context,
-       address common.Address,
+	ctx sdk.Context,
+	address common.Address,
 ) (contract vm.PrecompiledContract, found bool, err error) {
-       return nil, false, nil
+	return nil, false, nil
 }

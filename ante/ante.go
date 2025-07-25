@@ -37,8 +37,8 @@ type HandlerOptions struct {
 	SignModeHandler        *txsigning.HandlerMap
 	SigGasConsumer         authante.SignatureVerificationGasConsumer
 
-	AccountKeeper         evmtypes.AccountKeeper
-	BankKeeper            evmtypes.BankKeeper
+	AccountKeeper         evmanteinterfaces.AccountKeeper
+	BankKeeper            evmanteinterfaces.BankKeeper
 	Codec                 codec.BinaryCodec
 	IBCKeeper             *ibckeeper.Keeper
 	EvmKeeper             evmanteinterfaces.EVMKeeper

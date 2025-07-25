@@ -2,12 +2,12 @@
 package types
 
 type InstantiateMsg struct {
-	Symbol string `json:"symbol"`
-	Decimals int `json:"decimals"`
-	InitialBalances []Cw20Coin `json:"initial_balances"`
-	Marketing *InstantiateMarketingInfo `json:"marketing,omitempty"`
-	Mint *MinterResponse `json:"mint,omitempty"`
-	Name string `json:"name"`
+	Symbol          string                    `json:"symbol"`
+	Decimals        int                       `json:"decimals"`
+	InitialBalances []Cw20Coin                `json:"initial_balances"`
+	Marketing       *InstantiateMarketingInfo `json:"marketing,omitempty"`
+	Mint            *MinterResponse           `json:"mint,omitempty"`
+	Name            string                    `json:"name"`
 }
 
 type ExecuteMsg struct {
@@ -72,14 +72,14 @@ let b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```
 type Uint64 string
 
 type QueryMsg_AllAccounts struct {
-	Limit *int `json:"limit,omitempty"`
+	Limit      *int    `json:"limit,omitempty"`
 	StartAfter *string `json:"start_after,omitempty"`
 }
 
 type SpenderAllowanceInfo struct {
-	Allowance Uint128 `json:"allowance"`
-	Expires Expiration `json:"expires"`
-	Owner string `json:"owner"`
+	Allowance Uint128    `json:"allowance"`
+	Expires   Expiration `json:"expires"`
+	Owner     string     `json:"owner"`
 }
 
 /*
@@ -98,14 +98,14 @@ type EmbeddedLogo struct {
 }
 
 type ExecuteMsg_Transfer struct {
-	Amount Uint128 `json:"amount"`
-	Recipient string `json:"recipient"`
+	Amount    Uint128 `json:"amount"`
+	Recipient string  `json:"recipient"`
 }
 
 type ExecuteMsg_IncreaseAllowance struct {
-	Amount Uint128 `json:"amount"`
+	Amount  Uint128     `json:"amount"`
 	Expires *Expiration `json:"expires,omitempty"`
-	Spender string `json:"spender"`
+	Spender string      `json:"spender"`
 }
 
 type ExecuteMsg_UpdateMarketing struct {
@@ -132,8 +132,8 @@ type MarketingInfoResponse struct {
 }
 
 type Cw20Coin struct {
-	Address string `json:"address"`
-	Amount Uint128 `json:"amount"`
+	Address string  `json:"address"`
+	Amount  Uint128 `json:"amount"`
 }
 
 type QueryMsg_MarketingInfo struct{}
@@ -164,8 +164,8 @@ func (*LogoInfo_Embedded) Implements_LogoInfo() {}
 
 type MinterResponse_2 struct {
 	// cap is a hard cap on total supply that can be achieved by minting. Note that this refers to total_supply. If None, there is unlimited cap.
-	Cap *Uint128 `json:"cap,omitempty"`
-	Minter string `json:"minter"`
+	Cap    *Uint128 `json:"cap,omitempty"`
+	Minter string   `json:"minter"`
 }
 
 type ExecuteMsg_UpdateMinter struct {
@@ -183,8 +183,8 @@ type Expiration struct {
 }
 
 type QueryMsg_AllAllowances struct {
-	Limit *int `json:"limit,omitempty"`
-	Owner string `json:"owner"`
+	Limit      *int    `json:"limit,omitempty"`
+	Owner      string  `json:"owner"`
 	StartAfter *string `json:"start_after,omitempty"`
 }
 
@@ -204,47 +204,47 @@ type AllAllowancesResponse struct {
 }
 
 type AllowanceResponse struct {
-	Allowance Uint128 `json:"allowance"`
-	Expires Expiration `json:"expires"`
+	Allowance Uint128    `json:"allowance"`
+	Expires   Expiration `json:"expires"`
 }
 
 // When we download an embedded logo, we get this response type. We expect a SPA to be able to accept this info and display it.
 type DownloadLogoResponse struct {
 	MimeType string `json:"mime_type"`
-	Data Binary `json:"data"`
+	Data     Binary `json:"data"`
 }
 
 type QueryMsg_Minter struct{}
 
 type QueryMsg_Allowance struct {
-	Owner string `json:"owner"`
+	Owner   string `json:"owner"`
 	Spender string `json:"spender"`
 }
 
 type QueryMsg_AllSpenderAllowances struct {
-	Limit *int `json:"limit,omitempty"`
-	Spender string `json:"spender"`
+	Limit      *int    `json:"limit,omitempty"`
+	Spender    string  `json:"spender"`
 	StartAfter *string `json:"start_after,omitempty"`
 }
 
 type InstantiateMarketingInfo struct {
-	Marketing *string `json:"marketing,omitempty"`
-	Project *string `json:"project,omitempty"`
+	Marketing   *string `json:"marketing,omitempty"`
+	Project     *string `json:"project,omitempty"`
 	Description *string `json:"description,omitempty"`
-	Logo *Logo `json:"logo,omitempty"`
+	Logo        *Logo   `json:"logo,omitempty"`
 }
 
 type ExecuteMsg_TransferFrom struct {
-	Amount Uint128 `json:"amount"`
-	Owner string `json:"owner"`
-	Recipient string `json:"recipient"`
+	Amount    Uint128 `json:"amount"`
+	Owner     string  `json:"owner"`
+	Recipient string  `json:"recipient"`
 }
 
 type ExecuteMsg_SendFrom struct {
-	Owner string `json:"owner"`
-	Amount Uint128 `json:"amount"`
-	Contract string `json:"contract"`
-	Msg Binary `json:"msg"`
+	Owner    string  `json:"owner"`
+	Amount   Uint128 `json:"amount"`
+	Contract string  `json:"contract"`
+	Msg      Binary  `json:"msg"`
 }
 
 type QueryMsg_Balance struct {
@@ -252,15 +252,15 @@ type QueryMsg_Balance struct {
 }
 
 type AllowanceInfo struct {
-	Allowance Uint128 `json:"allowance"`
-	Expires Expiration `json:"expires"`
-	Spender string `json:"spender"`
+	Allowance Uint128    `json:"allowance"`
+	Expires   Expiration `json:"expires"`
+	Spender   string     `json:"spender"`
 }
 
 type MinterResponse struct {
 	// cap is a hard cap on total supply that can be achieved by minting. Note that this refers to total_supply. If None, there is unlimited cap.
-	Cap *Uint128 `json:"cap,omitempty"`
-	Minter string `json:"minter"`
+	Cap    *Uint128 `json:"cap,omitempty"`
+	Minter string   `json:"minter"`
 }
 
 type ExecuteMsg_Burn struct {
@@ -268,14 +268,14 @@ type ExecuteMsg_Burn struct {
 }
 
 type ExecuteMsg_Send struct {
-	Contract string `json:"contract"`
-	Msg Binary `json:"msg"`
-	Amount Uint128 `json:"amount"`
+	Contract string  `json:"contract"`
+	Msg      Binary  `json:"msg"`
+	Amount   Uint128 `json:"amount"`
 }
 
 type ExecuteMsg_Mint struct {
-	Amount Uint128 `json:"amount"`
-	Recipient string `json:"recipient"`
+	Amount    Uint128 `json:"amount"`
+	Recipient string  `json:"recipient"`
 }
 
 type BalanceResponse struct {
@@ -298,9 +298,9 @@ let c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```
 type Uint128 string
 
 type ExecuteMsg_DecreaseAllowance struct {
-	Amount Uint128 `json:"amount"`
+	Amount  Uint128     `json:"amount"`
 	Expires *Expiration `json:"expires,omitempty"`
-	Spender string `json:"spender"`
+	Spender string      `json:"spender"`
 }
 
 type QueryMsg_TokenInfo struct{}
@@ -310,9 +310,9 @@ type AllSpenderAllowancesResponse struct {
 }
 
 type TokenInfoResponse struct {
-	Decimals int `json:"decimals"`
-	Name string `json:"name"`
-	Symbol string `json:"symbol"`
+	Decimals    int     `json:"decimals"`
+	Name        string  `json:"name"`
+	Symbol      string  `json:"symbol"`
 	TotalSupply Uint128 `json:"total_supply"`
 }
 
@@ -326,7 +326,7 @@ type Logo struct {
 
 type ExecuteMsg_BurnFrom struct {
 	Amount Uint128 `json:"amount"`
-	Owner string `json:"owner"`
+	Owner  string  `json:"owner"`
 }
 
 /*

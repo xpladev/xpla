@@ -39,11 +39,11 @@ var cosmosEVMActivators = map[int]func(*vm.JumpTable){
 // EVMOptionsFn defines a function type for setting app options specifically for
 // the Cosmos EVM app. The function should receive the chainID and return an error if
 // any.
-type EVMOptionsFn func(string) error
+type EVMOptionsFn func(uint64) error
 
 // NoOpEVMOptions is a no-op function that can be used when the app does not
 // need any specific configuration.
-func NoOpEVMOptions(_ string) error {
+func NoOpEVMOptions(_ uint64) error {
 	return nil
 }
 
@@ -51,7 +51,7 @@ var sealed = false
 
 // EvmAppOptions allows to setup the global configuration
 // for the Cosmos EVM chain.
-func EvmAppOptions(chainID string) error {
+func EvmAppOptions(chainID uint64) error {
 	if sealed {
 		return nil
 	}

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -14,7 +15,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	tmos "github.com/cometbft/cometbft/libs/os"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	dbm "github.com/cosmos/cosmos-db"
@@ -40,7 +40,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -51,10 +50,10 @@ import (
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -62,12 +61,9 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	ethenc "github.com/cosmos/evm/encoding/codec"
+	"github.com/cosmos/evm/ethereum/eip712"
 	cosmosevmutils "github.com/cosmos/evm/utils"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
-
-	ethermintsecp256k1 "github.com/xpladev/ethermint/crypto/ethsecp256k1"
-	ethermintenc "github.com/xpladev/ethermint/encoding/codec"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
@@ -76,6 +72,12 @@ import (
 	"github.com/xpladev/xpla/app/upgrades"
 	"github.com/xpladev/xpla/app/upgrades/v1_8"
 	"github.com/xpladev/xpla/docs"
+	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
+	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
+	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
+	legacyerc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
+	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
+	legacyfeemarkettypes "github.com/xpladev/xpla/legacy/ethermint/x/feemarket/types"
 	xplaprecompile "github.com/xpladev/xpla/precompile"
 	xplatypes "github.com/xpladev/xpla/types"
 
@@ -112,8 +114,6 @@ type XplaApp struct { // nolint: golint
 	appCodec          codec.Codec
 	txConfig          client.TxConfig
 	interfaceRegistry types.InterfaceRegistry
-
-	invCheckPeriod uint
 
 	// the module manager
 	mm           *module.Manager
@@ -173,16 +173,13 @@ func NewXplaApp(
 
 	ethenc.RegisterLegacyAminoCodec(legacyAmino)
 	ethenc.RegisterInterfaces(interfaceRegistry)
-	// Set erc20 registry for backwards compatibility
-	erc20types.RegisterInterfaces(interfaceRegistry)
-	// Set ethermint registry for backwards compatibility
+	// Set legacy ethermint registries for backwards compatibility
 	ethermintenc.RegisterInterfaces(interfaceRegistry)
 	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PubKey{}, ethermintsecp256k1.PubKeyName, nil)
 	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PrivKey{}, ethermintsecp256k1.PrivKeyName, nil)
-
-	// App Opts
-	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
-	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
+	legacyevmtypes.RegisterInterfaces(interfaceRegistry)
+	legacyfeemarkettypes.RegisterInterfaces(interfaceRegistry)
+	legacyerc20types.RegisterInterfaces(interfaceRegistry)
 
 	bApp := baseapp.NewBaseApp(
 		appName,
@@ -191,13 +188,27 @@ func NewXplaApp(
 		txConfig.TxDecoder(),
 		baseAppOptions...)
 
+	evmChainId := uint64(0)
+	if bApp.ChainID() != "" { // ignore standalone cmd case
+		bigintChainId, err := etherminttypes.ParseChainID(bApp.ChainID())
+		if err != nil {
+			panic(err)
+		}
+		evmChainId = bigintChainId.Uint64()
+	}
+
+	// This is needed for the EIP712 txs because currently is using
+	// the deprecated method legacytx.StdSignBytes
+	legacytx.RegressionTestingAminoCodec = legacyAmino
+	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainId)
+
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
 	// initialize the Cosmos EVM application configuration
-	if err := evmAppOptions(bApp.ChainID()); err != nil {
+	if err := evmAppOptions(evmChainId); err != nil {
 		panic(err)
 	}
 
@@ -207,7 +218,6 @@ func NewXplaApp(
 		txConfig:          txConfig,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
-		invCheckPeriod:    invCheckPeriod,
 	}
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
@@ -221,7 +231,6 @@ func NewXplaApp(
 		app.BlockedModuleAccountAddrs(moduleAccountAddresses),
 		skipUpgradeHeights,
 		homePath,
-		invCheckPeriod,
 		logger,
 		appOpts,
 		wasmOpts,
@@ -234,7 +243,7 @@ func NewXplaApp(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(appModules(app, appCodec, txConfig, skipGenesisInvariants, tmLightClientModule)...)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, tmLightClientModule)...)
 	app.ModuleBasics = newBasicManagerFromManager(app)
 
 	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
@@ -256,6 +265,7 @@ func NewXplaApp(
 	// NOTE: upgrade module is required to be prioritized
 	app.mm.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
+		authtypes.ModuleName,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -275,7 +285,6 @@ func NewXplaApp(
 	// Uncomment if you want to set a custom migration order here.
 	// app.mm.SetOrderMigrations(custom order)
 
-	app.mm.RegisterInvariants(app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	err = app.mm.RegisterServices(app.configurator)
 	if err != nil {
@@ -294,7 +303,7 @@ func NewXplaApp(
 	//
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
 	// transactions
-	app.sm = module.NewSimulationManager(simulationModules(app, appCodec, skipGenesisInvariants)...)
+	app.sm = module.NewSimulationManager(simulationModules(app, appCodec)...)
 
 	app.sm.RegisterStoreDecoders()
 
@@ -365,13 +374,13 @@ func NewXplaApp(
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
-			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
+			panic(fmt.Sprintf("failed to load latest version: %s", err))
 		}
 
 		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
 
 		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
-			tmos.Exit(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
+			panic(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
 		}
 	}
 
@@ -469,6 +478,11 @@ func (app *XplaApp) AppCodec() codec.Codec {
 	return app.appCodec
 }
 
+// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
+func (app *XplaApp) DefaultGenesis() map[string]json.RawMessage {
+	return app.ModuleBasics.DefaultGenesis(app.appCodec)
+}
+
 // InterfaceRegistry returns Xpla's InterfaceRegistry
 func (app *XplaApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
@@ -553,6 +567,7 @@ func (app *XplaApp) setUpgradeHandlers() {
 				app.mm,
 				app.configurator,
 				&app.AppKeepers,
+				app.appCodec,
 			),
 		)
 	}
