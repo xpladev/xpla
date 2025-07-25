@@ -333,7 +333,7 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, err
 	}
 
-	err = p.EmitExecuteContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()))
+	err = p.EmitExecuteContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), msg, coins)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +381,7 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, err
 	}
 
-	err = p.EmitMigrateContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), codeId.BigInt())
+	err = p.EmitMigrateContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), codeId.BigInt(), msg)
 	if err != nil {
 		return nil, err
 	}

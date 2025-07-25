@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"math/big"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	cmn "github.com/cosmos/evm/precompiles/common"
+
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/xpladev/xpla/precompile/util"
 )
 
 const (
@@ -22,7 +25,9 @@ const (
 func (p PrecompiledWasm) EmitInstantiateContractEvent(
 	ctx sdk.Context,
 	stateDB vm.StateDB,
-	sender, admin, contractAddress common.Address,
+	sender common.Address,
+	admin common.Address,
+	contractAddress common.Address,
 	codeId *big.Int,
 	label string,
 ) (err error) {
@@ -47,7 +52,7 @@ func (p PrecompiledWasm) EmitInstantiateContractEvent(
 	// pack data fields
 	packedData, err := event.Inputs.NonIndexed().Pack(codeId, label)
 	if err != nil {
-		return fmt.Errorf("failed to pack event data: %w", err)
+		return fmt.Errorf("EmitInstantiateContractEvent: failed to pack event data: %w", err)
 	}
 
 	stateDB.AddLog(&ethtypes.Log{
@@ -64,7 +69,10 @@ func (p PrecompiledWasm) EmitInstantiateContractEvent(
 func (p PrecompiledWasm) EmitExecuteContractEvent(
 	ctx sdk.Context,
 	stateDB vm.StateDB,
-	sender, contractAddress common.Address,
+	sender common.Address,
+	contractAddress common.Address,
+	msg []byte,
+	funds sdk.Coins,
 ) (err error) {
 	event := p.Events[EventTypeExecuteContract]
 
@@ -80,12 +88,23 @@ func (p PrecompiledWasm) EmitExecuteContractEvent(
 		return err
 	}
 
-	// For the sake of brevity, detailed information such as `msg` and `funds` is omitted
-	// so empty non-indexed parameter
+	// convert sdk.Coin to util.Coin and generate the data field and pack
+	abiCoins := make([]util.Coin, len(funds))
+	for i, coin := range funds {
+		abiCoins[i] = util.Coin{
+			Denom:  coin.Denom,
+			Amount: coin.Amount.BigInt(),
+		}
+	}
+	packedData, err := event.Inputs.NonIndexed().Pack(msg, abiCoins)
+	if err != nil {
+		return fmt.Errorf("EmitExecuteContractEvent: failed to pack event data: %w", err)
+	}
+
 	stateDB.AddLog(&ethtypes.Log{
 		Address:     p.Address(),
 		Topics:      topics,
-		Data:        []byte{},
+		Data:        packedData,
 		BlockNumber: uint64(ctx.BlockHeight()),
 	})
 
@@ -96,8 +115,10 @@ func (p PrecompiledWasm) EmitExecuteContractEvent(
 func (p PrecompiledWasm) EmitMigrateContractEvent(
 	ctx sdk.Context,
 	stateDB vm.StateDB,
-	sender, contractAddress common.Address,
+	sender common.Address,
+	contractAddress common.Address,
 	codeId *big.Int,
+	msg []byte,
 ) (err error) {
 	event := p.Events[EventTypeMigrateContract]
 
@@ -114,9 +135,9 @@ func (p PrecompiledWasm) EmitMigrateContractEvent(
 	}
 
 	// pack data fields
-	packedData, err := event.Inputs.NonIndexed().Pack(codeId)
+	packedData, err := event.Inputs.NonIndexed().Pack(codeId, msg)
 	if err != nil {
-		return fmt.Errorf("failed to pack event data: %w", err)
+		return fmt.Errorf("EmitMigrateContractEvent: failed to pack event data: %w", err)
 	}
 
 	stateDB.AddLog(&ethtypes.Log{

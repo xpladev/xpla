@@ -33,11 +33,14 @@ interface IWasm {
      * executed via executeContract
      * @param sender the address of the sender
      * @param contractAddress the address of executed contract
-     * For the sake of brevity, detailed information such as `msg` and `funds` is omitted
+     * @param msg executed message
+     * @param funds the amounts of transferred coin
      */
     event ExecuteContract(
         address indexed sender,
-        address indexed contractAddress
+        address indexed contractAddress,
+        bytes msg,
+        Coin[] funds
     );
 
     /**
@@ -46,12 +49,13 @@ interface IWasm {
      * @param sender the address of the sender
      * @param contractAddress the address of migrated contract
      * @param codeId changed code id
-     * For the sake of brevity, detailed information `msg` is omitted
+     * @param msg the message passed during migration
      */
     event MigrateContract(
         address indexed sender,
         address indexed contractAddress,
-        uint256 codeId
+        uint256 codeId,
+        bytes msg
     );
 
     // Transactions

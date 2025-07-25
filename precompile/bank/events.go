@@ -1,21 +1,18 @@
 package bank
 
 import (
-	"math/big"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	cmn "github.com/cosmos/evm/precompiles/common"
+
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/xpladev/xpla/precompile/util"
 )
-
-// Coin for converting sdk.Coin Amount from sdkmath.Int to *big.Int
-type Coin struct {
-	Denom  string
-	Amount *big.Int
-}
 
 const (
 	EventTypeSend = "Send"
@@ -25,7 +22,8 @@ const (
 func (p PrecompiledBank) EmitSendEvent(
 	ctx sdk.Context,
 	stateDB vm.StateDB,
-	from, to common.Address,
+	from common.Address,
+	to common.Address,
 	amount sdk.Coins,
 ) (err error) {
 	event := p.Events[EventTypeSend]
@@ -42,17 +40,17 @@ func (p PrecompiledBank) EmitSendEvent(
 		return err
 	}
 
-	// generate the data field and pack
-	abiCoins := make([]Coin, len(amount))
+	// convert sdk.Coin to util.Coin and generate the data field and pack
+	abiCoins := make([]util.Coin, len(amount))
 	for i, coin := range amount {
-		abiCoins[i] = Coin{
+		abiCoins[i] = util.Coin{
 			Denom:  coin.Denom,
 			Amount: coin.Amount.BigInt(),
 		}
 	}
 	packedData, err := event.Inputs.NonIndexed().Pack(abiCoins)
 	if err != nil {
-		return err
+		return fmt.Errorf("EmitSendEvent: failed to pack event data: %w", err)
 	}
 
 	stateDB.AddLog(&ethtypes.Log{
