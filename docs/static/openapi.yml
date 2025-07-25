@@ -25355,6 +25355,91 @@ components:
           format: uint64
           type: string
       type: object
+    xpla.burn.v1beta1.BurnProposal:
+      properties:
+        amount:
+          items:
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+            properties:
+              amount:
+                type: string
+              denom:
+                type: string
+            type: object
+          type: array
+        proposal_id:
+          format: uint64
+          type: string
+        proposer:
+          type: string
+      title: BurnProposal defines a ongoingburn proposal
+      type: object
+    xpla.burn.v1beta1.QueryOngoingProposalResponse:
+      description: |-
+        QueryOngoingProposalResponse is the response type for the
+        Query/OngoingProposal RPC method.
+      properties:
+        amount:
+          items:
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+            properties:
+              amount:
+                type: string
+              denom:
+                type: string
+            type: object
+          type: array
+        proposer:
+          type: string
+      type: object
+    xpla.burn.v1beta1.QueryOngoingProposalsResponse:
+      description: |-
+        QueryOngoingProposalsResponse is the response type for the
+        Query/OngoingProposals RPC method.
+      properties:
+        proposals:
+          items:
+            properties:
+              amount:
+                items:
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                  properties:
+                    amount:
+                      type: string
+                    denom:
+                      type: string
+                  type: object
+                type: array
+              proposal_id:
+                format: uint64
+                type: string
+              proposer:
+                type: string
+            title: BurnProposal defines a ongoingburn proposal
+            type: object
+          type: array
+      type: object
     xpla.reward.v1beta1.Params:
       description: Params defines the set of params for the reward module.
       properties:
@@ -53634,6 +53719,143 @@ paths:
       summary: ConnectionParams queries all parameters of the ibc connection submodule.
       tags:
         - ibc/core/connection
+  /xpla/burn/v1beta1/ongoing_proposal:
+    get:
+      operationId: OngoingProposal
+      parameters:
+        - in: query
+          name: proposal_id
+          required: false
+          schema:
+            format: uint64
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: |-
+                  QueryOngoingProposalResponse is the response type for the
+                  Query/OngoingProposal RPC method.
+                properties:
+                  amount:
+                    items:
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                      properties:
+                        amount:
+                          type: string
+                        denom:
+                          type: string
+                      type: object
+                    type: array
+                  proposer:
+                    type: string
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Query a specific ongoing burn proposal by ID
+      tags:
+        - xpla/burn/v1beta1
+  /xpla/burn/v1beta1/ongoing_proposals:
+    get:
+      operationId: OngoingProposals
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: |-
+                  QueryOngoingProposalsResponse is the response type for the
+                  Query/OngoingProposals RPC method.
+                properties:
+                  proposals:
+                    items:
+                      properties:
+                        amount:
+                          items:
+                            description: >-
+                              Coin defines a token with a denomination and an
+                              amount.
+
+
+                              NOTE: The amount field is an Int which implements
+                              the custom method
+
+                              signatures required by gogoproto.
+                            properties:
+                              amount:
+                                type: string
+                              denom:
+                                type: string
+                            type: object
+                          type: array
+                        proposal_id:
+                          format: uint64
+                          type: string
+                        proposer:
+                          type: string
+                      title: BurnProposal defines a ongoingburn proposal
+                      type: object
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Query all ongoing burn proposals
+      tags:
+        - xpla/burn/v1beta1
   /xpla/reward/v1beta1/params:
     get:
       operationId: Params
