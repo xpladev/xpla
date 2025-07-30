@@ -28,11 +28,13 @@ import (
 	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	pstaking "github.com/cosmos/evm/precompiles/staking"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
+
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
-	pstaking "github.com/xpladev/xpla/precompile/staking"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplatypes "github.com/xpladev/xpla/types"
 	xplabanktypes "github.com/xpladev/xpla/x/bank/types"
@@ -2049,10 +2051,12 @@ func (t *EVMIntegrationTestSuite) Test08_DelegationWithPrecompiledStaking() {
 		Amount: delegationAmount,
 	}
 
-	delegationAbi, err := pstaking.ABI.Pack(string(pstaking.Delegate), t.UserWallet1.EthAddress, t.ValidatorWallet1.EthAddress, fund)
+	pstakingabi, err := pstaking.LoadABI()
+	assert.NoError(t.T(), err)
+	delegationAbi, err := pstakingabi.Pack(string(pstaking.DelegateMethod), t.UserWallet1.EthAddress, sdk.ValAddress(t.ValidatorWallet1.EthAddress[:]).String(), fund.Amount)
 	assert.NoError(t.T(), err)
 
-	txhash, err := t.UserWallet1.SendTx(t.EthClient, pstaking.Address, big.NewInt(0), delegationAbi)
+	txhash, err := t.UserWallet1.SendTx(t.EthClient, ethcommon.HexToAddress(evmtypes.StakingPrecompileAddress), big.NewInt(0), delegationAbi)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
