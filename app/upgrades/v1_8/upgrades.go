@@ -126,7 +126,13 @@ func migrateEvmParams(
 	// add new params
 	params.EVMChannels = vmtypes.DefaultEVMChannels
 	params.AccessControl = vmtypes.DefaultAccessControl
-	params.ActiveStaticPrecompiles = []string{}
+	params.ActiveStaticPrecompiles = []string{
+		"0x0000000000000000000000000000000000000800",
+		"0x0000000000000000000000000000000000000801",
+		"0x1000000000000000000000000000000000000001",
+		"0x1000000000000000000000000000000000000004",
+		"0x1000000000000000000000000000000000000005",
+	}
 
 	if err := params.Validate(); err != nil {
 		return err
