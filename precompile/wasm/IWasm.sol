@@ -15,17 +15,23 @@ interface IWasm {
      * @dev InstantiateContract defines an event emitted when a wasm contract is successfully
      * instantiated via instantiateContract or instantiateContract2
      * @param sender the address of the sender
-     * @param admin the address of the contract admin
      * @param contractAddress the address of the instantiated contract
      * @param codeId the id of contract
-     * @param label the label of contract
+     * @param admin the address of the contract admin
+     * @param label the optional metadata to be stored with a contract instance
+     * @param msg the message to be passed to the contract on instantiation
+     * @param funds the coins that are transferred to the contract on instantiation
+     * @param data the bytes to returned from the contract
      */
     event InstantiateContract(
         address indexed sender,
-        address indexed admin,
         address indexed contractAddress,
-        uint256 codeId,
-        string label
+        uint256 indexed codeId,
+        address admin,
+        string label,
+        bytes msg,
+        Coin[] funds,
+        bytes data
     );
 
     /**
@@ -33,14 +39,16 @@ interface IWasm {
      * executed via executeContract
      * @param sender the address of the sender
      * @param contractAddress the address of executed contract
-     * @param msg executed message
-     * @param funds the amounts of transferred coin
+     * @param msg the message to be passed to the contract
+     * @param funds the coins that are transferred to the contract on execution
+     * @param data the bytes to returned from the contract
      */
     event ExecuteContract(
         address indexed sender,
         address indexed contractAddress,
         bytes msg,
-        Coin[] funds
+        Coin[] funds,
+        bytes data
     );
 
     /**
@@ -49,13 +57,15 @@ interface IWasm {
      * @param sender the address of the sender
      * @param contractAddress the address of migrated contract
      * @param codeId changed code id
-     * @param msg the message passed during migration
+     * @param msg the message to be passed to the contract on migration
+     * @param data the bytes to returned from the contract
      */
     event MigrateContract(
         address indexed sender,
         address indexed contractAddress,
-        uint256 codeId,
-        bytes msg
+        uint256 indexed codeId,
+        bytes msg,
+        bytes data
     );
 
     // Transactions

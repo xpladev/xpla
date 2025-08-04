@@ -30,6 +30,9 @@ func (p PrecompiledWasm) EmitInstantiateContractEvent(
 	contractAddress common.Address,
 	codeId *big.Int,
 	label string,
+	msg []byte,
+	funds sdk.Coins,
+	data []byte,
 ) (err error) {
 	event := p.Events[EventTypeInstantiateContract]
 
@@ -40,17 +43,24 @@ func (p PrecompiledWasm) EmitInstantiateContractEvent(
 	if err != nil {
 		return err
 	}
-	topics[2], err = cmn.MakeTopic(admin)
+	topics[2], err = cmn.MakeTopic(contractAddress)
 	if err != nil {
 		return err
 	}
-	topics[3], err = cmn.MakeTopic(contractAddress)
+	topics[3], err = cmn.MakeTopic(codeId)
 	if err != nil {
 		return err
 	}
 
-	// pack data fields
-	packedData, err := event.Inputs.NonIndexed().Pack(codeId, label)
+	// convert sdk.Coin to util.Coin and generate the data field and pack
+	abiCoins := make([]util.Coin, len(funds))
+    for i, coin := range funds {
+        abiCoins[i] = util.Coin{
+            Denom:  coin.Denom,
+            Amount: coin.Amount.BigInt(),
+        }
+    }
+	packedData, err := event.Inputs.NonIndexed().Pack(admin, label, msg, abiCoins, data)
 	if err != nil {
 		return fmt.Errorf("EmitInstantiateContractEvent: failed to pack event data: %w", err)
 	}
@@ -73,6 +83,7 @@ func (p PrecompiledWasm) EmitExecuteContractEvent(
 	contractAddress common.Address,
 	msg []byte,
 	funds sdk.Coins,
+	data []byte,
 ) (err error) {
 	event := p.Events[EventTypeExecuteContract]
 
@@ -96,7 +107,7 @@ func (p PrecompiledWasm) EmitExecuteContractEvent(
 			Amount: coin.Amount.BigInt(),
 		}
 	}
-	packedData, err := event.Inputs.NonIndexed().Pack(msg, abiCoins)
+	packedData, err := event.Inputs.NonIndexed().Pack(msg, abiCoins, data)
 	if err != nil {
 		return fmt.Errorf("EmitExecuteContractEvent: failed to pack event data: %w", err)
 	}
@@ -119,11 +130,12 @@ func (p PrecompiledWasm) EmitMigrateContractEvent(
 	contractAddress common.Address,
 	codeId *big.Int,
 	msg []byte,
+	data []byte,
 ) (err error) {
 	event := p.Events[EventTypeMigrateContract]
 
 	// prepare event topics
-	topics := make([]common.Hash, 3)
+	topics := make([]common.Hash, 4)
 	topics[0] = event.ID
 	topics[1], err = cmn.MakeTopic(sender)
 	if err != nil {
@@ -133,9 +145,13 @@ func (p PrecompiledWasm) EmitMigrateContractEvent(
 	if err != nil {
 		return err
 	}
+	topics[3], err = cmn.MakeTopic(codeId)
+	if err != nil {
+		return err
+	}
 
 	// pack data fields
-	packedData, err := event.Inputs.NonIndexed().Pack(codeId, msg)
+	packedData, err := event.Inputs.NonIndexed().Pack(msg, data)
 	if err != nil {
 		return fmt.Errorf("EmitMigrateContractEvent: failed to pack event data: %w", err)
 	}
