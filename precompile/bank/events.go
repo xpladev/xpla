@@ -10,8 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-
-	"github.com/xpladev/xpla/precompile/util"
 )
 
 const (
@@ -41,9 +39,9 @@ func (p PrecompiledBank) EmitSendEvent(
 	}
 
 	// convert sdk.Coin to util.Coin and generate the data field and pack
-	abiCoins := make([]util.Coin, len(amount))
+	abiCoins := make([]cmn.Coin, len(amount))
 	for i, coin := range amount {
-		abiCoins[i] = util.Coin{
+		abiCoins[i] = cmn.Coin{
 			Denom:  coin.Denom,
 			Amount: coin.Amount.BigInt(),
 		}

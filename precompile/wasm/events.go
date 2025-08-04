@@ -11,8 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-
-	"github.com/xpladev/xpla/precompile/util"
 )
 
 const (
@@ -53,13 +51,13 @@ func (p PrecompiledWasm) EmitInstantiateContractEvent(
 	}
 
 	// convert sdk.Coin to util.Coin and generate the data field and pack
-	abiCoins := make([]util.Coin, len(funds))
-    for i, coin := range funds {
-        abiCoins[i] = util.Coin{
-            Denom:  coin.Denom,
-            Amount: coin.Amount.BigInt(),
-        }
-    }
+	abiCoins := make([]cmn.Coin, len(funds))
+	for i, coin := range funds {
+		abiCoins[i] = cmn.Coin{
+			Denom:  coin.Denom,
+			Amount: coin.Amount.BigInt(),
+		}
+	}
 	packedData, err := event.Inputs.NonIndexed().Pack(admin, label, msg, abiCoins, data)
 	if err != nil {
 		return fmt.Errorf("EmitInstantiateContractEvent: failed to pack event data: %w", err)
@@ -100,9 +98,9 @@ func (p PrecompiledWasm) EmitExecuteContractEvent(
 	}
 
 	// convert sdk.Coin to util.Coin and generate the data field and pack
-	abiCoins := make([]util.Coin, len(funds))
+	abiCoins := make([]cmn.Coin, len(funds))
 	for i, coin := range funds {
-		abiCoins[i] = util.Coin{
+		abiCoins[i] = cmn.Coin{
 			Denom:  coin.Denom,
 			Amount: coin.Amount.BigInt(),
 		}

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Coin} from "../util/Structs.sol";
+import {Coin} from "../util/Types.sol";
 
 address constant WASM_PRECOMPILE_ADDRESS = 0x1000000000000000000000000000000000000004;
 
