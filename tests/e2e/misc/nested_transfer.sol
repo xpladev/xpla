@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {WASM_PRECOMPILE_ADDRESS, IWasm} from "../../../precompile/wasm/IWasm.sol";
 import {AUTH_PRECOMPILE_ADDRESS, IAuth} from "../../../precompile/auth/IAuth.sol";
 import {BANK_PRECOMPILE_ADDRESS, IBank} from "../../../precompile/bank/IBank.sol";
-import {Coin} from "../../../precompile/util/Structs.sol";
+import {Coin} from "../../../precompile/util/Types.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract NetstedTransfer {
