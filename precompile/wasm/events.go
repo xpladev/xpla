@@ -51,13 +51,7 @@ func (p PrecompiledWasm) EmitInstantiateContractEvent(
 	}
 
 	// convert sdk.Coin to util.Coin and generate the data field and pack
-	abiCoins := make([]cmn.Coin, len(funds))
-	for i, coin := range funds {
-		abiCoins[i] = cmn.Coin{
-			Denom:  coin.Denom,
-			Amount: coin.Amount.BigInt(),
-		}
-	}
+	abiCoins := cmn.NewCoinsResponse(funds)
 	packedData, err := event.Inputs.NonIndexed().Pack(admin, label, msg, abiCoins, data)
 	if err != nil {
 		return fmt.Errorf("EmitInstantiateContractEvent: failed to pack event data: %w", err)
@@ -98,13 +92,7 @@ func (p PrecompiledWasm) EmitExecuteContractEvent(
 	}
 
 	// convert sdk.Coin to util.Coin and generate the data field and pack
-	abiCoins := make([]cmn.Coin, len(funds))
-	for i, coin := range funds {
-		abiCoins[i] = cmn.Coin{
-			Denom:  coin.Denom,
-			Amount: coin.Amount.BigInt(),
-		}
-	}
+	abiCoins := cmn.NewCoinsResponse(funds)
 	packedData, err := event.Inputs.NonIndexed().Pack(msg, abiCoins, data)
 	if err != nil {
 		return fmt.Errorf("EmitExecuteContractEvent: failed to pack event data: %w", err)

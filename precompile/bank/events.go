@@ -39,13 +39,7 @@ func (p PrecompiledBank) EmitSendEvent(
 	}
 
 	// convert sdk.Coin to util.Coin and generate the data field and pack
-	abiCoins := make([]cmn.Coin, len(amount))
-	for i, coin := range amount {
-		abiCoins[i] = cmn.Coin{
-			Denom:  coin.Denom,
-			Amount: coin.Amount.BigInt(),
-		}
-	}
+	abiCoins := cmn.NewCoinsResponse(amount)
 	packedData, err := event.Inputs.NonIndexed().Pack(abiCoins)
 	if err != nil {
 		return fmt.Errorf("EmitSendEvent: failed to pack event data: %w", err)
