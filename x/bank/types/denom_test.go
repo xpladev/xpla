@@ -12,8 +12,8 @@ func TestParseDenom(t *testing.T) {
 		expectedType  types.TokenType
 		expectedDenom string
 	}{
-		{"erc20/A2dC463DD29be4C8a28dB0C09D89b0AA89Fc9546", types.Erc20, "A2dC463DD29be4C8a28dB0C09D89b0AA89Fc9546"},
-		{"cw20/xpla1hz3svgdhmv67lsqlduu0tcnd3f75c0xr0mu48l6ywuwlz43zssjqc0z2h4", types.Cw20, "xpla1hz3svgdhmv67lsqlduu0tcnd3f75c0xr0mu48l6ywuwlz43zssjqc0z2h4"},
+		{"xerc20:A2dC463DD29be4C8a28dB0C09D89b0AA89Fc9546", types.Erc20, "A2dC463DD29be4C8a28dB0C09D89b0AA89Fc9546"},
+		{"xcw20:xpla1hz3svgdhmv67lsqlduu0tcnd3f75c0xr0mu48l6ywuwlz43zssjqc0z2h4", types.Cw20, "xpla1hz3svgdhmv67lsqlduu0tcnd3f75c0xr0mu48l6ywuwlz43zssjqc0z2h4"},
 		{"uatom", types.Cosmos, "uatom"},
 		{"ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5", types.Cosmos, "ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5"},
 		{"aphoton", types.Cosmos, "aphoton"},

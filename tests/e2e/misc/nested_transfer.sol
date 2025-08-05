@@ -17,7 +17,7 @@ contract NetstedTransfer {
     address evmAddressCw20Contract;
 
     constructor(address _token, string memory _cw20ContractAddress) {
-        erc20Denom = string.concat("erc20/", Strings.toHexString(_token));
+        erc20Denom = string.concat("xerc20:", Strings.toHexString(_token));
         cw20ContractAddress = _cw20ContractAddress;
         evmAddressCw20Contract = authContract.addressStringToBytes(cw20ContractAddress);
     }

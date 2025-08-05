@@ -359,7 +359,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 func (t *WASMIntegrationTestSuite) Test05_SendCw20WithXplaBank() {
 	// Prepare parameters
 	cw20ContractAddress := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, "/")
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, xplabanktypes.TYPE_SEPARATOR)
 
 	// check balance before sending
 	ctx := context.Background()
@@ -440,7 +440,7 @@ func (t *WASMIntegrationTestSuite) Test05_SendCw20WithXplaBank() {
 func (t *WASMIntegrationTestSuite) Test06_TotalSupplyCw20WithXplaBank() {
 	// Prepare parameters
 	cw20ContractAddress := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, "/")
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, xplabanktypes.TYPE_SEPARATOR)
 
 	//  Query cw2- total-supply with xplabank
 	ctx := context.Background()
@@ -1813,7 +1813,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 	// Prepare parameters
 	erc20TokenContract := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, "/")
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, xplabanktypes.TYPE_SEPARATOR)
 
 	// Check balance before sending
 	ctx := context.Background()
@@ -1873,7 +1873,7 @@ func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 func (t *EVMIntegrationTestSuite) Test05_TotalSupplyErc20WithXplaBank() {
 	// Prepare parameters
 	erc20TokenContract := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, "/")
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, xplabanktypes.TYPE_SEPARATOR)
 
 	// Query erc20 total-supply with xplabank
 	ctx := context.Background()
