@@ -24,6 +24,9 @@ import (
 	v1_7evmtypes "github.com/xpladev/xpla/app/upgrades/v1_8/legacy/evmtypes"
 	v1_7feemarkettypes "github.com/xpladev/xpla/app/upgrades/v1_8/legacy/feemarkettypes"
 	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
+	precompileAuth "github.com/xpladev/xpla/precompile/auth"
+	precompileBank "github.com/xpladev/xpla/precompile/bank"
+	precompileWasm "github.com/xpladev/xpla/precompile/wasm"
 	authkeeper "github.com/xpladev/xpla/x/auth/keeper"
 )
 
@@ -126,7 +129,18 @@ func migrateEvmParams(
 	// add new params
 	params.EVMChannels = vmtypes.DefaultEVMChannels
 	params.AccessControl = vmtypes.DefaultAccessControl
-	params.ActiveStaticPrecompiles = []string{}
+	params.ActiveStaticPrecompiles = []string{
+		vmtypes.P256PrecompileAddress,
+		vmtypes.Bech32PrecompileAddress,
+		vmtypes.StakingPrecompileAddress,
+		vmtypes.DistributionPrecompileAddress,
+		vmtypes.GovPrecompileAddress,
+		vmtypes.SlashingPrecompileAddress,
+		vmtypes.EvidencePrecompileAddress,
+		precompileBank.Address.String(),
+		precompileWasm.Address.String(),
+		precompileAuth.Address.String(),
+	}
 
 	if err := params.Validate(); err != nil {
 		return err

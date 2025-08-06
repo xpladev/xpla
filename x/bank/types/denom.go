@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	ERC20 = "erc20"
-	CW20  = "cw20"
+	ERC20          = "xerc20"
+	CW20           = "xcw20"
+	TYPE_SEPARATOR = ":"
 )
 
 type TokenType int
@@ -21,15 +22,15 @@ const (
 )
 
 func NewCw20Coin(contractAddress string, amount sdkmath.Int) sdk.Coin {
-	return sdk.NewCoin(CW20+"/"+contractAddress, amount)
+	return sdk.NewCoin(CW20+TYPE_SEPARATOR+contractAddress, amount)
 }
 
 func NewErc20Coin(contractAddress string, amount sdkmath.Int) sdk.Coin {
-	return sdk.NewCoin(ERC20+"/"+contractAddress, amount)
+	return sdk.NewCoin(ERC20+TYPE_SEPARATOR+contractAddress, amount)
 }
 
 func ParseDenom(denom string) (TokenType, string) {
-	res := strings.Split(denom, "/")
+	res := strings.Split(denom, TYPE_SEPARATOR)
 
 	if len(res) == 2 {
 		if strings.HasPrefix(denom, ERC20) {

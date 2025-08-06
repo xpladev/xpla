@@ -449,7 +449,7 @@ func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[s
 
 	// initialize precompile addresses to block
 	blockedPrecompilesHex := evmtypes.AvailableStaticPrecompiles
-	for _, addr := range vm.PrecompiledAddressesBerlin {
+	for _, addr := range vm.PrecompiledAddressesPrague {
 		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
 	}
 	for _, addr := range xplaprecompile.PrecompiledAddressesXpla {
@@ -458,7 +458,7 @@ func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[s
 
 	// add precompile addresses to block address
 	for _, precompile := range blockedPrecompilesHex {
-		modAccAddrs[cosmosevmutils.EthHexToCosmosAddr(precompile).String()] = true
+		modAccAddrs[cosmosevmutils.Bech32StringFromHexAddress(precompile)] = true
 	}
 
 	return modAccAddrs

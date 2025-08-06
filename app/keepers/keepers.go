@@ -60,7 +60,6 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -487,6 +486,7 @@ func NewAppKeeper(
 		&appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.FeeMarketKeeper,
+		&appKeepers.ConsensusParamsKeeper,
 		mockErc20Keeper,
 		evmTrace,
 	)
@@ -529,14 +529,22 @@ func NewAppKeeper(
 	)
 
 	// Register the precompiled contracts
-	precompile.RegistPrecompiledContract(
-		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
-		stakingkeeper.NewMsgServerImpl(appKeepers.StakingKeeper.Keeper),
-		distrkeeper.NewMsgServerImpl(appKeepers.DistrKeeper),
-		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
-		appKeepers.WasmKeeper,
-		appKeepers.AccountKeeper,
+	appKeepers.EvmKeeper.WithStaticPrecompiles(
+		precompile.NewAvailableStaticPrecompiles(
+			*appKeepers.StakingKeeper.Keeper,
+			appKeepers.DistrKeeper,
+			appKeepers.IBCKeeper.ChannelKeeper,
+			appKeepers.EvmKeeper,
+			*appKeepers.GovKeeper,
+			appKeepers.SlashingKeeper,
+			appKeepers.EvidenceKeeper,
+			appKeepers.AccountKeeper,
+			appKeepers.BankKeeper,
+			wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
+			appKeepers.WasmKeeper,
+			appKeepers.AccountKeeper,
+			appCodec,
+		),
 	)
 
 	return appKeepers
@@ -574,7 +582,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(pfmroutertypes.ModuleName)
 	paramsKeeper.Subspace(ratelimittypes.ModuleName).WithKeyTable(ratelimittypes.ParamKeyTable())
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
-	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
+	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(vmtypes.ModuleName).WithKeyTable(vmtypes.ParamKeyTable())
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(volunteertypes.ModuleName)

@@ -179,7 +179,7 @@ func (bek Erc20Keeper) callEVM(
 		AccessList: ethtypes.AccessList{},
 	}
 
-	res, err := bek.ek.ApplyMessage(ctx, msg, evmtypes.NewNoOpTracer(), true)
+	res, err := bek.ek.ApplyMessage(ctx, msg, evmtypes.NewNoOpTracer(), true, false)
 	if err != nil {
 		return nil, err
 	}

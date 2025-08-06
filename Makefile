@@ -190,14 +190,10 @@ proto-update-deps:
 
 # TODO: precompiled interface should be changed as a NPM package
 abi-gen:
-	cd precompile && \
-	solc --abi --pretty-json --overwrite -o auth auth/IAuth.sol && \
-	solc --abi --pretty-json --overwrite -o bank bank/IBank.sol && \
-	solc --abi --pretty-json --overwrite -o distribution distribution/IDistribution.sol && \
-	solc --abi --pretty-json --overwrite -o staking staking/IStaking.sol && \
-	solc --abi --pretty-json --overwrite -o wasm wasm/IWasm.sol && \
-	cd ../x/bank/keeper && \
-	solc --abi --pretty-json --overwrite -o . ./IERC20.sol
+	solc --abi --pretty-json --overwrite -o precompile/auth precompile/auth/IAuth.sol && \
+	solc --abi --pretty-json --overwrite -o precompile/bank precompile/bank/IBank.sol && \
+	solc --abi --pretty-json --overwrite -o precompile/wasm precompile/wasm/IWasm.sol && \
+	solc --abi --pretty-json --overwrite -o x/bank/keeper x/bank/keeper/IERC20.sol
 
 ###############################################################################
 ###                                Docker                                   ###

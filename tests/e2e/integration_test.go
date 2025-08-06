@@ -28,11 +28,13 @@ import (
 	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	pstaking "github.com/cosmos/evm/precompiles/staking"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
+
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
-	pstaking "github.com/xpladev/xpla/precompile/staking"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplatypes "github.com/xpladev/xpla/types"
 	xplabanktypes "github.com/xpladev/xpla/x/bank/types"
@@ -357,7 +359,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 func (t *WASMIntegrationTestSuite) Test05_SendCw20WithXplaBank() {
 	// Prepare parameters
 	cw20ContractAddress := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, "/")
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, xplabanktypes.TYPE_SEPARATOR)
 
 	// check balance before sending
 	ctx := context.Background()
@@ -438,7 +440,7 @@ func (t *WASMIntegrationTestSuite) Test05_SendCw20WithXplaBank() {
 func (t *WASMIntegrationTestSuite) Test06_TotalSupplyCw20WithXplaBank() {
 	// Prepare parameters
 	cw20ContractAddress := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, "/")
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, xplabanktypes.TYPE_SEPARATOR)
 
 	//  Query cw2- total-supply with xplabank
 	ctx := context.Background()
@@ -1811,7 +1813,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 	// Prepare parameters
 	erc20TokenContract := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, "/")
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, xplabanktypes.TYPE_SEPARATOR)
 
 	// Check balance before sending
 	ctx := context.Background()
@@ -1871,7 +1873,7 @@ func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
 func (t *EVMIntegrationTestSuite) Test05_TotalSupplyErc20WithXplaBank() {
 	// Prepare parameters
 	erc20TokenContract := t.TokenAddress
-	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, "/")
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, xplabanktypes.TYPE_SEPARATOR)
 
 	// Query erc20 total-supply with xplabank
 	ctx := context.Background()
@@ -1994,13 +1996,13 @@ func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
 
 	// send with precompiled contract
 	sendAmount := big.NewInt(1)
-	zeroFund := []Coin{
+	sendFund := []Coin{
 		{
 			Denom:  xplatypes.DefaultDenom,
 			Amount: sendAmount,
 		},
 	}
-	sendAbi, err := pbank.ABI.Pack(string(pbank.Send), t.UserWallet1.EthAddress, t.UserWallet2.EthAddress, zeroFund)
+	sendAbi, err := pbank.ABI.Pack(string(pbank.Send), t.UserWallet1.EthAddress, t.UserWallet2.EthAddress, sendFund)
 	assert.NoError(t.T(), err)
 
 	hash, err := t.UserWallet1.SendTx(t.EthClient, pbank.Address, big.NewInt(0), sendAbi)
@@ -2008,6 +2010,35 @@ func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
 
 	_, err = txCheckEvm(t.EthClient, hash)
 	assert.NoError(t.T(), err)
+
+	// event emission check
+	res, err := t.EthClient.TransactionReceipt(context.Background(), hash)
+	assert.NoError(t.T(), err)
+
+	sendQuery := ethereum.FilterQuery{
+		FromBlock: res.BlockNumber,
+		ToBlock:   res.BlockNumber,
+		Addresses: []ethcommon.Address{pbank.Address},
+		Topics: [][]ethcommon.Hash{
+			{pbank.ABI.Events[pbank.EventTypeSend].ID},
+		},
+	}
+
+	filteredLogs, err := t.EthClient.FilterLogs(ctx, sendQuery)
+	assert.NoError(t.T(), err)
+	for _, logs := range filteredLogs {
+		decodedData, err := pbank.ABI.Unpack(string(pbank.EventTypeSend), logs.Data)
+		assert.NoError(t.T(), err)
+
+		for _, unitUnparsedData := range decodedData {
+			unitData := unitUnparsedData.([]struct {
+				Denom  string   `json:"denom"`
+				Amount *big.Int `json:"amount"`
+			})
+			assert.Equal(t.T(), unitData[0].Denom, sendFund[0].Denom)
+			assert.Equal(t.T(), unitData[0].Amount, sendFund[0].Amount)
+		}
+	}
 
 	// wallet1 balance is smaller than before
 	currentCosmosBalance1, err := client.Balance(ctx, reqWallet1)
@@ -2049,10 +2080,12 @@ func (t *EVMIntegrationTestSuite) Test08_DelegationWithPrecompiledStaking() {
 		Amount: delegationAmount,
 	}
 
-	delegationAbi, err := pstaking.ABI.Pack(string(pstaking.Delegate), t.UserWallet1.EthAddress, t.ValidatorWallet1.EthAddress, fund)
+	pstakingabi, err := pstaking.LoadABI()
+	assert.NoError(t.T(), err)
+	delegationAbi, err := pstakingabi.Pack(string(pstaking.DelegateMethod), t.UserWallet1.EthAddress, sdk.ValAddress(t.ValidatorWallet1.EthAddress[:]).String(), fund.Amount)
 	assert.NoError(t.T(), err)
 
-	txhash, err := t.UserWallet1.SendTx(t.EthClient, pstaking.Address, big.NewInt(0), delegationAbi)
+	txhash, err := t.UserWallet1.SendTx(t.EthClient, ethcommon.HexToAddress(evmtypes.StakingPrecompileAddress), big.NewInt(0), delegationAbi)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -2109,12 +2142,29 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 	res, err := txCheckEvm(t.EthClient, resBiz)
 	assert.NoError(t.T(), err)
 
+	// event emission check
+	receipt, err := t.EthClient.TransactionReceipt(context.Background(), resBiz)
+	assert.NoError(t.T(), err)
+
+	sendQuery := ethereum.FilterQuery{
+		FromBlock: receipt.BlockNumber,
+		ToBlock:   receipt.BlockNumber,
+		Addresses: []ethcommon.Address{pwasm.Address},
+		Topics: [][]ethcommon.Hash{
+			{pwasm.ABI.Events[pwasm.EventTypeInstantiateContract].ID},
+		},
+	}
+
+	filteredLogs, err := t.EthClient.FilterLogs(context.Background(), sendQuery)
+	assert.NoError(t.T(), err)
+	assert.True(t.T(), len(filteredLogs) > 0)
+
 	cw20ContractAddress, contractAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
 	assert.NoError(t.T(), err)
 	t.Cw20TokenAddress = cw20ContractAddress
 
 	// query token info
-	queryMsg := []byte(fmt.Sprintf(`{"token_info":{}}`))
+	queryMsg := []byte(`{"token_info":{}}`)
 	queryAbi, err := pwasm.ABI.Pack(string(pwasm.SmartContractState), contractAddress, queryMsg)
 	assert.NoError(t.T(), err)
 

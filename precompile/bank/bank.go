@@ -4,16 +4,17 @@ import (
 	"embed"
 	"errors"
 
+	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/x/vm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
 )
@@ -45,8 +46,8 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 	p := PrecompiledBank{
 		Precompile: cmn.Precompile{
 			ABI:                  ABI,
-			KvGasConfig:          storetypes.GasConfig{},
-			TransientKVGasConfig: storetypes.GasConfig{},
+			KvGasConfig:          storetypes.KVGasConfig(),
+			TransientKVGasConfig: storetypes.TransientGasConfig(),
 		},
 		bk: bk,
 	}
@@ -58,35 +59,74 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 func (p PrecompiledBank) Address() common.Address { return Address }
 
 func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
-	// Implement the method as needed
-	return 0
+	// NOTE: This check avoid panicking when trying to decode the method ID
+	if len(input) < 4 {
+		return 0
+	}
+
+	methodID := input[:4]
+
+	method, err := p.MethodById(methodID)
+	if err != nil {
+		// This should never happen since this method is going to fail during Run
+		return 0
+	}
+
+	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
-	method, argsBz := util.SplitInput(contract.Input)
-
-	abiMethod, err := ABI.MethodById(method)
+func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
+	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
 	if err != nil {
-		return nil, err
+		return cmn.ReturnRevertError(evm, err)
 	}
 
-	args, err := abiMethod.Inputs.Unpack(argsBz)
-	if err != nil {
-		return nil, err
-	}
+	// Start the balance change handler before executing the precompile.
+	p.GetBalanceHandler().BeforeBalanceChange(ctx)
 
-	ctx := evm.StateDB.(*statedb.StateDB).GetContext()
+	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
+	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
+	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
 
-	switch MethodBank(abiMethod.Name) {
+	switch MethodBank(method.Name) {
 	case Balance:
-		return p.balance(ctx, abiMethod, args)
+		bz, err = p.balance(ctx, method, args)
 	case Send:
-		return p.send(ctx, evm.Origin, abiMethod, args)
+		bz, err = p.send(ctx, stateDB, contract.Caller(), method, args)
 	case Supply:
-		return p.supplyOf(ctx, abiMethod, args)
+		bz, err = p.supplyOf(ctx, method, args)
 	default:
-		return nil, errors.New("method not found")
+		bz, err = nil, errors.New("method not found")
 	}
+	if err != nil {
+		return cmn.ReturnRevertError(evm, err)
+	}
+
+	cost := ctx.GasMeter().GasConsumed() - initialGas
+
+	if !contract.UseGas(cost, nil, tracing.GasChangeCallPrecompiledContract) {
+		return cmn.ReturnRevertError(evm, vm.ErrOutOfGas)
+	}
+
+	// Process the native balance changes after the method execution.
+	if err = p.GetBalanceHandler().AfterBalanceChange(ctx, stateDB); err != nil {
+		return cmn.ReturnRevertError(evm, err)
+	}
+
+	return bz, nil
+}
+
+func (p PrecompiledBank) IsTransaction(method *abi.Method) bool {
+	switch MethodBank(method.Name) {
+	case Send:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p PrecompiledBank) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("xpla evm extension", "bank")
 }
 
 func (p PrecompiledBank) balance(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
@@ -117,7 +157,7 @@ func (p PrecompiledBank) supplyOf(ctx sdk.Context, method *abi.Method, args []in
 	return method.Outputs.Pack(coin.Amount.BigInt())
 }
 
-func (p PrecompiledBank) send(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledBank) send(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -139,6 +179,11 @@ func (p PrecompiledBank) send(ctx sdk.Context, sender common.Address, method *ab
 	}
 
 	err = p.bk.SendCoins(ctx, fromAddress, toAddress, coins)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.EmitSendEvent(ctx, stateDB, common.BytesToAddress(fromAddress.Bytes()), common.BytesToAddress(toAddress.Bytes()), coins)
 	if err != nil {
 		return nil, err
 	}

@@ -4,16 +4,17 @@ import (
 	"embed"
 	"errors"
 
+	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/x/vm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
 
@@ -49,8 +50,8 @@ func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) Prec
 	p := PrecompiledWasm{
 		Precompile: cmn.Precompile{
 			ABI:                  ABI,
-			KvGasConfig:          storetypes.GasConfig{},
-			TransientKVGasConfig: storetypes.GasConfig{},
+			KvGasConfig:          storetypes.KVGasConfig(),
+			TransientKVGasConfig: storetypes.TransientGasConfig(),
 		},
 		ak:  ak,
 		wms: wms,
@@ -62,45 +63,88 @@ func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) Prec
 }
 
 func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
-	// Implement the method as needed
-	return 0
+	// NOTE: This check avoid panicking when trying to decode the method ID
+	if len(input) < 4 {
+		return 0
+	}
+
+	methodID := input[:4]
+
+	method, err := p.MethodById(methodID)
+	if err != nil {
+		// This should never happen since this method is going to fail during Run
+		return 0
+	}
+
+	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
+func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
 	if contract.Gas < wasmtypes.DefaultInstanceCost {
 		return nil, errors.New("insufficient gas")
 	}
-	method, argsBz := util.SplitInput(contract.Input)
 
-	abiMethod, err := ABI.MethodById(method)
+	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
 	if err != nil {
-		return nil, err
+		return cmn.ReturnRevertError(evm, err)
 	}
 
-	args, err := abiMethod.Inputs.Unpack(argsBz)
-	if err != nil {
-		return nil, err
-	}
+	// Start the balance change handler before executing the precompile.
+	p.GetBalanceHandler().BeforeBalanceChange(ctx)
 
-	ctx := evm.StateDB.(*statedb.StateDB).GetContext()
+	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
+	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
+	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
 
-	switch MethodWasm(abiMethod.Name) {
+	switch MethodWasm(method.Name) {
 	case InstantiateContract:
-		return p.instantiateContract(ctx, evm.Origin, abiMethod, args)
+		bz, err = p.instantiateContract(ctx, stateDB, contract.Caller(), method, args)
 	case InstantiateContract2:
-		return p.instantiateContract2(ctx, evm.Origin, abiMethod, args)
+		bz, err = p.instantiateContract2(ctx, stateDB, contract.Caller(), method, args)
 	case ExecuteContract:
-		return p.executeContract(ctx, evm.Origin, abiMethod, args)
+		bz, err = p.executeContract(ctx, stateDB, contract.Caller(), method, args)
 	case MigrateContract:
-		return p.migrateContract(ctx, evm.Origin, abiMethod, args)
+		bz, err = p.migrateContract(ctx, stateDB, contract.Caller(), method, args)
 	case SmartContractState:
-		return p.smartContractState(ctx, abiMethod, args)
+		bz, err = p.smartContractState(ctx, method, args)
 	default:
-		return nil, errors.New("method not found")
+		bz, err = nil, errors.New("method not found")
+	}
+	if err != nil {
+		return cmn.ReturnRevertError(evm, err)
+	}
+
+	cost := ctx.GasMeter().GasConsumed() - initialGas
+
+	if !contract.UseGas(cost, nil, tracing.GasChangeCallPrecompiledContract) {
+		return cmn.ReturnRevertError(evm, vm.ErrOutOfGas)
+	}
+
+	// Process the native balance changes after the method execution.
+	if err = p.GetBalanceHandler().AfterBalanceChange(ctx, stateDB); err != nil {
+		return cmn.ReturnRevertError(evm, err)
+	}
+
+	return bz, nil
+}
+
+func (PrecompiledWasm) IsTransaction(method *abi.Method) bool {
+	switch MethodWasm(method.Name) {
+	case InstantiateContract,
+		InstantiateContract2,
+		ExecuteContract,
+		MigrateContract:
+		return true
+	default:
+		return false
 	}
 }
 
-func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("xpla evm extension", "wasm")
+}
+
+func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -157,10 +201,15 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, sender common.Addr
 
 	contractAddress := common.BytesToAddress(cosmosContractAddress.Bytes())
 
+	err = p.EmitInstantiateContractEvent(ctx, stateDB, sender, common.BytesToAddress(admin.Bytes()), contractAddress, codeId.BigInt(), label, msg, coins, res.Data)
+	if err != nil {
+		return nil, err
+	}
+
 	return method.Outputs.Pack(contractAddress, res.Data)
 }
 
-func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -229,10 +278,15 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, sender common.Add
 
 	contractAddress := common.BytesToAddress(cosmosContractAddress.Bytes())
 
+	err = p.EmitInstantiateContractEvent(ctx, stateDB, sender, common.BytesToAddress(admin.Bytes()), contractAddress, codeId.BigInt(), label, msg, coins, res.Data)
+	if err != nil {
+		return nil, err
+	}
+
 	return method.Outputs.Pack(contractAddress, res.Data)
 }
 
-func (p PrecompiledWasm) executeContract(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
 		return nil, err
@@ -271,10 +325,15 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, sender common.Address,
 		return nil, err
 	}
 
+	err = p.EmitExecuteContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), msg, coins, res.Data)
+	if err != nil {
+		return nil, err
+	}
+
 	return method.Outputs.Pack(res.Data)
 }
 
-func (p PrecompiledWasm) migrateContract(ctx sdk.Context, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
+func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, sender common.Address, method *abi.Method, args []interface{}) ([]byte, error) {
 
 	fromAddress, err := util.GetAccAddress(args[0])
 	if err != nil {
@@ -310,6 +369,11 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, sender common.Address,
 	}
 
 	res, err := p.wms.MigrateContract(ctx, migrateMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.EmitMigrateContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), codeId.BigInt(), msg, res.Data)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ import (
 )
 
 type EvmKeeper interface {
-	ApplyMessage(ctx sdk.Context, msg core.Message, tracer *tracing.Hooks, commit bool) (*evmtypes.MsgEthereumTxResponse, error)
+	ApplyMessage(ctx sdk.Context, msg core.Message, tracer *tracing.Hooks, commit bool, internal bool) (*evmtypes.MsgEthereumTxResponse, error)
 	EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*evmtypes.EstimateGasResponse, error)
 	GetNonce(ctx sdk.Context, addr common.Address) uint64
 }
