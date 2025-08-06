@@ -1996,13 +1996,13 @@ func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
 
 	// send with precompiled contract
 	sendAmount := big.NewInt(1)
-	zeroFund := []Coin{
+	sendFund := []Coin{
 		{
 			Denom:  xplatypes.DefaultDenom,
 			Amount: sendAmount,
 		},
 	}
-	sendAbi, err := pbank.ABI.Pack(string(pbank.Send), t.UserWallet1.EthAddress, t.UserWallet2.EthAddress, zeroFund)
+	sendAbi, err := pbank.ABI.Pack(string(pbank.Send), t.UserWallet1.EthAddress, t.UserWallet2.EthAddress, sendFund)
 	assert.NoError(t.T(), err)
 
 	hash, err := t.UserWallet1.SendTx(t.EthClient, pbank.Address, big.NewInt(0), sendAbi)
@@ -2010,6 +2010,35 @@ func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
 
 	_, err = txCheckEvm(t.EthClient, hash)
 	assert.NoError(t.T(), err)
+
+	// event emission check
+	res, err := t.EthClient.TransactionReceipt(context.Background(), hash)
+	assert.NoError(t.T(), err)
+
+	sendQuery := ethereum.FilterQuery{
+		FromBlock: res.BlockNumber,
+		ToBlock:   res.BlockNumber,
+		Addresses: []ethcommon.Address{pbank.Address},
+		Topics: [][]ethcommon.Hash{
+			{pbank.ABI.Events[pbank.EventTypeSend].ID},
+		},
+	}
+
+	filteredLogs, err := t.EthClient.FilterLogs(ctx, sendQuery)
+	assert.NoError(t.T(), err)
+	for _, logs := range filteredLogs {
+		decodedData, err := pbank.ABI.Unpack(string(pbank.EventTypeSend), logs.Data)
+		assert.NoError(t.T(), err)
+
+		for _, unitUnparsedData := range decodedData {
+			unitData := unitUnparsedData.([]struct {
+				Denom  string   `json:"denom"`
+				Amount *big.Int `json:"amount"`
+			})
+			assert.Equal(t.T(), unitData[0].Denom, sendFund[0].Denom)
+			assert.Equal(t.T(), unitData[0].Amount, sendFund[0].Amount)
+		}
+	}
 
 	// wallet1 balance is smaller than before
 	currentCosmosBalance1, err := client.Balance(ctx, reqWallet1)
@@ -2113,12 +2142,29 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 	res, err := txCheckEvm(t.EthClient, resBiz)
 	assert.NoError(t.T(), err)
 
+	// event emission check
+	receipt, err := t.EthClient.TransactionReceipt(context.Background(), resBiz)
+	assert.NoError(t.T(), err)
+
+	sendQuery := ethereum.FilterQuery{
+		FromBlock: receipt.BlockNumber,
+		ToBlock:   receipt.BlockNumber,
+		Addresses: []ethcommon.Address{pwasm.Address},
+		Topics: [][]ethcommon.Hash{
+			{pwasm.ABI.Events[pwasm.EventTypeInstantiateContract].ID},
+		},
+	}
+
+	filteredLogs, err := t.EthClient.FilterLogs(context.Background(), sendQuery)
+	assert.NoError(t.T(), err)
+	assert.True(t.T(), len(filteredLogs) > 0)
+
 	cw20ContractAddress, contractAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
 	assert.NoError(t.T(), err)
 	t.Cw20TokenAddress = cw20ContractAddress
 
 	// query token info
-	queryMsg := []byte(fmt.Sprintf(`{"token_info":{}}`))
+	queryMsg := []byte(`{"token_info":{}}`)
 	queryAbi, err := pwasm.ABI.Pack(string(pwasm.SmartContractState), contractAddress, queryMsg)
 	assert.NoError(t.T(), err)
 
