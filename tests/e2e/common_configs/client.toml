@@ -15,6 +15,3 @@ output = "text"
 node = "tcp://localhost:26657"
 # Transaction broadcasting mode (sync|async)
 broadcast-mode = "sync"
-
-[evm]
-evm-chain-id = 1
