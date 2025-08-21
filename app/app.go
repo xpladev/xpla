@@ -54,6 +54,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -182,6 +183,9 @@ func NewXplaApp(
 	legacyevmtypes.RegisterInterfaces(interfaceRegistry)
 	legacyfeemarkettypes.RegisterInterfaces(interfaceRegistry)
 	legacyerc20types.RegisterInterfaces(interfaceRegistry)
+
+	// For backward compatibility
+	vestingtypes.RegisterInterfaces(interfaceRegistry)
 
 	bApp := baseapp.NewBaseApp(
 		appName,
