@@ -37,6 +37,13 @@ var PrecompiledAddressesXpla = []common.Address{
 	pbank.Address, pwasm.Address, pauth.Address,
 }
 
+type wasmDelegatePrecompile struct {
+	*pwasm.PrecompiledWasm
+}
+func (p wasmDelegatePrecompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	return p.PrecompiledWasm.RunDelegate(evm, contract, readOnly)
+}
+
 // NewAvailableStaticPrecompiles returns the list of all available static precompiled contracts from Cosmos EVM.
 // NOTE: this should only be used during initialization of the Keeper.
 func NewAvailableStaticPrecompiles(
@@ -107,8 +114,11 @@ func NewAvailableStaticPrecompiles(
 
 	// xpla precompiles
 	precompiles[pbank.Address] = pbank.NewPrecompiledBank(bk)
-	precompiles[pwasm.Address] = pwasm.NewPrecompiledWasm(ak, wms, wk)
+	precompileWasm := pwasm.NewPrecompiledWasm(ak, wms, wk)
+	precompiles[pwasm.Address] = precompileWasm
 	precompiles[pauth.Address] = pauth.NewPrecompiledAuth(authAk)
+	// delegatecall wasm
+	precompiles[pwasm.DelegatecallAddress] = wasmDelegatePrecompile{PrecompiledWasm: precompileWasm}
 
 	return precompiles
 }

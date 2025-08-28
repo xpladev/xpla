@@ -21,10 +21,11 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
-var _ vm.PrecompiledContract = PrecompiledWasm{}
+var _ vm.PrecompiledContract = &PrecompiledWasm{}
 
 var (
 	Address = common.HexToAddress(hexAddress)
+	DelegatecallAddress = common.HexToAddress(delegatecallHexAddress)
 	ABI     = abi.ABI{}
 
 	//go:embed IWasm.abi
@@ -46,7 +47,7 @@ func init() {
 	}
 }
 
-func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) PrecompiledWasm {
+func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) *PrecompiledWasm {
 	p := PrecompiledWasm{
 		Precompile: cmn.Precompile{
 			ABI:                  ABI,
@@ -59,7 +60,7 @@ func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) Prec
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
-	return p
+	return &p
 }
 
 func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
@@ -79,7 +80,17 @@ func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
 	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
+// Run is the entry point for the basic call.
+func (p *PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
+    return p.run(evm, contract, readOnly, contract.Caller())
+}
+
+// RunDelegate is the entry point for the delegatecall-only precompile.
+func (p *PrecompiledWasm) RunDelegate(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
+    return p.run(evm, contract, readOnly, evm.Origin)
+}
+
+func (p PrecompiledWasm) run(evm *vm.EVM, contract *vm.Contract, readOnly bool, caller common.Address) (bz []byte, err error) {
 	if contract.Gas < wasmtypes.DefaultInstanceCost {
 		return nil, errors.New("insufficient gas")
 	}
@@ -98,13 +109,13 @@ func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 
 	switch MethodWasm(method.Name) {
 	case InstantiateContract:
-		bz, err = p.instantiateContract(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.instantiateContract(ctx, stateDB, caller, method, args)
 	case InstantiateContract2:
-		bz, err = p.instantiateContract2(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.instantiateContract2(ctx, stateDB, caller, method, args)
 	case ExecuteContract:
-		bz, err = p.executeContract(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.executeContract(ctx, stateDB, caller, method, args)
 	case MigrateContract:
-		bz, err = p.migrateContract(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.migrateContract(ctx, stateDB, caller, method, args)
 	case SmartContractState:
 		bz, err = p.smartContractState(ctx, method, args)
 	default:
