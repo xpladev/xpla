@@ -537,7 +537,6 @@ func NewAppKeeper(
 			appKeepers.EvmKeeper,
 			*appKeepers.GovKeeper,
 			appKeepers.SlashingKeeper,
-			appKeepers.EvidenceKeeper,
 			appKeepers.AccountKeeper,
 			appKeepers.BankKeeper,
 			wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),

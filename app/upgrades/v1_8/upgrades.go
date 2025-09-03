@@ -136,7 +136,6 @@ func migrateEvmParams(
 		vmtypes.DistributionPrecompileAddress,
 		vmtypes.GovPrecompileAddress,
 		vmtypes.SlashingPrecompileAddress,
-		vmtypes.EvidencePrecompileAddress,
 		precompileBank.Address.String(),
 		precompileWasm.Address.String(),
 		precompileAuth.Address.String(),
