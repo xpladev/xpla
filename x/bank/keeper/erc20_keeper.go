@@ -6,6 +6,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	types "github.com/xpladev/xpla/x/bank/types"
 )
@@ -57,6 +58,21 @@ func (k *Erc20SendKeeper) SendCoins(goCtx context.Context, fromAddr sdk.AccAddre
 			return sdkerrors.ErrInvalidCoins.Wrapf("it should be erc20 token: %s", coin.String())
 		}
 	}
+
+	fromAddrString := fromAddr.String()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			banktypes.EventTypeTransfer,
+			sdk.NewAttribute(banktypes.AttributeKeyRecipient, toAddr.String()),
+			sdk.NewAttribute(banktypes.AttributeKeySender, fromAddrString),
+			sdk.NewAttribute(sdk.AttributeKeyAmount, amt.String()),
+		),
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(banktypes.AttributeKeySender, fromAddrString),
+		),
+	})
 
 	return nil
 }
