@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -61,6 +62,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	evmante "github.com/cosmos/evm/ante"
 	ethenc "github.com/cosmos/evm/encoding/codec"
 	"github.com/cosmos/evm/ethereum/eip712"
 	cosmosevmutils "github.com/cosmos/evm/utils"
@@ -125,6 +127,10 @@ type XplaApp struct { // nolint: golint
 	// simulation manager
 	sm           *module.SimulationManager
 	configurator module.Configurator
+
+	// for evm enable
+	clientCtx          client.Context
+	pendingTxListeners []evmante.PendingTxListener
 }
 
 func init() {
@@ -631,4 +637,12 @@ func noOpTxFeeChecker(_ sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
 	}
 
 	return feeTx.GetFee(), 0, nil
+}
+
+func (app *XplaApp) SetClientCtx(clientCtx client.Context) {
+	app.clientCtx = clientCtx
+}
+
+func (app *XplaApp) RegisterPendingTxListener(listener func(common.Hash)) {
+	app.pendingTxListeners = append(app.pendingTxListeners, listener)
 }

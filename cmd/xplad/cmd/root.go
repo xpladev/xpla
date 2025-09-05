@@ -218,6 +218,9 @@ func initRootCmd(rootCmd *cobra.Command,
 	cfg.Seal()
 
 	ac := appCreator{}
+	sdkAppCreatorWrapper := func(l log.Logger, d dbm.DB, w io.Writer, ao servertypes.AppOptions) servertypes.Application {
+		return ac.newApp(l, d, w, ao)
+	}
 
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(basicManager, xpla.DefaultNodeHome),
@@ -230,8 +233,8 @@ func initRootCmd(rootCmd *cobra.Command,
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
-		pruning.Cmd(ac.newApp, xpla.DefaultNodeHome),
-		snapshot.Cmd(ac.newApp),
+		pruning.Cmd(sdkAppCreatorWrapper, xpla.DefaultNodeHome),
+		snapshot.Cmd(sdkAppCreatorWrapper),
 	)
 
 	evmserver.AddCommands(rootCmd, evmserver.NewDefaultStartOptions(ac.newApp, xpla.DefaultNodeHome), ac.appExport, addModuleInitFlags)
@@ -325,7 +328,7 @@ func (a appCreator) newApp(
 	db dbm.DB,
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
-) servertypes.Application {
+) evmserver.Application {
 	var cache storetypes.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
