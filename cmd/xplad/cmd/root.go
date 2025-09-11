@@ -63,6 +63,7 @@ import (
 	evmcfg "github.com/cosmos/evm/server/config"
 
 	xpla "github.com/xpladev/xpla/app"
+	"github.com/xpladev/xpla/app/encoding"
 	"github.com/xpladev/xpla/app/params"
 	xplatypes "github.com/xpladev/xpla/types"
 )
@@ -123,18 +124,19 @@ func NewRootCmd() *cobra.Command {
 			// sets the RPC client needed for SIGN_MODE_TEXTUAL. This sign mode
 			// is only available if the client is online.
 			if !initClientCtx.Offline {
+				txConfig := encoding.NewTxConfig(initClientCtx.Codec, tx.DefaultSignModes)
 				txConfigOpts := tx.ConfigOptions{
 					EnabledSignModes:           append(tx.DefaultSignModes, signing.SignMode_SIGN_MODE_TEXTUAL),
 					TextualCoinMetadataQueryFn: authtxconfig.NewGRPCCoinMetadataQueryFn(initClientCtx),
 				}
-				txConfigWithTextual, err := tx.NewTxConfigWithOptions(
+				txConfig.TxConfig, err = tx.NewTxConfigWithOptions(
 					initClientCtx.Codec,
 					txConfigOpts,
 				)
 				if err != nil {
 					return err
 				}
-				initClientCtx = initClientCtx.WithTxConfig(txConfigWithTextual)
+				initClientCtx = initClientCtx.WithTxConfig(txConfig)
 			}
 
 			if err = client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
