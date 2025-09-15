@@ -1726,8 +1726,8 @@ github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/urfave/cli/v2 v2.27.5 h1:WoHEJLdsXr6dDWoJgMq/CboDmyY/8HMMH1fTECbih+w=
 github.com/urfave/cli/v2 v2.27.5/go.mod h1:3Sevf16NykTbInEnD0yKkjDAeZDS0A6bzhBH5hrMvTQ=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/xpladev/cosmos-sdk v0.53.4-xpla h1:15itnnmH2+5PBqSQAowEiZZPXZFrLIOuTZncuZ0QhVc=
-github.com/xpladev/cosmos-sdk v0.53.4-xpla/go.mod h1:7U3+WHZtI44dEOnU46+lDzBb2tFh1QlMvi8Z5JugopI=
+github.com/xpladev/cosmos-sdk v0.53.4-xpla.0.20250915075815-5813a1033a10 h1:zlnLX95UDRz77tLu2yAeMJLSmve09RrzLdrd/0P5nes=
+github.com/xpladev/cosmos-sdk v0.53.4-xpla.0.20250915075815-5813a1033a10/go.mod h1:7U3+WHZtI44dEOnU46+lDzBb2tFh1QlMvi8Z5JugopI=
 github.com/xpladev/evm v0.3.1-xpla-hotfix01 h1:be96s7ODgJXXa9gJjcdCy96/c9QD9n0/akoxnqOUs0Y=
 github.com/xpladev/evm v0.3.1-xpla-hotfix01/go.mod h1:jMPqOV4DXJZxV2htjb3Co8l2aASC3BmQj0V10JqlkoI=
 github.com/xpladev/go-ethereum v1.15.11-xpla-evm h1:QaiIDmMQeYQsa6JAcqfhk9OxzFpOcOP4ZfYqqZEQeC4=

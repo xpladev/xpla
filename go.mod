@@ -275,7 +275,7 @@ replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
 	// xpla features
-	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.4-xpla
+	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.4-xpla.0.20250915075815-5813a1033a10
 
 	// xpla features
 	github.com/cosmos/evm => github.com/xpladev/evm v0.3.1-xpla-hotfix01
