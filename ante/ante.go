@@ -4,24 +4,27 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
-	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
+	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
 
 	corestoretypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	tmlog "cosmossdk.io/log"
-	//storetypes "cosmossdk.io/store/types"
+
 	txsigning "cosmossdk.io/x/tx/signing"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 
-	evmante "github.com/xpladev/ethermint/app/ante"
-	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	cosmosante "github.com/cosmos/evm/ante/cosmos"
+	evmante "github.com/cosmos/evm/ante/evm"
+	evmanteinterfaces "github.com/cosmos/evm/ante/interfaces"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	volunteerante "github.com/xpladev/xpla/x/volunteer/ante"
 )
@@ -34,22 +37,18 @@ type HandlerOptions struct {
 	SignModeHandler        *txsigning.HandlerMap
 	SigGasConsumer         authante.SignatureVerificationGasConsumer
 
-	AccountKeeper         evmtypes.AccountKeeper
-	BankKeeper            evmtypes.BankKeeper
+	AccountKeeper         evmanteinterfaces.AccountKeeper
+	BankKeeper            evmanteinterfaces.BankKeeper
 	Codec                 codec.BinaryCodec
 	IBCKeeper             *ibckeeper.Keeper
-	EvmKeeper             evmante.EVMKeeper
+	EvmKeeper             evmanteinterfaces.EVMKeeper
 	VolunteerKeeper       volunteerante.VolunteerKeeper
 	BypassMinFeeMsgTypes  []string
-	FeeMarketKeeper       evmante.FeeMarketKeeper
+	FeeMarketKeeper       evmanteinterfaces.FeeMarketKeeper
 	MaxTxGasWanted        uint64
 	TxFeeChecker          authante.TxFeeChecker
 	TXCounterStoreService corestoretypes.KVStoreService
-	WasmConfig            *wasmtypes.WasmConfig
-}
-
-var disabledAuthzMsgs = []string{
-	sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
+	WasmConfig            *wasmtypes.NodeConfig
 }
 
 // NewAnteHandler returns an 'AnteHandler' that will run actions before a tx is sent to a module's handler.
@@ -78,6 +77,15 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	if opts.VolunteerKeeper == nil {
 		return nil, errorsmod.Wrap(errortypes.ErrLogic, "staking keeper is required for AnteHandler")
 	}
+	if opts.Codec == nil {
+		return nil, errorsmod.Wrap(errortypes.ErrLogic, "codec is required for AnteHandler")
+	}
+	if opts.SigGasConsumer == nil {
+		return nil, errorsmod.Wrap(errortypes.ErrLogic, "signature gas consumer is required for AnteHandler")
+	}
+	if opts.TxFeeChecker == nil {
+		return nil, errorsmod.Wrap(errortypes.ErrLogic, "tx fee checker is required for AnteHandler")
+	}
 
 	return func(
 		ctx sdk.Context, tx sdk.Tx, sim bool,
@@ -91,13 +99,10 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 			eopts := txWithExtensions.GetExtensionOptions()
 			if len(eopts) > 0 {
 				switch typeURL := eopts[0].GetTypeUrl(); typeURL {
-				case "/ethermint.evm.v1.ExtensionOptionsEthereumTx":
+				case "/cosmos.evm.vm.v1.ExtensionOptionsEthereumTx":
 					// handle as *evmtypes.MsgEthereumTx
 					anteHandler = newEthAnteHandler(opts)
-				case "/ethermint.types.v1.ExtensionOptionsWeb3Tx":
-					// handle as normal Cosmos SDK tx, except signature is checked for EIP712 representation
-					anteHandler = newLegacyCosmosAnteHandlerEip712(opts)
-				case "/ethermint.types.v1.ExtensionOptionDynamicFeeTx":
+				case "/cosmos.evm.types.v1.ExtensionOptionDynamicFeeTx":
 					// cosmos-sdk tx with dynamic fee extension
 					anteHandler = newCosmosAnteHandler(opts)
 				default:
@@ -130,9 +135,11 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	}
 
 	anteDecorators := []sdk.AnteDecorator{
-		evmante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		cosmosante.NewRejectMessagesDecorator(), // reject MsgEthereumTxs
 		// disable the Msg types that cannot be included on an authz.MsgExec msgs field
-		evmante.NewAuthzLimiterDecorator(disabledAuthzMsgs),
+		cosmosante.NewAuthzLimiterDecorator(
+			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
+		),
 		volunteerante.NewRejectDelegateVolunteerValidatorDecorator(opts.VolunteerKeeper),
 		authante.NewSetUpContextDecorator(), // second decorator. SetUpContext must be called before other decorators
 		wasmkeeper.NewLimitSimulationGasDecorator(opts.WasmConfig.SimulationGasLimit),
@@ -157,44 +164,12 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 
 func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		evmante.NewEthSetUpContextDecorator(opts.EvmKeeper),                      // outermost AnteDecorator. SetUpContext must be called first
-		evmante.NewEthMempoolFeeDecorator(opts.EvmKeeper),                        // Check eth effective gas price against minimal-gas-prices
-		evmante.NewEthMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
-		evmante.NewEthValidateBasicDecorator(opts.EvmKeeper),
-		evmante.NewEthSigVerificationDecorator(opts.EvmKeeper),
-		evmante.NewEthAccountVerificationDecorator(opts.AccountKeeper, opts.EvmKeeper),
-		evmante.NewEthGasConsumeDecorator(opts.EvmKeeper, opts.MaxTxGasWanted),
-		evmante.NewCanTransferDecorator(opts.EvmKeeper),
-		evmante.NewEthIncrementSenderSequenceDecorator(opts.AccountKeeper), // innermost AnteDecorator.
-		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
-		evmante.NewEthEmitEventDecorator(opts.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
-	)
-}
-
-// newCosmosAnteHandlerEip712 creates the ante handler for transactions signed with EIP712
-func newLegacyCosmosAnteHandlerEip712(opts HandlerOptions) sdk.AnteHandler {
-	return sdk.ChainAnteDecorators(
-		evmante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
-		// disable the Msg types that cannot be included on an authz.MsgExec msgs field
-		evmante.NewAuthzLimiterDecorator(disabledAuthzMsgs),
-		volunteerante.NewRejectDelegateVolunteerValidatorDecorator(opts.VolunteerKeeper),
-		authante.NewSetUpContextDecorator(),
-		authante.NewValidateBasicDecorator(),
-		authante.NewTxTimeoutHeightDecorator(),
-		NewMinGasPriceDecorator(opts.FeeMarketKeeper, opts.EvmKeeper, opts.BypassMinFeeMsgTypes), // Check eth effective gas price against the global MinGasPrice
-		authante.NewValidateMemoDecorator(opts.AccountKeeper),
-		authante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
-		authante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.TxFeeChecker),
-		// SetPubKeyDecorator must be called before all signature verification decorators
-		authante.NewSetPubKeyDecorator(opts.AccountKeeper),
-		authante.NewValidateSigCountDecorator(opts.AccountKeeper),
-		authante.NewSigGasConsumeDecorator(opts.AccountKeeper, opts.SigGasConsumer),
-		// Note: signature verification uses EIP instead of the cosmos signature validator
-		//nolint: staticcheck
-		evmante.NewLegacyEip712SigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
-		authante.NewIncrementSequenceDecorator(opts.AccountKeeper),
-		ibcante.NewRedundantRelayDecorator(opts.IBCKeeper),
-		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
+		evmante.NewEVMMonoDecorator(
+			opts.AccountKeeper,
+			opts.FeeMarketKeeper,
+			opts.EvmKeeper,
+			opts.MaxTxGasWanted,
+		),
 	)
 }
 

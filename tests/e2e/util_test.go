@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,6 +29,10 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	xplatypes "github.com/xpladev/xpla/types"
+
+	"github.com/ethereum/go-ethereum/common"
+	commontypes "github.com/ethereum/go-ethereum/core/types"
+	web3 "github.com/ethereum/go-ethereum/ethclient"
 )
 
 // copied from Tendermint type
@@ -35,6 +40,11 @@ type PVKey struct {
 	Address tmtypes.Address  `json:"address"`
 	PubKey  tmcrypto.PubKey  `json:"pub_key"`
 	PrivKey tmcrypto.PrivKey `json:"priv_key"`
+}
+
+type Coin struct {
+	Denom  string   `json:"denom"`
+	Amount *big.Int `json:"amount"`
 }
 
 func walletSetup() (
@@ -188,9 +198,14 @@ func txCheck(txHash string) error {
 
 	for i := 0; i < 20; i++ {
 		txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
-		_, err = txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txHash})
 
+		var res *txtypes.GetTxResponse
+		res, err = txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txHash})
 		if err == nil {
+			if res.TxResponse.Code != 0 {
+				return fmt.Errorf("Tx failed with code %d", res.TxResponse.Code)
+			}
+
 			return nil
 		}
 
@@ -198,6 +213,27 @@ func txCheck(txHash string) error {
 	}
 
 	return err
+}
+
+func txCheckEvm(client *web3.Client, txHash common.Hash) (*commontypes.Receipt, error) {
+	var err error
+	var isPending bool
+
+	for i := 0; i < 20; i++ {
+		res, err := client.TransactionReceipt(context.Background(), txHash)
+		if err == nil {
+
+			return res, nil
+		}
+
+		time.Sleep(time.Second / 5)
+	}
+
+	if isPending {
+		return nil, fmt.Errorf("Pending tx : %s", txHash.String())
+	}
+
+	return nil, err
 }
 
 func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, title, description string, proposerWallet *WalletInfo, voters []*WalletInfo) error {
@@ -214,10 +250,7 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, ti
 			return err
 		}
 
-		feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-		fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-		txhash, err := proposerWallet.SendTx(ChainID, msg, fee, xplaProposalGasLimit, false)
+		txhash, err := proposerWallet.SendTx(ChainID, msg, false)
 		if txhash != "" && err == nil {
 			fmt.Println("Tx sent:", txhash)
 		} else {
@@ -263,10 +296,8 @@ func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, ti
 
 			eg.Go(func() error {
 				voteMsg := govv1beta1type.NewMsgVote(addr.ByteAddress, proposalId, govv1beta1type.OptionYes)
-				feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-				fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
 
-				txhash, err := addr.SendTx(ChainID, voteMsg, fee, xplaGeneralGasLimit, false)
+				txhash, err := addr.SendTx(ChainID, voteMsg, false)
 				if txhash != "" && err == nil {
 					fmt.Println(addr.StringAddress, "voted to the proposal", proposalId, "as tx", txhash, "err:", err)
 				} else {
@@ -403,4 +434,35 @@ func makeUpdateParamMaxValidators(conn *grpc.ClientConn, maxValidators uint32) (
 	}
 
 	return msg, nil
+}
+
+func getContractAddressByBlockResultFromHeight(height big.Int) (sdk.AccAddress, common.Address, error) {
+	txClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
+	res, err := txClient.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{Query: fmt.Sprintf("tx.height=%s", height.String())})
+	if err != nil {
+		return nil, common.Address{}, err
+	}
+
+	for _, txRes := range res.TxResponses {
+		for _, event := range txRes.Events {
+			if event.Type != "instantiate" {
+				continue
+			}
+
+			for _, attr := range event.Attributes {
+				if attr.Key != "_contract_address" {
+					continue
+				}
+
+				contractAddr, err := sdk.AccAddressFromBech32(attr.Value)
+				if err != nil {
+					return nil, common.Address{}, err
+				}
+
+				return contractAddr.Bytes(), common.BytesToAddress(contractAddr.Bytes()), nil
+			}
+		}
+	}
+
+	return nil, common.Address{}, fmt.Errorf("Contract address not found")
 }

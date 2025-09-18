@@ -1,17 +1,15 @@
-package v1_7
+package v1_8
 
 import (
 	store "cosmossdk.io/store/types"
 
-	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
-
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
-
 	"github.com/xpladev/xpla/app/upgrades"
+	burntypes "github.com/xpladev/xpla/x/burn/types"
 )
 
 const (
-	UpgradeName = "v1_7"
+	UpgradeName    = "v1_8"
+	IbcFeeStoreKey = "feeibc"
 )
 
 var Upgrade = upgrades.Upgrade{
@@ -19,10 +17,11 @@ var Upgrade = upgrades.Upgrade{
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{
-			ratelimittypes.ModuleName,
+			burntypes.ModuleName,
 		},
+		Renamed: nil,
 		Deleted: []string{
-			erc20types.ModuleName,
+			IbcFeeStoreKey,
 		},
 	},
 }

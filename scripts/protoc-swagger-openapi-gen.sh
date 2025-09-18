@@ -17,17 +17,16 @@ tendermint_dir=$(go list -f '{{ .Dir }}' -m github.com/cometbft/cometbft)
 cosmos_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-proto)
 cosmos_sdk_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-sdk)
 wasm_dir=$(go list -f '{{ .Dir }}' -m github.com/CosmWasm/wasmd)
-ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v8)
-ethermint_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/ethermint)
-pfm=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8)
+ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v10)
+evm_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/evm)
 xpla_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/xpla)
 
 # move the vendor folder back to ./vendor
 if [ -d $temp_dir ]; then
   mv ./$temp_dir ./vendor
 fi
-# XXX We will get rid of erc20 proto files on ethermint, so I remove erc20 files on this list temporary.
-proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $ethermint_dir/proto $pfm/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq | grep -v evmos)
+
+proto_dirs=$(find $tendermint_dir/proto $cosmos_sdk_dir/proto $wasm_dir/proto $ibc_dir/proto $evm_dir/proto $xpla_dir/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq | grep -v erc20 | grep -v precisebank | grep -v circuit | grep -v counter | grep -v epochs | grep -v protocolpool | grep -v lightclients)
 for dir in $proto_dirs; do
   # generate swagger files (filter query files)
   query_file=$(find "${dir}" -maxdepth 1 \( -not \( -path '*/autocli/*' -o -path '*/group/*' -o -path '*/orm/*' -o -path '*/nft/*' \) \) \( -name 'query.proto' -o -name 'service.proto' \))
@@ -36,9 +35,8 @@ for dir in $proto_dirs; do
     -I "$tendermint_dir/proto" \
     -I "$cosmos_sdk_dir/proto" \
     -I "$ibc_dir/proto" \
-    -I "$ethermint_dir/proto" \
+    -I "$evm_dir/proto" \
     -I "$xpla_dir/proto" \
-    -I "$pfm/proto" \
     -I "$wasm_dir/proto" \
     -I "$gogo_proto_dir" \
     -I "$google_api_dir/third_party/googleapis" \
@@ -68,20 +66,14 @@ for f in $files; do
   echo "[+] $f"
 
   # check gaia first before cosmos
-  if [[ "$f" =~ "router" ]]; then
-    cp $f ./tmp-swagger-gen/_all/pfm-$counter.json
-  elif [[ "$f" =~ "cosmwasm" ]]; then
+  if [[ "$f" =~ "cosmwasm" ]]; then
     cp $f ./tmp-swagger-gen/_all/cosmwasm-$counter.json
-  elif [[ "$f" =~ "ethermint" ]]; then
-    cp $f ./tmp-swagger-gen/_all/ethermint-$counter.json
   elif [[ "$f" =~ "xpla" ]]; then
     cp $f ./tmp-swagger-gen/_all/xpla-$counter.json
+  elif [[ "$f" =~ "ibc" ]]; then
+    cp $f ./tmp-swagger-gen/_all/ibc-$counter.json
   elif [[ "$f" =~ "cosmos" ]]; then
     cp $f ./tmp-swagger-gen/_all/cosmos-$counter.json
-  elif [[ "$f" =~ "pfm" ]]; then
-    cp $f ./tmp-swagger-gen/_all/pfm-$counter.json
-  else
-    cp $f ./tmp-swagger-gen/_all/other-$counter.json
   fi
   ((counter++))
 done

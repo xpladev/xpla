@@ -7,7 +7,7 @@ rm -f /genesis/*
 
 # 1. chain init
 /usr/bin/xplad init $MONIKER --chain-id localtest_1-1 --home $XPLAHOME
-/usr/bin/xplad config chain-id localtest_1-1 --home $XPLAHOME
+/usr/bin/xplad config set client chain-id localtest_1-1 --home $XPLAHOME
 
 # 2. Register the keys
 # xpla1z2k85n48ydfvzslrugwzl4j2u7vtdyf3xvucmc
@@ -74,10 +74,10 @@ done
 
 # 6. Replace params
 sed -i 's/"bond_denom": "stake"/"bond_denom": "axpla"/g' $XPLAHOME/config/genesis.json
-sed -i 's/"evm_denom": "aphoton",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"evm_denom": "atest",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom": "stake",/"denom": "axpla",/g' $XPLAHOME/config/genesis.json
-sed -i 's/"max_gas": "-1"/"max_gas": "5000000"/g' $XPLAHOME/config/genesis.json
+sed -i 's/"max_gas": "-1"/"max_gas": "50000000000"/g' $XPLAHOME/config/genesis.json
 sed -i 's/"no_base_fee": false,/"no_base_fee": true,/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation": "0.[0-9]\+",/"inflation": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_rate_change": "0.[0-9]\+",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
@@ -99,11 +99,14 @@ sed -i 's/"signed_blocks_window": "[0-9]\+"/"signed_blocks_window": "5"/g' $XPLA
 # gov params
 sed -i 's/"max_deposit_period": "[0-9]\+s"/"max_deposit_period": "4s"/' $XPLAHOME/config/genesis.json
 sed -i 's/"voting_period": "[0-9]\+s"/"voting_period": "4s"/' $XPLAHOME/config/genesis.json
+sed -i 's/"expedited_voting_period": "[0-9]\+s"/"expedited_voting_period": "3s"/' $XPLAHOME/config/genesis.json
 
 sed -i 's/"0x0000000000000000000000000000000000000800",//' $XPLAHOME/config/genesis.json
 sed -i 's/"0x0000000000000000000000000000000000000801",//' $XPLAHOME/config/genesis.json
 sed -i 's/"0x0000000000000000000000000000000000000802",//' $XPLAHOME/config/genesis.json
 sed -i 's/"0x0000000000000000000000000000000000000803"//' $XPLAHOME/config/genesis.json
+
+sed -i 's/"active_static_precompiles": \[\]/"active_static_precompiles": ["0x0000000000000000000000000000000000000800","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005"]/g' $XPLAHOME/config/genesis.json
 
 /usr/bin/xplad validate-genesis --home $XPLAHOME
 

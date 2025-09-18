@@ -15,8 +15,6 @@ import (
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -26,6 +24,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	xplaApp "github.com/xpladev/xpla/app"
+	xplatypes "github.com/xpladev/xpla/types"
+	authkeeper "github.com/xpladev/xpla/x/auth/keeper"
+	bankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	stakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
@@ -71,7 +72,9 @@ func CreateTestInput(t *testing.T) TestInput {
 		map[int64]bool{},
 		xplaApp.DefaultNodeHome,
 		xplaApp.EmptyAppOptions{},
-		xplaApp.EmptyWasmOptions)
+		xplaApp.EmptyWasmOptions,
+		xplatypes.EvmAppOptions,
+	)
 
 	ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{Time: time.Now().UTC()})
 
@@ -103,7 +106,18 @@ func CreateTestInput(t *testing.T) TestInput {
 	sh := stakingtestutil.NewHelper(t, ctx, app.AppKeepers.StakingKeeper.Keeper)
 	app.ModuleBasics.RegisterInterfaces(app.InterfaceRegistry())
 
-	return TestInput{ctx, app.LegacyAmino(), app.AppKeepers.AccountKeeper.AccountKeeper, app.AppKeepers.BankKeeper, app.AppKeepers.RewardKeeper, app.AppKeepers.StakingKeeper, app.AppKeepers.SlashingKeeper, app.AppKeepers.DistrKeeper, app.AppKeepers.VolunteerKeeper, sh}
+	return TestInput{
+		ctx,
+		app.LegacyAmino(),
+		app.AppKeepers.AccountKeeper,
+		app.AppKeepers.BankKeeper,
+		app.AppKeepers.RewardKeeper,
+		app.AppKeepers.StakingKeeper,
+		app.AppKeepers.SlashingKeeper,
+		app.AppKeepers.DistrKeeper,
+		app.AppKeepers.VolunteerKeeper,
+		sh,
+	}
 }
 
 func (ti *TestInput) InitAccountWithCoins(addr sdk.AccAddress, coins sdk.Coins) error {

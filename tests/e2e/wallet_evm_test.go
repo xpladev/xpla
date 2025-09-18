@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	ethereum "github.com/ethereum/go-ethereum"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -83,11 +84,24 @@ func (e *EVMWalletInfo) SendTx(client *web3.Client, to ethcommon.Address, ethAmo
 		return ethcommon.Hash{}, err
 	}
 
-	txStruct := &ethtypes.LegacyTx{
-		Nonce:    e.Nonce,
+	gas, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
+		From:     e.EthAddress,
+		To:       &to,
 		GasPrice: big.NewInt(int64(xplaGasPriceInt)),
-		Gas:      uint64(xplaCodeGasLimit),
-		Value:    big.NewInt(0),
+		Gas:      0,
+		Value:    ethAmount,
+		Data:     txData,
+	})
+	if err != nil {
+		return ethcommon.Hash{}, err
+	}
+
+	txStruct := &ethtypes.LegacyTx{
+		To:       &to,
+		Nonce:    e.CosmosWalletInfo.Sequence,
+		GasPrice: big.NewInt(int64(xplaGasPriceInt)),
+		Gas:      gas,
+		Value:    ethAmount,
 		Data:     txData,
 	}
 
@@ -105,6 +119,9 @@ func (e *EVMWalletInfo) SendTx(client *web3.Client, to ethcommon.Address, ethAmo
 		err = errors.Wrap(err, "SendTx, SendTransaction")
 		return ethcommon.Hash{}, err
 	}
+
+	e.CosmosWalletInfo.Sequence += 1
+	e.Nonce += 1
 
 	return signedTx.Hash(), nil
 }

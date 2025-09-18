@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -10,13 +11,15 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/ethereum/go-ethereum/core/vm"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	tmos "github.com/cometbft/cometbft/libs/os"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/gogoproto/proto"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -37,7 +40,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -48,38 +50,49 @@ import (
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
-	evmapi "github.com/xpladev/ethermint/api/ethermint/evm/v1"
-	ethenc "github.com/xpladev/ethermint/encoding/codec"
-	erc20types "github.com/xpladev/ethermint/x/erc20/types"
-	evmtypes "github.com/xpladev/ethermint/x/evm/types"
+	ethenc "github.com/cosmos/evm/encoding/codec"
+	"github.com/cosmos/evm/ethereum/eip712"
+	cosmosevmutils "github.com/cosmos/evm/utils"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	"github.com/xpladev/xpla/app/upgrades/v1_7"
+	"github.com/xpladev/xpla/app/upgrades/v1_8"
 	"github.com/xpladev/xpla/docs"
+	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
+	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
+	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
+	legacyerc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
+	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
+	legacyfeemarkettypes "github.com/xpladev/xpla/legacy/ethermint/x/feemarket/types"
+	xplaprecompile "github.com/xpladev/xpla/precompile"
+	xplatypes "github.com/xpladev/xpla/types"
 
-	protov2 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+const appName = "Xpla"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_7.Upgrade,
+		v1_8.Upgrade,
 	}
 )
 
@@ -90,7 +103,7 @@ var (
 
 var (
 	// TODO: after test, take this values from appOpts
-	evmMaxGasWanted uint64 = 500000 //ethermintconfig.DefaultMaxTxGasWanted
+	evmMaxGasWanted uint64 = 500000 //legacy from ethermintconfig.DefaultMaxTxGasWanted
 )
 
 // XplaApp extends an ABCI application, but with most of its parameters exported.
@@ -104,8 +117,6 @@ type XplaApp struct { // nolint: golint
 	appCodec          codec.Codec
 	txConfig          client.TxConfig
 	interfaceRegistry types.InterfaceRegistry
-
-	invCheckPeriod uint
 
 	// the module manager
 	mm           *module.Manager
@@ -137,6 +148,7 @@ func NewXplaApp(
 	homePath string,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
+	evmAppOptions xplatypes.EVMOptionsFn,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *XplaApp {
 	legacyAmino := codec.NewLegacyAmino()
@@ -147,12 +159,11 @@ func NewXplaApp(
 		ValidatorAddressCodec: address.Bech32Codec{
 			Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
 		},
+		// apply custom GetSigners for MsgEthereumTx
+		CustomGetSigners: map[protoreflect.FullName]signing.GetSignersFunc{
+			evmtypes.MsgEthereumTxCustomGetSigner.MsgType: evmtypes.MsgEthereumTxCustomGetSigner.Fn,
+		},
 	}
-	// apply custom GetSigners for MsgEthereumTx
-	signingOptions.DefineCustomGetSigners(
-		protov2.MessageName(&evmapi.MsgEthereumTx{}),
-		evmtypes.GetSignersV2,
-	)
 	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles:     proto.HybridResolver,
 		SigningOptions: signingOptions,
@@ -165,12 +176,16 @@ func NewXplaApp(
 
 	ethenc.RegisterLegacyAminoCodec(legacyAmino)
 	ethenc.RegisterInterfaces(interfaceRegistry)
-	// Set erc20 registry for backwards compatibility
-	erc20types.RegisterInterfaces(interfaceRegistry)
+	// Set legacy ethermint registries for backwards compatibility
+	ethermintenc.RegisterInterfaces(interfaceRegistry)
+	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PubKey{}, ethermintsecp256k1.PubKeyName, nil)
+	legacyAmino.RegisterConcrete(&ethermintsecp256k1.PrivKey{}, ethermintsecp256k1.PrivKeyName, nil)
+	legacyevmtypes.RegisterInterfaces(interfaceRegistry)
+	legacyfeemarkettypes.RegisterInterfaces(interfaceRegistry)
+	legacyerc20types.RegisterInterfaces(interfaceRegistry)
 
-	// App Opts
-	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
-	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
+	// For backward compatibility
+	vestingtypes.RegisterInterfaces(interfaceRegistry)
 
 	bApp := baseapp.NewBaseApp(
 		appName,
@@ -179,10 +194,29 @@ func NewXplaApp(
 		txConfig.TxDecoder(),
 		baseAppOptions...)
 
+	evmChainId := uint64(0)
+	if bApp.ChainID() != "" { // ignore standalone cmd case
+		bigintChainId, err := etherminttypes.ParseChainID(bApp.ChainID())
+		if err != nil {
+			panic(err)
+		}
+		evmChainId = bigintChainId.Uint64()
+	}
+
+	// This is needed for the EIP712 txs because currently is using
+	// the deprecated method legacytx.StdSignBytes
+	legacytx.RegressionTestingAminoCodec = legacyAmino
+	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainId)
+
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
+
+	// initialize the Cosmos EVM application configuration
+	if err := evmAppOptions(evmChainId); err != nil {
+		panic(err)
+	}
 
 	app := &XplaApp{
 		BaseApp:           bApp,
@@ -190,7 +224,6 @@ func NewXplaApp(
 		txConfig:          txConfig,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
-		invCheckPeriod:    invCheckPeriod,
 	}
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
@@ -204,15 +237,19 @@ func NewXplaApp(
 		app.BlockedModuleAccountAddrs(moduleAccountAddresses),
 		skipUpgradeHeights,
 		homePath,
-		invCheckPeriod,
 		logger,
 		appOpts,
 		wasmOpts,
 	)
 
+	// Create IBC Tendermint Light Client Stack
+	clientKeeper := app.AppKeepers.IBCKeeper.ClientKeeper
+	tmLightClientModule := ibctm.NewLightClientModule(appCodec, clientKeeper.GetStoreProvider())
+	clientKeeper.AddRoute(ibctm.ModuleName, &tmLightClientModule)
+
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(appModules(app, appCodec, txConfig, skipGenesisInvariants)...)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, tmLightClientModule)...)
 	app.ModuleBasics = newBasicManagerFromManager(app)
 
 	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
@@ -234,13 +271,13 @@ func NewXplaApp(
 	// NOTE: upgrade module is required to be prioritized
 	app.mm.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
+		authtypes.ModuleName,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
-	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	// Tell the app's module manager how to set the order of BeginBlockers, which are run at the beginning of every block.
 	app.mm.SetOrderBeginBlockers(orderBeginBlockers()...)
 
@@ -249,15 +286,11 @@ func NewXplaApp(
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
 	// NOTE: The genutils module must also occur after auth so that it can access the params from auth.
-	// NOTE: Capability module must occur first so that it can initialize any capabilities
-	// so that other modules that want to create or claim capabilities afterwards in InitChain
-	// can do so safely.
 	app.mm.SetOrderInitGenesis(orderInitBlockers()...)
 
 	// Uncomment if you want to set a custom migration order here.
 	// app.mm.SetOrderMigrations(custom order)
 
-	app.mm.RegisterInvariants(app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	err = app.mm.RegisterServices(app.configurator)
 	if err != nil {
@@ -276,7 +309,7 @@ func NewXplaApp(
 	//
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
 	// transactions
-	app.sm = module.NewSimulationManager(simulationModules(app, appCodec, skipGenesisInvariants)...)
+	app.sm = module.NewSimulationManager(simulationModules(app, appCodec)...)
 
 	app.sm.RegisterStoreDecoders()
 
@@ -285,7 +318,7 @@ func NewXplaApp(
 	app.MountTransientStores(app.GetTransientStoreKey())
 	app.MountMemoryStores(app.GetMemoryStoreKey())
 
-	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
+	wasmConfig, err := wasm.ReadNodeConfig(appOpts)
 	if err != nil {
 		panic("error while reading wasm config: " + err.Error())
 	}
@@ -347,13 +380,13 @@ func NewXplaApp(
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
-			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
+			panic(fmt.Sprintf("failed to load latest version: %s", err))
 		}
 
 		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
 
 		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
-			tmos.Exit(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
+			panic(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
 		}
 	}
 
@@ -418,6 +451,20 @@ func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[s
 	// remove module accounts that are ALLOWED to received funds
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
+	// initialize precompile addresses to block
+	blockedPrecompilesHex := evmtypes.AvailableStaticPrecompiles
+	for _, addr := range vm.PrecompiledAddressesPrague {
+		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
+	}
+	for _, addr := range xplaprecompile.PrecompiledAddressesXpla {
+		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
+	}
+
+	// add precompile addresses to block address
+	for _, precompile := range blockedPrecompilesHex {
+		modAccAddrs[cosmosevmutils.Bech32StringFromHexAddress(precompile)] = true
+	}
+
 	return modAccAddrs
 }
 
@@ -435,6 +482,11 @@ func (app *XplaApp) LegacyAmino() *codec.LegacyAmino {
 // for modules to register their own custom testing types.
 func (app *XplaApp) AppCodec() codec.Codec {
 	return app.appCodec
+}
+
+// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
+func (app *XplaApp) DefaultGenesis() map[string]json.RawMessage {
+	return app.ModuleBasics.DefaultGenesis(app.appCodec)
 }
 
 // InterfaceRegistry returns Xpla's InterfaceRegistry
@@ -521,6 +573,7 @@ func (app *XplaApp) setUpgradeHandlers() {
 				app.mm,
 				app.configurator,
 				&app.AppKeepers,
+				app.appCodec,
 			),
 		)
 	}

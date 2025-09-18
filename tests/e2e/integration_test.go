@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,18 +22,25 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1types "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	slashingtype "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtype "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	pstaking "github.com/cosmos/evm/precompiles/staking"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
+
 	wasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	pauth "github.com/xpladev/xpla/precompile/auth"
+	pbank "github.com/xpladev/xpla/precompile/bank"
+	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplatypes "github.com/xpladev/xpla/types"
+	xplabanktypes "github.com/xpladev/xpla/x/bank/types"
 	volunteerValType "github.com/xpladev/xpla/x/volunteer/types"
 
-	// evmtypes "github.com/xpladev/ethermint/x/evm/types"
-
+	ethereum "github.com/ethereum/go-ethereum"
 	abibind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -163,10 +171,7 @@ func (t *WASMIntegrationTestSuite) Test01_SimpleDelegation() {
 		coin,
 	)
 
-	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
+	txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, false)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -207,9 +212,7 @@ func (t *WASMIntegrationTestSuite) Test02_StoreCode() {
 		WASMByteCode: contractBytes,
 	}
 
-	feeAmt := sdkmath.LegacyNewDec(xplaCodeGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, fee, xplaCodeGasLimit, false)
+	txhash, err := t.UserWallet1.SendTx(ChainID, storeMsg, false)
 
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
@@ -252,10 +255,7 @@ func (t *WASMIntegrationTestSuite) Test03_InstantiateContract() {
 		Msg:    initMsg,
 	}
 
-	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, fee, xplaGeneralGasLimit, false)
+	txhash, err := t.UserWallet2.SendTx(ChainID, instantiateMsg, false)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -322,10 +322,7 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 		Msg:      transferMsg,
 	}
 
-	feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-	fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, fee, xplaGeneralGasLimit, false)
+	txhash, err := t.UserWallet2.SendTx(ChainID, contractExecMsg, false)
 	assert.NoError(t.T(), err)
 	assert.NotNil(t.T(), txhash)
 
@@ -357,6 +354,122 @@ func (t *WASMIntegrationTestSuite) Test04_ContractExecution() {
 	assert.NoError(t.T(), err)
 
 	assert.Equal(t.T(), "50000000", amtResp.Balance)
+}
+
+func (t *WASMIntegrationTestSuite) Test05_SendCw20WithXplaBank() {
+	// Prepare parameters
+	cw20ContractAddress := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, xplabanktypes.TYPE_SEPARATOR)
+
+	// check balance before sending
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	reqWallet1 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet1.StringAddress,
+		Denom:   denom,
+	}
+
+	reqWallet2 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet2.StringAddress,
+		Denom:   denom,
+	}
+
+	resWallet1, err := client.Balance(ctx, reqWallet1)
+	assert.NoError(t.T(), err)
+	wallet1Balance := resWallet1.Balance.Amount
+
+	resWallet2, err := client.Balance(ctx, reqWallet2)
+	assert.NoError(t.T(), err)
+	wallet2Balance := resWallet2.Balance.Amount
+
+	// Send cw20 with xplabank
+	sendMsg := banktypes.NewMsgSend(
+		t.UserWallet1.ByteAddress,
+		t.UserWallet2.ByteAddress,
+		sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(1))),
+	)
+
+	txhash, err := t.UserWallet1.SendTx(ChainID, sendMsg, false)
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
+
+	// wallet1 balance should be decreased
+	resWallet1, err = client.Balance(ctx, reqWallet1)
+	afterWallet1Balance := resWallet1.Balance.Amount
+	assert.NoError(t.T(), err)
+	assert.Equal(t.T(), wallet1Balance.Sub(sdkmath.NewInt(1)), afterWallet1Balance)
+
+	// wallet2 balacne should be 1 increased
+	resWallet2, err = client.Balance(ctx, reqWallet2)
+	afterWallet2Balance := resWallet2.Balance.Amount
+	assert.NoError(t.T(), err)
+	assert.Equal(t.T(), wallet2Balance.Add(sdkmath.NewInt(1)), afterWallet2Balance)
+
+	// check with cw20 call
+	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	queryStr := []byte(fmt.Sprintf(`{
+		"balance": {
+			"address": "%s"
+		}
+	}`, t.UserWallet2.StringAddress))
+
+	tokenResp, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
+		Address:   t.TokenAddress,
+		QueryData: queryStr,
+	})
+
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), tokenResp)
+
+	type AmtResp struct {
+		Balance string `json:"balance"`
+	}
+
+	amtResp := &AmtResp{}
+	err = json.Unmarshal(tokenResp.Data.Bytes(), amtResp)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), afterWallet2Balance.String(), amtResp.Balance)
+}
+
+func (t *WASMIntegrationTestSuite) Test06_TotalSupplyCw20WithXplaBank() {
+	// Prepare parameters
+	cw20ContractAddress := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.CW20, cw20ContractAddress}, xplabanktypes.TYPE_SEPARATOR)
+
+	//  Query cw2- total-supply with xplabank
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	req := &banktypes.QuerySupplyOfRequest{
+		Denom: denom,
+	}
+	supply, err := client.SupplyOf(ctx, req)
+	assert.NoError(t.T(), err)
+
+	// check with cw20 call
+	queryTokenAmtClient := wasmtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	rawQueryData, err := json.Marshal(map[string]any{"token_info": xplabanktypes.QueryMsg_TokenInfo{}})
+	assert.NoError(t.T(), err)
+
+	rawResponseData, err := queryTokenAmtClient.SmartContractState(context.Background(), &wasmtype.QuerySmartContractStateRequest{
+		Address:   t.TokenAddress,
+		QueryData: rawQueryData,
+	})
+	assert.NoError(t.T(), err)
+
+	var response xplabanktypes.TokenInfoResponse
+	err = json.Unmarshal(rawResponseData.Data, &response)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), supply.Amount.Amount.String(), string(response.TotalSupply))
+
 }
 
 func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnregistryDelegation() {
@@ -479,11 +592,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				sdk.ValAddress(t.VolunteerValidatorWallet1.ByteAddress.Bytes()).String(),
 				coin,
 			)
-
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, delegationMsg, false)
 			assert.NoError(t.T(), err)
 
 		}
@@ -499,10 +608,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.UserWallet1.SendTx(ChainID, delegationMsg, false)
 			assert.Error(t.T(), err)
 
 			queryClient := txtypes.NewServiceClient(desc.GetConnectionWithContext(context.Background()))
@@ -530,10 +636,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, false)
 			assert.NoError(t.T(), err)
 		}
 
@@ -549,10 +652,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.UserWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.UserWallet1.SendTx(ChainID, redelegationMsg, false)
 			if assert.Error(t.T(), err) && assert.Equal(t.T(), txhash, "") {
 				fmt.Println("Expected failure is occurred.")
 			} else {
@@ -572,10 +672,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 				coin,
 			)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, fee, xplaGeneralGasLimit, false)
+			_, err := t.VolunteerValidatorWallet1.SendTx(ChainID, redelegationMsg, false)
 			assert.NoError(t.T(), err)
 		}
 	}
@@ -673,10 +770,7 @@ func (t *WASMIntegrationTestSuite) Test12_GeneralVolunteerValidatorRegistryUnreg
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, txErr = t.UserWallet1.SendTx(ChainID, proposalMsg, fee, xplaProposalGasLimit, false)
+			txhash, txErr = t.UserWallet1.SendTx(ChainID, proposalMsg, false)
 		}
 
 		// Assertion
@@ -924,10 +1018,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
+			txhash, err := t.ValidatorWallet5.SendTx(ChainID, createValidatorMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
@@ -1034,6 +1125,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 			maxValidators += 1
 
 			msg, err := makeUpdateParamMaxValidators(desc.GetConnectionWithContext(context.Background()), maxValidators)
+			assert.NoError(t.T(), err)
 
 			err = applyVoteTallyingProposal(
 				desc.GetConnectionWithContext(context.Background()),
@@ -1068,10 +1160,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			assert.NoError(t.T(), err)
 
-			feeAmt := sdkmath.LegacyNewDec(xplaProposalGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.VolunteerValidatorWallet1.SendTx(ChainID, createValidatorMsg, fee, xplaProposalGasLimit, false)
+			txhash, err := t.VolunteerValidatorWallet1.SendTx(ChainID, createValidatorMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
@@ -1219,10 +1308,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress).String())
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
@@ -1429,10 +1515,7 @@ func (t *WASMIntegrationTestSuite) Test15_ValidatorActiveSetChange() {
 
 			unjailMsg := slashingtype.NewMsgUnjail(sdk.ValAddress(t.VolunteerValidatorWallet3.ByteAddress).String())
 
-			feeAmt := sdkmath.LegacyNewDec(xplaGeneralGasLimit).Mul(sdkmath.LegacyMustNewDecFromStr(xplaGasPrice))
-			fee := sdk.NewCoin(xplatypes.DefaultDenom, feeAmt.Ceil().RoundInt())
-
-			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, fee, xplaGeneralGasLimit, false)
+			txhash, err := t.VolunteerValidatorWallet3.SendTx(ChainID, unjailMsg, false)
 			if assert.NotEqual(t.T(), "", txhash) && assert.NoError(t.T(), err) {
 				fmt.Println("Tx sent", txhash)
 			} else {
@@ -1607,8 +1690,9 @@ type EVMIntegrationTestSuite struct {
 
 	EthClient *web3.Client
 
-	Coinbase     string
-	TokenAddress ethcommon.Address
+	Coinbase         string
+	TokenAddress     ethcommon.Address
+	Cw20TokenAddress sdk.AccAddress
 
 	UserWallet1      *EVMWalletInfo
 	UserWallet2      *EVMWalletInfo
@@ -1646,7 +1730,6 @@ func (i *EVMIntegrationTestSuite) TeardownTest() {}
 
 func (t *EVMIntegrationTestSuite) Test01_CheckBalance() {
 	resp, err := t.EthClient.BalanceAt(context.Background(), t.UserWallet1.EthAddress, nil)
-
 	assert.NoError(t.T(), err)
 
 	expectedInt := new(big.Int)
@@ -1662,7 +1745,8 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	networkId, err := t.EthClient.NetworkID(context.Background())
 	assert.NoError(t.T(), err)
 
-	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	assert.NoError(t.T(), err)
 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
 	assert.NoError(t.T(), err)
 
@@ -1672,7 +1756,8 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	strbin, err := os.ReadFile(filepath.Join(".", "misc", "token.sol.bin"))
 	assert.NoError(t.T(), err)
 
-	binbyte, _ := hex.DecodeString(string(strbin))
+	binbyte, err := hex.DecodeString(string(strbin))
+	assert.NoError(t.T(), err)
 
 	parsedAbi, err := TokenInterfaceMetaData.GetAbi()
 	assert.NoError(t.T(), err)
@@ -1701,7 +1786,8 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	multiplier, _ := new(big.Int).SetString("1000000000000000000", 10)
 	amt := new(big.Int).Mul(big.NewInt(10), multiplier)
 
-	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	assert.NoError(t.T(), err)
 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
 	assert.NoError(t.T(), err)
 
@@ -1713,7 +1799,8 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	assert.NoError(t.T(), err)
 	fmt.Println("Sent as ", tx.Hash().String())
 
-	time.Sleep(time.Second*blocktime + 1)
+	_, err = txCheckEvm(t.EthClient, tx.Hash())
+	assert.NoError(t.T(), err)
 
 	// query & assert
 	callOpt := &abibind.CallOpts{}
@@ -1721,6 +1808,685 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	assert.NoError(t.T(), err)
 
 	assert.Equal(t.T(), amt, resp)
+}
+
+func (t *EVMIntegrationTestSuite) Test04_SendErc20WithXplaBank() {
+	// Prepare parameters
+	erc20TokenContract := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, xplabanktypes.TYPE_SEPARATOR)
+
+	// Check balance before sending
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	reqWallet1 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet1.CosmosWalletInfo.ByteAddress.String(),
+		Denom:   denom,
+	}
+
+	reqWallet2 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet2.CosmosWalletInfo.ByteAddress.String(),
+		Denom:   denom,
+	}
+
+	resWallet1, err := client.Balance(ctx, reqWallet1)
+	assert.NoError(t.T(), err)
+	wallet1Balance := resWallet1.Balance.Amount
+
+	// Send erc20 with xplabank
+	sendMsg := banktypes.NewMsgSend(
+		t.UserWallet1.CosmosWalletInfo.ByteAddress,
+		t.UserWallet2.CosmosWalletInfo.ByteAddress,
+		sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(1))),
+	)
+
+	txhash, err := t.UserWallet1.CosmosWalletInfo.SendTx(ChainID, sendMsg, false)
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	err = txCheck(txhash)
+	assert.NoError(t.T(), err)
+
+	// wallet1 balance should be decreased
+	resWallet1, err = client.Balance(ctx, reqWallet1)
+	assert.NoError(t.T(), err)
+	afterWallet1Balance := resWallet1.Balance.Amount
+	assert.True(t.T(), wallet1Balance.GT(afterWallet1Balance))
+
+	// wallet2 balacne should be 1 increased
+	resWallet2, err := client.Balance(ctx, reqWallet2)
+	assert.NoError(t.T(), err)
+	wallet2Balance := resWallet2.Balance.Amount
+	assert.Equal(t.T(), wallet2Balance, sdkmath.NewIntFromUint64(10000000000000000001))
+
+	// check with evm call
+	tokenInterface, err := NewTokenInterface(t.TokenAddress, t.EthClient)
+	assert.NoError(t.T(), err)
+
+	callOpt := &abibind.CallOpts{}
+	resp, err := tokenInterface.BalanceOf(callOpt, t.UserWallet2.EthAddress)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), wallet2Balance.BigInt(), resp)
+}
+
+func (t *EVMIntegrationTestSuite) Test05_TotalSupplyErc20WithXplaBank() {
+	// Prepare parameters
+	erc20TokenContract := t.TokenAddress
+	denom := strings.Join([]string{xplabanktypes.ERC20, erc20TokenContract.String()}, xplabanktypes.TYPE_SEPARATOR)
+
+	// Query erc20 total-supply with xplabank
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	req := &banktypes.QuerySupplyOfRequest{
+		Denom: denom,
+	}
+	cosmosRes, err := client.SupplyOf(ctx, req)
+	assert.NoError(t.T(), err)
+
+	// Query erc20 total-supply with evm call
+	tokenInterface, err := NewTokenInterface(t.TokenAddress, t.EthClient)
+	assert.NoError(t.T(), err)
+
+	callOpt := &abibind.CallOpts{}
+	evmRes, err := tokenInterface.TotalSupply(callOpt)
+	assert.NoError(t.T(), err)
+
+	// compare the results
+	assert.Equal(t.T(), cosmosRes.Amount.Amount.BigInt(), evmRes)
+}
+
+func (t *EVMIntegrationTestSuite) Test06_CheckSupplyWithPrecompiledBank() {
+	// abi supply
+	supplyAbi, err := pbank.ABI.Pack(string(pbank.Supply), xplatypes.DefaultDenom)
+	assert.NoError(t.T(), err)
+
+	res, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet1.EthAddress,
+		To:         &pbank.Address,
+		Data:       supplyAbi,
+		Gas:        1000000,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+	assert.NoError(t.T(), err)
+
+	supply := new(big.Int).SetBytes(res)
+
+	// query supply with xplabank
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	req := &banktypes.QuerySupplyOfRequest{
+		Denom: xplatypes.DefaultDenom,
+	}
+	cosmosRes, err := client.SupplyOf(ctx, req)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), cosmosRes.Amount.Amount.BigInt(), supply)
+}
+
+func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
+	// wallet1 balance with precompiled contract
+	balance1Abi, err := pbank.ABI.Pack(string(pbank.Balance), t.UserWallet1.EthAddress, xplatypes.DefaultDenom)
+	assert.NoError(t.T(), err)
+
+	balance1Biz, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet1.EthAddress,
+		To:         &pbank.Address,
+		Data:       balance1Abi,
+		Gas:        0,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+	assert.NoError(t.T(), err)
+
+	balance1 := new(big.Int).SetBytes(balance1Biz)
+
+	// wallet2 balance with precompiled contract
+	balance2Abi, err := pbank.ABI.Pack(string(pbank.Balance), t.UserWallet2.EthAddress, xplatypes.DefaultDenom)
+	assert.NoError(t.T(), err)
+
+	balance2Biz, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet2.EthAddress,
+		To:         &pbank.Address,
+		Data:       balance2Abi,
+		Gas:        0,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+	assert.NoError(t.T(), err)
+
+	balance2 := new(big.Int).SetBytes(balance2Biz)
+
+	ctx := context.Background()
+	client := banktypes.NewQueryClient(desc.GetConnectionWithContext(ctx))
+
+	// wallet1 balance with cosmos
+	reqWallet1 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet1.CosmosWalletInfo.ByteAddress.String(),
+		Denom:   xplatypes.DefaultDenom,
+	}
+
+	cosmosBalance1, err := client.Balance(ctx, reqWallet1)
+	assert.NoError(t.T(), err)
+
+	// wallet2 balance with cosmos
+	reqWallet2 := &banktypes.QueryBalanceRequest{
+		Address: t.UserWallet2.CosmosWalletInfo.ByteAddress.String(),
+		Denom:   xplatypes.DefaultDenom,
+	}
+
+	cosmosBalance2, err := client.Balance(ctx, reqWallet2)
+	assert.NoError(t.T(), err)
+
+	// compare the results
+	assert.Equal(t.T(), cosmosBalance1.Balance.Amount.BigInt(), balance1)
+	assert.Equal(t.T(), cosmosBalance2.Balance.Amount.BigInt(), balance2)
+
+	// send with precompiled contract
+	sendAmount := big.NewInt(1)
+	sendFund := []Coin{
+		{
+			Denom:  xplatypes.DefaultDenom,
+			Amount: sendAmount,
+		},
+	}
+	sendAbi, err := pbank.ABI.Pack(string(pbank.Send), t.UserWallet1.EthAddress, t.UserWallet2.EthAddress, sendFund)
+	assert.NoError(t.T(), err)
+
+	hash, err := t.UserWallet1.SendTx(t.EthClient, pbank.Address, big.NewInt(0), sendAbi)
+	assert.NoError(t.T(), err)
+
+	_, err = txCheckEvm(t.EthClient, hash)
+	assert.NoError(t.T(), err)
+
+	// event emission check
+	res, err := t.EthClient.TransactionReceipt(context.Background(), hash)
+	assert.NoError(t.T(), err)
+
+	sendQuery := ethereum.FilterQuery{
+		FromBlock: res.BlockNumber,
+		ToBlock:   res.BlockNumber,
+		Addresses: []ethcommon.Address{pbank.Address},
+		Topics: [][]ethcommon.Hash{
+			{pbank.ABI.Events[pbank.EventTypeSend].ID},
+		},
+	}
+
+	filteredLogs, err := t.EthClient.FilterLogs(ctx, sendQuery)
+	assert.NoError(t.T(), err)
+	for _, logs := range filteredLogs {
+		decodedData, err := pbank.ABI.Unpack(string(pbank.EventTypeSend), logs.Data)
+		assert.NoError(t.T(), err)
+
+		for _, unitUnparsedData := range decodedData {
+			unitData := unitUnparsedData.([]struct {
+				Denom  string   `json:"denom"`
+				Amount *big.Int `json:"amount"`
+			})
+			assert.Equal(t.T(), unitData[0].Denom, sendFund[0].Denom)
+			assert.Equal(t.T(), unitData[0].Amount, sendFund[0].Amount)
+		}
+	}
+
+	// wallet1 balance is smaller than before
+	currentCosmosBalance1, err := client.Balance(ctx, reqWallet1)
+	assert.NoError(t.T(), err)
+
+	assert.True(t.T(),
+		cosmosBalance1.Balance.IsGTE(*currentCosmosBalance1.Balance),
+	)
+
+	// wallet2 balance is bigger than before
+	currentCosmosBalance2, err := client.Balance(ctx, reqWallet2)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(),
+		new(big.Int).Add(cosmosBalance2.Balance.Amount.BigInt(), sendAmount),
+		currentCosmosBalance2.Balance.Amount.BigInt(),
+	)
+}
+
+func (t *EVMIntegrationTestSuite) Test08_DelegationWithPrecompiledStaking() {
+	// check before delegation
+	queryClient := stakingtype.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
+
+	queryDelegatorMsg := &stakingtype.QueryDelegatorDelegationsRequest{
+		DelegatorAddr: t.UserWallet1.CosmosWalletInfo.StringAddress,
+	}
+
+	delegationResp, err := queryClient.DelegatorDelegations(context.Background(), queryDelegatorMsg)
+	assert.NoError(t.T(), err)
+
+	delegatedList := delegationResp.GetDelegationResponses()
+
+	beforeDelegationAmount := delegatedList[0].Balance.Amount
+
+	// delegate with precompiled contract
+	delegationAmount := big.NewInt(1000000000000000000)
+	fund := Coin{
+		Denom:  xplatypes.DefaultDenom,
+		Amount: delegationAmount,
+	}
+
+	pstakingabi, err := pstaking.LoadABI()
+	assert.NoError(t.T(), err)
+	delegationAbi, err := pstakingabi.Pack(string(pstaking.DelegateMethod), t.UserWallet1.EthAddress, sdk.ValAddress(t.ValidatorWallet1.EthAddress[:]).String(), fund.Amount)
+	assert.NoError(t.T(), err)
+
+	txhash, err := t.UserWallet1.SendTx(t.EthClient, ethcommon.HexToAddress(evmtypes.StakingPrecompileAddress), big.NewInt(0), delegationAbi)
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), txhash)
+
+	_, err = txCheckEvm(t.EthClient, txhash)
+	assert.NoError(t.T(), err)
+
+	// check delegation amount
+	delegationResp, err = queryClient.DelegatorDelegations(context.Background(), queryDelegatorMsg)
+	assert.NoError(t.T(), err)
+
+	delegatedList = delegationResp.GetDelegationResponses()
+	expectDelegationAmount := new(big.Int).Add(beforeDelegationAmount.BigInt(), delegationAmount)
+
+	expected := []stakingtype.DelegationResponse{
+		stakingtype.NewDelegationResp(
+			t.UserWallet1.CosmosWalletInfo.StringAddress,
+			sdk.ValAddress(t.ValidatorWallet1.EthAddress[:]).String(),
+			sdkmath.LegacyNewDecFromBigInt(expectDelegationAmount),
+			sdk.NewCoin(xplatypes.DefaultDenom, sdkmath.NewIntFromBigInt(expectDelegationAmount)),
+		),
+	}
+
+	assert.Equal(t.T(), expected, delegatedList)
+}
+
+func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
+	// instantiate wasm contract
+	initMsg := []byte(fmt.Sprintf(`
+		{
+			"name": "testtoken",
+			"symbol": "TKN",
+			"decimals": 6,
+			"initial_balances": [
+				{
+					"address": "%s",
+					"amount": "100000000"
+				}
+			]
+		}
+	`, t.UserWallet1.CosmosWalletInfo.StringAddress))
+
+	zeroFund := []Coin{
+		{
+			Denom:  xplatypes.DefaultDenom,
+			Amount: big.NewInt(0),
+		},
+	}
+	instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, zeroFund)
+	assert.NoError(t.T(), err)
+
+	resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
+	assert.NoError(t.T(), err)
+
+	res, err := txCheckEvm(t.EthClient, resBiz)
+	assert.NoError(t.T(), err)
+
+	// event emission check
+	receipt, err := t.EthClient.TransactionReceipt(context.Background(), resBiz)
+	assert.NoError(t.T(), err)
+
+	sendQuery := ethereum.FilterQuery{
+		FromBlock: receipt.BlockNumber,
+		ToBlock:   receipt.BlockNumber,
+		Addresses: []ethcommon.Address{pwasm.Address},
+		Topics: [][]ethcommon.Hash{
+			{pwasm.ABI.Events[pwasm.EventTypeInstantiateContract].ID},
+		},
+	}
+
+	filteredLogs, err := t.EthClient.FilterLogs(context.Background(), sendQuery)
+	assert.NoError(t.T(), err)
+	assert.True(t.T(), len(filteredLogs) > 0)
+
+	cw20ContractAddress, contractAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
+	assert.NoError(t.T(), err)
+	t.Cw20TokenAddress = cw20ContractAddress
+
+	// query token info
+	queryMsg := []byte(`{"token_info":{}}`)
+	queryAbi, err := pwasm.ABI.Pack(string(pwasm.SmartContractState), contractAddress, queryMsg)
+	assert.NoError(t.T(), err)
+
+	resTokenInfoBiz, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet1.EthAddress,
+		To:         &pwasm.Address,
+		Data:       queryAbi,
+		Gas:        0,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+	assert.NoError(t.T(), err)
+
+	resTokenInfo, err := pwasm.ABI.Unpack(string(pwasm.SmartContractState), resTokenInfoBiz)
+	assert.NoError(t.T(), err)
+
+	tokenInfo, exist := resTokenInfo[0].([]byte)
+	assert.True(t.T(), exist)
+
+	assert.Equal(t.T(), `{"name":"testtoken","symbol":"TKN","decimals":6,"total_supply":"100000000"}`, string(tokenInfo))
+
+	// send cw20 with precompiled contract
+	sendMsg := []byte(fmt.Sprintf(`{"transfer":{"recipient":"%s","amount":"1"}}`, t.UserWallet2.CosmosWalletInfo.StringAddress))
+
+	sendAbi, err := pwasm.ABI.Pack(string(pwasm.ExecuteContract), t.UserWallet1.EthAddress, contractAddress, sendMsg, zeroFund)
+	assert.NoError(t.T(), err)
+
+	txhash, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), sendAbi)
+	assert.NoError(t.T(), err)
+
+	_, err = txCheckEvm(t.EthClient, txhash)
+	assert.NoError(t.T(), err)
+
+	// check cw20 balance with precompiled contract
+	queryCw20BalanceMsg := []byte(fmt.Sprintf(`{"balance":{"address":"%s"}}`, t.UserWallet2.CosmosWalletInfo.StringAddress))
+	queryCw20BalanceAbi, err := pwasm.ABI.Pack(string(pwasm.SmartContractState), contractAddress, queryCw20BalanceMsg)
+	assert.NoError(t.T(), err)
+
+	resCw20BalanceBiz, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet1.EthAddress,
+		To:         &pwasm.Address,
+		Data:       queryCw20BalanceAbi,
+		Gas:        0,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+	assert.NoError(t.T(), err)
+
+	resCw20Balance, err := pwasm.ABI.Unpack(string(pwasm.SmartContractState), resCw20BalanceBiz)
+	assert.NoError(t.T(), err)
+
+	cw20Balance, exist := resCw20Balance[0].([]byte)
+	assert.True(t.T(), exist)
+
+	assert.Equal(t.T(), `{"balance":"1"}`, string(cw20Balance))
+}
+
+func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
+	t.Run("account(address evmAddress)", func() {
+		// common address
+		queryXplaAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), t.UserWallet1.EthAddress)
+		assert.NoError(t.T(), err)
+
+		encodedXplaAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryXplaAddressAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+		assert.NoError(t.T(), err)
+
+		resXplaAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaAddress)
+		assert.NoError(t.T(), err)
+
+		xplaAddress := resXplaAddress[0].(string)
+
+		assert.Equal(t.T(), t.UserWallet1.CosmosWalletInfo.StringAddress, xplaAddress)
+
+		// contract address
+		initMsg := []byte(fmt.Sprintf(`
+			{
+				"name": "testtoken",
+				"symbol": "TKN",
+				"decimals": 6,
+				"initial_balances": [
+					{
+						"address": "%s",
+						"amount": "100000000"
+					}
+				]
+			}
+		`, t.UserWallet1.CosmosWalletInfo.StringAddress))
+
+		zeroFund := []Coin{
+			{
+				Denom:  xplatypes.DefaultDenom,
+				Amount: big.NewInt(0),
+			},
+		}
+		instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, zeroFund)
+		assert.NoError(t.T(), err)
+
+		resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
+		assert.NoError(t.T(), err)
+
+		res, err := txCheckEvm(t.EthClient, resBiz)
+		assert.NoError(t.T(), err)
+
+		contractXplaAddress, contractEvmAddress, err := getContractAddressByBlockResultFromHeight(*res.BlockNumber)
+		assert.NoError(t.T(), err)
+
+		queryXplaContractAddressAbi, err := pauth.ABI.Pack(string(pauth.Account), contractEvmAddress)
+		assert.NoError(t.T(), err)
+
+		encodedXplaContractAddress, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryXplaContractAddressAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+		assert.NoError(t.T(), err)
+
+		resXplaContractAddress, err := pauth.ABI.Unpack(string(pauth.Account), encodedXplaContractAddress)
+		assert.NoError(t.T(), err)
+
+		xplaContractAddress := resXplaContractAddress[0].(string)
+
+		assert.Equal(t.T(), contractXplaAddress.String(), xplaContractAddress)
+	})
+
+	t.Run("moduleAccountByName(string calldata name)", func() {
+		queryModuleAccountByNameAbi, err := pauth.ABI.Pack(string(pauth.ModuleAccountByName), "distribution")
+		assert.NoError(t.T(), err)
+
+		encodedModuleAccountByName, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryModuleAccountByNameAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+		assert.NoError(t.T(), err)
+
+		resModuleAccountByName, err := pauth.ABI.Unpack(string(pauth.ModuleAccountByName), encodedModuleAccountByName)
+		assert.NoError(t.T(), err)
+
+		moduleAccountAddress := resModuleAccountByName[0].(string)
+
+		assert.NotEqual(t.T(), "", moduleAccountAddress)
+	})
+
+	t.Run("bech32Prefix()", func() {
+		queryBech32PrefixAbi, err := pauth.ABI.Pack(string(pauth.Bech32Prefix))
+		assert.NoError(t.T(), err)
+
+		encodedBech32Prefix, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryBech32PrefixAbi,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+		assert.NoError(t.T(), err)
+
+		resBech32Prefix, err := pauth.ABI.Unpack(string(pauth.Bech32Prefix), encodedBech32Prefix)
+		assert.NoError(t.T(), err)
+
+		bech32Prefix := resBech32Prefix[0].(string)
+
+		assert.Equal(t.T(), xplatypes.Bech32MainPrefix, bech32Prefix)
+	})
+
+	t.Run("addressBytesToString(address evmAddress)", func() {
+		queryAddressByteToString, err := pauth.ABI.Pack(string(pauth.AddressBytesToString), t.UserWallet1.EthAddress)
+		assert.NoError(t.T(), err)
+
+		encodedAddressByteToString, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryAddressByteToString,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+		assert.NoError(t.T(), err)
+
+		resAddressByteToString, err := pauth.ABI.Unpack(string(pauth.AddressBytesToString), encodedAddressByteToString)
+		assert.NoError(t.T(), err)
+
+		address := resAddressByteToString[0].(string)
+
+		assert.Equal(t.T(), t.UserWallet1.CosmosWalletInfo.StringAddress, address)
+	})
+
+	t.Run("addressStringToBytes(string calldata stringAddress)", func() {
+		queryAddressStringToByte, err := pauth.ABI.Pack(string(pauth.AddressStringToBytes), t.UserWallet1.CosmosWalletInfo.StringAddress)
+		assert.NoError(t.T(), err)
+
+		encodedAddressByteToString, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+			From:       t.UserWallet1.EthAddress,
+			To:         &pauth.Address,
+			Data:       queryAddressStringToByte,
+			Gas:        0,
+			GasPrice:   nil,
+			Value:      nil,
+			GasFeeCap:  nil,
+			GasTipCap:  nil,
+			AccessList: nil,
+		}, nil)
+		assert.NoError(t.T(), err)
+
+		resAddressStringToByte, err := pauth.ABI.Unpack(string(pauth.AddressStringToBytes), encodedAddressByteToString)
+		assert.NoError(t.T(), err)
+
+		byteAddress := resAddressStringToByte[0].(ethcommon.Address)
+
+		assert.Equal(t.T(), t.UserWallet1.EthAddress, byteAddress)
+	})
+}
+
+func (t *EVMIntegrationTestSuite) Test11_NestedTransfer() {
+	// Prepare parameters
+	networkId, err := t.EthClient.NetworkID(context.Background())
+	assert.NoError(t.T(), err)
+
+	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+	assert.NoError(t.T(), err)
+
+	auth.GasLimit = uint64(1300000)
+	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
+
+	strbin, err := os.ReadFile(filepath.Join(".", "misc", "nested_transfer.sol.bin"))
+	assert.NoError(t.T(), err)
+
+	binbyte, _ := hex.DecodeString(string(strbin))
+
+	parsedAbi, err := NestedTransferInterfaceMetaData.GetAbi()
+	assert.NoError(t.T(), err)
+	assert.NotNil(t.T(), parsedAbi)
+
+	// test contract deploy
+	address, tx, _, err := abibind.DeployContract(auth, *parsedAbi, binbyte, t.EthClient, t.TokenAddress, t.Cw20TokenAddress.String())
+	assert.NoError(t.T(), err)
+	fmt.Println("Tx hash: ", tx.Hash().String())
+
+	time.Sleep(time.Second*blocktime + 1)
+
+	fmt.Println("Contract address: ", address.String())
+
+	t.Run("transfer by bank", func() {
+		// Prepare parameters
+		store, err := NewNestedTransferInterface(t.TokenAddress, t.EthClient)
+		assert.NoError(t.T(), err)
+
+		amt := new(big.Int).SetInt64(1)
+
+		ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+		auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+		assert.NoError(t.T(), err)
+
+		auth.GasLimit = uint64(300000)
+		auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
+
+		// try to bank transfer
+		tx, err := store.ExecuteBankTransfer(auth, t.UserWallet2.EthAddress, amt)
+		assert.NoError(t.T(), err)
+		fmt.Println("Sent as ", tx.Hash().String())
+
+		_, err = txCheckEvm(t.EthClient, tx.Hash())
+		assert.NoError(t.T(), err)
+	})
+
+	t.Run("transfer by wasm fund", func() {
+		// Prepare parameters
+		store, err := NewNestedTransferInterface(t.TokenAddress, t.EthClient)
+		assert.NoError(t.T(), err)
+
+		amt := new(big.Int).SetInt64(1)
+
+		ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+		auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+		assert.NoError(t.T(), err)
+
+		auth.GasLimit = uint64(300000)
+		auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
+
+		// try to wasm execute
+		tx, err := store.ExecuteTransfer(auth, t.UserWallet2.EthAddress, amt)
+		assert.NoError(t.T(), err)
+		fmt.Println("Sent as ", tx.Hash().String())
+
+		_, err = txCheckEvm(t.EthClient, tx.Hash())
+		assert.NoError(t.T(), err)
+	})
 }
 
 // Wrote and tried to test triggering EVM by MsgEthereumTx

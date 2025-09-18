@@ -1,0 +1,15 @@
+syntax = "proto3";
+package xpla.burn.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/burn/types";
+
+import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+import "xpla/burn/v1beta1/burn.proto";
+
+// GenesisState defines the bank module's genesis state.
+message GenesisState {
+  // ongoing_burn_proposals defines the ongoing burn proposals at genesis
+  repeated xpla.burn.v1beta1.BurnProposal ongoing_burn_proposals = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
