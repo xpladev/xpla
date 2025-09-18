@@ -3,6 +3,7 @@ package bank
 import (
 	"embed"
 	"errors"
+	"fmt"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -13,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
 
@@ -28,6 +31,10 @@ var (
 	//go:embed IBank.abi
 	abiFS embed.FS
 )
+
+type TotalSupplyInput struct {
+	PageRequest query.PageRequest
+}
 
 type PrecompiledBank struct {
 	cmn.Precompile
@@ -95,6 +102,8 @@ func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 		bz, err = p.send(ctx, stateDB, contract.Caller(), method, args)
 	case Supply:
 		bz, err = p.supplyOf(ctx, method, args)
+	case TotalSupply:
+		bz, err = p.totalSupply(ctx, method, args)
 	default:
 		bz, err = nil, errors.New("method not found")
 	}
@@ -189,4 +198,24 @@ func (p PrecompiledBank) send(ctx sdk.Context, stateDB vm.StateDB, sender common
 	}
 
 	return method.Outputs.Pack(true)
+}
+
+func (p PrecompiledBank) totalSupply(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 1, len(args))
+	}
+
+	var input TotalSupplyInput
+	if err := method.Inputs.Copy(&input, args); err != nil {
+		return nil, fmt.Errorf("failed to copy args to struct: %w", err)
+	}
+
+	res, err := p.bk.TotalSupply(ctx, &banktypes.QueryTotalSupplyRequest{Pagination: &input.PageRequest})
+	if err != nil {
+		return nil, err
+	}
+
+	abiCoins := cmn.NewCoinsResponse(res.Supply)
+
+	return method.Outputs.Pack(abiCoins, res.Pagination)
 }
