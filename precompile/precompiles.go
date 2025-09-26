@@ -20,11 +20,13 @@ import (
 	"github.com/cosmos/evm/precompiles/bech32"
 	distprecompile "github.com/cosmos/evm/precompiles/distribution"
 	govprecompile "github.com/cosmos/evm/precompiles/gov"
+	ics20precompile "github.com/cosmos/evm/precompiles/ics20"
 	"github.com/cosmos/evm/precompiles/p256"
 	slashingprecompile "github.com/cosmos/evm/precompiles/slashing"
 	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 
+	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
 	channelkeeper "github.com/cosmos/ibc-go/v10/modules/core/04-channel/keeper"
 
 	pauth "github.com/xpladev/xpla/precompile/auth"
@@ -50,6 +52,7 @@ var PrecompiledAddressesXpla = []common.Address{
 func NewAvailableStaticPrecompiles(
 	stakingKeeper stakingkeeper.Keeper,
 	distributionKeeper distributionkeeper.Keeper,
+	transferKeeper ibctransferkeeper.Keeper,
 	channelKeeper *channelkeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
 	govKeeper govkeeper.Keeper,
@@ -101,6 +104,16 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate distribution precompile: %w", err))
 	}
 
+	ibcTransferPrecompile, err := ics20precompile.NewPrecompile(
+		bk,
+		stakingKeeper,
+		transferKeeper,
+		channelKeeper,
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate ICS20 precompile: %w", err))
+	}
+
 	govPrecompile, err := govprecompile.NewPrecompile(
 		govkeeper.NewMsgServerImpl(&govKeeper),
 		govkeeper.NewQueryServer(&govKeeper),
@@ -130,6 +143,7 @@ func NewAvailableStaticPrecompiles(
 	// Stateful precompiles
 	precompiles[stakingPrecompile.Address()] = stakingPrecompile
 	precompiles[distributionPrecompile.Address()] = distributionPrecompile
+	precompiles[ibcTransferPrecompile.Address()] = ibcTransferPrecompile
 	precompiles[govPrecompile.Address()] = govPrecompile
 	precompiles[slashingPrecompile.Address()] = slashingPrecompile
 

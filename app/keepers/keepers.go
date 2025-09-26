@@ -533,6 +533,7 @@ func NewAppKeeper(
 		precompile.NewAvailableStaticPrecompiles(
 			*appKeepers.StakingKeeper.Keeper,
 			appKeepers.DistrKeeper,
+			appKeepers.TransferKeeper,
 			appKeepers.IBCKeeper.ChannelKeeper,
 			appKeepers.EvmKeeper,
 			*appKeepers.GovKeeper,
