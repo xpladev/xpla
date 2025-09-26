@@ -70,10 +70,10 @@ import (
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	vmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	vmtypes "github.com/cosmos/evm/x/vm/types"
-	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
-	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 
 	"github.com/xpladev/xpla/precompile"
+	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
+	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	burnkeeper "github.com/xpladev/xpla/x/burn/keeper"
 	burntypes "github.com/xpladev/xpla/x/burn/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"

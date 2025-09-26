@@ -125,7 +125,6 @@ func migrateEvmParams(
 	// migrate params
 	params.EvmDenom = paramsV7.EvmDenom
 	params.ExtraEIPs = paramsV7.ExtraEIPs
-	params.AllowUnprotectedTxs = paramsV7.AllowUnprotectedTxs
 	// add new params
 	params.EVMChannels = vmtypes.DefaultEVMChannels
 	params.AccessControl = vmtypes.DefaultAccessControl

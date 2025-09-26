@@ -30,6 +30,7 @@ import (
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
+	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 )
 
 const bech32PrecompileBaseGas = 6_000
@@ -54,7 +55,7 @@ func NewAvailableStaticPrecompiles(
 	govKeeper govkeeper.Keeper,
 	slashingKeeper slashingkeeper.Keeper,
 	ak pwasm.AccountKeeper,
-	bk pbank.BankKeeper,
+	bk xplabankkeeper.Keeper,
 	wms pwasm.WasmMsgServer,
 	wk pwasm.WasmKeeper,
 	authAk pauth.AccountKeeper,
@@ -77,27 +78,47 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate bech32 precompile: %w", err))
 	}
 
-	stakingPrecompile, err := stakingprecompile.NewPrecompile(stakingKeeper, options.AddressCodec)
+	stakingPrecompile, err := stakingprecompile.NewPrecompile(
+		stakingKeeper,
+		stakingkeeper.NewMsgServerImpl(&stakingKeeper),
+		stakingkeeper.NewQuerier(&stakingKeeper),
+		bk,
+		options.AddressCodec,
+	)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate staking precompile: %w", err))
 	}
 
 	distributionPrecompile, err := distprecompile.NewPrecompile(
 		distributionKeeper,
+		distributionkeeper.NewMsgServerImpl(distributionKeeper),
+		distributionkeeper.NewQuerier(distributionKeeper),
 		stakingKeeper,
-		evmKeeper,
+		bk,
 		options.AddressCodec,
 	)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate distribution precompile: %w", err))
 	}
 
-	govPrecompile, err := govprecompile.NewPrecompile(govKeeper, codec, options.AddressCodec)
+	govPrecompile, err := govprecompile.NewPrecompile(
+		govkeeper.NewMsgServerImpl(&govKeeper),
+		govkeeper.NewQueryServer(&govKeeper),
+		bk,
+		codec,
+		options.AddressCodec,
+	)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate gov precompile: %w", err))
 	}
 
-	slashingPrecompile, err := slashingprecompile.NewPrecompile(slashingKeeper, options.ValidatorAddrCodec, options.ConsensusAddrCodec)
+	slashingPrecompile, err := slashingprecompile.NewPrecompile(
+		slashingKeeper,
+		slashingkeeper.NewMsgServerImpl(slashingKeeper),
+		bk,
+		options.ValidatorAddrCodec,
+		options.ConsensusAddrCodec,
+	)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate slashing precompile: %w", err))
 	}

@@ -46,6 +46,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -65,6 +66,7 @@ import (
 	evmante "github.com/cosmos/evm/ante"
 	ethenc "github.com/cosmos/evm/encoding/codec"
 	"github.com/cosmos/evm/ethereum/eip712"
+	evmmempool "github.com/cosmos/evm/mempool"
 	cosmosevmutils "github.com/cosmos/evm/utils"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
@@ -131,6 +133,7 @@ type XplaApp struct { // nolint: golint
 	// for evm enable
 	clientCtx          client.Context
 	pendingTxListeners []evmante.PendingTxListener
+	EVMMempool        *evmmempool.ExperimentalEVMMempool
 }
 
 func init() {
@@ -370,6 +373,28 @@ func NewXplaApp(
 
 	app.setUpgradeHandlers()
 	app.setUpgradeStoreLoaders()
+
+	// XXX: temporary added before evm 0.5.0 released
+	// set the EVM priority nonce mempool
+	// If you wish to use the noop mempool, remove this codeblock
+	if evmtypes.GetChainConfig() != nil {
+		// TODO: Get the actual block gas limit from consensus parameters
+		mempoolConfig := &evmmempool.EVMMempoolConfig{
+			AnteHandler:   anteHandler,
+			BlockGasLimit: 100_000_000,
+		}
+
+		evmMempool := evmmempool.NewExperimentalEVMMempool(app.CreateQueryContext, logger, app.EvmKeeper, app.FeeMarketKeeper, app.txConfig, app.clientCtx, mempoolConfig)
+		app.EVMMempool = evmMempool
+
+		app.SetMempool(evmMempool)
+		checkTxHandler := evmmempool.NewCheckTxHandler(evmMempool)
+		app.SetCheckTxHandler(checkTxHandler)
+
+		abciProposalHandler := baseapp.NewDefaultProposalHandler(evmMempool, app)
+		abciProposalHandler.SetSignerExtractionAdapter(evmmempool.NewEthSignerExtractionAdapter(sdkmempool.NewDefaultSignerExtractionAdapter()))
+		app.SetPrepareProposal(abciProposalHandler.PrepareProposalHandler())
+	}
 
 	// At startup, after all modules have been registered, check that all prot
 	// annotations are correct.
@@ -645,4 +670,8 @@ func (app *XplaApp) SetClientCtx(clientCtx client.Context) {
 
 func (app *XplaApp) RegisterPendingTxListener(listener func(common.Hash)) {
 	app.pendingTxListeners = append(app.pendingTxListeners, listener)
+}
+
+func (app *XplaApp) GetMempool() sdkmempool.ExtMempool {
+	return app.EVMMempool
 }
