@@ -149,7 +149,7 @@ func NewAvailableStaticPrecompiles(
 
 	// xpla precompiles
 	precompiles[pbank.Address] = pbank.NewPrecompiledBank(bk)
-	precompiles[pwasm.Address] = pwasm.NewPrecompiledWasm(ak, wms, wk)
+	precompiles[pwasm.Address] = pwasm.NewPrecompiledWasm(ak, wms, wk, bk)
 	precompiles[pauth.Address] = pauth.NewPrecompiledAuth(authAk)
 
 	return precompiles

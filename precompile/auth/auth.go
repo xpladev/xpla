@@ -75,13 +75,10 @@ func (p PrecompiledAuth) RequiredGas(input []byte) uint64 {
 }
 
 func (p PrecompiledAuth) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
-	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+	ctx, _, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
 	if err != nil {
 		return cmn.ReturnRevertError(evm, err)
 	}
-
-	// Start the balance change handler before executing the precompile.
-	p.GetBalanceHandler().BeforeBalanceChange(ctx)
 
 	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
 	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
@@ -109,11 +106,6 @@ func (p PrecompiledAuth) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 
 	if !contract.UseGas(cost, nil, tracing.GasChangeCallPrecompiledContract) {
 		return cmn.ReturnRevertError(evm, vm.ErrOutOfGas)
-	}
-
-	// Process the native balance changes after the method execution.
-	if err = p.GetBalanceHandler().AfterBalanceChange(ctx, stateDB); err != nil {
-		return cmn.ReturnRevertError(evm, err)
 	}
 
 	return bz, nil

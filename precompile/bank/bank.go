@@ -60,6 +60,9 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
+	// Set the balance handler for the precompile.
+	p.SetBalanceHandler(bk)
+
 	return p
 }
 

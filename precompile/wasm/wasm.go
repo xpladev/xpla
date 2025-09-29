@@ -16,6 +16,7 @@ import (
 
 	cmn "github.com/cosmos/evm/precompiles/common"
 
+	pbank "github.com/xpladev/xpla/precompile/bank"
 	"github.com/xpladev/xpla/precompile/util"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -46,7 +47,7 @@ func init() {
 	}
 }
 
-func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) PrecompiledWasm {
+func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) PrecompiledWasm {
 	p := PrecompiledWasm{
 		Precompile: cmn.Precompile{
 			ABI:                  ABI,
@@ -58,6 +59,9 @@ func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) Prec
 		wk:  wk,
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
+
+	// Set the balance handler for the precompile.
+	p.SetBalanceHandler(bk)
 
 	return p
 }
