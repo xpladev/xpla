@@ -81,7 +81,7 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate bech32 precompile: %w", err))
 	}
 
-	stakingPrecompile, err := stakingprecompile.NewPrecompile(
+	stakingPrecompile := stakingprecompile.NewPrecompile(
 		stakingKeeper,
 		stakingkeeper.NewMsgServerImpl(&stakingKeeper),
 		stakingkeeper.NewQuerier(&stakingKeeper),
@@ -92,7 +92,7 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate staking precompile: %w", err))
 	}
 
-	distributionPrecompile, err := distprecompile.NewPrecompile(
+	distributionPrecompile := distprecompile.NewPrecompile(
 		distributionKeeper,
 		distributionkeeper.NewMsgServerImpl(distributionKeeper),
 		distributionkeeper.NewQuerier(distributionKeeper),
@@ -104,7 +104,7 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate distribution precompile: %w", err))
 	}
 
-	ibcTransferPrecompile, err := ics20precompile.NewPrecompile(
+	ibcTransferPrecompile := ics20precompile.NewPrecompile(
 		bk,
 		stakingKeeper,
 		transferKeeper,
@@ -114,7 +114,7 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate ICS20 precompile: %w", err))
 	}
 
-	govPrecompile, err := govprecompile.NewPrecompile(
+	govPrecompile := govprecompile.NewPrecompile(
 		govkeeper.NewMsgServerImpl(&govKeeper),
 		govkeeper.NewQueryServer(&govKeeper),
 		bk,
@@ -125,7 +125,7 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate gov precompile: %w", err))
 	}
 
-	slashingPrecompile, err := slashingprecompile.NewPrecompile(
+	slashingPrecompile := slashingprecompile.NewPrecompile(
 		slashingKeeper,
 		slashingkeeper.NewMsgServerImpl(slashingKeeper),
 		bk,

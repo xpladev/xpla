@@ -83,7 +83,6 @@ func NewRootCmd() *cobra.Command {
 		tempDir,
 		initAppOptions,
 		xpla.EmptyWasmOptions,
-		xplatypes.NoOpEVMOptions,
 	)
 	defer func() {
 		if err := tempApplication.Close(); err != nil {
@@ -401,7 +400,6 @@ func (a appCreator) newApp(
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		appOpts,
 		wasmOpts,
-		xplatypes.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -446,7 +444,6 @@ func (a appCreator) appExport(
 		homePath,
 		appOpts,
 		emptyWasmOpts,
-		xplatypes.EvmAppOptions,
 	)
 
 	if height != -1 {

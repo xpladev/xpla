@@ -30,7 +30,6 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	xplaapp "github.com/xpladev/xpla/app"
-	xplatypes "github.com/xpladev/xpla/types"
 )
 
 // SimAppChainID hardcoded chainID for simulation
@@ -59,6 +58,9 @@ var DefaultConsensusParams = &tmproto.ConsensusParams{
 
 type EmptyAppOptions struct{}
 
+func init() {
+	sdk.DefaultBondDenom = "aatom"
+}
 func (EmptyAppOptions) Get(_ string) interface{} { return nil }
 
 func Setup(t *testing.T, chainid string) *xplaapp.XplaApp {
@@ -137,7 +139,6 @@ func setup(chainid string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		xplaapp.DefaultNodeHome,
 		appOptions,
 		emptyWasmOpts,
-		xplatypes.EvmAppOptions,
 		baseapp.SetChainID(chainid),
 	)
 	return app, app.ModuleBasics.DefaultGenesis(app.AppCodec())

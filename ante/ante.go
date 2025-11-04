@@ -101,10 +101,10 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 				switch typeURL := eopts[0].GetTypeUrl(); typeURL {
 				case "/cosmos.evm.vm.v1.ExtensionOptionsEthereumTx":
 					// handle as *evmtypes.MsgEthereumTx
-					anteHandler = newEthAnteHandler(opts)
+					anteHandler = newEthAnteHandler(ctx, opts)
 				case "/cosmos.evm.types.v1.ExtensionOptionDynamicFeeTx":
 					// cosmos-sdk tx with dynamic fee extension
-					anteHandler = newCosmosAnteHandler(opts)
+					anteHandler = newCosmosAnteHandler(ctx, opts)
 				default:
 					return ctx, errorsmod.Wrapf(
 						errortypes.ErrUnknownExtensionOptions,
@@ -119,7 +119,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		// handle as totally normal Cosmos SDK tx
 		switch tx.(type) {
 		case sdk.Tx:
-			anteHandler = newCosmosAnteHandler(opts)
+			anteHandler = newCosmosAnteHandler(ctx, opts)
 		default:
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid transaction type: %T", tx)
 		}
@@ -128,12 +128,13 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	}, nil
 }
 
-func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
+func newCosmosAnteHandler(ctx sdk.Context, opts HandlerOptions) sdk.AnteHandler {
 	sigGasConsumer := opts.SigGasConsumer
 	if sigGasConsumer == nil {
 		sigGasConsumer = SigVerificationGasConsumer
 	}
 
+	feemarketParams := opts.FeeMarketKeeper.GetParams(ctx)
 	anteDecorators := []sdk.AnteDecorator{
 		cosmosante.NewRejectMessagesDecorator(), // reject MsgEthereumTxs
 		// disable the Msg types that cannot be included on an authz.MsgExec msgs field
@@ -157,18 +158,22 @@ func newCosmosAnteHandler(opts HandlerOptions) sdk.AnteHandler {
 		authante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		authante.NewIncrementSequenceDecorator(opts.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(opts.IBCKeeper),
-		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper),
+		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper, &feemarketParams),
 	}
 	return sdk.ChainAnteDecorators(anteDecorators...)
 }
 
-func newEthAnteHandler(opts HandlerOptions) sdk.AnteHandler {
+func newEthAnteHandler(ctx sdk.Context, opts HandlerOptions) sdk.AnteHandler {
+	evmParams := opts.EvmKeeper.GetParams(ctx)
+	feemarketParams := opts.FeeMarketKeeper.GetParams(ctx)
 	return sdk.ChainAnteDecorators(
 		evmante.NewEVMMonoDecorator(
 			opts.AccountKeeper,
 			opts.FeeMarketKeeper,
 			opts.EvmKeeper,
 			opts.MaxTxGasWanted,
+			&evmParams,
+			&feemarketParams,
 		),
 	)
 }

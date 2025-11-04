@@ -64,6 +64,7 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	evmante "github.com/cosmos/evm/ante"
+	evmantetypes "github.com/cosmos/evm/ante/types"
 	ethenc "github.com/cosmos/evm/encoding/codec"
 	"github.com/cosmos/evm/ethereum/eip712"
 	evmmempool "github.com/cosmos/evm/mempool"
@@ -84,7 +85,6 @@ import (
 	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
 	legacyfeemarkettypes "github.com/xpladev/xpla/legacy/ethermint/x/feemarket/types"
 	xplaprecompile "github.com/xpladev/xpla/precompile"
-	xplatypes "github.com/xpladev/xpla/types"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -133,7 +133,7 @@ type XplaApp struct { // nolint: golint
 	// for evm enable
 	clientCtx          client.Context
 	pendingTxListeners []evmante.PendingTxListener
-	EVMMempool        *evmmempool.ExperimentalEVMMempool
+	EVMMempool         *evmmempool.ExperimentalEVMMempool
 }
 
 func init() {
@@ -157,7 +157,6 @@ func NewXplaApp(
 	homePath string,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
-	evmAppOptions xplatypes.EVMOptionsFn,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *XplaApp {
 	legacyAmino := codec.NewLegacyAmino()
@@ -222,11 +221,6 @@ func NewXplaApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
-	// initialize the Cosmos EVM application configuration
-	if err := evmAppOptions(evmChainId); err != nil {
-		panic(err)
-	}
-
 	app := &XplaApp{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
@@ -281,6 +275,7 @@ func NewXplaApp(
 	app.mm.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
 		authtypes.ModuleName,
+		evmtypes.ModuleName,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -334,22 +329,23 @@ func NewXplaApp(
 
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			AccountKeeper:   app.AccountKeeper,
-			BankKeeper:      app.BankKeeper,
-			FeegrantKeeper:  app.FeeGrantKeeper,
-			SignModeHandler: txConfig.SignModeHandler(),
-			SigGasConsumer:  xplaante.SigVerificationGasConsumer,
+			ExtensionOptionChecker: evmantetypes.HasDynamicFeeExtensionOption,
+			FeegrantKeeper:         app.FeeGrantKeeper,
+			SignModeHandler:        txConfig.SignModeHandler(),
+			SigGasConsumer:         xplaante.SigVerificationGasConsumer,
 
+			AccountKeeper:         app.AccountKeeper,
+			BankKeeper:            app.BankKeeper,
 			Codec:                 appCodec,
 			IBCKeeper:             app.IBCKeeper,
 			EvmKeeper:             app.EvmKeeper,
 			VolunteerKeeper:       app.VolunteerKeeper,
 			FeeMarketKeeper:       app.FeeMarketKeeper,
-			WasmConfig:            &wasmConfig,
 			BypassMinFeeMsgTypes:  cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
-			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
-			TxFeeChecker:          noOpTxFeeChecker,
 			MaxTxGasWanted:        evmMaxGasWanted,
+			TxFeeChecker:          noOpTxFeeChecker,
+			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
+			WasmConfig:            &wasmConfig,
 		},
 	)
 	if err != nil {
@@ -377,23 +373,8 @@ func NewXplaApp(
 	// XXX: temporary added before evm 0.5.0 released
 	// set the EVM priority nonce mempool
 	// If you wish to use the noop mempool, remove this codeblock
-	if evmtypes.GetChainConfig() != nil {
-		// TODO: Get the actual block gas limit from consensus parameters
-		mempoolConfig := &evmmempool.EVMMempoolConfig{
-			AnteHandler:   anteHandler,
-			BlockGasLimit: 100_000_000,
-		}
-
-		evmMempool := evmmempool.NewExperimentalEVMMempool(app.CreateQueryContext, logger, app.EvmKeeper, app.FeeMarketKeeper, app.txConfig, app.clientCtx, mempoolConfig)
-		app.EVMMempool = evmMempool
-
-		app.SetMempool(evmMempool)
-		checkTxHandler := evmmempool.NewCheckTxHandler(evmMempool)
-		app.SetCheckTxHandler(checkTxHandler)
-
-		abciProposalHandler := baseapp.NewDefaultProposalHandler(evmMempool, app)
-		abciProposalHandler.SetSignerExtractionAdapter(evmmempool.NewEthSignerExtractionAdapter(sdkmempool.NewDefaultSignerExtractionAdapter()))
-		app.SetPrepareProposal(abciProposalHandler.PrepareProposalHandler())
+	if err := app.configureEVMMempool(appOpts, logger); err != nil {
+		panic(fmt.Sprintf("failed to configure EVM mempool: %s", err.Error()))
 	}
 
 	// At startup, after all modules have been registered, check that all prot
@@ -674,4 +655,8 @@ func (app *XplaApp) RegisterPendingTxListener(listener func(common.Hash)) {
 
 func (app *XplaApp) GetMempool() sdkmempool.ExtMempool {
 	return app.EVMMempool
+}
+
+func (app *XplaApp) GetAnteHandler() sdk.AnteHandler {
+	return app.BaseApp.AnteHandler()
 }
