@@ -24,7 +24,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	xplaApp "github.com/xpladev/xpla/app"
-	xplatypes "github.com/xpladev/xpla/types"
 	authkeeper "github.com/xpladev/xpla/x/auth/keeper"
 	bankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
@@ -73,7 +72,6 @@ func CreateTestInput(t *testing.T) TestInput {
 		xplaApp.DefaultNodeHome,
 		xplaApp.EmptyAppOptions{},
 		xplaApp.EmptyWasmOptions,
-		xplatypes.EvmAppOptions,
 	)
 
 	ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{Time: time.Now().UTC()})

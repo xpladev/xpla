@@ -25,5 +25,5 @@ cp /genesis/genesis.json $XPLAHOME/config
 /usr/bin/xplad validate-genesis --home $XPLAHOME
 
 # 5. start daemon
-/usr/bin/xplad tendermint unsafe-reset-all --home=$XPLAHOME
+/usr/bin/xplad comet unsafe-reset-all --home=$XPLAHOME
 /usr/bin/xplad start --home=$XPLAHOME

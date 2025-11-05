@@ -27,6 +27,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	evmtypes "github.com/cosmos/evm/x/vm/types"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	xplaapp "github.com/xpladev/xpla/app"
@@ -59,7 +61,7 @@ var DefaultConsensusParams = &tmproto.ConsensusParams{
 type EmptyAppOptions struct{}
 
 func init() {
-	sdk.DefaultBondDenom = "aatom"
+	sdk.DefaultBondDenom = "axpla"
 }
 func (EmptyAppOptions) Get(_ string) interface{} { return nil }
 
@@ -201,9 +203,38 @@ func genesisStateWithValSet(t *testing.T,
 		Coins:   sdk.Coins{sdk.NewCoin(sdk.DefaultBondDenom, bondAmt)},
 	})
 
+	// denom metadata
+	var metadata []banktypes.Metadata
+	metadata = append(metadata, banktypes.Metadata{
+		Description: "The native staking token for xpla",
+		DenomUnits: []*banktypes.DenomUnit{
+			{
+				Denom:    "axpla",
+				Exponent: 0,
+				Aliases:  nil,
+			},
+			{
+				Denom:    "xpla",
+				Exponent: 18,
+				Aliases:  nil,
+			},
+		},
+		Base:    "axpla",
+		Display: "xpla",
+		Name:    "Test XPLA Token",
+		Symbol:  "XPLA",
+		URI:     "example_uri",
+		URIHash: "example_uri_hash",
+	})
+
 	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, metadata, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
+
+	// evm
+	evmGenesis := evmtypes.DefaultGenesisState()
+	evmGenesis.Params.EvmDenom = "axpla"
+	genesisState[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 
 	return genesisState
 }

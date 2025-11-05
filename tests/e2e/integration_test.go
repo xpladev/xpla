@@ -2121,7 +2121,7 @@ func (t *EVMIntegrationTestSuite) Test08_DelegationWithPrecompiledStaking() {
 		Amount: delegationAmount,
 	}
 
-	pstakingabi, err := pstaking.LoadABI()
+	pstakingabi := pstaking.ABI
 	assert.NoError(t.T(), err)
 	delegationAbi, err := pstakingabi.Pack(string(pstaking.DelegateMethod), t.UserWallet1.EthAddress, sdk.ValAddress(t.ValidatorWallet1.EthAddress[:]).String(), fund.Amount)
 	assert.NoError(t.T(), err)
