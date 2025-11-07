@@ -1,27 +1,21 @@
-package v1_8
+package v1_9
 
 import (
 	store "cosmossdk.io/store/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
-	burntypes "github.com/xpladev/xpla/x/burn/types"
 )
 
 const (
-	UpgradeName    = "v1_8"
-	IbcFeeStoreKey = "feeibc"
+	UpgradeName = "v1_9"
 )
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
-		Added: []string{
-			burntypes.ModuleName,
-		},
+		Added:   []string{},
 		Renamed: nil,
-		Deleted: []string{
-			IbcFeeStoreKey,
-		},
+		Deleted: []string{},
 	},
 }
