@@ -6,6 +6,9 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	interchaintest "github.com/cosmos/interchaintest/v10"
 	"github.com/cosmos/interchaintest/v10/chain/cosmos"
 	"github.com/cosmos/interchaintest/v10/chain/cosmos/wasm"
@@ -43,6 +46,30 @@ var (
 			UIDGID:     "1025:1025",
 		},
 	}
+
+	denomMetadata = []banktypes.Metadata{
+		{
+			Description: "november draft description",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "axpla",
+					Exponent: 0,
+					Aliases:  nil,
+				},
+				{
+					Denom:    "xpla",
+					Exponent: 18,
+					Aliases:  nil,
+				},
+			},
+			Base:    "axpla",
+			Display: "xpla",
+			Name:    "XPLA native coin",
+			Symbol:  "XPLA",
+			URI:     "_uri",
+			URIHash: "_uri_hash",
+		},
+	}
 )
 
 func XplaChainSpec(
@@ -53,6 +80,8 @@ func XplaChainSpec(
 ) *interchaintest.ChainSpec {
 
 	genesis := []cosmos.GenesisKV{
+		cosmos.NewGenesisKV("app_state.bank.denom_metadata", denomMetadata),
+
 		cosmos.NewGenesisKV("app_state.gov.params.voting_period", "10s"),
 		cosmos.NewGenesisKV("app_state.gov.params.max_deposit_period", "10s"),
 		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", Denom),
