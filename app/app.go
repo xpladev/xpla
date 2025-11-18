@@ -68,6 +68,7 @@ import (
 	ethenc "github.com/cosmos/evm/encoding/codec"
 	"github.com/cosmos/evm/ethereum/eip712"
 	evmmempool "github.com/cosmos/evm/mempool"
+	srvflags "github.com/cosmos/evm/server/flags"
 	cosmosevmutils "github.com/cosmos/evm/utils"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
@@ -80,7 +81,6 @@ import (
 	"github.com/xpladev/xpla/docs"
 	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
-	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
 	legacyerc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
 	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
 	legacyfeemarkettypes "github.com/xpladev/xpla/legacy/ethermint/x/feemarket/types"
@@ -159,6 +159,8 @@ func NewXplaApp(
 	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *XplaApp {
+	evmChainID := cast.ToUint64(appOpts.Get(srvflags.EVMChainID))
+
 	legacyAmino := codec.NewLegacyAmino()
 	signingOptions := signing.Options{
 		AddressCodec: address.Bech32Codec{
@@ -202,19 +204,10 @@ func NewXplaApp(
 		txConfig.TxDecoder(),
 		baseAppOptions...)
 
-	evmChainId := uint64(0)
-	if bApp.ChainID() != "" { // ignore standalone cmd case
-		bigintChainId, err := etherminttypes.ParseChainID(bApp.ChainID())
-		if err != nil {
-			panic(err)
-		}
-		evmChainId = bigintChainId.Uint64()
-	}
-
 	// This is needed for the EIP712 txs because currently is using
 	// the deprecated method legacytx.StdSignBytes
 	legacytx.RegressionTestingAminoCodec = legacyAmino
-	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainId)
+	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainID)
 
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
@@ -370,7 +363,6 @@ func NewXplaApp(
 	app.setUpgradeHandlers()
 	app.setUpgradeStoreLoaders()
 
-	// XXX: temporary added before evm 0.5.0 released
 	// set the EVM priority nonce mempool
 	// If you wish to use the noop mempool, remove this codeblock
 	if err := app.configureEVMMempool(appOpts, logger); err != nil {
