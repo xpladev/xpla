@@ -88,9 +88,6 @@ func NewAvailableStaticPrecompiles(
 		bk,
 		options.AddressCodec,
 	)
-	if err != nil {
-		panic(fmt.Errorf("failed to instantiate staking precompile: %w", err))
-	}
 
 	distributionPrecompile := distprecompile.NewPrecompile(
 		distributionKeeper,
@@ -100,9 +97,6 @@ func NewAvailableStaticPrecompiles(
 		bk,
 		options.AddressCodec,
 	)
-	if err != nil {
-		panic(fmt.Errorf("failed to instantiate distribution precompile: %w", err))
-	}
 
 	ibcTransferPrecompile := ics20precompile.NewPrecompile(
 		bk,
@@ -110,9 +104,6 @@ func NewAvailableStaticPrecompiles(
 		transferKeeper,
 		channelKeeper,
 	)
-	if err != nil {
-		panic(fmt.Errorf("failed to instantiate ICS20 precompile: %w", err))
-	}
 
 	govPrecompile := govprecompile.NewPrecompile(
 		govkeeper.NewMsgServerImpl(&govKeeper),
@@ -121,9 +112,6 @@ func NewAvailableStaticPrecompiles(
 		codec,
 		options.AddressCodec,
 	)
-	if err != nil {
-		panic(fmt.Errorf("failed to instantiate gov precompile: %w", err))
-	}
 
 	slashingPrecompile := slashingprecompile.NewPrecompile(
 		slashingKeeper,
@@ -132,9 +120,6 @@ func NewAvailableStaticPrecompiles(
 		options.ValidatorAddrCodec,
 		options.ConsensusAddrCodec,
 	)
-	if err != nil {
-		panic(fmt.Errorf("failed to instantiate slashing precompile: %w", err))
-	}
 
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile
