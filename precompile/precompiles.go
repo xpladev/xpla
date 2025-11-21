@@ -7,8 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	"cosmossdk.io/core/address"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -24,6 +22,7 @@ import (
 	"github.com/cosmos/evm/precompiles/p256"
 	slashingprecompile "github.com/cosmos/evm/precompiles/slashing"
 	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
+	evmprecompiletypes "github.com/cosmos/evm/precompiles/types"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 
 	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
@@ -36,12 +35,6 @@ import (
 )
 
 const bech32PrecompileBaseGas = 6_000
-
-type Optionals struct {
-	AddressCodec       address.Codec // used by gov/staking
-	ValidatorAddrCodec address.Codec // used by slashing
-	ConsensusAddrCodec address.Codec // used by slashing
-}
 
 var PrecompiledAddressesXpla = []common.Address{
 	pbank.Address, pwasm.Address, pauth.Address,
@@ -63,7 +56,7 @@ func NewAvailableStaticPrecompiles(
 	wk pwasm.WasmKeeper,
 	authAk pauth.AccountKeeper,
 	codec codec.Codec,
-	opts ...Option,
+	opts ...evmprecompiletypes.Option,
 ) map[common.Address]vm.PrecompiledContract {
 	options := defaultOptionals()
 	for _, opt := range opts {
@@ -140,24 +133,10 @@ func NewAvailableStaticPrecompiles(
 	return precompiles
 }
 
-func defaultOptionals() Optionals {
-	return Optionals{
+func defaultOptionals() evmprecompiletypes.Optionals {
+	return evmprecompiletypes.Optionals{
 		AddressCodec:       evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		ValidatorAddrCodec: evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		ConsensusAddrCodec: evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	}
-}
-
-type Option func(*Optionals)
-
-func WithAddressCodec(c address.Codec) Option {
-	return func(o *Optionals) { o.AddressCodec = c }
-}
-
-func WithValidatorAddrCodec(c address.Codec) Option {
-	return func(o *Optionals) { o.ValidatorAddrCodec = c }
-}
-
-func WithConsensusAddrCodec(c address.Codec) Option {
-	return func(o *Optionals) { o.ConsensusAddrCodec = c }
 }
