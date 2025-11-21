@@ -52,8 +52,8 @@ func init() {
 func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 	p := PrecompiledBank{
 		Precompile: cmn.Precompile{
-			KvGasConfig:          storetypes.KVGasConfig(),
-			TransientKVGasConfig: storetypes.TransientGasConfig(),
+			KvGasConfig:           storetypes.KVGasConfig(),
+			TransientKVGasConfig:  storetypes.TransientGasConfig(),
 			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
 		},
 		ABI: ABI,

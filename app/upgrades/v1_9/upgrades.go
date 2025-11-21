@@ -59,7 +59,7 @@ func CreateUpgradeHandler(
 		params := keepers.EvmKeeper.GetParams(ctx)
 		idx := slices.Index(params.ActiveStaticPrecompiles, deletedEvidencePrecompileAddress)
 		if idx != -1 {
-			params.ActiveStaticPrecompiles = slices.Delete(params.ActiveStaticPrecompiles, idx, idx + 1)
+			params.ActiveStaticPrecompiles = slices.Delete(params.ActiveStaticPrecompiles, idx, idx+1)
 		}
 		params.ActiveStaticPrecompiles = append(params.ActiveStaticPrecompiles, vmtypes.ICS20PrecompileAddress)
 		if err := keepers.EvmKeeper.SetParams(ctx, params); err != nil {
