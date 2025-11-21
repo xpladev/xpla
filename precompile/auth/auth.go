@@ -103,7 +103,7 @@ func (p PrecompiledAuth) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *
 		bz, err = nil, errors.New("method not found")
 	}
 
-	return bz, nil
+	return bz, err
 }
 
 func (p PrecompiledAuth) IsTransaction(method *abi.Method) bool {

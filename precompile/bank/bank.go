@@ -54,6 +54,7 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 		Precompile: cmn.Precompile{
 			KvGasConfig:          storetypes.KVGasConfig(),
 			TransientKVGasConfig: storetypes.TransientGasConfig(),
+			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
 		},
 		ABI: ABI,
 		bk:  bk,
@@ -109,7 +110,7 @@ func (p PrecompiledBank) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *
 		bz, err = nil, errors.New("method not found")
 	}
 
-	return bz, nil
+	return bz, err
 }
 
 func (p PrecompiledBank) IsTransaction(method *abi.Method) bool {
