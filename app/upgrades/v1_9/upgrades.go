@@ -2,6 +2,7 @@ package v1_9
 
 import (
 	"context"
+	"slices"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -9,6 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
+	vmtypes "github.com/cosmos/evm/x/vm/types"
 
 	"github.com/xpladev/xpla/app/keepers"
 )
@@ -48,6 +51,18 @@ func CreateUpgradeHandler(
 		ctx.Logger().Info("Initiating EVM coin info...")
 		// Initialize EvmCoinInfo in the module store
 		if err := keepers.EvmKeeper.InitEvmCoinInfo(ctx); err != nil {
+			return nil, err
+		}
+
+		ctx.Logger().Info("Modifying EVM Active Static Precompiles...")
+		deletedEvidencePrecompileAddress := "0x0000000000000000000000000000000000000807"
+		params := keepers.EvmKeeper.GetParams(ctx)
+		idx := slices.Index(params.ActiveStaticPrecompiles, deletedEvidencePrecompileAddress)
+		if idx != -1 {
+			params.ActiveStaticPrecompiles = slices.Delete(params.ActiveStaticPrecompiles, idx, idx + 1)
+		}
+		params.ActiveStaticPrecompiles = append(params.ActiveStaticPrecompiles, vmtypes.ICS20PrecompileAddress)
+		if err := keepers.EvmKeeper.SetParams(ctx, params); err != nil {
 			return nil, err
 		}
 
