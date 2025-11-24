@@ -64,6 +64,7 @@ import (
 
 	xpla "github.com/xpladev/xpla/app"
 	"github.com/xpladev/xpla/app/params"
+	legacykeyclient "github.com/xpladev/xpla/legacy/ethermint/client"
 	xplatypes "github.com/xpladev/xpla/types"
 )
 
@@ -239,13 +240,15 @@ func initRootCmd(rootCmd *cobra.Command,
 	evmserver.AddCommands(rootCmd, evmserver.NewDefaultStartOptions(ac.newApp, xpla.DefaultNodeHome), ac.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
+	keysCmd := evmclient.KeyCommands(xpla.DefaultNodeHome, true)
+	keysCmd.AddCommand(legacykeyclient.UnsafeExportLegacyEthKeyCommand())
 	rootCmd.AddCommand(
 		server.StatusCommand(),
 		// XXX is this enough?
 		// genesisCommand(txConfig, basicManager),
 		queryCommand(),
 		txCommand(basicManager),
-		evmclient.KeyCommands(xpla.DefaultNodeHome, true),
+		keysCmd,
 	)
 }
 
