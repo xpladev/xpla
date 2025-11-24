@@ -27,25 +27,25 @@ func CreateUpgradeHandler(
 
 		ctx.Logger().Info("Setting denom metadata...")
 		keepers.BankKeeper.SetDenomMetaData(ctx, banktypes.Metadata{
-			Description: "november draft description",
+			Description: "The native staking coin of the CONX Chain.",
 			DenomUnits: []*banktypes.DenomUnit{
 				{
 					Denom:    "axpla",
 					Exponent: 0,
-					Aliases:  nil,
+					Aliases:  []string{"attoxpla"},
 				},
 				{
 					Denom:    "xpla",
 					Exponent: 18,
-					Aliases:  nil,
+					Aliases:  []string{},
 				},
 			},
 			Base:    "axpla",
 			Display: "xpla",
-			Name:    "XPLA native coin",
+			Name:    "CONX Chain XPLA",
 			Symbol:  "XPLA",
-			URI:     "_uri",
-			URIHash: "_uri_hash",
+			URI:     "",
+			URIHash: "",
 		})
 
 		ctx.Logger().Info("Initiating EVM coin info...")
