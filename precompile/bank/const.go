@@ -8,7 +8,8 @@ const (
 type MethodBank string
 
 const (
-	Balance MethodBank = "balance"
-	Send    MethodBank = "send"
-	Supply  MethodBank = "supplyOf"
+	Balance     MethodBank = "balance"
+	Send        MethodBank = "send"
+	Supply      MethodBank = "supplyOf"
+	TotalSupply MethodBank = "totalSupply"
 )

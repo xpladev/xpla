@@ -24,6 +24,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	"github.com/spf13/cast"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -38,11 +39,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -66,14 +65,16 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	evmaddress "github.com/cosmos/evm/encoding/address"
+	srvflags "github.com/cosmos/evm/server/flags"
 	feemarketkeeper "github.com/cosmos/evm/x/feemarket/keeper"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	vmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	vmtypes "github.com/cosmos/evm/x/vm/types"
-	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
-	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 
 	"github.com/xpladev/xpla/precompile"
+	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
+	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	burnkeeper "github.com/xpladev/xpla/x/burn/keeper"
 	burntypes "github.com/xpladev/xpla/x/burn/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
@@ -140,6 +141,7 @@ func NewAppKeeper(
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
 ) AppKeepers {
+	evmChainID := cast.ToUint64(appOpts.Get(srvflags.EVMChainID))
 	appKeepers := AppKeepers{}
 
 	// Set keys KVStoreKey, TransientStoreKey, MemoryStoreKey
@@ -180,7 +182,7 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		govModAddress,
 	)
@@ -205,8 +207,8 @@ func NewAppKeeper(
 		&appKeepers.BankKeeper,
 		govModAddress,
 		&appKeepers.VolunteerKeeper,
-		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
-		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
 
 	appKeepers.MintKeeper = mintkeeper.NewKeeper(
@@ -454,8 +456,7 @@ func NewAppKeeper(
 	// Create Interchain Accounts Controller Stack
 	var icaControllerStack porttypes.IBCModule = icacontroller.NewIBCMiddleware(appKeepers.ICAControllerKeeper)
 
-	var wasmStack porttypes.IBCModule
-	wasmStack = wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)
+	var wasmStack porttypes.IBCModule = wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)
 
 	// Create IBC Router & seal
 	ibcRouter := porttypes.NewRouter().
@@ -488,6 +489,7 @@ func NewAppKeeper(
 		appKeepers.FeeMarketKeeper,
 		&appKeepers.ConsensusParamsKeeper,
 		mockErc20Keeper,
+		evmChainID,
 		evmTrace,
 	)
 
@@ -533,11 +535,11 @@ func NewAppKeeper(
 		precompile.NewAvailableStaticPrecompiles(
 			*appKeepers.StakingKeeper.Keeper,
 			appKeepers.DistrKeeper,
+			appKeepers.TransferKeeper,
 			appKeepers.IBCKeeper.ChannelKeeper,
 			appKeepers.EvmKeeper,
 			*appKeepers.GovKeeper,
 			appKeepers.SlashingKeeper,
-			appKeepers.EvidenceKeeper,
 			appKeepers.AccountKeeper,
 			appKeepers.BankKeeper,
 			wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
@@ -583,7 +585,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ratelimittypes.ModuleName).WithKeyTable(ratelimittypes.ParamKeyTable())
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
-	paramsKeeper.Subspace(vmtypes.ModuleName).WithKeyTable(vmtypes.ParamKeyTable())
+	paramsKeeper.Subspace(vmtypes.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(volunteertypes.ModuleName)
 

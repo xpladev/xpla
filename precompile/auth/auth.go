@@ -9,7 +9,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -32,6 +31,7 @@ var (
 
 type PrecompiledAuth struct {
 	cmn.Precompile
+	abi.ABI
 	ak AccountKeeper
 }
 
@@ -46,11 +46,11 @@ func init() {
 func NewPrecompiledAuth(ak AccountKeeper) PrecompiledAuth {
 	p := PrecompiledAuth{
 		Precompile: cmn.Precompile{
-			ABI:                  ABI,
 			KvGasConfig:          storetypes.KVGasConfig(),
 			TransientKVGasConfig: storetypes.TransientGasConfig(),
 		},
-		ak: ak,
+		ABI: ABI,
+		ak:  ak,
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
@@ -74,18 +74,19 @@ func (p PrecompiledAuth) RequiredGas(input []byte) uint64 {
 	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-func (p PrecompiledAuth) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
-	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+func (p PrecompiledAuth) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
+	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		return p.Execute(ctx, evm.StateDB, contract, readonly)
+	})
+}
+
+func (p PrecompiledAuth) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	method, args, err := cmn.SetupABI(p.ABI, contract, readOnly, p.IsTransaction)
 	if err != nil {
-		return cmn.ReturnRevertError(evm, err)
+		return nil, err
 	}
 
-	// Start the balance change handler before executing the precompile.
-	p.GetBalanceHandler().BeforeBalanceChange(ctx)
-
-	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
-	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
-	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+	var bz []byte
 
 	switch MethodAuth(method.Name) {
 	case Account:
@@ -101,22 +102,8 @@ func (p PrecompiledAuth) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 	default:
 		bz, err = nil, errors.New("method not found")
 	}
-	if err != nil {
-		return cmn.ReturnRevertError(evm, err)
-	}
 
-	cost := ctx.GasMeter().GasConsumed() - initialGas
-
-	if !contract.UseGas(cost, nil, tracing.GasChangeCallPrecompiledContract) {
-		return cmn.ReturnRevertError(evm, vm.ErrOutOfGas)
-	}
-
-	// Process the native balance changes after the method execution.
-	if err = p.GetBalanceHandler().AfterBalanceChange(ctx, stateDB); err != nil {
-		return cmn.ReturnRevertError(evm, err)
-	}
-
-	return bz, nil
+	return bz, err
 }
 
 func (p PrecompiledAuth) IsTransaction(method *abi.Method) bool {

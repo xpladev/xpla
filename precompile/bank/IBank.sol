@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {Coin} from "../util/Types.sol";
+import {PageRequest, PageResponse} from "../util/Types.sol";
 
 address constant BANK_PRECOMPILE_ADDRESS = 0x1000000000000000000000000000000000000001;
 
@@ -38,4 +39,14 @@ interface IBank {
     function supplyOf(
         string memory denom
     ) external view returns (uint256 supply);
+
+    /**
+     * @dev TotalSupply returns total supply of coins with pagenation
+     * @param pageRequest a struct of pagenation request
+     * @return totalSupply coin list of total supply
+     * @return pageResponse a pagenation response with next key and total count
+     */
+    function totalSupply(
+        PageRequest calldata pageRequest
+    ) external view returns (Coin[] memory totalSupply, PageResponse memory pageResponse);
 }

@@ -56,7 +56,7 @@ do
     # 2) Execute a gentx
     /usr/bin/xplad gentx validator$IDX 9000000000000000000axpla  \
         --chain-id="localtest_1-1" \
-        --pubkey=$(xplad tendermint show-validator --home $XPLAHOME) \
+        --pubkey=$(xplad comet show-validator --home $XPLAHOME) \
         --min-self-delegation=1 \
         --moniker=validator$IDX \
         --commission-rate=0.1 \
@@ -74,7 +74,7 @@ done
 
 # 6. Replace params
 sed -i 's/"bond_denom": "stake"/"bond_denom": "axpla"/g' $XPLAHOME/config/genesis.json
-sed -i 's/"evm_denom": "atest",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"evm_denom": "aatom",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom": "stake",/"denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"max_gas": "-1"/"max_gas": "50000000000"/g' $XPLAHOME/config/genesis.json
@@ -107,6 +107,7 @@ sed -i 's/"0x0000000000000000000000000000000000000802",//' $XPLAHOME/config/gene
 sed -i 's/"0x0000000000000000000000000000000000000803"//' $XPLAHOME/config/genesis.json
 
 sed -i 's/"active_static_precompiles": \[\]/"active_static_precompiles": ["0x0000000000000000000000000000000000000800","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005"]/g' $XPLAHOME/config/genesis.json
+sed -i 's/"denom_metadata": \[\]/"denom_metadata": [{"description":"The native staking token for xpla.","denom_units":[{"denom":"axpla","exponent":0,"aliases":["attoxpla"]},{"denom":"xpla","exponent":18,"aliases":[]}],"base":"axpla","display":"xpla","name":"Test XPLA Token","symbol":"XPLA","uri":"","uri_hash":""}]/g' $XPLAHOME/config/genesis.json
 
 /usr/bin/xplad validate-genesis --home $XPLAHOME
 
@@ -129,5 +130,5 @@ cp /genesis/genesis.json $XPLAHOME/config
 cat $XPLAHOME/config/genesis.json
 
 # 5. start daemon
-/usr/bin/xplad tendermint unsafe-reset-all --home=$XPLAHOME
+/usr/bin/xplad comet unsafe-reset-all --home=$XPLAHOME
 /usr/bin/xplad start --home=$XPLAHOME

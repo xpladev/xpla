@@ -9,13 +9,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
 
+	pbank "github.com/xpladev/xpla/precompile/bank"
 	"github.com/xpladev/xpla/precompile/util"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -33,6 +33,7 @@ var (
 
 type PrecompiledWasm struct {
 	cmn.Precompile
+	abi.ABI
 	ak  AccountKeeper
 	wms WasmMsgServer
 	wk  WasmKeeper
@@ -46,13 +47,14 @@ func init() {
 	}
 }
 
-func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper) PrecompiledWasm {
+func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) PrecompiledWasm {
 	p := PrecompiledWasm{
 		Precompile: cmn.Precompile{
-			ABI:                  ABI,
-			KvGasConfig:          storetypes.KVGasConfig(),
-			TransientKVGasConfig: storetypes.TransientGasConfig(),
+			KvGasConfig:           storetypes.KVGasConfig(),
+			TransientKVGasConfig:  storetypes.TransientGasConfig(),
+			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
 		},
+		ABI: ABI,
 		ak:  ak,
 		wms: wms,
 		wk:  wk,
@@ -79,22 +81,23 @@ func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
 	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
+func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
+	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		return p.Execute(ctx, evm.StateDB, contract, readonly)
+	})
+}
+
+func (p PrecompiledWasm) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *vm.Contract, readOnly bool) ([]byte, error) {
 	if contract.Gas < wasmtypes.DefaultInstanceCost {
 		return nil, errors.New("insufficient gas")
 	}
 
-	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+	method, args, err := cmn.SetupABI(p.ABI, contract, readOnly, p.IsTransaction)
 	if err != nil {
-		return cmn.ReturnRevertError(evm, err)
+		return nil, err
 	}
 
-	// Start the balance change handler before executing the precompile.
-	p.GetBalanceHandler().BeforeBalanceChange(ctx)
-
-	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
-	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
-	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+	var bz []byte
 
 	switch MethodWasm(method.Name) {
 	case InstantiateContract:
@@ -110,22 +113,8 @@ func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 	default:
 		bz, err = nil, errors.New("method not found")
 	}
-	if err != nil {
-		return cmn.ReturnRevertError(evm, err)
-	}
 
-	cost := ctx.GasMeter().GasConsumed() - initialGas
-
-	if !contract.UseGas(cost, nil, tracing.GasChangeCallPrecompiledContract) {
-		return cmn.ReturnRevertError(evm, vm.ErrOutOfGas)
-	}
-
-	// Process the native balance changes after the method execution.
-	if err = p.GetBalanceHandler().AfterBalanceChange(ctx, stateDB); err != nil {
-		return cmn.ReturnRevertError(evm, err)
-	}
-
-	return bz, nil
+	return bz, err
 }
 
 func (PrecompiledWasm) IsTransaction(method *abi.Method) bool {

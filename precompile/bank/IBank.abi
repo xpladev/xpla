@@ -119,5 +119,80 @@
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes",
+            "name": "key",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint64",
+            "name": "offset",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "limit",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "countTotal",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "reverse",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct PageRequest",
+        "name": "pageRequest",
+        "type": "tuple"
+      }
+    ],
+    "name": "totalSupply",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "denom",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Coin[]",
+        "name": "totalSupply",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes",
+            "name": "nextKey",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint64",
+            "name": "total",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct PageResponse",
+        "name": "pageResponse",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]

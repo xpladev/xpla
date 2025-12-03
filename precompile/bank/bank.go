@@ -3,16 +3,18 @@ package bank
 import (
 	"embed"
 	"errors"
+	"fmt"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
 
@@ -29,8 +31,13 @@ var (
 	abiFS embed.FS
 )
 
+type TotalSupplyInput struct {
+	PageRequest query.PageRequest
+}
+
 type PrecompiledBank struct {
 	cmn.Precompile
+	abi.ABI
 	bk BankKeeper
 }
 
@@ -45,11 +52,12 @@ func init() {
 func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 	p := PrecompiledBank{
 		Precompile: cmn.Precompile{
-			ABI:                  ABI,
-			KvGasConfig:          storetypes.KVGasConfig(),
-			TransientKVGasConfig: storetypes.TransientGasConfig(),
+			KvGasConfig:           storetypes.KVGasConfig(),
+			TransientKVGasConfig:  storetypes.TransientGasConfig(),
+			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
 		},
-		bk: bk,
+		ABI: ABI,
+		bk:  bk,
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
@@ -75,18 +83,19 @@ func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
 	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
-	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
+	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		return p.Execute(ctx, evm.StateDB, contract, readonly)
+	})
+}
+
+func (p PrecompiledBank) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	method, args, err := cmn.SetupABI(p.ABI, contract, readOnly, p.IsTransaction)
 	if err != nil {
-		return cmn.ReturnRevertError(evm, err)
+		return nil, err
 	}
 
-	// Start the balance change handler before executing the precompile.
-	p.GetBalanceHandler().BeforeBalanceChange(ctx)
-
-	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
-	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
-	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+	var bz []byte
 
 	switch MethodBank(method.Name) {
 	case Balance:
@@ -95,25 +104,13 @@ func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) 
 		bz, err = p.send(ctx, stateDB, contract.Caller(), method, args)
 	case Supply:
 		bz, err = p.supplyOf(ctx, method, args)
+	case TotalSupply:
+		bz, err = p.totalSupply(ctx, method, args)
 	default:
 		bz, err = nil, errors.New("method not found")
 	}
-	if err != nil {
-		return cmn.ReturnRevertError(evm, err)
-	}
 
-	cost := ctx.GasMeter().GasConsumed() - initialGas
-
-	if !contract.UseGas(cost, nil, tracing.GasChangeCallPrecompiledContract) {
-		return cmn.ReturnRevertError(evm, vm.ErrOutOfGas)
-	}
-
-	// Process the native balance changes after the method execution.
-	if err = p.GetBalanceHandler().AfterBalanceChange(ctx, stateDB); err != nil {
-		return cmn.ReturnRevertError(evm, err)
-	}
-
-	return bz, nil
+	return bz, err
 }
 
 func (p PrecompiledBank) IsTransaction(method *abi.Method) bool {
@@ -189,4 +186,24 @@ func (p PrecompiledBank) send(ctx sdk.Context, stateDB vm.StateDB, sender common
 	}
 
 	return method.Outputs.Pack(true)
+}
+
+func (p PrecompiledBank) totalSupply(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 1, len(args))
+	}
+
+	var input TotalSupplyInput
+	if err := method.Inputs.Copy(&input, args); err != nil {
+		return nil, fmt.Errorf("failed to copy args to struct: %w", err)
+	}
+
+	res, err := p.bk.TotalSupply(ctx, &banktypes.QueryTotalSupplyRequest{Pagination: &input.PageRequest})
+	if err != nil {
+		return nil, err
+	}
+
+	abiCoins := cmn.NewCoinsResponse(res.Supply)
+
+	return method.Outputs.Pack(abiCoins, res.Pagination)
 }

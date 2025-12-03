@@ -20,6 +20,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	ed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmosquery "github.com/cosmos/cosmos-sdk/types/query"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -1898,7 +1899,7 @@ func (t *EVMIntegrationTestSuite) Test05_TotalSupplyErc20WithXplaBank() {
 }
 
 func (t *EVMIntegrationTestSuite) Test06_CheckSupplyWithPrecompiledBank() {
-	// abi supply
+	// check supplyOf
 	supplyAbi, err := pbank.ABI.Pack(string(pbank.Supply), xplatypes.DefaultDenom)
 	assert.NoError(t.T(), err)
 
@@ -1928,6 +1929,46 @@ func (t *EVMIntegrationTestSuite) Test06_CheckSupplyWithPrecompiledBank() {
 	assert.NoError(t.T(), err)
 
 	assert.Equal(t.T(), cosmosRes.Amount.Amount.BigInt(), supply)
+
+	// check totalSupply
+	pagenation := cosmosquery.PageRequest{
+		Key:        nil,
+		Offset:     0,
+		Limit:      100,
+		CountTotal: true,
+		Reverse:    false,
+	}
+	totalSupplyAbi, err := pbank.ABI.Pack(string(pbank.TotalSupply), pagenation)
+	assert.NoError(t.T(), err)
+
+	res2, err := t.EthClient.CallContract(context.Background(), ethereum.CallMsg{
+		From:       t.UserWallet1.EthAddress,
+		To:         &pbank.Address,
+		Data:       totalSupplyAbi,
+		Gas:        1000000,
+		GasPrice:   nil,
+		Value:      nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		AccessList: nil,
+	}, nil)
+	assert.NoError(t.T(), err)
+
+	var totalSupplyResp struct {
+		TotalSupply  []Coin
+		PageResponse cosmosquery.PageResponse
+	}
+	err = pbank.ABI.UnpackIntoInterface(&totalSupplyResp, string(pbank.TotalSupply), res2)
+	assert.NoError(t.T(), err)
+
+	req2 := &banktypes.QueryTotalSupplyRequest{
+		Pagination: &pagenation,
+	}
+	cosmosRes2, err := client.TotalSupply(ctx, req2)
+	assert.NoError(t.T(), err)
+
+	assert.Equal(t.T(), cosmosRes2.Supply[0].Amount.BigInt(), totalSupplyResp.TotalSupply[0].Amount)
+	assert.Equal(t.T(), cosmosRes2.Supply[0].Denom, totalSupplyResp.TotalSupply[0].Denom)
 }
 
 func (t *EVMIntegrationTestSuite) Test07_SendWithPrecompiledBank() {
@@ -2080,7 +2121,7 @@ func (t *EVMIntegrationTestSuite) Test08_DelegationWithPrecompiledStaking() {
 		Amount: delegationAmount,
 	}
 
-	pstakingabi, err := pstaking.LoadABI()
+	pstakingabi := pstaking.ABI
 	assert.NoError(t.T(), err)
 	delegationAbi, err := pstakingabi.Pack(string(pstaking.DelegateMethod), t.UserWallet1.EthAddress, sdk.ValAddress(t.ValidatorWallet1.EthAddress[:]).String(), fund.Amount)
 	assert.NoError(t.T(), err)
