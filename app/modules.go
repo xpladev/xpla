@@ -80,6 +80,7 @@ var maccPerms = map[string][]string{
 	feemarkettypes.ModuleName:      nil,
 	rewardtypes.ModuleName:         nil,
 	burntypes.ModuleName:           {authtypes.Burner},
+	banktypes.ModuleName:           nil,
 }
 
 func appModules(

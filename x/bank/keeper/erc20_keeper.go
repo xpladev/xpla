@@ -14,8 +14,8 @@ type BaseErc20Keeper struct {
 	Erc20SendKeeper
 }
 
-func NewBaseErc20Keeper(ek types.EvmKeeper) BaseErc20Keeper {
-	erc20keeper := NewErc20Keeper(ek)
+func NewBaseErc20Keeper(ak banktypes.AccountKeeper, ek types.EvmKeeper) BaseErc20Keeper {
+	erc20keeper := NewErc20Keeper(ak, ek)
 	return BaseErc20Keeper{
 		Erc20SendKeeper: Erc20SendKeeper{
 			Erc20ViewKeeper: Erc20ViewKeeper{erc20keeper: erc20keeper},

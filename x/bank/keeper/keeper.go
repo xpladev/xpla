@@ -36,7 +36,7 @@ func NewKeeper(
 ) Keeper {
 	return Keeper{
 		BaseKeeper: bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
-		bek:        NewBaseErc20Keeper(ek),
+		bek:        NewBaseErc20Keeper(ak, ek),
 		bck:        NewBaseCw20Keeper(wk, wmk),
 		ak:         ak,
 	}
