@@ -21,11 +21,12 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
-var _ vm.PrecompiledContract = PrecompiledWasm{}
+var _ vm.PrecompiledContract = &PrecompiledWasm{}
 
 var (
-	Address = common.HexToAddress(hexAddress)
-	ABI     = abi.ABI{}
+	Address             = common.HexToAddress(hexAddress)
+	DelegatecallAddress = common.HexToAddress(delegatecallHexAddress)
+	ABI                 = abi.ABI{}
 
 	//go:embed IWasm.abi
 	abiFS embed.FS
@@ -47,7 +48,7 @@ func init() {
 	}
 }
 
-func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) PrecompiledWasm {
+func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) *PrecompiledWasm {
 	p := PrecompiledWasm{
 		Precompile: cmn.Precompile{
 			KvGasConfig:           storetypes.KVGasConfig(),
@@ -61,7 +62,7 @@ func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk p
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
-	return p
+	return &p
 }
 
 func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
@@ -81,13 +82,21 @@ func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
 	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-func (p PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
+// Run is the entry point for the basic call.
+func (p *PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
-		return p.Execute(ctx, evm.StateDB, contract, readonly)
+		return p.Execute(ctx, evm.StateDB, contract, readonly, contract.Caller())
 	})
 }
 
-func (p PrecompiledWasm) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *vm.Contract, readOnly bool) ([]byte, error) {
+// RunDelegate is the entry point for the delegatecall-only precompile.
+func (p *PrecompiledWasm) RunDelegate(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
+	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		return p.Execute(ctx, evm.StateDB, contract, readonly, evm.Origin)
+	})
+}
+
+func (p PrecompiledWasm) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *vm.Contract, readOnly bool, caller common.Address) ([]byte, error) {
 	if contract.Gas < wasmtypes.DefaultInstanceCost {
 		return nil, errors.New("insufficient gas")
 	}
@@ -101,13 +110,13 @@ func (p PrecompiledWasm) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *
 
 	switch MethodWasm(method.Name) {
 	case InstantiateContract:
-		bz, err = p.instantiateContract(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.instantiateContract(ctx, stateDB, caller, method, args)
 	case InstantiateContract2:
-		bz, err = p.instantiateContract2(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.instantiateContract2(ctx, stateDB, caller, method, args)
 	case ExecuteContract:
-		bz, err = p.executeContract(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.executeContract(ctx, stateDB, caller, method, args)
 	case MigrateContract:
-		bz, err = p.migrateContract(ctx, stateDB, contract.Caller(), method, args)
+		bz, err = p.migrateContract(ctx, stateDB, caller, method, args)
 	case SmartContractState:
 		bz, err = p.smartContractState(ctx, method, args)
 	default:

@@ -106,7 +106,7 @@ sed -i 's/"0x0000000000000000000000000000000000000801",//' $XPLAHOME/config/gene
 sed -i 's/"0x0000000000000000000000000000000000000802",//' $XPLAHOME/config/genesis.json
 sed -i 's/"0x0000000000000000000000000000000000000803"//' $XPLAHOME/config/genesis.json
 
-sed -i 's/"active_static_precompiles": \[\]/"active_static_precompiles": ["0x0000000000000000000000000000000000000800","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005"]/g' $XPLAHOME/config/genesis.json
+sed -i 's/"active_static_precompiles": \[\]/"active_static_precompiles": ["0x0000000000000000000000000000000000000800","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005","0x1000000000000000000000000000000000000044"]/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom_metadata": \[\]/"denom_metadata": [{"description":"The native staking token for xpla.","denom_units":[{"denom":"axpla","exponent":0,"aliases":["attoxpla"]},{"denom":"xpla","exponent":18,"aliases":[]}],"base":"axpla","display":"xpla","name":"Test XPLA Token","symbol":"XPLA","uri":"","uri_hash":""}]/g' $XPLAHOME/config/genesis.json
 
 /usr/bin/xplad validate-genesis --home $XPLAHOME
