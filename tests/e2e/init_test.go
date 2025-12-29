@@ -20,7 +20,7 @@ const (
 	validatorActiveBlocks = 3
 	downtimeJailDuration  = 20
 
-	xplaGasPrice = "8500000000"
+	xplaGasPrice = "280000000000"
 )
 
 var (
