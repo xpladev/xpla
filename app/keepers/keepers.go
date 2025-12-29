@@ -485,8 +485,6 @@ func NewAppKeeper(
 	)
 
 	evmTracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
-	// W/A for avoiding evm hook panic by erc20 keeper
-	var mockErc20Keeper MockErc20Keeper = MockErc20Keeper{}
 	appKeepers.EvmKeeper = vmkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[vmtypes.StoreKey],
@@ -498,7 +496,7 @@ func NewAppKeeper(
 		appKeepers.StakingKeeper,
 		appKeepers.FeeMarketKeeper,
 		&appKeepers.ConsensusParamsKeeper,
-		mockErc20Keeper,
+		nil,
 		evmChainID,
 		evmTracer,
 	)
