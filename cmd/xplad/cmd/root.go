@@ -44,7 +44,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
@@ -226,12 +225,6 @@ func initRootCmd(rootCmd *cobra.Command,
 
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(basicManager, xpla.DefaultNodeHome),
-		// XXX check this needed
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome, genutiltypes.DefaultMessageValidator, txConfig.SigningContext().ValidatorAddressCodec()),
-		genutilcli.GenTxCmd(basicManager, txConfig, banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome, txConfig.SigningContext().ValidatorAddressCodec()),
-		genutilcli.ValidateGenesisCmd(basicManager),
-		AddGenesisAccountCmd(xpla.DefaultNodeHome),
-		// XXX end
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
@@ -246,8 +239,7 @@ func initRootCmd(rootCmd *cobra.Command,
 	keysCmd.AddCommand(legacykeyclient.UnsafeExportLegacyEthKeyCommand())
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		// XXX is this enough?
-		// genesisCommand(txConfig, basicManager),
+		genesisCommand(txConfig, basicManager, AddGenesisAccountCmd(xpla.DefaultNodeHome)),
 		queryCommand(),
 		txCommand(basicManager),
 		keysCmd,
@@ -265,6 +257,14 @@ func addModuleInitFlags(startCmd *cobra.Command) {
 func genesisCommand(txConfig client.TxConfig, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
 	cmd := genutilcli.GenesisCoreCommand(txConfig, basicManager, xpla.DefaultNodeHome)
 
+	// remove default add-genesis-account commands
+	for _, subCmd := range cmd.Commands() {
+		if subCmd.Name() == "add-genesis-account" || subCmd.Name() == "bulk-add-genesis-account" {
+			cmd.RemoveCommand(subCmd)
+		}
+	}
+
+	// change add-genesis-account to custom AddGenesisAccountCmd()
 	for _, subCmd := range cmds {
 		cmd.AddCommand(subCmd)
 	}

@@ -32,19 +32,19 @@ rm -f /genesis/*
 /usr/bin/xplad keys add volunteer_validator3 --recover --keyring-backend test --home $XPLAHOME < /opt/tests/e2e/test_keys/volunteer_validator3.mnemonics
 
 # 3. Add the genesis accounts
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator3 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator4 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show user2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show validator2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show validator3 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show validator4 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show user1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show user2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
 
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show volunteer_validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show volunteer_validator2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show volunteer_validator3 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show volunteer_validator1 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show volunteer_validator2 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show volunteer_validator3 -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
 
 # -- experimentals
-/usr/bin/xplad add-genesis-account $(/usr/bin/xplad keys show validator5_experimental -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
+/usr/bin/xplad genesis add-genesis-account $(/usr/bin/xplad keys show validator5_experimental -a --keyring-backend test --home $XPLAHOME) 100000000000000000000axpla --keyring-backend test --home $XPLAHOME
 
 # 4. Get the node keys and create gentxs
 for IDX in 1 2 3 4
@@ -54,7 +54,7 @@ do
     cp /opt/tests/e2e/validator$IDX/priv_validator_key.json $XPLAHOME/config
 
     # 2) Execute a gentx
-    /usr/bin/xplad gentx validator$IDX 9000000000000000000axpla  \
+    /usr/bin/xplad genesis gentx validator$IDX 9000000000000000000axpla  \
         --chain-id="localtest_1-1" \
         --pubkey=$(xplad comet show-validator --home $XPLAHOME) \
         --min-self-delegation=1 \
@@ -70,7 +70,7 @@ do
 done
 
 # 5. Do collect gentxs
-/usr/bin/xplad collect-gentxs --home $XPLAHOME
+/usr/bin/xplad genesis collect-gentxs --home $XPLAHOME
 
 # 6. Replace params
 sed -i 's/"bond_denom": "stake"/"bond_denom": "axpla"/g' $XPLAHOME/config/genesis.json
@@ -109,7 +109,7 @@ sed -i 's/"0x0000000000000000000000000000000000000803"//' $XPLAHOME/config/genes
 sed -i 's/"active_static_precompiles": \[\]/"active_static_precompiles": ["0x0000000000000000000000000000000000000800","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005","0x1000000000000000000000000000000000000044"]/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom_metadata": \[\]/"denom_metadata": [{"description":"The native staking token for xpla.","denom_units":[{"denom":"axpla","exponent":0,"aliases":["attoxpla"]},{"denom":"xpla","exponent":18,"aliases":[]}],"base":"axpla","display":"xpla","name":"Test XPLA Token","symbol":"XPLA","uri":"","uri_hash":""}]/g' $XPLAHOME/config/genesis.json
 
-/usr/bin/xplad validate-genesis --home $XPLAHOME
+/usr/bin/xplad genesis validate-genesis --home $XPLAHOME
 
 # 7. Copy to the shared folder
 cp $XPLAHOME/config/genesis.json /genesis
