@@ -522,7 +522,7 @@ func NewAppKeeper(
 		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.DistrKeeper,
-		appKeepers.MintKeeper,
+		appKeepers.MintKeeper.Params,
 		govModAddress,
 	)
 
