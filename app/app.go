@@ -106,8 +106,7 @@ var (
 )
 
 var (
-	// TODO: after test, take this values from appOpts
-	evmMaxGasWanted uint64 = 500000 //legacy from ethermintconfig.DefaultMaxTxGasWanted
+	DefaultEvmMaxGasWanted uint64 = 500_000 //legacy from ethermintconfig.DefaultMaxTxGasWanted
 )
 
 // XplaApp extends an ABCI application, but with most of its parameters exported.
@@ -320,6 +319,10 @@ func NewXplaApp(
 		panic("error while reading wasm config: " + err.Error())
 	}
 
+	evmMaxGasWanted := cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted))
+	if evmMaxGasWanted == 0 {
+		evmMaxGasWanted = DefaultEvmMaxGasWanted
+	}
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
 			ExtensionOptionChecker: evmantetypes.HasDynamicFeeExtensionOption,

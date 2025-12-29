@@ -129,11 +129,6 @@ type AppKeepers struct {
 	BurnKeeper      burnkeeper.Keeper
 }
 
-var (
-	// TODO: after test, take this values from appOpts
-	evmTrace = "" //evmconfig.DefaultEVMTracer,
-)
-
 func NewAppKeeper(
 	appCodec codec.Codec,
 	bApp *baseapp.BaseApp,
@@ -489,6 +484,7 @@ func NewAppKeeper(
 		appKeepers.tkeys[feemarkettypes.TransientKey],
 	)
 
+	evmTracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
 	// W/A for avoiding evm hook panic by erc20 keeper
 	var mockErc20Keeper MockErc20Keeper = MockErc20Keeper{}
 	appKeepers.EvmKeeper = vmkeeper.NewKeeper(
@@ -504,7 +500,7 @@ func NewAppKeeper(
 		&appKeepers.ConsensusParamsKeeper,
 		mockErc20Keeper,
 		evmChainID,
-		evmTrace,
+		evmTracer,
 	)
 
 	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
