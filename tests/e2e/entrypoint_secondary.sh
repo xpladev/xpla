@@ -22,7 +22,7 @@ sleep 10s
 cp /genesis/genesis.json $XPLAHOME/config
 
 # 4. check genesis.json
-/usr/bin/xplad validate-genesis --home $XPLAHOME
+/usr/bin/xplad genesis validate-genesis --home $XPLAHOME
 
 # 5. start daemon
 /usr/bin/xplad comet unsafe-reset-all --home=$XPLAHOME

@@ -13,7 +13,7 @@ cp -r /opt/tests/e2e/$MONIKER/* /opt/.xpla/config
 /usr/bin/xplad keys add user2 --recover --home $XPLAHOME < /opt/tests/e2e/test_keys/user2.mnemonics
 
 # 4. check genesis.json
-/usr/bin/xplad validate-genesis --home $XPLAHOME
+/usr/bin/xplad genesis validate-genesis --home $XPLAHOME
 
 # 5. start daemon
 /usr/bin/xplad start --home=$XPLAHOME
