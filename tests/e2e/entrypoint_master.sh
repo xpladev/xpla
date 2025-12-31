@@ -78,14 +78,16 @@ sed -i 's/"evm_denom": "aatom",/"evm_denom": "axpla",/g' $XPLAHOME/config/genesi
 sed -i 's/"mint_denom": "stake",/"mint_denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"denom": "stake",/"denom": "axpla",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"max_gas": "-1"/"max_gas": "50000000000"/g' $XPLAHOME/config/genesis.json
-sed -i 's/"no_base_fee": false,/"no_base_fee": true,/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation": "0.[0-9]\+",/"inflation": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_rate_change": "0.[0-9]\+",/"inflation_rate_change": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"inflation_min": "0.[0-9]\+",/"inflation_min": "0.000000000000000000",/g' $XPLAHOME/config/genesis.json
 sed -i 's/"unbonding_time": "[0-9]\+s"/"unbonding_time": "4s"/' $XPLAHOME/config/genesis.json
 
-sed -i 's/"min_gas_price": "0.000000000000000000",/"min_gas_price": "8500000000",/g' $XPLAHOME/config/genesis.json
-
+# feemarket module
+sed -i 's/"base_fee": "[0-9]\+.[0-9]\+",/"base_fee": "280000000000.000000000000000000",/g' $XPLAHOME/config/genesis.json
+sed -i 's/"base_fee_change_denominator": [0-9],/"base_fee_change_denominator": 1,/g' $XPLAHOME/config/genesis.json
+sed -i 's/"elasticity_multiplier": [0-9],/"elasticity_multiplier": 1,/g' $XPLAHOME/config/genesis.json
+sed -i 's/"min_gas_price": "[0-9].[0-9]\+",/"min_gas_price": "280000000000.000000000000000000",/g' $XPLAHOME/config/genesis.json
 
 # reduce blocktime around 2 sec
 sed -i 's/"blocks_per_year": "[0-9]\+"/"blocks_per_year": "19000000"/g' $XPLAHOME/config/genesis.json
