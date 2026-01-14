@@ -71,10 +71,10 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk 
 	feePoolRate := params.FeePoolRate.Mul(total)
 	communityPoolRate := params.CommunityPoolRate.Mul(total)
 	for denom, totalReward := range totalRewards {
-		feePoolReward := sdk.NewCoin(denom, feePoolRate.MulInt(totalReward.Amount).RoundInt())
+		feePoolReward := sdk.NewCoin(denom, feePoolRate.MulInt(totalReward.Amount).TruncateInt())
 		feePoolRewards = append(feePoolRewards, feePoolReward)
 
-		communityPoolReward := sdk.NewCoin(denom, communityPoolRate.MulInt(totalReward.Amount).RoundInt())
+		communityPoolReward := sdk.NewCoin(denom, communityPoolRate.MulInt(totalReward.Amount).TruncateInt())
 		communityPoolRewards = append(communityPoolRewards, communityPoolReward)
 
 		reserveRewards = append(reserveRewards, sdk.NewCoin(denom, totalReward.Amount.Sub(feePoolReward.Amount).Sub(communityPoolReward.Amount)))
