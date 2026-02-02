@@ -152,6 +152,11 @@ test: go.sum
 	go clean -testcache
 	go test -short -p 1 ./...
 
+.PHONY: test-solidity
+test-solidity:
+	@echo "Beginning solidity tests..."
+	./scripts/run-solidity-tests.sh
+
 go.sum: go.mod
 	@go mod verify
 	@go mod tidy
