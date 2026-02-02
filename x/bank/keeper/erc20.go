@@ -1,8 +1,10 @@
 package keeper
 
 import (
-	"embed"
+	"bytes"
 	"math/big"
+
+	_ "embed"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -12,17 +14,14 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
-	precompileutil "github.com/xpladev/xpla/precompile/util"
 	"github.com/xpladev/xpla/x/bank/types"
 )
-
-const abiFile = "IERC20.abi"
 
 var (
 	ABI = abi.ABI{}
 
 	//go:embed IERC20.abi
-	abiFS embed.FS
+	f []byte
 )
 
 type Erc20Keeper struct {
@@ -32,7 +31,7 @@ type Erc20Keeper struct {
 
 func init() {
 	var err error
-	ABI, err = precompileutil.LoadABI(abiFS, abiFile)
+	ABI, err = abi.JSON(bytes.NewReader(f))
 	if err != nil {
 		panic(err)
 	}

@@ -1,8 +1,10 @@
 package auth
 
 import (
-	"embed"
+	"bytes"
 	"errors"
+
+	_ "embed"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -25,8 +27,8 @@ var (
 	Address = common.HexToAddress(hexAddress)
 	ABI     = abi.ABI{}
 
-	//go:embed IAuth.abi
-	abiFS embed.FS
+	//go:embed IAuth.json
+	f []byte
 )
 
 type PrecompiledAuth struct {
@@ -37,7 +39,7 @@ type PrecompiledAuth struct {
 
 func init() {
 	var err error
-	ABI, err = util.LoadABI(abiFS, abiFile)
+	ABI, err = abi.JSON(bytes.NewReader(f))
 	if err != nil {
 		panic(err)
 	}
