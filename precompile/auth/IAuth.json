@@ -1,0 +1,91 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "evmAddress",
+        "type": "address"
+      }
+    ],
+    "name": "account",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "stringAddress",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "evmAddress",
+        "type": "address"
+      }
+    ],
+    "name": "addressBytesToString",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "stringAddress",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "stringAddress",
+        "type": "string"
+      }
+    ],
+    "name": "addressStringToBytes",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "byteAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bech32Prefix",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "prefix",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "name": "moduleAccountByName",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "stringAddress",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
