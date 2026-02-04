@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { spawn } = require('child_process')
+const { spawn, execSync } = require('child_process')
 const yargs = require('yargs/yargs')
 const { hideBin } = require('yargs/helpers')
 
@@ -366,6 +366,35 @@ function setupNetwork ({ runConfig, timeout }) {
   return Promise.race([spawnPromise, timeoutPromise])
 }
 
+function uploadCounterWasm () {
+  const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'upload_counter_wasm.sh')
+  const wasmPath = path.join(__dirname, 'suites', 'misc', 'counter_submsg.wasm')
+  if (!fs.existsSync(scriptPath) || !fs.existsSync(wasmPath)) {
+    logger.warn('Counter WASM or upload script not found, skipping COUNTER_WASM_ADDRESS')
+    return
+  }
+  try {
+    logger.info('Uploading counter WASM (precompiles + revert_cases)...')
+    const env = {
+      ...process.env,
+      CHAINDIR: process.env.CHAINDIR || (process.env.HOME ? `${process.env.HOME}/.xpla` : undefined)
+    }
+    const out = execSync(`bash "${scriptPath}" "${wasmPath}"`, { cwd: __dirname, encoding: 'utf8', env })
+    const lastLine = out.trim().split('\n').pop()
+    const envVars = JSON.parse(lastLine)
+    if (envVars.COUNTER_WASM_ADDRESS) {
+      process.env.COUNTER_WASM_ADDRESS = envVars.COUNTER_WASM_ADDRESS
+      logger.info(`COUNTER_WASM_ADDRESS=${process.env.COUNTER_WASM_ADDRESS}`)
+    }
+    if (envVars.REVERT_COUNTER_WASM_ADDRESS) {
+      process.env.REVERT_COUNTER_WASM_ADDRESS = envVars.REVERT_COUNTER_WASM_ADDRESS
+      logger.info(`REVERT_COUNTER_WASM_ADDRESS=${process.env.REVERT_COUNTER_WASM_ADDRESS}`)
+    }
+  } catch (e) {
+    logger.warn(`Counter WASM upload failed: ${e.message}`)
+  }
+}
+
 async function main () {
   // Sync configuration before running tests
   const configPaths = syncConfiguration()
@@ -384,6 +413,10 @@ async function main () {
     //
     // TODO: this should be handled more gracefully, i.e. check for block height
     await new Promise((resolve) => setTimeout(resolve, 20000))
+
+    if (runConfig.network === 'cosmos') {
+      uploadCounterWasm()
+    }
 
     await performTests({ allTests, runConfig })
 

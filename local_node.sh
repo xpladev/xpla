@@ -245,7 +245,6 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
   jq ".app_state[\"bank\"][\"denom_metadata\"]=[{\"description\":\"The native staking token for xpla.\",\"denom_units\":[{\"denom\":\"axpla\",\"exponent\":0,\"aliases\":[\"attoxpla\"]},{\"denom\":\"xpla\",\"exponent\":18,\"aliases\":[]}],\"base\":\"axpla\",\"display\":\"xpla\",\"name\":\"Test XPLA Token\",\"symbol\":\"XPLA\",\"uri\":\"\",\"uri_hash\":\"\"}]" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"feemarket\"][\"params\"][\"min_gas_price\"]=\"$BASEFEE\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"feemarket\"][\"params\"][\"base_fee\"]=\"$BASEFEE\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq ".app_state[\"feemarket\"][\"params\"][\"base_fee\"]=\"$BASEFEE\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"feemarket\"][\"params\"][\"base_fee_change_denominator\"]=1" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"feemarket\"][\"params\"][\"elasticity_multiplier\"]=1" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
@@ -264,11 +263,11 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
   # Fund StakingReverter contract address with axpla for consortium staking tests
   # Only when TEST_SOLIDITY=true
   if [[ ${TEST_SOLIDITY} ]]; then
-    # Contract address is calculated from dev0 address (0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101) with nonce 25
+    # Contract address is calculated from dev0 address (0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101) with nonce 29
     # This address will be used by the Solidity test: tests/solidity/suites/precompiles/test/1_staking/0_edge_case_revert.js
-    # Pre-calculated Bech32 address: xpla1ykj5wlmj7nhqygtygnzghg9qkhsq0wa497x76z
-    # Pre-calculated contract address: 0x25a5477f72f4EE02216444C48BA0a0B5e007bBB5
-    STAKING_REVERTER_CONTRACT_BECH32="xpla1ykj5wlmj7nhqygtygnzghg9qkhsq0wa497x76z"
+    # Pre-calculated Bech32 address: xpla1ajw7ngmsuxpkjryll7prlztcfrys842mvuye9s
+    # Pre-calculated contract address: 0xEc9de9A370e183690C9FFf823f897848C903d55b
+    STAKING_REVERTER_CONTRACT_BECH32="xpla1ajw7ngmsuxpkjryll7prlztcfrys842mvuye9s"
     echo "Funding StakingReverter contract ($STAKING_REVERTER_CONTRACT_BECH32) with axpla in genesis"
     xplad genesis add-genesis-account "$STAKING_REVERTER_CONTRACT_BECH32" 1000000000000000000${DENOM} --keyring-backend "$KEYRING" --home "$CHAINDIR"
   fi
