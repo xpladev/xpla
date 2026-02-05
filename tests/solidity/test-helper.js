@@ -1,6 +1,9 @@
 const fs = require('fs')
 const path = require('path')
-const { spawn, execSync } = require('child_process')
+const { spawn, exec } = require('child_process')
+const { promisify } = require('util')
+
+const execAsync = promisify(exec)
 const yargs = require('yargs/yargs')
 const { hideBin } = require('yargs/helpers')
 
@@ -366,7 +369,7 @@ function setupNetwork ({ runConfig, timeout }) {
   return Promise.race([spawnPromise, timeoutPromise])
 }
 
-function uploadCounterWasm () {
+async function uploadCounterWasm () {
   const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'upload_counter_wasm.sh')
   const wasmPath = path.join(__dirname, 'suites', 'misc', 'counter_submsg.wasm')
   if (!fs.existsSync(scriptPath) || !fs.existsSync(wasmPath)) {
@@ -379,8 +382,8 @@ function uploadCounterWasm () {
       ...process.env,
       CHAINDIR: process.env.CHAINDIR || (process.env.HOME ? `${process.env.HOME}/.xpla` : undefined)
     }
-    const out = execSync(`bash "${scriptPath}" "${wasmPath}"`, { cwd: __dirname, encoding: 'utf8', env })
-    const lastLine = out.trim().split('\n').pop()
+    const { stdout } = await execAsync(`bash "${scriptPath}" "${wasmPath}"`, { cwd: __dirname, encoding: 'utf8', env })
+    const lastLine = stdout.trim().split('\n').pop()
     const envVars = JSON.parse(lastLine)
     if (envVars.COUNTER_WASM_ADDRESS) {
       process.env.COUNTER_WASM_ADDRESS = envVars.COUNTER_WASM_ADDRESS
@@ -415,7 +418,7 @@ async function main () {
     await new Promise((resolve) => setTimeout(resolve, 20000))
 
     if (runConfig.network === 'cosmos') {
-      uploadCounterWasm()
+      await uploadCounterWasm()
     }
 
     await performTests({ allTests, runConfig })
