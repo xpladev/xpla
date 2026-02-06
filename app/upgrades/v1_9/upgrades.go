@@ -11,8 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	vmtypes "github.com/cosmos/evm/x/vm/types"
-
 	"github.com/xpladev/xpla/app/keepers"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 )
@@ -62,7 +60,6 @@ func CreateUpgradeHandler(
 		if idx != -1 {
 			params.ActiveStaticPrecompiles = slices.Delete(params.ActiveStaticPrecompiles, idx, idx+1)
 		}
-		params.ActiveStaticPrecompiles = append(params.ActiveStaticPrecompiles, vmtypes.ICS20PrecompileAddress)
 		params.ActiveStaticPrecompiles = append(params.ActiveStaticPrecompiles, pwasm.DelegatecallAddress.String())
 		if err := keepers.EvmKeeper.SetParams(ctx, params); err != nil {
 			return nil, err
