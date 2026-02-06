@@ -20,7 +20,7 @@ import (
 var (
 	ABI = abi.ABI{}
 
-	//go:embed IERC20.abi
+	//go:embed IERC20.json
 	f []byte
 )
 

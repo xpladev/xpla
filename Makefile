@@ -193,9 +193,9 @@ proto-update-deps:
 ###                          Precompiled contract                           ###
 ###############################################################################
 
-# TODO: precompiled interface should be changed as a NPM package
 abi-gen:
-	solc --abi --pretty-json --overwrite -o x/bank/keeper/IERC20.json x/bank/keeper/IERC20.sol
+	solc --abi --pretty-json --overwrite -o x/bank/keeper x/bank/keeper/IERC20.sol
+	mv x/bank/keeper/IERC20.abi x/bank/keeper/IERC20.json
 
 ###############################################################################
 ###                        Compile Solidity Contracts                       ###
