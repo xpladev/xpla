@@ -1,9 +1,11 @@
 package bank
 
 import (
-	"embed"
+	"bytes"
 	"errors"
 	"fmt"
+
+	_ "embed"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -27,8 +29,8 @@ var (
 	Address = common.HexToAddress(hexAddress)
 	ABI     = abi.ABI{}
 
-	//go:embed IBank.abi
-	abiFS embed.FS
+	//go:embed IBank.json
+	f []byte
 )
 
 type TotalSupplyInput struct {
@@ -43,7 +45,7 @@ type PrecompiledBank struct {
 
 func init() {
 	var err error
-	ABI, err = util.LoadABI(abiFS, abiFile)
+	ABI, err = abi.JSON(bytes.NewReader(f))
 	if err != nil {
 		panic(err)
 	}

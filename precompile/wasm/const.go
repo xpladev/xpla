@@ -3,7 +3,6 @@ package wasm
 const (
 	hexAddress             = "0x1000000000000000000000000000000000000004"
 	delegatecallHexAddress = "0x1000000000000000000000000000000000000044"
-	abiFile                = "IWasm.abi"
 )
 
 type MethodWasm string

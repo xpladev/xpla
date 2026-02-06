@@ -1,8 +1,10 @@
 package wasm
 
 import (
-	"embed"
+	"bytes"
 	"errors"
+
+	_ "embed"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -28,8 +30,8 @@ var (
 	DelegatecallAddress = common.HexToAddress(delegatecallHexAddress)
 	ABI                 = abi.ABI{}
 
-	//go:embed IWasm.abi
-	abiFS embed.FS
+	//go:embed IWasm.json
+	f []byte
 )
 
 type PrecompiledWasm struct {
@@ -42,7 +44,7 @@ type PrecompiledWasm struct {
 
 func init() {
 	var err error
-	ABI, err = util.LoadABI(abiFS, abiFile)
+	ABI, err = abi.JSON(bytes.NewReader(f))
 	if err != nil {
 		panic(err)
 	}

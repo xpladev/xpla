@@ -1,0 +1,28 @@
+{
+  "name": "@xpla/contracts",
+  "version": "1.9.0-rc1",
+  "description": "A collection of smart contracts used in the development of the CONX Chain.",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "hardhat": "^3.1.5"
+  },
+  "files": [
+    "**/*.sol",
+    "/build/contracts/*.json"
+  ],
+  "scripts": {
+    "compile": "hardhat compile",
+    "clean": "hardhat clean"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xpladev/xpla.git"
+  },
+  "author": "DELIGHT LABS",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xpladev/xpla/issues"
+  },
+  "homepage": "https://github.com/xpladev/xpla/blob/main/contracts/README.md"
+}

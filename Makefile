@@ -152,6 +152,11 @@ test: go.sum
 	go clean -testcache
 	go test -short -p 1 ./...
 
+.PHONY: test-solidity
+test-solidity:
+	@echo "Beginning solidity tests..."
+	./scripts/run-solidity-tests.sh
+
 go.sum: go.mod
 	@go mod verify
 	@go mod tidy
@@ -188,12 +193,26 @@ proto-update-deps:
 ###                          Precompiled contract                           ###
 ###############################################################################
 
-# TODO: precompiled interface should be changed as a NPM package
 abi-gen:
-	solc --abi --pretty-json --overwrite -o precompile/auth precompile/auth/IAuth.sol && \
-	solc --abi --pretty-json --overwrite -o precompile/bank precompile/bank/IBank.sol && \
-	solc --abi --pretty-json --overwrite -o precompile/wasm precompile/wasm/IWasm.sol && \
 	solc --abi --pretty-json --overwrite -o x/bank/keeper x/bank/keeper/IERC20.sol
+	mv x/bank/keeper/IERC20.abi x/bank/keeper/IERC20.json
+
+###############################################################################
+###                        Compile Solidity Contracts                       ###
+###############################################################################
+
+# Install the necessary dependencies, compile the solidity contracts
+contracts-all: contracts-clean contracts-compile
+
+# Clean smart contract compilation artifacts, dependencies and cache files
+contracts-clean:
+	@echo "Cleaning up the contracts directory..."
+	@python3 ./scripts/compile_smart_contracts/compile_smart_contracts.py --clean
+
+# Compile precompile Solidity contracts.
+contracts-compile:
+	@echo "Compiling smart contracts..."
+	@python3 ./scripts/compile_smart_contracts/compile_smart_contracts.py --compile
 
 ###############################################################################
 ###                                Docker                                   ###
