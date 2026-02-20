@@ -181,7 +181,7 @@ func NewXplaApp(
 	if err != nil {
 		panic(err)
 	}
-	interfaceRegistry = encoding.NewRegistryWithEthereumTxFallback(interfaceRegistry)
+	interfaceRegistry = encoding.NewEthereumTxCompatRegistry(interfaceRegistry)
 
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	txConfig := encoding.NewTxConfig(appCodec, authtx.DefaultSignModes)
