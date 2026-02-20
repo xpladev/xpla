@@ -6,7 +6,7 @@ toolchain go1.24.5
 
 require (
 	cosmossdk.io/math v1.5.3
-	github.com/cosmos/cosmos-sdk v0.53.5
+	github.com/cosmos/cosmos-sdk v0.53.6
 	github.com/cosmos/evm v0.5.1
 	github.com/cosmos/interchaintest/v10 v10.0.1
 	github.com/moby/moby v27.5.1+incompatible
@@ -86,7 +86,7 @@ require (
 	github.com/cosmos/ibc-go/v10 v10.5.0 // indirect
 	github.com/cosmos/ics23/go v0.11.0 // indirect
 	github.com/cosmos/interchain-security/v7 v7.0.0-20250408210344-06e0dc6bf6d6 // indirect
-	github.com/cosmos/ledger-cosmos-go v0.16.0 // indirect
+	github.com/cosmos/ledger-cosmos-go v1.0.0 // indirect
 	github.com/crate-crypto/go-eth-kzg v1.3.0 // indirect
 	github.com/crate-crypto/go-ipa v0.0.0-20240724233137-53bbb0ceb27a // indirect
 	github.com/danieljoos/wincred v1.2.1 // indirect
@@ -274,8 +274,8 @@ replace (
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
 
 	// Interchaintest
-	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.4-768cb210-xpla
-	github.com/cosmos/evm => github.com/xpladev/evm v0.5.1-xpla
+	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla
+	github.com/cosmos/evm => github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60
 
 	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.16.2-xpla-evm
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
