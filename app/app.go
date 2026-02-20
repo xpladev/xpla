@@ -73,6 +73,7 @@ import (
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
+	"github.com/xpladev/xpla/app/encoding"
 	"github.com/xpladev/xpla/app/keepers"
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
@@ -180,8 +181,10 @@ func NewXplaApp(
 	if err != nil {
 		panic(err)
 	}
+	interfaceRegistry = encoding.NewRegistryWithEthereumTxFallback(interfaceRegistry)
+
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
-	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+	txConfig := encoding.NewTxConfig(appCodec, authtx.DefaultSignModes)
 
 	ethenc.RegisterLegacyAminoCodec(legacyAmino)
 	ethenc.RegisterInterfaces(interfaceRegistry)
@@ -254,7 +257,7 @@ func NewXplaApp(
 		EnabledSignModes:           enabledSignModes,
 		TextualCoinMetadataQueryFn: txmodule.NewBankKeeperCoinMetadataQueryFn(app.BankKeeper),
 	}
-	txConfig, err = authtx.NewTxConfigWithOptions(
+	txConfig.TxConfig, err = authtx.NewTxConfigWithOptions(
 		appCodec,
 		txConfigOpts,
 	)
