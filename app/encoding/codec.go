@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	msgEthereumTxTypeURL   = "cosmos.evm.vm.v1.MsgEthereumTx"
-	legacyTxTypeURL        = "cosmos.evm.vm.v1.LegacyTx"
-	dynamicFeeTxTypeURL    = "cosmos.evm.vm.v1.DynamicFeeTx"
-	accessListTxTypeURL    = "cosmos.evm.vm.v1.AccessListTx"
+	msgEthereumTxTypeURL = "cosmos.evm.vm.v1.MsgEthereumTx"
+	legacyTxTypeURL      = "cosmos.evm.vm.v1.LegacyTx"
+	dynamicFeeTxTypeURL  = "cosmos.evm.vm.v1.DynamicFeeTx"
+	accessListTxTypeURL  = "cosmos.evm.vm.v1.AccessListTx"
 
 	legacyMsgEthereumTxTypeURL = "ethermint.evm.v1.MsgEthereumTx"
 )
