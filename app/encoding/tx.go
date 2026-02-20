@@ -1,12 +1,12 @@
 package encoding
 
 import (
+	txsigning "cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	txsigning "cosmossdk.io/x/tx/signing"
 )
 
 var _ client.TxConfig = &TxConfigWrapper{}
