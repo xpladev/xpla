@@ -282,7 +282,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.4-768cb210-xpla
 
 	// xpla features
-	github.com/cosmos/evm => github.com/xpladev/evm v0.5.1-xpla.1
+	github.com/cosmos/evm => github.com/xpladev/evm v0.5.1-xpla.2
 
 	// xpla features
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1
