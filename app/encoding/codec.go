@@ -7,18 +7,15 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
-	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
 )
 
 const (
-	msgEthereumTxTypeURL   = "cosmos.evm.vm.v1.MsgEthereumTx"
-	legacyTxTypeURL        = "cosmos.evm.vm.v1.LegacyTx"
-	dynamicFeeTxTypeURL    = "cosmos.evm.vm.v1.DynamicFeeTx"
-	accessListTxTypeURL    = "cosmos.evm.vm.v1.AccessListTx"
+	msgEthereumTxTypeURL = "cosmos.evm.vm.v1.MsgEthereumTx"
+	legacyTxTypeURL      = "cosmos.evm.vm.v1.LegacyTx"
+	dynamicFeeTxTypeURL  = "cosmos.evm.vm.v1.DynamicFeeTx"
+	accessListTxTypeURL  = "cosmos.evm.vm.v1.AccessListTx"
 )
 
 // EthereumTxCompatRegistry wraps an InterfaceRegistry and adds UnpackAny/Resolve
@@ -35,13 +32,13 @@ func NewEthereumTxCompatRegistry(inner codectypes.InterfaceRegistry) *EthereumTx
 }
 
 // Resolve implements AnyResolver (used by unknownproto.RejectUnknownFields and client tx decode).
-// - For cosmos.evm.vm.v1.MsgEthereumTx we delegate to inner (new type) so that response display
-//   unmarshals correctly and shows from/raw. Legacy payloads (tag 1) fail first decode and are
-//   retried in TxDecoder with LegacyTxDecodeRegistry.
-// - For cosmos.evm.vm.v1.LegacyTx/DynamicFeeTx/AccessListTx we return legacy TxData types so
-//   the client can resolve inner Anys when decoding pre-upgrade txs (payload uses ethermint schema).
-// - All other type URLs are delegated to the inner registry as-is; the SDK stores type URLs
-//   with a leading slash (e.g. /cosmos.gov.v1beta1.MsgSubmitProposal), so we must not strip it.
+//   - For cosmos.evm.vm.v1.MsgEthereumTx we delegate to inner (new type) so that response display
+//     unmarshals correctly and shows from/raw. Legacy payloads (tag 1) fail first decode and are
+//     retried in TxDecoder with LegacyTxDecodeRegistry.
+//   - For cosmos.evm.vm.v1.LegacyTx/DynamicFeeTx/AccessListTx we return legacy TxData types so
+//     the client can resolve inner Anys when decoding pre-upgrade txs (payload uses ethermint schema).
+//   - All other type URLs are delegated to the inner registry as-is; the SDK stores type URLs
+//     with a leading slash (e.g. /cosmos.gov.v1beta1.MsgSubmitProposal), so we must not strip it.
 func (r *EthereumTxCompatRegistry) Resolve(typeURL string) (proto.Message, error) {
 	normalized := strings.TrimPrefix(typeURL, "/")
 	switch normalized {
@@ -105,20 +102,12 @@ func (r *EthereumTxCompatRegistry) UnpackAny(any *codectypes.Any, iface interfac
 	if isCosmosEthereumTxTypeURL(any.TypeUrl) {
 		var legacyMsg legacyevmtypes.MsgEthereumTx
 		if errLegacy := proto.Unmarshal(any.Value, &legacyMsg); errLegacy == nil && legacyMsg.Data != nil {
-			// Pre-upgrade payload (tag 1 = data): convert to new type with from/raw populated.
 			if errUnpack := legacyMsg.UnpackInterfaces(r); errUnpack != nil {
 				return errUnpack
 			}
-			legacyTx := legacyMsg.AsTransaction()
-			newMsg := &evmtypes.MsgEthereumTx{}
-			newMsg.FromEthereumTx(legacyTx)
-			if legacyTx != nil {
-				signer := ethtypes.LatestSignerForChainID(legacyTx.ChainId())
-				_ = newMsg.FromSignedEthereumTx(legacyTx, signer)
-			}
 			if ptr, ok := iface.(*sdk.Msg); ok {
-				*ptr = newMsg
-				cached, err := codectypes.NewAnyWithValue(newMsg)
+				*ptr = &legacyMsg
+				cached, err := codectypes.NewAnyWithValue(&legacyMsg)
 				if err != nil {
 					return err
 				}
@@ -130,15 +119,15 @@ func (r *EthereumTxCompatRegistry) UnpackAny(any *codectypes.Any, iface interfac
 	return r.InterfaceRegistry.UnpackAny(any, iface)
 }
 
-
-// legacyTxDecodeRegistry overrides only Resolve for MsgEthereumTx (returns legacy type)
-// so the fallback decode path passes RejectUnknownFields for tag 1 payloads.
+// legacyTxDecodeRegistry overrides Resolve and UnpackAny for MsgEthereumTx so that
+// fallback decode uses legacy type and keeps it as legacy. Used for display/query so
+// pre-upgrade txs are shown in the original msg format (data, hash, from); @type becomes ethermint.
 type legacyTxDecodeRegistry struct {
 	*EthereumTxCompatRegistry
 }
 
-// LegacyTxDecodeRegistry returns an InterfaceRegistry that resolves MsgEthereumTx as legacy type.
-// Use only for the fallback decode when the first decode fails on legacy (tag 1) payload.
+// LegacyTxDecodeRegistry returns an InterfaceRegistry that resolves MsgEthereumTx as legacy type
+// and keeps it as legacy in UnpackAny so the response is parsed and shown as the original msg format.
 func LegacyTxDecodeRegistry(wrapped *EthereumTxCompatRegistry) codectypes.InterfaceRegistry {
 	return &legacyTxDecodeRegistry{EthereumTxCompatRegistry: wrapped}
 }
@@ -149,6 +138,34 @@ func (r *legacyTxDecodeRegistry) Resolve(typeURL string) (proto.Message, error) 
 		return &legacyevmtypes.MsgEthereumTx{}, nil
 	}
 	return r.EthereumTxCompatRegistry.Resolve(typeURL)
+}
+
+// UnpackAny keeps MsgEthereumTx with legacy payload (tag 1 = data) as legacy type so the
+// response is shown in the original msg format (data, hash, from); @type is ethermint.evm.v1.MsgEthereumTx.
+func (r *legacyTxDecodeRegistry) UnpackAny(any *codectypes.Any, iface interface{}) error {
+	if any == nil {
+		return r.InterfaceRegistry.UnpackAny(any, iface)
+	}
+	if !isCosmosEthereumTxTypeURL(any.TypeUrl) {
+		return r.EthereumTxCompatRegistry.UnpackAny(any, iface)
+	}
+	var legacyMsg legacyevmtypes.MsgEthereumTx
+	if errLegacy := proto.Unmarshal(any.Value, &legacyMsg); errLegacy != nil || legacyMsg.Data == nil {
+		return r.EthereumTxCompatRegistry.UnpackAny(any, iface)
+	}
+	if errUnpack := legacyMsg.UnpackInterfaces(r); errUnpack != nil {
+		return errUnpack
+	}
+	if ptr, ok := iface.(*sdk.Msg); ok {
+		*ptr = &legacyMsg
+		cached, err := codectypes.NewAnyWithValue(&legacyMsg)
+		if err != nil {
+			return err
+		}
+		*any = *cached
+		return nil
+	}
+	return r.EthereumTxCompatRegistry.UnpackAny(any, iface)
 }
 
 func isCosmosEthereumTxTypeURL(typeURL string) bool {
@@ -181,4 +198,3 @@ func IsLegacyMsgEthereumTxDecodeErr(err error) bool {
 	}
 	return false
 }
-

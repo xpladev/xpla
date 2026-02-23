@@ -538,7 +538,9 @@ func (app *XplaApp) RegisterNodeService(clientCtx client.Context, cfg config.Con
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
+// Passes app.txConfig (TxConfigWrapper with fallback TxDecoder for legacy MsgEthereumTx) so the default server shows pre-upgrade txs in ethermint format.
 func (app *XplaApp) RegisterTxService(clientCtx client.Context) {
+	clientCtx = clientCtx.WithTxConfig(app.txConfig)
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 

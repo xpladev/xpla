@@ -11,7 +11,7 @@ import (
 
 var _ client.TxConfig = &TxConfigWrapper{}
 
-// NewTxConfig creates a new TxConfigWrapper containing a custom TxDecoder that converts legacy messages
+// NewTxConfig creates a new TxConfigWrapper with a custom TxDecoder that fallback-decodes legacy MsgEthereumTx (tag 1).
 func NewTxConfig(cdc codec.Codec, sigModes []signingtypes.SignMode) *TxConfigWrapper {
 	return &TxConfigWrapper{
 		TxConfig: authtx.NewTxConfig(cdc, sigModes),
