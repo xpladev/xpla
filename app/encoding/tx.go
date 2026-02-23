@@ -5,8 +5,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+
 	txsigning "cosmossdk.io/x/tx/signing"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
+	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
 )
 
 var _ client.TxConfig = &TxConfigWrapper{}
@@ -44,8 +51,84 @@ func (w *TxConfigWrapper) TxDecoder() sdk.TxDecoder {
 		if err != nil {
 			return nil, err
 		}
+		return w.normalizeLegacyEthereumMsgs(tx)
+	}
+}
+
+func (w *TxConfigWrapper) normalizeLegacyEthereumMsgs(tx sdk.Tx) (sdk.Tx, error) {
+	msgs := tx.GetMsgs()
+	newMsgs := make([]sdk.Msg, len(msgs))
+	isModified := false
+
+	for i, msg := range msgs {
+		if legacyMsg, ok := msg.(*legacyevmtypes.MsgEthereumTx); ok {
+			legacyTx := legacyMsg.AsTransaction()
+			newMsg := &evmtypes.MsgEthereumTx{}
+			newMsg.FromEthereumTx(legacyTx)
+			if legacyTx != nil && legacyTx.ChainId() != nil && legacyTx.ChainId().Sign() > 0 {
+				signer := ethtypes.LatestSignerForChainID(legacyTx.ChainId())
+				_ = newMsg.FromSignedEthereumTx(legacyTx, signer)
+			}
+			newMsgs[i] = newMsg
+			isModified = true
+			continue
+		}
+		newMsgs[i] = msg
+	}
+
+	if !isModified {
 		return tx, nil
 	}
+
+	txBuilder := w.NewTxBuilder()
+
+	if feeTx, ok := tx.(sdk.FeeTx); ok {
+		txBuilder.SetGasLimit(feeTx.GetGas())
+		txBuilder.SetFeeAmount(feeTx.GetFee())
+		txBuilder.SetFeePayer(feeTx.FeePayer())
+		txBuilder.SetFeeGranter(feeTx.FeeGranter())
+	}
+
+	if memoTx, ok := tx.(sdk.TxWithMemo); ok {
+		txBuilder.SetMemo(memoTx.GetMemo())
+	}
+
+	if tsTx, ok := tx.(sdk.TxWithTimeoutTimeStamp); ok {
+		txBuilder.SetTimeoutTimestamp(tsTx.GetTimeoutTimeStamp())
+	}
+
+	if thTx, ok := tx.(sdk.TxWithTimeoutHeight); ok {
+		txBuilder.SetTimeoutHeight(thTx.GetTimeoutHeight())
+	}
+
+	if uoTx, ok := tx.(sdk.TxWithUnordered); ok {
+		txBuilder.SetUnordered(uoTx.GetUnordered())
+	}
+
+	if err := txBuilder.SetMsgs(newMsgs...); err != nil {
+		return nil, err
+	}
+
+	if sigTx, ok := tx.(authsigning.SigVerifiableTx); ok {
+		sigs, err := sigTx.GetSignaturesV2()
+		if err != nil {
+			return nil, err
+		}
+		if len(sigs) > 0 {
+			if err := txBuilder.SetSignatures(sigs...); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if extTx, ok := tx.(authante.HasExtensionOptionsTx); ok {
+		if extTxBuilder, ok := txBuilder.(authtx.ExtensionOptionsTxBuilder); ok {
+			extTxBuilder.SetExtensionOptions(extTx.GetExtensionOptions()...)
+			extTxBuilder.SetNonCriticalExtensionOptions(extTx.GetNonCriticalExtensionOptions()...)
+		}
+	}
+
+	return txBuilder.GetTx(), nil
 }
 
 // TxEncoder delegates to the inner TxConfig
