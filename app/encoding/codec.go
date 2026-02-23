@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"errors"
+	"math/big"
 	"strings"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -15,10 +16,10 @@ import (
 )
 
 const (
-	msgEthereumTxTypeURL   = "cosmos.evm.vm.v1.MsgEthereumTx"
-	legacyTxTypeURL        = "cosmos.evm.vm.v1.LegacyTx"
-	dynamicFeeTxTypeURL    = "cosmos.evm.vm.v1.DynamicFeeTx"
-	accessListTxTypeURL    = "cosmos.evm.vm.v1.AccessListTx"
+	msgEthereumTxTypeURL = "cosmos.evm.vm.v1.MsgEthereumTx"
+	legacyTxTypeURL      = "cosmos.evm.vm.v1.LegacyTx"
+	dynamicFeeTxTypeURL  = "cosmos.evm.vm.v1.DynamicFeeTx"
+	accessListTxTypeURL  = "cosmos.evm.vm.v1.AccessListTx"
 )
 
 // EthereumTxCompatRegistry wraps an InterfaceRegistry and adds UnpackAny/Resolve
@@ -35,13 +36,13 @@ func NewEthereumTxCompatRegistry(inner codectypes.InterfaceRegistry) *EthereumTx
 }
 
 // Resolve implements AnyResolver (used by unknownproto.RejectUnknownFields and client tx decode).
-// - For cosmos.evm.vm.v1.MsgEthereumTx we delegate to inner (new type) so that response display
-//   unmarshals correctly and shows from/raw. Legacy payloads (tag 1) fail first decode and are
-//   retried in TxDecoder with LegacyTxDecodeRegistry.
-// - For cosmos.evm.vm.v1.LegacyTx/DynamicFeeTx/AccessListTx we return legacy TxData types so
-//   the client can resolve inner Anys when decoding pre-upgrade txs (payload uses ethermint schema).
-// - All other type URLs are delegated to the inner registry as-is; the SDK stores type URLs
-//   with a leading slash (e.g. /cosmos.gov.v1beta1.MsgSubmitProposal), so we must not strip it.
+//   - For cosmos.evm.vm.v1.MsgEthereumTx we delegate to inner (new type) so that response display
+//     unmarshals correctly and shows from/raw. Legacy payloads (tag 1) fail first decode and are
+//     retried in TxDecoder with LegacyTxDecodeRegistry.
+//   - For cosmos.evm.vm.v1.LegacyTx/DynamicFeeTx/AccessListTx we return legacy TxData types so
+//     the client can resolve inner Anys when decoding pre-upgrade txs (payload uses ethermint schema).
+//   - All other type URLs are delegated to the inner registry as-is; the SDK stores type URLs
+//     with a leading slash (e.g. /cosmos.gov.v1beta1.MsgSubmitProposal), so we must not strip it.
 func (r *EthereumTxCompatRegistry) Resolve(typeURL string) (proto.Message, error) {
 	normalized := strings.TrimPrefix(typeURL, "/")
 	switch normalized {
@@ -113,7 +114,7 @@ func (r *EthereumTxCompatRegistry) UnpackAny(any *codectypes.Any, iface interfac
 			newMsg := &evmtypes.MsgEthereumTx{}
 			newMsg.FromEthereumTx(legacyTx)
 			if legacyTx != nil {
-				signer := ethtypes.LatestSignerForChainID(legacyTx.ChainId())
+				signer := legacySigner(legacyTx.ChainId())
 				_ = newMsg.FromSignedEthereumTx(legacyTx, signer)
 			}
 			if ptr, ok := iface.(*sdk.Msg); ok {
@@ -129,7 +130,6 @@ func (r *EthereumTxCompatRegistry) UnpackAny(any *codectypes.Any, iface interfac
 	}
 	return r.InterfaceRegistry.UnpackAny(any, iface)
 }
-
 
 // legacyTxDecodeRegistry overrides only Resolve for MsgEthereumTx (returns legacy type)
 // so the fallback decode path passes RejectUnknownFields for tag 1 payloads.
@@ -153,6 +153,14 @@ func (r *legacyTxDecodeRegistry) Resolve(typeURL string) (proto.Message, error) 
 
 func isCosmosEthereumTxTypeURL(typeURL string) bool {
 	return strings.Contains(typeURL, msgEthereumTxTypeURL)
+}
+
+// legacySigner chooses a signer that won't panic for pre-EIP-155 signatures.
+func legacySigner(chainID *big.Int) ethtypes.Signer {
+	if chainID != nil && chainID.Sign() > 0 {
+		return ethtypes.LatestSignerForChainID(chainID)
+	}
+	return ethtypes.HomesteadSigner{}
 }
 
 func isUnknownFieldProtoErr(err error) bool {
@@ -181,4 +189,3 @@ func IsLegacyMsgEthereumTxDecodeErr(err error) bool {
 	}
 	return false
 }
-

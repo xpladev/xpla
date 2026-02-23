@@ -11,7 +11,6 @@ import (
 
 	txsigning "cosmossdk.io/x/tx/signing"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
 )
@@ -40,12 +39,11 @@ func (w *TxConfigWrapper) TxDecoder() sdk.TxDecoder {
 
 	return func(txBytes []byte) (sdk.Tx, error) {
 		tx, err := defaultDecoder(txBytes)
-		if err != nil && w.Codec != nil {
-			if wrapped, ok := w.Codec.InterfaceRegistry().(*EthereumTxCompatRegistry); ok && IsLegacyMsgEthereumTxDecodeErr(err) {
-				fallbackDecoder := authtx.DefaultTxDecoder(codec.NewProtoCodec(LegacyTxDecodeRegistry(wrapped)))
-				if fallbackTx, fallbackErr := fallbackDecoder(txBytes); fallbackErr == nil {
-					tx, err = fallbackTx, nil
-				}
+		if err != nil && w.Codec != nil && IsLegacyMsgEthereumTxDecodeErr(err) {
+			wrapped := NewEthereumTxCompatRegistry(w.Codec.InterfaceRegistry())
+			fallbackDecoder := authtx.DefaultTxDecoder(codec.NewProtoCodec(LegacyTxDecodeRegistry(wrapped)))
+			if fallbackTx, fallbackErr := fallbackDecoder(txBytes); fallbackErr == nil {
+				tx, err = fallbackTx, nil
 			}
 		}
 		if err != nil {
@@ -65,8 +63,8 @@ func (w *TxConfigWrapper) normalizeLegacyEthereumMsgs(tx sdk.Tx) (sdk.Tx, error)
 			legacyTx := legacyMsg.AsTransaction()
 			newMsg := &evmtypes.MsgEthereumTx{}
 			newMsg.FromEthereumTx(legacyTx)
-			if legacyTx != nil && legacyTx.ChainId() != nil && legacyTx.ChainId().Sign() > 0 {
-				signer := ethtypes.LatestSignerForChainID(legacyTx.ChainId())
+			if legacyTx != nil {
+				signer := legacySigner(legacyTx.ChainId())
 				_ = newMsg.FromSignedEthereumTx(legacyTx, signer)
 			}
 			newMsgs[i] = newMsg
