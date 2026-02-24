@@ -1707,10 +1707,10 @@ github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/urfave/cli/v2 v2.27.5 h1:WoHEJLdsXr6dDWoJgMq/CboDmyY/8HMMH1fTECbih+w=
 github.com/urfave/cli/v2 v2.27.5/go.mod h1:3Sevf16NykTbInEnD0yKkjDAeZDS0A6bzhBH5hrMvTQ=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/xpladev/cosmos-sdk v0.53.4-768cb210-xpla h1:wq3GGicPnujpzS+NcuVh97PFEmUP8vXZPbSL0GR2QQg=
-github.com/xpladev/cosmos-sdk v0.53.4-768cb210-xpla/go.mod h1:nifazrMGFjpmOuaVIZBQ8akQc160imzySYFEA8A7tus=
-github.com/xpladev/evm v0.5.1-xpla.2 h1:QMmuwpbjuBg1TZ/XdR5U79hC9f0Rx0Yk98uxdbzj0GU=
-github.com/xpladev/evm v0.5.1-xpla.2/go.mod h1:AiKOtGMt539qICNH2Kdy+iw9yK3rlcU6MWet3+g8sWs=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla h1:6vdNwdkblOMf9vSp6pISCDkzY5XyUmwrVX+4ECInUVM=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
+github.com/xpladev/evm-sec-papyrus v0.0.0-20260224011955-c9ad1220f0fd h1:FoobFou+UcO02L3xThr5smZvKDLF3ISItoMp2Q85Ezc=
+github.com/xpladev/evm-sec-papyrus v0.0.0-20260224011955-c9ad1220f0fd/go.mod h1:MUrVrODPlGdehAzc2KjUPEVHLtA7WChEvrFLs5kWa9E=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm h1:kelMWZ91b/rfeMnIkk57w4rPSPm9wHlChFocIU1oIdU=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm/go.mod h1:X5CIOyo8SuK1Q5GnaEizQVLHT/DfsiGWuNeVdQcEMNA=
 github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1 h1:0sIH6/K1pE+75byzNDE3BoQ9gdl3KCfjeaAS6DSjnUg=

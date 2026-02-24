@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/cosmos/evm/x/vm/statedb"
 	"github.com/xpladev/xpla/x/bank/types"
 )
 
@@ -48,7 +49,8 @@ func (k Erc20Keeper) QueryTotalSupply(ctx sdk.Context, contractAddress common.Ad
 	moduleAccount := k.ak.GetModuleAccount(ctx, banktypes.ModuleName)
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
 
-	res, err := k.ek.CallEVM(ctx, ABI, moduleAddress, contractAddress, false, nil, types.GetErc20Method(types.TotalSupply))
+	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, nil, types.GetErc20Method(types.TotalSupply))
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
@@ -73,7 +75,8 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
 	ethAccount := common.BytesToAddress(account.Bytes())
 
-	res, err := k.ek.CallEVM(ctx, ABI, moduleAddress, contractAddress, false, nil, types.GetErc20Method(types.BalanceOf), ethAccount)
+	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, nil, types.GetErc20Method(types.BalanceOf), ethAccount)
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
@@ -97,7 +100,8 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 	ethSender := common.BytesToAddress(sender.Bytes())
 	ethTo := common.BytesToAddress(to.Bytes())
 
-	res, err := k.ek.CallEVM(ctx, ABI, ethSender, contractAddress, true, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
+	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, true, false, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
 	if err != nil {
 		return err
 	}

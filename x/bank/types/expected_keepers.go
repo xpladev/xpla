@@ -13,17 +13,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/cosmos/evm/x/vm/statedb"
 )
 
 type EvmKeeper interface {
-	ApplyMessage(ctx sdk.Context, msg core.Message, tracer *tracing.Hooks, commit bool, internal bool) (*evmtypes.MsgEthereumTxResponse, error)
+	statedb.Keeper
+	ApplyMessage(ctx sdk.Context, stateDB *statedb.StateDB, msg core.Message, tracer *tracing.Hooks, commit bool, callFromPrecompile bool, internal bool) (*evmtypes.MsgEthereumTxResponse, error)
 	EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*evmtypes.EstimateGasResponse, error)
 	GetNonce(ctx sdk.Context, addr common.Address) uint64
 	CallEVM(
 		ctx sdk.Context,
+		stateDB *statedb.StateDB,
 		abi abi.ABI,
 		from, contract common.Address,
 		commit bool,
+		callFromPrecompile bool,
 		gasCap *big.Int,
 		method string,
 		args ...interface{},

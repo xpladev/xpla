@@ -867,8 +867,8 @@ github.com/cosmos/interchain-security/v7 v7.0.0-20250408210344-06e0dc6bf6d6 h1:S
 github.com/cosmos/interchain-security/v7 v7.0.0-20250408210344-06e0dc6bf6d6/go.mod h1:W7JHsNaZ5XoH88cKT+wuCRsXkx/Fcn2kEwzpeGdJBxI=
 github.com/cosmos/interchaintest/v10 v10.0.1 h1:yMjGtoAE/sD1HWar3mf6BZAIjjTIBX8+mPQ/pB66HiY=
 github.com/cosmos/interchaintest/v10 v10.0.1/go.mod h1:HfUoEjGBYIqJp/PZDlYqQfAo2aKYCJvvhriBRHUt7/k=
-github.com/cosmos/ledger-cosmos-go v0.16.0 h1:YKlWPG9NnGZIEUb2bEfZ6zhON1CHlNTg0QKRRGcNEd0=
-github.com/cosmos/ledger-cosmos-go v0.16.0/go.mod h1:WrM2xEa8koYoH2DgeIuZXNarF7FGuZl3mrIOnp3Dp0o=
+github.com/cosmos/ledger-cosmos-go v1.0.0 h1:jNKW89nPf0vR0EkjHG8Zz16h6p3zqwYEOxlHArwgYtw=
+github.com/cosmos/ledger-cosmos-go v1.0.0/go.mod h1:mGaw2wDOf+Z6SfRJsMGxU9DIrBa4du0MAiPlpPhLAOE=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/cpuguy83/go-md2man/v2 v2.0.6 h1:XJtiaUW6dEEqVuZiMTn1ldk455QWwEIsMIJlo5vtkx0=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
@@ -1688,10 +1688,10 @@ github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/urfave/cli/v2 v2.27.5 h1:WoHEJLdsXr6dDWoJgMq/CboDmyY/8HMMH1fTECbih+w=
 github.com/urfave/cli/v2 v2.27.5/go.mod h1:3Sevf16NykTbInEnD0yKkjDAeZDS0A6bzhBH5hrMvTQ=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/xpladev/cosmos-sdk v0.53.4-768cb210-xpla h1:wq3GGicPnujpzS+NcuVh97PFEmUP8vXZPbSL0GR2QQg=
-github.com/xpladev/cosmos-sdk v0.53.4-768cb210-xpla/go.mod h1:nifazrMGFjpmOuaVIZBQ8akQc160imzySYFEA8A7tus=
-github.com/xpladev/evm v0.5.1-xpla h1:/TcUDjERC5xyI/naD6kb7/fAxN5a5nTEizzMnKrzSPo=
-github.com/xpladev/evm v0.5.1-xpla/go.mod h1:AiKOtGMt539qICNH2Kdy+iw9yK3rlcU6MWet3+g8sWs=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla h1:6vdNwdkblOMf9vSp6pISCDkzY5XyUmwrVX+4ECInUVM=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
+github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60 h1:PJDWiQ4uJa79tvK8rBMeN+K4dRi6kxfD3A8pJHZYe2Q=
+github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60/go.mod h1:MUrVrODPlGdehAzc2KjUPEVHLtA7WChEvrFLs5kWa9E=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm h1:kelMWZ91b/rfeMnIkk57w4rPSPm9wHlChFocIU1oIdU=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm/go.mod h1:X5CIOyo8SuK1Q5GnaEizQVLHT/DfsiGWuNeVdQcEMNA=
 github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 h1:gEOO8jv9F4OT7lGCjxCBTO/36wtF6j2nSip77qHd4x4=
