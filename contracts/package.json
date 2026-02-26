@@ -2,6 +2,9 @@
   "name": "@xpla/contracts",
   "version": "1.9.0-rc1",
   "description": "A collection of smart contracts used in the development of the CONX Chain.",
+  "dependencies": {
+    "cosmos-evm-contracts": "^0.0.1"
+  },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.4.0",
     "hardhat": "^3.1.5"
