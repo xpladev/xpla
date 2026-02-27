@@ -1,6 +1,6 @@
 {
   "name": "@xpla/contracts",
-  "version": "1.9.0-rc1",
+  "version": "1.9.0-rc2",
   "description": "A collection of smart contracts used in the development of the CONX Chain.",
   "dependencies": {
     "cosmos-evm-contracts": "^0.0.1"
@@ -11,11 +11,13 @@
   },
   "files": [
     "**/*.sol",
-    "/build/contracts/*.json"
+    "artifacts/solidity/precompiles/**/*.json"
   ],
   "scripts": {
     "compile": "hardhat compile",
-    "clean": "hardhat clean"
+    "clean": "hardhat clean",
+    "prepack": "pnpm run compile && find artifacts -name 'artifacts.d.ts' -delete && node scripts/prepack-publish.mjs",
+    "postpack": "node scripts/prepack-publish.mjs --restore"
   },
   "type": "module",
   "repository": {

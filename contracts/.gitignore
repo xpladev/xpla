@@ -1,6 +1,10 @@
 # Compiled contracts
 artifacts/
 
+# Publish layout (prepack creates abi/, postpack removes)
+abi/
+precompiles/
+
 # Cached files
 cache/
 
