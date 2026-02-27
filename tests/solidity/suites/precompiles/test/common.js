@@ -89,7 +89,7 @@ function findEvent(logs, iface, eventName) {
     return null
 }
 
-module.exports = {
+export {
     STAKING_PRECOMPILE_ADDRESS,
     BECH32_PRECOMPILE_ADDRESS,
     DISTRIBUTION_PRECOMPILE_ADDRESS,

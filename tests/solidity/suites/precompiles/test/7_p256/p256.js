@@ -1,5 +1,7 @@
-const { expect } = require('chai')
-const hre = require('hardhat')
+import { expect } from 'chai'
+import hre from 'hardhat'
+
+const { ethers } = await hre.network.connect();
 
 describe('P256 Precompile', function () {
     const P256_ADDRESS = '0x0000000000000000000000000000000000000100'
@@ -8,7 +10,7 @@ describe('P256 Precompile', function () {
     let signer
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners()
+        [signer] = await ethers.getSigners()
     })
 
     it('verifies valid P256 signature', async function () {
@@ -31,7 +33,7 @@ describe('P256 Precompile', function () {
         expect(input.length).to.equal(322) // 160 bytes * 2 + 2 for 0x
 
         // Make direct call to P256 precompile
-        const result = await hre.ethers.provider.call({
+        const result = await ethers.provider.call({
             to: P256_ADDRESS,
             data: input,
             gasLimit: GAS_LIMIT

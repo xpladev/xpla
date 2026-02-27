@@ -5,13 +5,15 @@
  *
  * Set COUNTER_WASM_ADDRESS (Bech32 or EVM hex) and run with get-contracts.
  */
-const { expect } = require('chai');
-const hre = require('hardhat');
-const {
+import { expect } from 'chai';
+import hre from 'hardhat';
+import {
     WASM_PRECOMPILE_ADDRESS,
     BECH32_PRECOMPILE_ADDRESS,
     LARGE_GAS_LIMIT,
-} = require('../common');
+} from '../common.js';
+
+const { ethers } = await hre.network.connect();
 
 const GET_COUNTER_QUERY = '{"get_count":{}}';
 const INCREMENT_MSG = '{"increment":{}}'; // full flow: increment → no_op submsg → reply (counter 3)
@@ -29,9 +31,9 @@ describe('WASM Counter (normal)', function () {
             return;
         }
 
-        [signer] = await hre.ethers.getSigners();
-        wasm = await hre.ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS);
-        bech32 = await hre.ethers.getContractAt('Bech32I', BECH32_PRECOMPILE_ADDRESS);
+        [signer] = await ethers.getSigners();
+        wasm = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS);
+        bech32 = await ethers.getContractAt('Bech32I', BECH32_PRECOMPILE_ADDRESS);
 
         if (addr.startsWith('xpla')) {
             counterWasmAddress = await bech32.bech32ToHex.staticCall(addr);
@@ -43,9 +45,9 @@ describe('WASM Counter (normal)', function () {
     async function getCounter() {
         const data = await wasm.smartContractState.staticCall(
             counterWasmAddress,
-            hre.ethers.toUtf8Bytes(GET_COUNTER_QUERY)
+            ethers.toUtf8Bytes(GET_COUNTER_QUERY)
         );
-        const decoded = hre.ethers.toUtf8String(data);
+        const decoded = ethers.toUtf8String(data);
         const obj = JSON.parse(decoded);
         return Number(obj.counter ?? obj.count ?? 0);
     }
@@ -59,7 +61,7 @@ describe('WASM Counter (normal)', function () {
             .executeContract(
                 signer.address,
                 counterWasmAddress,
-                hre.ethers.toUtf8Bytes(INCREMENT_MSG),
+                ethers.toUtf8Bytes(INCREMENT_MSG),
                 funds,
                 { gasLimit: LARGE_GAS_LIMIT }
             );

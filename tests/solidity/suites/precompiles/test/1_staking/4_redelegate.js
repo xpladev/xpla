@@ -1,6 +1,8 @@
-const {expect} = require('chai')
-const hre = require('hardhat')
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common')
+import {expect} from 'chai'
+import hre from 'hardhat'
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js'
+
+const { ethers } = await hre.network.connect();
 
 // Cosmos SDK LegacyDec precision (18 decimal places)
 const PRECISION = 10n ** 18n
@@ -64,9 +66,9 @@ describe('Staking – redelegate with event and state assertions', function () {
     let staking, signer
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners()
+        [signer] = await ethers.getSigners()
         // instantiate StakingI and Bech32I precompile contracts
-        staking = await hre.ethers.getContractAt('StakingI', STAKING_ADDRESS)
+        staking = await ethers.getContractAt('StakingI', STAKING_ADDRESS)
     })
 
     it('should redelegate tokens and emit Redelegate event', async function () {

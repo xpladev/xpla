@@ -1,33 +1,36 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const { LARGE_GAS_LIMIT, LOW_GAS_LIMIT } = require('./common');
-const {
+import { expect } from 'chai';
+import hre from 'hardhat';
+import { LARGE_GAS_LIMIT, LOW_GAS_LIMIT } from './common.js';
+import {
     decodeRevertReason,
     analyzeFailedTransaction,
     verifyTransactionRevert,
     verifyOutOfGasError
-} = require('./test_helper')
+} from './test_helper.js';
+
+const { ethers } = await hre.network.connect();
 
 describe('Precompile Revert Cases E2E Tests', function () {
     let revertTestContract, precompileWrapper;
+    let signer;
     let validValidatorAddress, invalidValidatorAddress;
     let analysis, decodedReason;
 
     before(async function () {
-        [signer] = await hre.ethers.getSigners();
+        [signer] = await ethers.getSigners();
         
         // Deploy RevertTestContract
-        const RevertTestContractFactory = await hre.ethers.getContractFactory('RevertTestContract');
+        const RevertTestContractFactory = await ethers.getContractFactory('RevertTestContract');
         revertTestContract = await RevertTestContractFactory.deploy({
-            value: hre.ethers.parseEther('1.0'), // Fund with 1 ETH
+            value: ethers.parseEther('1.0'), // Fund with 1 ETH
             gasLimit: LARGE_GAS_LIMIT
         });
         await revertTestContract.waitForDeployment();
         
         // Deploy PrecompileWrapper
-        const PrecompileWrapperFactory = await hre.ethers.getContractFactory('PrecompileWrapper');
+        const PrecompileWrapperFactory = await ethers.getContractFactory('PrecompileWrapper');
         precompileWrapper = await PrecompileWrapperFactory.deploy({
-            value: hre.ethers.parseEther('1.0'), // Fund with 1 ETH
+            value: ethers.parseEther('1.0'), // Fund with 1 ETH
             gasLimit: LARGE_GAS_LIMIT
         });
         await precompileWrapper.waitForDeployment();
@@ -50,7 +53,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyTransactionRevert(analysis, "invalid validator address")
         });
@@ -61,7 +64,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyTransactionRevert(analysis, "invalid validator address")
         });
@@ -74,7 +77,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
             } catch (error) {
                 decodedReason = decodeRevertReason(error.data)
             }
-            expect(decodedReason).contains("intended revert")
+            expect(decodedReason).to.include("intended revert")
         });
 
         it('should capture precompile revert reason through transaction receipt', async function () {
@@ -83,7 +86,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyTransactionRevert(analysis, "invalid validator address")
         });
@@ -96,7 +99,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyTransactionRevert(analysis, "invalid validator address")
         });
@@ -107,7 +110,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyTransactionRevert(analysis, "invalid validator address")
         });
@@ -118,7 +121,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyTransactionRevert(analysis, "invalid validator address")
         });
@@ -132,7 +135,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyOutOfGasError(analysis)
         });
@@ -143,7 +146,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyOutOfGasError(analysis)
         });
@@ -154,7 +157,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash)
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers)
             }
             verifyOutOfGasError(analysis)
         });
@@ -165,7 +168,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyOutOfGasError(analysis)
         });
@@ -192,7 +195,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                     await tx.wait()
                     expect.fail(`${testCase.name} should have reverted`);
                 } catch (error) {
-                    analysis = await analyzeFailedTransaction(error.receipt.hash);
+                    analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
                 }
                 verifyTransactionRevert(analysis, testCase.expectedReason)
             }
@@ -208,7 +211,7 @@ describe('Precompile Revert Cases E2E Tests', function () {
                     // Simulate the call to get error data
                     try {
                         const contractAddress = await revertTestContract.getAddress();
-                        await hre.ethers.provider.call({
+                        await ethers.provider.call({
                             to: contractAddress,
                             data: revertTestContract.interface.encodeFunctionData('directStakingRevert', [invalidValidatorAddress]),
                             gasLimit: LARGE_GAS_LIMIT

@@ -27,5 +27,6 @@
   "bugs": {
     "url": "https://github.com/xpladev/xpla/issues"
   },
-  "homepage": "https://github.com/xpladev/xpla/blob/main/contracts/README.md"
+  "homepage": "https://github.com/xpladev/xpla/blob/main/contracts/README.md",
+  "packageManager": "pnpm@9.15.0"
 }

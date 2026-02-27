@@ -1,6 +1,8 @@
-const {expect} = require('chai')
-const hre = require('hardhat')
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common')
+import {expect} from 'chai'
+import hre from 'hardhat'
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js'
+
+const { ethers } = await hre.network.connect();
 
 describe('Staking – delegate with event assertion', function () {
     const STAKING_ADDRESS = '0x0000000000000000000000000000000000000800'
@@ -10,17 +12,17 @@ describe('Staking – delegate with event assertion', function () {
     let staking, bech32, signer
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners()
+        [signer] = await ethers.getSigners()
 
         // Instantiate the StakingI precompile
-        staking = await hre.ethers.getContractAt('StakingI', STAKING_ADDRESS)
+        staking = await ethers.getContractAt('StakingI', STAKING_ADDRESS)
         // Instantiate the Bech32I precompile for address conversion
-        bech32 = await hre.ethers.getContractAt('Bech32I', BECH32_ADDRESS)
+        bech32 = await ethers.getContractAt('Bech32I', BECH32_ADDRESS)
     })
 
     it('should stake native coin and emit Delegate event (using precision-adjusted shares)', async function () {
         const valBech32 = 'xplavaloper10jmp6sgh4cc6zt3e8gw05wavvejgr5pwlgtsgz'
-        const stakeAmountBn = hre.ethers.parseEther('0.001')   // BigNumber
+        const stakeAmountBn = ethers.parseEther('0.001')   // BigNumber
         const stakeAmount = BigInt(stakeAmountBn.toString())
 
         // compute the expected shares minted = stakeAmount * 10^18

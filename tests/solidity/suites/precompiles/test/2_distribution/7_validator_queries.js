@@ -1,5 +1,7 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
+import { expect } from 'chai';
+import hre from 'hardhat';
+
+const { ethers } = await hre.network.connect();
 
 describe('Distribution – validator query methods', function () {
     const DIST_ADDRESS = '0x0000000000000000000000000000000000000801';
@@ -9,8 +11,8 @@ describe('Distribution – validator query methods', function () {
     let distribution, signer;
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners();
-        distribution = await hre.ethers.getContractAt('DistributionI', DIST_ADDRESS);
+        [signer] = await ethers.getSigners();
+        distribution = await ethers.getContractAt('DistributionI', DIST_ADDRESS);
     });
 
     it('validatorDistributionInfo returns current distribution info', async function () {

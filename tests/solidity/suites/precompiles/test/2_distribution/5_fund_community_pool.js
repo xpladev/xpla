@@ -1,6 +1,8 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common');
+import { expect } from 'chai';
+import hre from 'hardhat';
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js';
+
+const { ethers } = await hre.network.connect();
 
 describe('Distribution – fund community pool', function () {
     const DIST_ADDRESS = '0x0000000000000000000000000000000000000801';
@@ -9,17 +11,17 @@ describe('Distribution – fund community pool', function () {
     let distribution, signer;
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners();
-        distribution = await hre.ethers.getContractAt('DistributionI', DIST_ADDRESS);
+        [signer] = await ethers.getSigners();
+        distribution = await ethers.getContractAt('DistributionI', DIST_ADDRESS);
     });
 
     it('funds the community pool and emits FundCommunityPool event', async function () {
-        const coin = { denom: 'axpla', amount: hre.ethers.parseEther('0.01') };
+        const coin = { denom: 'axpla', amount: ethers.parseEther('0.01') };
 
         const beforePool = await distribution.communityPool();
         
         // Check user balance before funding
-        const balanceBefore = await hre.ethers.provider.getBalance(signer.address);
+        const balanceBefore = await ethers.provider.getBalance(signer.address);
         console.log('User balance before funding:', balanceBefore.toString());
 
         const tx = await distribution
@@ -29,7 +31,7 @@ describe('Distribution – fund community pool', function () {
         console.log('FundCommunityPool tx hash:', receipt.hash);
 
         // Check user balance after funding
-        const balanceAfter = await hre.ethers.provider.getBalance(signer.address);
+        const balanceAfter = await ethers.provider.getBalance(signer.address);
         console.log('User balance after funding:', balanceAfter.toString());
 
         const evt = findEvent(receipt.logs, distribution.interface, 'FundCommunityPool');

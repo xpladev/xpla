@@ -5,6 +5,6 @@ artifacts/
 # don't track the contracts on evmos directory because these are copied from the precompiles pkg of this repo
 **/precompiles/contracts/xpla/*
 
-# ignore package-lock files (only use yarn.lock)
+# ignore other lock files (only use pnpm)
 package-lock.json
-!yarn.lock
+yarn.lock

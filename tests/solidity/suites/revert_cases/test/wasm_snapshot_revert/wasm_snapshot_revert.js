@@ -1,15 +1,16 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const {
+import { expect } from 'chai';
+import hre from 'hardhat';
+import {
     WASM_PRECOMPILE_ADDRESS,
     BECH32_PRECOMPILE_ADDRESS,
     LARGE_GAS_LIMIT,
-} = require('../common');
-
-const {
+} from '../common.js';
+import {
     analyzeFailedTransaction,
     verifyTransactionRevert,
-} = require('../test_helper')
+} from '../test_helper.js';
+
+const { ethers } = await hre.network.connect();
 
 const GET_COUNTER_QUERY = '{"get_count":{}}';
 const INCREMENT_MSG = '{"increment":{}}'; // increment -> submsg no_op -> reply (counter 1->2->3)
@@ -29,9 +30,9 @@ describe('WASM Snapshot Revert', function () {
             return;
         }
 
-        [signer] = await hre.ethers.getSigners();
-        wasm = await hre.ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS);
-        bech32 = await hre.ethers.getContractAt('Bech32I', BECH32_PRECOMPILE_ADDRESS);
+        [signer] = await ethers.getSigners();
+        wasm = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS);
+        bech32 = await ethers.getContractAt('Bech32I', BECH32_PRECOMPILE_ADDRESS);
 
         // If Bech32, convert to EVM address for precompile
         if (addr.startsWith('xpla')) {
@@ -40,7 +41,7 @@ describe('WASM Snapshot Revert', function () {
             counterWasmAddress = addr;
         }
 
-        const CallerFactory = await hre.ethers.getContractFactory('WasmSnapshotRevertCaller');
+        const CallerFactory = await ethers.getContractFactory('WasmSnapshotRevertCaller');
         caller = await CallerFactory.deploy({ gasLimit: LARGE_GAS_LIMIT });
         await caller.waitForDeployment();
 
@@ -50,9 +51,9 @@ describe('WASM Snapshot Revert', function () {
     async function getCounter() {
         const data = await wasm.smartContractState.staticCall(
             counterWasmAddress,
-            hre.ethers.toUtf8Bytes(GET_COUNTER_QUERY)
+            ethers.toUtf8Bytes(GET_COUNTER_QUERY)
         );
-        const decoded = hre.ethers.toUtf8String(data);
+        const decoded = ethers.toUtf8String(data);
         const obj = JSON.parse(decoded);
         return Number(obj.counter ?? obj.count ?? 0);
     }
@@ -67,7 +68,7 @@ describe('WASM Snapshot Revert', function () {
             .executeContract(
                 signer.address,
                 counterWasmAddress,
-                hre.ethers.toUtf8Bytes(INCREMENT_MSG),
+                ethers.toUtf8Bytes(INCREMENT_MSG),
                 funds,
                 { gasLimit: 259_670 }
             );
@@ -75,7 +76,7 @@ describe('WASM Snapshot Revert', function () {
             await tx.wait();
             expect.fail('Transaction should have failed with revert');
         } catch (error) {
-            analysis = await analyzeFailedTransaction(error.receipt.hash);
+            analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
         }
 
         verifyTransactionRevert(analysis, "out of gas");
@@ -95,7 +96,7 @@ describe('WASM Snapshot Revert', function () {
         // With limited gas, we expect revert (status=0), and local counter must rollback to 0.
         const tx = await caller.callExecuteWithLocalCounter(
             counterWasmAddress,
-            hre.ethers.toUtf8Bytes(INCREMENT_MSG),
+            ethers.toUtf8Bytes(INCREMENT_MSG),
             { gasLimit: 286980 }
         );
 
@@ -104,7 +105,7 @@ describe('WASM Snapshot Revert', function () {
             await tx.wait();
             expect.fail('Transaction should have failed with revert');
         } catch (error) {
-            analysis = await analyzeFailedTransaction(error.receipt.hash);
+            analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
         }
 
         verifyTransactionRevert(analysis, "out of gas");

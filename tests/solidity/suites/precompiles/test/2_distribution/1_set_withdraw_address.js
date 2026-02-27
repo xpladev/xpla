@@ -1,6 +1,8 @@
-const {expect} = require('chai');
-const hre = require('hardhat');
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common');
+import {expect} from 'chai';
+import hre from 'hardhat';
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js';
+
+const { ethers } = await hre.network.connect();
 
 describe('Distribution – set withdraw address', function () {
     const DIST_ADDRESS = '0x0000000000000000000000000000000000000801';
@@ -9,8 +11,8 @@ describe('Distribution – set withdraw address', function () {
     let distribution, signer;
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners();
-        distribution = await hre.ethers.getContractAt('DistributionI', DIST_ADDRESS);
+        [signer] = await ethers.getSigners();
+        distribution = await ethers.getContractAt('DistributionI', DIST_ADDRESS);
     });
 
     it('should set withdraw address and emit SetWithdrawerAddress event', async function () {

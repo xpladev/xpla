@@ -1,6 +1,8 @@
-const { expect } = require('chai')
-const hre = require('hardhat')
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common')
+import { expect } from 'chai'
+import hre from 'hardhat'
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js'
+
+const { ethers } = await hre.network.connect();
 
 describe('Gov Precompile', function () {
     const GOV_ADDRESS = '0x0000000000000000000000000000000000000805'
@@ -11,12 +13,12 @@ describe('Gov Precompile', function () {
     let gov, signer, globalProposalId
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners()
-        gov = await hre.ethers.getContractAt('IGov', GOV_ADDRESS)
+        [signer] = await ethers.getSigners()
+        gov = await ethers.getContractAt('IGov', GOV_ADDRESS)
         
         // Create a single proposal to be reused across tests
         const jsonProposal = buildProposal(COSMOS_ADDR)
-        const deposit = { denom: 'axpla', amount: hre.ethers.parseEther('1') }
+        const deposit = { denom: 'axpla', amount: ethers.parseEther('1') }
 
         const tx = await gov
             .connect(signer)
@@ -63,11 +65,11 @@ describe('Gov Precompile', function () {
     })
 
     it('deposits on the global proposal', async function () {
-        const amt = hre.ethers.parseEther('0.5')
+        const amt = ethers.parseEther('0.5')
         const deposit = { denom: 'axpla', amount: amt }
 
         // Check balances before deposit
-        const signerBalanceBefore = await hre.ethers.provider.getBalance(signer.address)
+        const signerBalanceBefore = await ethers.provider.getBalance(signer.address)
 
         const depTx = await gov
             .connect(signer)
@@ -75,7 +77,7 @@ describe('Gov Precompile', function () {
         const depRcpt = await waitWithTimeout(depTx, 20000, RETRY_DELAY_FUNC)
 
         // Check balances after deposit
-        const signerBalanceAfter = await hre.ethers.provider.getBalance(signer.address)
+        const signerBalanceAfter = await ethers.provider.getBalance(signer.address)
         const gasFee = depRcpt.gasUsed * depRcpt.gasPrice
 
         // Verify balance changes (only gas fees should be deducted for gov deposit)
@@ -194,13 +196,13 @@ describe('Gov Precompile', function () {
         const proposalIdToCancel = globalProposalId
         
         // Calculate total deposits made (1 ETH initial + 0.5 ETH additional)
-        const initialDeposit = hre.ethers.parseEther('1')
-        const additionalDeposit = hre.ethers.parseEther('0.5')
+        const initialDeposit = ethers.parseEther('1')
+        const additionalDeposit = ethers.parseEther('0.5')
         const totalDeposits = initialDeposit + additionalDeposit
         const expectedRefund = totalDeposits / 2n // 50% refund
         
         // Check balances before cancel
-        const signerBalanceBefore = await hre.ethers.provider.getBalance(signer.address)
+        const signerBalanceBefore = await ethers.provider.getBalance(signer.address)
         
         const cancelTx = await gov
             .connect(signer)
@@ -208,7 +210,7 @@ describe('Gov Precompile', function () {
         const cancelRcpt = await waitWithTimeout(cancelTx, 20000, RETRY_DELAY_FUNC)
 
         // Check balances after cancel
-        const signerBalanceAfter = await hre.ethers.provider.getBalance(signer.address)
+        const signerBalanceAfter = await ethers.provider.getBalance(signer.address)
         const gasFee = cancelRcpt.gasUsed * cancelRcpt.gasPrice
         
         // Verify balance changes (50% refund minus gas fees)
@@ -220,6 +222,6 @@ describe('Gov Precompile', function () {
         expect(cancelEvt.args.proposer).to.equal(signer.address)
         expect(cancelEvt.args.proposalId).to.equal(proposalIdToCancel)
 
-        await expect(gov.getProposal(proposalIdToCancel)).to.be.reverted;
+        await expect(gov.getProposal(proposalIdToCancel)).to.revert(ethers);
     })
 })

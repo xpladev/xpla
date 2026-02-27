@@ -1,6 +1,8 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common');
+import { expect } from 'chai';
+import hre from 'hardhat';
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js';
+
+const { ethers } = await hre.network.connect();
 
 describe('Distribution – deposit validator rewards pool', function () {
     const DIST_ADDRESS = '0x0000000000000000000000000000000000000801';
@@ -11,18 +13,18 @@ describe('Distribution – deposit validator rewards pool', function () {
     let distribution, signer;
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners();
-        distribution = await hre.ethers.getContractAt('DistributionI', DIST_ADDRESS);
+        [signer] = await ethers.getSigners();
+        distribution = await ethers.getContractAt('DistributionI', DIST_ADDRESS);
     });
 
     it('deposits rewards and emits DepositValidatorRewardsPool event', async function () {
-        const coin = { denom: 'axpla', amount: hre.ethers.parseEther('0.1') };
+        const coin = { denom: 'axpla', amount: ethers.parseEther('0.1') };
 
         const beforeRewards = await distribution.validatorOutstandingRewards(VAL_BECH32);
         const beforeCoin = beforeRewards.find(c => c.denom === coin.denom);
         const start = beforeCoin ? BigInt(beforeCoin.amount.toString()) : 0n;
 
-        const balanceBefore = await hre.ethers.provider.getBalance(signer.address);
+        const balanceBefore = await ethers.provider.getBalance(signer.address);
         console.log('User balance before deposit:', balanceBefore.toString());
 
         const tx = await distribution
@@ -31,7 +33,7 @@ describe('Distribution – deposit validator rewards pool', function () {
         const receipt = await waitWithTimeout(tx, 20000, RETRY_DELAY_FUNC);
         console.log('DepositValidatorRewardsPool tx hash:', receipt.hash);
 
-        const balanceAfter = await hre.ethers.provider.getBalance(signer.address);
+        const balanceAfter = await ethers.provider.getBalance(signer.address);
         console.log('User balance after deposit:', balanceAfter.toString());
 
         const evt = findEvent(receipt.logs, distribution.interface, 'DepositValidatorRewardsPool');

@@ -1,40 +1,41 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const {
+import { expect } from 'chai';
+import hre from 'hardhat';
+import {
     DEFAULT_GAS_LIMIT,
     LARGE_GAS_LIMIT,
     LOW_GAS_LIMIT,
     PANIC_ASSERT_0x01,
     PANIC_DIVISION_BY_ZERO_0x12,
     PANIC_ARRAY_OUT_OF_BOUND_0x32
-} = require('./common');
-const {
+} from './common.js';
+import {
     decodeRevertReason,
     analyzeFailedTransaction,
     verifyTransactionRevert,
     verifyOutOfGasError
-} = require('./test_helper')
+} from './test_helper.js';
 
+const { ethers } = await hre.network.connect();
 
 describe('Standard Revert Cases E2E Tests', function () {
     let standardRevertTestContract, simpleWrapper, signer;
     let analysis, decodedReason;
 
     before(async function () {
-        [signer] = await hre.ethers.getSigners();
+        [signer] = await ethers.getSigners();
         
         // Deploy StandardRevertTestContract
-        const StandardRevertTestContractFactory = await hre.ethers.getContractFactory('StandardRevertTestContract');
+        const StandardRevertTestContractFactory = await ethers.getContractFactory('StandardRevertTestContract');
         standardRevertTestContract = await StandardRevertTestContractFactory.deploy({
-            value: hre.ethers.parseEther('1.0'), // Fund with 1 ETH
+            value: ethers.parseEther('1.0'), // Fund with 1 ETH
             gasLimit: LARGE_GAS_LIMIT
         });
         await standardRevertTestContract.waitForDeployment();
         
         // Deploy SimpleWrapper
-        const SimpleWrapperFactory = await hre.ethers.getContractFactory('SimpleWrapper');
+        const SimpleWrapperFactory = await ethers.getContractFactory('SimpleWrapper');
         simpleWrapper = await SimpleWrapperFactory.deploy({
-            value: hre.ethers.parseEther('1.0'), // Fund with 1 ETH
+            value: ethers.parseEther('1.0'), // Fund with 1 ETH
             gasLimit: LARGE_GAS_LIMIT
         });
         await simpleWrapper.waitForDeployment();
@@ -57,7 +58,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, customMessage);
 
@@ -80,7 +81,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, "Value exceeds threshold");
             
@@ -105,7 +106,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, PANIC_ASSERT_0x01);
             
@@ -135,7 +136,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, PANIC_DIVISION_BY_ZERO_0x12);
         });
@@ -147,7 +148,7 @@ describe('Standard Revert Cases E2E Tests', function () {
             } catch (error) {
                 decodedReason = decodeRevertReason(error.data);
             }
-            expect(decodedReason).contains(PANIC_ARRAY_OUT_OF_BOUND_0x32);
+            expect(decodedReason).to.include(PANIC_ARRAY_OUT_OF_BOUND_0x32);
         });
 
         it('should handle array out of bounds (Transaction Panic error)', async function () {
@@ -156,7 +157,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, PANIC_ARRAY_OUT_OF_BOUND_0x32);
         });
@@ -167,7 +168,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, "Test message");
         });
@@ -180,7 +181,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, "Multiple calls revert");
         });
@@ -191,7 +192,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, "Internal function revert");
         });
@@ -203,7 +204,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have reverted');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyTransactionRevert(analysis, "Wrapper test");
         });
@@ -216,7 +217,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyOutOfGasError(analysis);
         });
@@ -227,7 +228,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyOutOfGasError(analysis);
         });
@@ -238,7 +239,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyOutOfGasError(analysis);
         });
@@ -250,7 +251,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyOutOfGasError(analysis);
         });
@@ -261,7 +262,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 await tx.wait();
                 expect.fail('Transaction should have failed with OutOfGas');
             } catch (error) {
-                analysis = await analyzeFailedTransaction(error.receipt.hash);
+                analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
             }
             verifyOutOfGasError(analysis);
         });
@@ -333,7 +334,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                     await testCase.call();
                     expect.fail(`${testCase.name} should have reverted`);
                 } catch (error) {
-                    analysis = await analyzeFailedTransaction(error.receipt.hash);
+                    analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
                 }
                 verifyTransactionRevert(analysis, testCase.expectedReason);
             }
@@ -346,7 +347,7 @@ describe('Standard Revert Cases E2E Tests', function () {
                 } catch (error) {
                     decodedReason = decodeRevertReason(error.data);
                 }
-                expect(decodedReason).contains(testCase.expectedReason);
+                expect(decodedReason).to.include(testCase.expectedReason);
             }
         });
 
@@ -358,7 +359,7 @@ describe('Standard Revert Cases E2E Tests', function () {
             } catch (error) {
                 try {
                     const contractAddress = await standardRevertTestContract.getAddress();
-                    await hre.ethers.provider.call({
+                    await ethers.provider.call({
                         to: contractAddress,
                         data: standardRevertTestContract.interface.encodeFunctionData('standardRevert', ['Hex encoding test']),
                         gasLimit: DEFAULT_GAS_LIMIT

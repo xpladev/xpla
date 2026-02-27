@@ -1,14 +1,15 @@
-const hre = require('hardhat');
-const {expect} = require('chai');
-const { BytesLike } = require('ethers');
+import hre from 'hardhat';
+import {expect} from 'chai';
+
+const { ethers } = await hre.network.connect();
 
 describe('Bank', function () {
     it('query account balances', async function () {
-        const bank = await hre.ethers.getContractAt(
+        const bank = await ethers.getContractAt(
             'IBank',
             '0x1000000000000000000000000000000000000001'
         );
-        const [signer] = await hre.ethers.getSigners();
+        const [signer] = await ethers.getSigners();
         const balance = await bank
             .getFunction('balance')
             .staticCall(signer.address, 'axpla');
@@ -18,7 +19,7 @@ describe('Bank', function () {
     });
 
     it('query total supply', async function () {
-        const bank = await hre.ethers.getContractAt(
+        const bank = await ethers.getContractAt(
             'IBank',
             '0x1000000000000000000000000000000000000001'
         );
