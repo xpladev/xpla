@@ -85,7 +85,7 @@ describe('WASM Snapshot Revert', function () {
         expect(counter).to.equal(0);
     });
 
-    it('Case 2: via WasmSnapshotRevertCaller local counter rolls back on revert', async function () {
+    it('Case 2: via WasmSnapshotRevertCaller – on revert local counter rolls back to 0', async function () {
         if (!counterWasmAddress) return this.skip();
 
         // Sanity: local counter starts at 0
@@ -110,10 +110,34 @@ describe('WASM Snapshot Revert', function () {
 
         verifyTransactionRevert(analysis, "out of gas");
 
+        // Key point: on revert, local counter must rollback to 0 (not 1).
         const afterLocal = await caller.counter();
-        expect(afterLocal, 'local counter should rollback to 0').to.equal(0n);
+        expect(afterLocal, 'local counter should be 0 after revert').to.equal(0n);
 
         const counter = await getCounter();
         expect(counter).to.equal(0);
+    });
+
+    it('Case 3: via WasmSnapshotRevertCaller – on success local counter stays 1', async function () {
+        if (!counterWasmAddress) return this.skip();
+
+        // Sanity: local counter is 0 (from previous test or fresh state)
+        const beforeLocal = await caller.counter();
+        expect(beforeLocal).to.equal(0n);
+
+        // Call with sufficient gas so WASM execute succeeds. Contract sets counter=1 before the call.
+        const tx = await caller.callExecuteWithLocalCounter(
+            counterWasmAddress,
+            ethers.toUtf8Bytes(INCREMENT_MSG),
+            { gasLimit: LARGE_GAS_LIMIT }
+        );
+        await tx.wait();
+
+        // Key point: on success, local counter must remain 1 (no rollback).
+        const afterLocal = await caller.counter();
+        expect(afterLocal, 'local counter should be 1 after success').to.equal(1n);
+
+        const counter = await getCounter();
+        expect(counter, 'WASM counter should have incremented').to.be.greaterThan(0);
     });
 });
