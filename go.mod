@@ -23,7 +23,7 @@ require (
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.53.6
-	github.com/cosmos/evm v0.5.1
+	github.com/cosmos/evm v0.6.0
 	github.com/cosmos/gogoproto v1.7.2
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 v10.1.0
 	github.com/cosmos/ibc-apps/modules/rate-limiting/v10 v10.1.0
@@ -282,7 +282,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla
 
 	// xpla features
-	github.com/cosmos/evm => github.com/xpladev/evm-sec-papyrus v0.0.0-20260224011955-c9ad1220f0fd
+	github.com/cosmos/evm => github.com/xpladev/evm v0.6.0-xpla
 
 	// xpla features
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1
