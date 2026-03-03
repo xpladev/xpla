@@ -2,6 +2,8 @@ version: "3.7"
 services:
   node1:
     container_name: xpla-localnet-validator1
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     build:
       context: ../../.
@@ -24,16 +26,14 @@ services:
 
   node2:
     container_name: xpla-localnet-validator2
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     volumes:
       - ~/genesis:/genesis:ro
 
     depends_on:
       - node1
-
-    build:
-      context: ../../.
-      target: runtime
 
     ports:
       - "18555:8545"
@@ -48,16 +48,14 @@ services:
 
   node3:
     container_name: xpla-localnet-validator3
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     volumes:
       - ~/genesis:/genesis:ro
 
     depends_on:
       - node1
-
-    build:
-      context: ../../.
-      target: runtime
 
     ports:
       - "18565:8545"
@@ -72,16 +70,14 @@ services:
 
   node4:
     container_name: xpla-localnet-validator4
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     volumes:
       - ~/genesis:/genesis:ro
 
     depends_on:
       - node1
-
-    build:
-      context: ../../.
-      target: runtime
 
     ports:
       - "18575:8545"
@@ -96,16 +92,14 @@ services:
 
   node5:
     container_name: xpla-localnet-validator5
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     volumes:
       - ~/genesis:/genesis:ro
 
     depends_on:
       - node1
-
-    build:
-      context: ../../.
-      target: runtime
 
     ports:
       - "18585:8545"
@@ -120,16 +114,14 @@ services:
 
   node-volunteer-1:
     container_name: xpla-localnet-volunteer1
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     volumes:
       - ~/genesis:/genesis:ro
 
     depends_on:
       - node1
-
-    build:
-      context: ../../.
-      target: runtime
 
     ports:
       - "18595:8545"
@@ -144,16 +136,14 @@ services:
 
   node-volunteer-2:
     container_name: xpla-localnet-volunteer2
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     volumes:
       - ~/genesis:/genesis:ro
 
     depends_on:
       - node1
-
-    build:
-      context: ../../.
-      target: runtime
 
     ports:
       - "18605:8545"
@@ -168,16 +158,14 @@ services:
 
   node-volunteer-3:
     container_name: xpla-localnet-volunteer3
+    image: xpla-localnet-e2e:latest
+    pull_policy: never
 
     volumes:
       - ~/genesis:/genesis:ro
 
     depends_on:
       - node1
-
-    build:
-      context: ../../.
-      target: runtime
 
     ports:
       - "18615:8545"
