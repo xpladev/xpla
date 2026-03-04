@@ -1707,8 +1707,8 @@ github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/urfave/cli/v2 v2.27.5 h1:WoHEJLdsXr6dDWoJgMq/CboDmyY/8HMMH1fTECbih+w=
 github.com/urfave/cli/v2 v2.27.5/go.mod h1:3Sevf16NykTbInEnD0yKkjDAeZDS0A6bzhBH5hrMvTQ=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/xpladev/cosmos-sdk v0.53.6-xpla h1:6vdNwdkblOMf9vSp6pISCDkzY5XyUmwrVX+4ECInUVM=
-github.com/xpladev/cosmos-sdk v0.53.6-xpla/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla-2 h1:6/ffVxMEIGJGqsDVF8fyRuVIaZ78Ftuo3iZvHAvAlcU=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla-2/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
 github.com/xpladev/evm v0.6.0-xpla h1:rqhLLhJRtWRiV4Cu3OOTYQKM2r90Z6xGQdQIURC9GCE=
 github.com/xpladev/evm v0.6.0-xpla/go.mod h1:QnaJDtxqon2mywiYqxM8VwW8FKeFazi0au0qzVpFAG8=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm h1:kelMWZ91b/rfeMnIkk57w4rPSPm9wHlChFocIU1oIdU=
