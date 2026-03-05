@@ -36,3 +36,4 @@ jobs:
             apk add --update --no-cache binutils-gold
           binaries: |
             - /go/bin/xplad
+          additional-args: "--alpine-version 3.22"
