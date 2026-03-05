@@ -1,7 +1,7 @@
 # @xpla/contracts
 
 A collection of smart contracts for the CONX Chain.  
-The published package includes precompile interface sources (`.sol`) and ABIs (`.json`).
+The published package includes precompile interface sources (`.sol`) and ABIs as typed TypeScript (`.ts`).
 
 ## Installation
 
@@ -23,20 +23,11 @@ After installation, use the following paths:
 | Path | Description |
 |------|-------------|
 | `@xpla/contracts/precompiles/` | Solidity sources (`.sol`) |
-| `@xpla/contracts/abi/precompiles/` | ABI as JSON (`.json`) or typed ESM (`.js` + `.d.ts`) |
+| `@xpla/contracts/abi/precompiles/` | ABI as typed ESM (`.ts`) |
 
 Included precompiles: `auth`, `bank`, `wasm`.
 
 ## Usage
-
-### Loading ABI (ethers / viem / web3, etc.)
-
-```javascript
-import IAuthAbi from "@xpla/contracts/abi/precompiles/auth/IAuth.sol/IAuth.json" assert { type: "json" };
-
-// or Node
-const IAuthAbi = require("@xpla/contracts/abi/precompiles/auth/IAuth.json");
-```
 
 ### Loading ABI with TypeScript / viem (typed)
 
@@ -85,6 +76,6 @@ import "@xpla/contracts/wasm/IWasm.sol";
 
 ### Path reference
 
-- Interface ABI: `@xpla/contracts/abi/precompiles/{module}/{Interface}.json`  
-  e.g. `abi/precompiles/auth/IAuth.json`
+- Interface ABI: `@xpla/contracts/abi/precompiles/{module}/{Interface}.ts`  
+  e.g. `abi/precompiles/auth/IAuth`
 - Sources: `@xpla/contracts/precompiles/{module}/{Interface}.sol`

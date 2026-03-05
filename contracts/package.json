@@ -1,14 +1,16 @@
 {
   "name": "@xpla/contracts",
-  "version": "1.9.0-rc5",
+  "version": "1.9.0-rc8",
   "description": "A collection of smart contracts used in the development of the CONX Chain.",
   "dependencies": {
-    "cosmos-evm-contracts": "^0.0.8"
+    "cosmos-evm-contracts": "^0.0.9"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.4.0",
-    "hardhat": "^3.1.5",
-    "typescript": "^5.1.6"
+    "@types/node": "^22.0.0",
+    "@wagmi/cli": "^2.2.0",
+    "hardhat": "^3.1.10",
+    "typescript": "^5.0.0"
   },
   "files": [
     "dist",
@@ -16,15 +18,10 @@
   ],
   "exports": {
     "./*.sol": "./dist/*.sol",
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "default": "./dist/*.js"
-    }
+    "./*": "./dist/*.ts"
   },
   "scripts": {
-    "build:precompiles": "node scripts/build-precompiles.js && pnpm exec tsc -p tsconfig.json",
-    "compile": "hardhat compile",
+    "build:precompiles": "node scripts/build-precompiles.js && wagmi generate",
     "prepublishOnly": "pnpm run build:precompiles"
   },
   "type": "module",
