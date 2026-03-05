@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       cosmos-evm-contracts:
-        specifier: ^0.0.7
-        version: 0.0.7
+        specifier: ^0.0.8
+        version: 0.0.8
     devDependencies:
       '@openzeppelin/contracts':
         specifier: ^5.4.0
@@ -343,8 +343,8 @@ packages:
     resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
     engines: {node: '>= 14.16.0'}
 
-  cosmos-evm-contracts@0.0.7:
-    resolution: {integrity: sha512-6j6EQtjz+te7uB0CAnd/g+qpmRwOZrsNUbhAvi4mm9Sql5cLP4nfV9SmFLSWhXWp8MpTaRbq2wJGHk2eLnGrPQ==}
+  cosmos-evm-contracts@0.0.8:
+    resolution: {integrity: sha512-tN/riYbsEKtUOwEmfbuaxWyJaK1GP76070npLaKDLvr6qpvT7+ppXRAy/G9wqlNei06q4Z2sieFrLpjqeRcYwg==}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -692,7 +692,7 @@ snapshots:
     dependencies:
       readdirp: 4.1.2
 
-  cosmos-evm-contracts@0.0.7:
+  cosmos-evm-contracts@0.0.8:
     dependencies:
       '@account-abstraction/contracts': 0.8.0
 
