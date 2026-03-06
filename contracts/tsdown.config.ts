@@ -12,4 +12,14 @@ export default defineConfig({
     dts: '.d.ts',
   }),
   platform: 'neutral',
+  copy: [
+    {
+      from: [
+        "solidity/precompiles/**/*.sol",
+      ],
+      to: "dist/precompiles",
+      flatten: false,
+      verbose: true,
+    },
+  ],
 });

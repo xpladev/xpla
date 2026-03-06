@@ -1,6 +1,6 @@
 {
   "name": "@xpla/contracts",
-  "version": "1.9.0-rc9",
+  "version": "1.9.0-rc10",
   "description": "A collection of smart contracts used in the development of the CONX Chain.",
   "dependencies": {
     "cosmos-evm-contracts": "^0.0.11"
@@ -26,7 +26,7 @@
     }
   },
   "scripts": {
-    "build:precompiles": "node scripts/build-precompiles.js && wagmi generate && tsdown",
+    "build:precompiles": "wagmi generate && tsdown",
     "prepublishOnly": "pnpm run build:precompiles"
   },
   "type": "module",
