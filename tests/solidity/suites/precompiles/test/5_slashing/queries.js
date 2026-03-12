@@ -1,5 +1,7 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
+import { expect } from 'chai';
+import hre from 'hardhat';
+
+const { ethers } = await hre.network.connect();
 
 describe('Slashing – query methods', function () {
     const SLASHING_ADDRESS = '0x0000000000000000000000000000000000000806';
@@ -7,7 +9,7 @@ describe('Slashing – query methods', function () {
     let slashing;
 
     before(async function () {
-        slashing = await hre.ethers.getContractAt('ISlashing', SLASHING_ADDRESS);
+        slashing = await ethers.getContractAt('ISlashing', SLASHING_ADDRESS);
     });
 
     it('getSigningInfos returns list of signing info', async function () {

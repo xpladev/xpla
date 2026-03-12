@@ -1,7 +1,8 @@
-require("@nomicfoundation/hardhat-toolbox");
+import { defineConfig } from "hardhat/config";
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+export default defineConfig({
+  plugins: [hardhatToolboxMochaEthers],
   solidity: {
     compilers: [
       {
@@ -15,6 +16,7 @@ module.exports = {
   },
   networks: {
     cosmos: {
+      type: "http",
       url: "http://127.0.0.1:8545",
       chainId: 37,
       accounts: [
@@ -24,4 +26,4 @@ module.exports = {
       ],
     },
   },
-};
+});

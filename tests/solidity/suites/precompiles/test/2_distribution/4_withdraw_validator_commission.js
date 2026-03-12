@@ -1,6 +1,8 @@
-const { expect } = require('chai')
-const { ethers } = require('hardhat')
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common')
+import { expect } from 'chai'
+import hre from 'hardhat'
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js'
+
+const { ethers } = await hre.network.connect();
 
 describe('Distribution – withdraw validator commission', function () {
     const DIST_ADDRESS = '0x0000000000000000000000000000000000000801'

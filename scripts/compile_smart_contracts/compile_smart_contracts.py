@@ -1,7 +1,7 @@
 """
 Compile Solidity smart contracts in this repository with Hardhat.
 
-Prerequisite: contracts/solidity directory must exist.
+Prerequisite: contracts/solidity/precompiles directory must exist (or will be created).
 
 Usage:
     python3 compile_smart_contracts.py --compile   # compile all under precompile/
@@ -24,10 +24,11 @@ REPO_PATH = Path(__file__).parent.parent.parent
 # Only scan precompile for Solidity contracts.
 PRECOMPILE_DIR = "precompile"
 
-# Target directory for Hardhat: contracts/solidity (must exist).
+# Target directory for Hardhat: contracts/solidity/precompiles (must exist or will be created).
 HARDHAT_PROJECT_DIR = "contracts"
 SOLIDITY_SOURCE = "solidity"
-RELATIVE_TARGET = Path(HARDHAT_PROJECT_DIR) / SOLIDITY_SOURCE
+PRECOMPILES = "precompiles"
+RELATIVE_TARGET = Path(HARDHAT_PROJECT_DIR) / SOLIDITY_SOURCE / PRECOMPILES
 CONTRACTS_TARGET = REPO_PATH / RELATIVE_TARGET
 
 
@@ -148,11 +149,12 @@ def is_ignored_file(file_path: Path, repo_path: Path) -> bool:
 
 
 def copy_to_contracts_directory(target_dir: Path, contracts: List[Contract]) -> None:
-    """Copy found contracts into target_dir (contracts/solidity). Assumes target_dir exists."""
+    """Copy found contracts into target_dir (contracts/solidity/precompiles). Creates target if needed."""
+    target_dir.mkdir(parents=True, exist_ok=True)
     if not target_dir.is_dir():
         raise ValueError(
             f"Target directory does not exist: {target_dir}. "
-            "Create contracts/solidity first."
+            "Create contracts/solidity/precompiles first."
         )
 
     for contract in contracts:
@@ -194,16 +196,17 @@ def compile_contracts_in_dir(target_dir: Path):
 
     cur_dir = os.getcwd()
 
-    # Change to the root directory of the hardhat setup to compile.
-    os.chdir(target_dir.parent)
+    # Change to the root directory of the hardhat setup to compile (contracts/).
+    hardhat_root = target_dir.parent.parent
+    os.chdir(hardhat_root)
     if not os.path.exists("hardhat.config.ts"):
         raise ValueError("compilation can only work in a HardHat setup")
 
-    install_failed = os.system("npm install")
+    install_failed = os.system("pnpm install")
     if install_failed:
-        raise ValueError("Failed to install npm packages.")
+        raise ValueError("Failed to install pnpm packages.")
 
-    compilation_failed = os.system("npx hardhat compile")
+    compilation_failed = os.system("pnpm exec hardhat compile")
     if compilation_failed:
         raise ValueError("Failed to compile Solidity contracts.")
 
@@ -276,10 +279,11 @@ def clean_up_hardhat_project(hardhat_dir: Path):
     if os.path.exists(cache):
         rmtree(cache)
 
-    contracts_dir = hardhat_dir / SOLIDITY_SOURCE
-    for entry in contracts_dir.iterdir():
-        if entry.is_dir():
-            rmtree(entry)
+    contracts_dir = hardhat_dir / SOLIDITY_SOURCE / PRECOMPILES
+    if contracts_dir.exists():
+        for entry in contracts_dir.iterdir():
+            if entry.is_dir():
+                rmtree(entry)
 
 
 def is_relative_target(path: Path) -> bool:
@@ -296,9 +300,13 @@ def compile_files(repo_path: Path):
     found_contracts = find_solidity_contracts(repo_path)
     copy_to_contracts_directory(CONTRACTS_TARGET, found_contracts)
     compile_contracts_in_dir(CONTRACTS_TARGET)
-    copy_compiled_contracts_back_to_source(
-        found_contracts, CONTRACTS_TARGET.parent / "artifacts" / SOLIDITY_SOURCE
+    compiled_dir = (
+        CONTRACTS_TARGET.parent.parent
+        / "artifacts"
+        / SOLIDITY_SOURCE
+        / PRECOMPILES
     )
+    copy_compiled_contracts_back_to_source(found_contracts, compiled_dir)
 
 
 if __name__ == "__main__":
@@ -316,7 +324,7 @@ if __name__ == "__main__":
         compile_files(REPO_PATH)
 
     elif sys.argv[1] == "--clean":
-        clean_up_hardhat_project(CONTRACTS_TARGET.parent)
+        clean_up_hardhat_project(CONTRACTS_TARGET.parent.parent)
 
     else:
         raise ValueError(

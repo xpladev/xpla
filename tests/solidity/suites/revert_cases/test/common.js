@@ -19,8 +19,7 @@ const PANIC_ASSERT_0x01 = "Panic(1)"
 const PANIC_DIVISION_BY_ZERO_0x12 = "Panic(18)"
 const PANIC_ARRAY_OUT_OF_BOUND_0x32 = "Panic(50)"
 
-module.exports = {
-    // Precompile Addresses
+export {
     STAKING_PRECOMPILE_ADDRESS,
     BECH32_PRECOMPILE_ADDRESS,
     DISTRIBUTION_PRECOMPILE_ADDRESS,
@@ -30,13 +29,9 @@ module.exports = {
     P256_PRECOMPILE_ADDRESS,
     WASM_PRECOMPILE_ADDRESS,
     WERC20_ADDRESS,
-    
-    // Gas limits
     DEFAULT_GAS_LIMIT,
     LARGE_GAS_LIMIT,
     LOW_GAS_LIMIT,
-    
-    // Panics
     PANIC_ASSERT_0x01,
     PANIC_DIVISION_BY_ZERO_0x12,
     PANIC_ARRAY_OUT_OF_BOUND_0x32

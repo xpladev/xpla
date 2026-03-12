@@ -1,6 +1,6 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common');
+import { expect } from 'chai';
+import hre from 'hardhat';
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js';
 
 /**
  * Parse the raw return from delegationTotalRewards into structured objects.
@@ -26,6 +26,8 @@ function formatTotalRewards([delegationRewardsRaw, totalRaw]) {
     return { delegationRewards, totalRewards }
 }
 
+const { ethers } = await hre.network.connect();
+
 describe('DistributionI – claimRewards', function () {
     const DISTRIBUTION_ADDRESS = '0x0000000000000000000000000000000000000801';
     const GAS_LIMIT = 1_000_000;
@@ -33,8 +35,8 @@ describe('DistributionI – claimRewards', function () {
     let distribution, signer;
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners();
-        distribution = await hre.ethers.getContractAt('DistributionI', DISTRIBUTION_ADDRESS);
+        [signer] = await ethers.getSigners();
+        distribution = await ethers.getContractAt('DistributionI', DISTRIBUTION_ADDRESS);
     });
 
     it('should claim rewards from at most one validator', async function () {
@@ -48,7 +50,7 @@ describe('DistributionI – claimRewards', function () {
         const newWithdrawAddress = '0x498B5AeC5D439b733dC2F58AB489783A23FB26dA';
 
         // Check user balance before claiming rewards
-        const balanceBefore = await hre.ethers.provider.getBalance(newWithdrawAddress);
+        const balanceBefore = await ethers.provider.getBalance(newWithdrawAddress);
         console.log('User balance before claiming:', balanceBefore.toString());
 
         const tx = await distribution
@@ -58,7 +60,7 @@ describe('DistributionI – claimRewards', function () {
         console.log('ClaimRewards tx hash:', receipt.hash, 'gas used:', receipt.gasUsed.toString());
 
         // Check user balance after claiming rewards
-        const balanceAfter = await hre.ethers.provider.getBalance(newWithdrawAddress);
+        const balanceAfter = await ethers.provider.getBalance(newWithdrawAddress);
         console.log('User balance after claiming:', balanceAfter.toString());
 
         const evt = findEvent(receipt.logs, distribution.interface, 'ClaimRewards');

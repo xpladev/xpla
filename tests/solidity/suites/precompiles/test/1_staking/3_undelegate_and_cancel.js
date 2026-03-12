@@ -1,6 +1,8 @@
-const {expect} = require('chai')
-const hre = require('hardhat')
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common')
+import {expect} from 'chai'
+import hre from 'hardhat'
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js'
+
+const { ethers } = await hre.network.connect();
 
 function formatUnbondingDelegation(res) {
     const delegatorAddress = res[0]
@@ -41,14 +43,14 @@ describe('Staking – delegate, undelegate & cancelUnbondingDelegation with even
     let staking, signer
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners()
+        [signer] = await ethers.getSigners()
         // Instantiate the StakingI precompile contract
-        staking = await hre.ethers.getContractAt('StakingI', STAKING_ADDRESS)
+        staking = await ethers.getContractAt('StakingI', STAKING_ADDRESS)
     })
 
     it('should delegate, undelegate, then cancel unbonding and emit correct events', async function () {
         const valBech32 = 'xplavaloper10jmp6sgh4cc6zt3e8gw05wavvejgr5pwlgtsgz'
-        const amount = hre.ethers.parseEther('0.001')
+        const amount = ethers.parseEther('0.001')
 
         // DELEGATE
         const delegateTx = await staking.connect(signer).delegate(signer.address, valBech32, amount, {gasLimit: GAS_LIMIT})

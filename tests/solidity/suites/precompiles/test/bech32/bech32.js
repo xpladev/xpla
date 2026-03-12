@@ -1,14 +1,16 @@
-const {expect} = require('chai');
-const hre = require('hardhat');
+import {expect} from 'chai';
+import hre from 'hardhat';
+
+const { ethers } = await hre.network.connect();
 
 describe('Bech32', function () {
     it('hex to bech32 and back', async function () {
-        const bech32 = await hre.ethers.getContractAt(
+        const bech32 = await ethers.getContractAt(
             'Bech32I',
             '0x0000000000000000000000000000000000000400'
         );
 
-        const [signer] = await hre.ethers.getSigners();
+        const [signer] = await ethers.getSigners();
         const bech32Addr = await bech32.getFunction('hexToBech32').staticCall(
             signer.address,
             'xpla'

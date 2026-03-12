@@ -1,11 +1,13 @@
-const { expect } = require('chai')
-const hre = require('hardhat')
-const {
+import { expect } from 'chai'
+import hre from 'hardhat'
+import {
     STAKING_PRECOMPILE_ADDRESS,
     DEFAULT_GAS_LIMIT,
     parseValidator,
     findEvent, waitWithTimeout, RETRY_DELAY_FUNC
-} = require('../common')
+} from '../common.js'
+
+const { ethers } = await hre.network.connect();
 
 describe('StakingI – createValidator', function() {
     const GAS_LIMIT = DEFAULT_GAS_LIMIT // skip gas estimation for simplicity
@@ -13,10 +15,10 @@ describe('StakingI – createValidator', function() {
     let staking, signer
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners()
+        [signer] = await ethers.getSigners()
 
         // Instantiate the StakingI precompile contract
-        staking = await hre.ethers.getContractAt('StakingI', STAKING_PRECOMPILE_ADDRESS)
+        staking = await ethers.getContractAt('StakingI', STAKING_PRECOMPILE_ADDRESS)
     })
 
     it('should create a validator successfully', async function() {
@@ -31,15 +33,15 @@ describe('StakingI – createValidator', function() {
 
         // Set initial commission parameters (18-decimal precision)
         const commissionRates = {
-            rate: hre.ethers.parseUnits('0.05', 18), // 5%
-            maxRate: hre.ethers.parseUnits('0.20', 18), // 20%
-            maxChangeRate: hre.ethers.parseUnits('0.01', 18), // 1%
+            rate: ethers.parseUnits('0.05', 18), // 5%
+            maxRate: ethers.parseUnits('0.20', 18), // 20%
+            maxChangeRate: ethers.parseUnits('0.01', 18), // 1%
         }
 
         // Configure the remaining createValidator arguments
         const minSelfDelegation = 1
         const pubkey = 'nfJ0axJC9dhta1MAE1EBFaVdxxkYzxYrBaHuJVjG//M='
-        const deposit = hre.ethers.parseEther('1') // self-delegate 1 native token
+        const deposit = ethers.parseEther('1') // self-delegate 1 native token
 
         // Submit the createValidator transaction
         const tx = await staking.connect(signer).createValidator(

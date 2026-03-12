@@ -1,4 +1,4 @@
-const { expect } = require('chai');
+import { expect } from 'chai';
 
 // Helper to convert the raw tuple returned by staking.validator() into an object
 function parseValidator (raw) {
@@ -77,14 +77,16 @@ function decodeRevertReason(errorData) {
 
 /**
  * Helper function to analyze transaction receipt for revert information
+ * @param {string} txHash - Transaction hash
+ * @param {import('hardhat').HardhatEthers} ethers - Ethers instance from hre.network.connect()
  */
-async function analyzeFailedTransaction(txHash) {
-    const receipt = await hre.ethers.provider.getTransactionReceipt(txHash);
-    const tx = await hre.ethers.provider.getTransaction(txHash);
+async function analyzeFailedTransaction(txHash, ethers) {
+    const receipt = await ethers.provider.getTransactionReceipt(txHash);
+    const tx = await ethers.provider.getTransaction(txHash);
     
     // Try to get revert reason through call simulation
     try {
-        await hre.ethers.provider.call({
+        await ethers.provider.call({
             to: tx.to,
             data: tx.data,
             from: tx.from,
@@ -121,7 +123,7 @@ function verifyTransactionRevert(analysis, expectedRevertReason) {
     expect(analysis).to.not.be.null;
     expect(analysis.status).to.equal(0); // Failed transaction
     expect(analysis.errorData).to.not.be.null;
-    expect(analysis.decodedReason).contains(expectedRevertReason, "unexpected revert reason");
+    expect(analysis.decodedReason).to.include(expectedRevertReason, "unexpected revert reason");
 }
 
 /**
@@ -131,10 +133,10 @@ function verifyOutOfGasError(analysis) {
     expect(analysis).to.not.be.null;
     expect(analysis.status).to.equal(0); // Failed transaction
     expect(analysis.gasUsed).to.be.equal(analysis.gasLimit);
-    expect(analysis.errorMessage.toLowerCase()).include('out of gas');
+    expect(analysis.errorMessage.toLowerCase()).to.include('out of gas');
 }
 
-module.exports = {
+export {
     parseValidator,
     findEvent,
     decodeRevertReason,

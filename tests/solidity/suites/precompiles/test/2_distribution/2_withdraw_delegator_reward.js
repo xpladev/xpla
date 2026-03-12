@@ -1,6 +1,8 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} = require('../common');
+import { expect } from 'chai';
+import hre from 'hardhat';
+import { findEvent, waitWithTimeout, RETRY_DELAY_FUNC} from '../common.js';
+
+const { ethers } = await hre.network.connect();
 
 describe('Distribution – withdraw delegator reward', function () {
     const STAKING_ADDRESS = '0x0000000000000000000000000000000000000800'
@@ -10,16 +12,16 @@ describe('Distribution – withdraw delegator reward', function () {
     let staking, distribution, signer;
 
     before(async () => {
-        [signer] = await hre.ethers.getSigners();
+        [signer] = await ethers.getSigners();
 
-        staking = await hre.ethers.getContractAt('StakingI', STAKING_ADDRESS)
-        distribution = await hre.ethers.getContractAt('DistributionI', DIST_ADDRESS);
+        staking = await ethers.getContractAt('StakingI', STAKING_ADDRESS)
+        distribution = await ethers.getContractAt('DistributionI', DIST_ADDRESS);
     });
 
     it('should withdraw rewards and emit WithdrawDelegatorReward event', async function () {
         const valBech32 = 'xplavaloper10jmp6sgh4cc6zt3e8gw05wavvejgr5pwlgtsgz';
         const valHex = '0x7cB61D4117AE31a12E393a1Cfa3BaC666481D02E';
-        const stakeAmountBn = hre.ethers.parseEther('0.1')   // BigNumber
+        const stakeAmountBn = ethers.parseEther('0.1')   // BigNumber
         const stakeAmount = BigInt(stakeAmountBn.toString())
         // This address is a current withdraw address for the signer. Check 1_set_withdraw_address.js test for more details.
         const newWithdrawAddress = '0x498B5AeC5D439b733dC2F58AB489783A23FB26dA';
@@ -39,7 +41,7 @@ describe('Distribution – withdraw delegator reward', function () {
         const currentReward = result[0];
 
         // Check user balance before withdrawal
-        const balanceBefore = await hre.ethers.provider.getBalance(newWithdrawAddress);
+        const balanceBefore = await ethers.provider.getBalance(newWithdrawAddress);
         console.log('User balance before withdrawal:', balanceBefore.toString());
 
         const tx = await distribution
@@ -49,7 +51,7 @@ describe('Distribution – withdraw delegator reward', function () {
         console.log('WithdrawDelegatorRewards tx hash:', receipt.hash);
 
         // Check user balance after withdrawal
-        const balanceAfter = await hre.ethers.provider.getBalance(newWithdrawAddress);
+        const balanceAfter = await ethers.provider.getBalance(newWithdrawAddress);
         console.log('User balance after withdrawal:', balanceAfter.toString());
 
         // Check events

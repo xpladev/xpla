@@ -1,19 +1,12 @@
 {
   "compilerOptions": {
-    "outDir": "./dist",
-    "declaration": true,
-    "declarationMap": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
-    "isolatedDeclarations": true,
-    "noEmitOnError": true,
-    "noImplicitOverride": true,
-    "noUncheckedSideEffectImports": true,
-    "skipDefaultLibCheck": true,
-    "sourceMap": true,
-    "composite": true,
-    "incremental": true,
-    "typeRoots": ["${configDir}/node_modules/@types"]
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "types": ["node"],
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true
   },
-  "exclude": ["${configDir}/dist", "${configDir}/node_modules"]
+  "include": ["wagmi.config.ts", "tsdown.config.ts"]
 }

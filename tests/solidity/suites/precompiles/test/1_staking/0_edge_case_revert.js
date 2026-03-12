@@ -1,10 +1,12 @@
-const { expect } = require('chai');
-const hre = require('hardhat');
-const {
+import { expect } from 'chai';
+import hre from 'hardhat';
+import {
     STAKING_PRECOMPILE_ADDRESS,
     LARGE_GAS_LIMIT,
     waitWithTimeout, RETRY_DELAY_FUNC
-} = require('../common');
+} from '../common.js';
+
+const { ethers } = await hre.network.connect();
 
 describe('Staking – edge case revert test', function () {
     const GAS_LIMIT = LARGE_GAS_LIMIT;
@@ -13,25 +15,25 @@ describe('Staking – edge case revert test', function () {
     let validatorAddress;
 
     before(async function () {
-        [signer] = await hre.ethers.getSigners();
+        [signer] = await ethers.getSigners();
         
         // Get staking precompile interface
-        staking = await hre.ethers.getContractAt('StakingI', STAKING_PRECOMPILE_ADDRESS);
+        staking = await ethers.getContractAt('StakingI', STAKING_PRECOMPILE_ADDRESS);
         
         // Get actual nonce from chain (may not be 0 if other transactions were sent)
-        const actualNonce = await hre.ethers.provider.getTransactionCount(signer.address);
+        const actualNonce = await ethers.provider.getTransactionCount(signer.address);
         
         // Calculate contract address using actual nonce
         // Expected address: 0x3D641a2791533B4A0000345eA8d509d01E1ec301 (Bech32: xpla184jp5fu32va55qqqx30234gf6q0pascpg7nq6k)
         // This address should be funded with axpla in genesis (see local_node.sh)
-        const predictedAddress = hre.ethers.getCreateAddress({
+        const predictedAddress = ethers.getCreateAddress({
             from: signer.address,
             nonce: actualNonce
         });
         console.log('Predicted contract address (using actual nonce):', predictedAddress);
         
         // Deploy StakingReverter contract (axpla is funded in genesis)
-        const StakingReverterFactory = await hre.ethers.getContractFactory('StakingReverter');
+        const StakingReverterFactory = await ethers.getContractFactory('StakingReverter');
         stakingReverter = await StakingReverterFactory.deploy({
             gasLimit: GAS_LIMIT
         });

@@ -4,8 +4,8 @@
   "author": "Go Ethereum",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "test-ganache": "yarn truffle test",
-    "test-cosmos": "yarn truffle test --network cosmos"
+    "test-ganache": "truffle test",
+    "test-cosmos": "truffle test --network cosmos"
   },
   "devDependencies": {
     "truffle-assertions": "^0.9.2"

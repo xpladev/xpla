@@ -2,7 +2,7 @@
 pragma solidity >=0.8.17;
 
 import "./xpla/wasm/IWasm.sol";
-import "./xpla/util/Types.sol" as xplaTypes;
+import "cosmos-evm-contracts/precompiles/common/Types.sol";
 
 /// @title WasmSnapshotRevertCaller
 /// @dev Calls WASM precompile executeContract for snapshot/revert tests.
@@ -22,7 +22,7 @@ contract WasmSnapshotRevertCaller {
         bytes calldata executeMsg
     ) external returns (bytes memory) {
         counter = 1;
-        xplaTypes.Coin[] memory funds = new xplaTypes.Coin[](0);
+        Coin[] memory funds = new Coin[](0);
         return IWasm(WASM_PRECOMPILE_ADDRESS).executeContract(
             address(this),
             contractAddress,
