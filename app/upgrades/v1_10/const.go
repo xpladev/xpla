@@ -1,4 +1,4 @@
-package v1_9
+package v1_10
 
 import (
 	store "cosmossdk.io/store/types"
@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	UpgradeName = "v1_9"
+	UpgradeName = "v1_10"
 )
 
 var Upgrade = upgrades.Upgrade{
