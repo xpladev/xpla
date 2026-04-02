@@ -1,0 +1,36 @@
+{
+  "name": "precompiles",
+  "version": "1.0.0",
+  "author": "Evmos team",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "get-contracts": "mkdir -p ./contracts/xpla && rsync -avm --include='*/' --exclude='**/ERC20Minter_OpenZeppelinV5.sol' --exclude='**/WEVMOS.sol' --exclude='**/ERC20NoMetadata.sol' --include='*.sol' --exclude='*' ../../../../precompile/ ./contracts/xpla/",
+    "clean-contracts": "rm -rf ./contracts/xpla/*",
+    "test-ganache": "hardhat test",
+    "test-cosmos": "pnpm run get-contracts && hardhat test --network cosmos && pnpm run clean-contracts"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-verify": "^3.0.0",
+    "@openzeppelin/hardhat-upgrades": "^2.0.2",
+    "@openzeppelin/contracts": "^4.9.6",
+    "@typechain/ethers-v6": "^0.4.3",
+    "@typechain/hardhat": "^8.0.3",
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "chai": "^5.1.2",
+    "hardhat": "^3.1.5",
+    "hardhat-gas-reporter": "^1.0.9",
+    "solidity-coverage": "^0.8.4",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.3.1",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "cosmos-evm-contracts": "^0.0.1",
+    "ethers": "^6.7.0"
+  }
+}

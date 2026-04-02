@@ -1,0 +1,10 @@
+# dependencies
+node_modules/
+cache/
+artifacts/
+# don't track the contracts on evmos directory because these are copied from the precompiles pkg of this repo
+**/precompiles/contracts/xpla/*
+
+# ignore other lock files (only use pnpm)
+package-lock.json
+yarn.lock

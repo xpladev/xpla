@@ -80,6 +80,7 @@ var maccPerms = map[string][]string{
 	feemarkettypes.ModuleName:      nil,
 	rewardtypes.ModuleName:         nil,
 	burntypes.ModuleName:           {authtypes.Burner},
+	banktypes.ModuleName:           nil,
 }
 
 func appModules(
@@ -115,7 +116,7 @@ func appModules(
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
 		pfmrouter.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
 		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.AccountKeeper.AddressCodec()),
+		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.BankKeeper, app.AccountKeeper.AddressCodec()),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),

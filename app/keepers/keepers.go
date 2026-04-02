@@ -16,6 +16,7 @@ import (
 	icahost "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
+	ibccallbacks "github.com/cosmos/ibc-go/v10/modules/apps/callbacks"
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
@@ -24,6 +25,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	"github.com/spf13/cast"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -38,11 +40,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -66,14 +66,16 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	evmaddress "github.com/cosmos/evm/encoding/address"
+	srvflags "github.com/cosmos/evm/server/flags"
 	feemarketkeeper "github.com/cosmos/evm/x/feemarket/keeper"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	vmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	vmtypes "github.com/cosmos/evm/x/vm/types"
-	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
-	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 
 	"github.com/xpladev/xpla/precompile"
+	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
+	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	burnkeeper "github.com/xpladev/xpla/x/burn/keeper"
 	burntypes "github.com/xpladev/xpla/x/burn/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
@@ -81,6 +83,11 @@ import (
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
+)
+
+const (
+	// MaxIBCCallbackGas should roughly be a couple orders of magnitude larger than needed.
+	MaxIBCCallbackGas = uint64(10_000_000)
 )
 
 type AppKeepers struct {
@@ -122,11 +129,6 @@ type AppKeepers struct {
 	BurnKeeper      burnkeeper.Keeper
 }
 
-var (
-	// TODO: after test, take this values from appOpts
-	evmTrace = "" //evmconfig.DefaultEVMTracer,
-)
-
 func NewAppKeeper(
 	appCodec codec.Codec,
 	bApp *baseapp.BaseApp,
@@ -140,6 +142,7 @@ func NewAppKeeper(
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
 ) AppKeepers {
+	evmChainID := cast.ToUint64(appOpts.Get(srvflags.EVMChainID))
 	appKeepers := AppKeepers{}
 
 	// Set keys KVStoreKey, TransientStoreKey, MemoryStoreKey
@@ -180,7 +183,7 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		govModAddress,
 	)
@@ -205,8 +208,8 @@ func NewAppKeeper(
 		&appKeepers.BankKeeper,
 		govModAddress,
 		&appKeepers.VolunteerKeeper,
-		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
-		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
 
 	appKeepers.MintKeeper = mintkeeper.NewKeeper(
@@ -426,36 +429,43 @@ func NewAppKeeper(
 	)
 
 	// Middleware Stacks
+	wasmStackIBCHandler := wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper,
+		appKeepers.IBCKeeper.ChannelKeeper)
 
 	// Create Transfer Stack (from bottom to top of stack)
 	// - core IBC
 	// - ratelimit
 	// - pfm
-	// - provider
+	// - callbacks
 	// - transfer
 	//
 	// This is how transfer stack will work in the end:
-	// * RecvPacket -> IBC core -> RateLimit -> PFM -> Transfer (AddRoute)
-	// * SendPacket -> Transfer -> PFM -> RateLimit -> IBC core (ICS4Wrapper)
+	// * RecvPacket -> IBC core -> RateLimit -> PFM -> Callbacks -> Transfer (AddRoute)
+	// * SendPacket -> Transfer -> Callbacks -> PFM -> RateLimit -> IBC core (ICS4Wrapper)
 
 	var transferStack porttypes.IBCModule
 	transferStack = transfer.NewIBCModule(appKeepers.TransferKeeper)
+	cbStack := ibccallbacks.NewIBCMiddleware(transferStack, appKeepers.PFMRouterKeeper, wasmStackIBCHandler,
+		MaxIBCCallbackGas)
 	transferStack = pfmrouter.NewIBCMiddleware(
-		transferStack,
+		cbStack,
 		appKeepers.PFMRouterKeeper,
 		0, // retries on timeout
 		pfmrouterkeeper.DefaultForwardTransferPacketTimeoutTimestamp,
 	)
 	transferStack = ratelimit.NewIBCMiddleware(appKeepers.RatelimitKeeper, transferStack)
+	appKeepers.TransferKeeper.WithICS4Wrapper(cbStack)
 
 	// Create ICAHost Stack
 	var icaHostStack porttypes.IBCModule = icahost.NewIBCModule(appKeepers.ICAHostKeeper)
 
 	// Create Interchain Accounts Controller Stack
 	var icaControllerStack porttypes.IBCModule = icacontroller.NewIBCMiddleware(appKeepers.ICAControllerKeeper)
-
-	var wasmStack porttypes.IBCModule
-	wasmStack = wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)
+	icaControllerStack = ibccallbacks.NewIBCMiddleware(icaControllerStack, appKeepers.IBCKeeper.ChannelKeeper,
+		wasmStackIBCHandler, MaxIBCCallbackGas)
+	icaICS4Wrapper := icaControllerStack.(porttypes.ICS4Wrapper)
+	appKeepers.ICAControllerKeeper.WithICS4Wrapper(icaICS4Wrapper)
+	wasmStack := wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)
 
 	// Create IBC Router & seal
 	ibcRouter := porttypes.NewRouter().
@@ -474,8 +484,7 @@ func NewAppKeeper(
 		appKeepers.tkeys[feemarkettypes.TransientKey],
 	)
 
-	// W/A for avoiding evm hook panic by erc20 keeper
-	var mockErc20Keeper MockErc20Keeper = MockErc20Keeper{}
+	evmTracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
 	appKeepers.EvmKeeper = vmkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[vmtypes.StoreKey],
@@ -487,8 +496,9 @@ func NewAppKeeper(
 		appKeepers.StakingKeeper,
 		appKeepers.FeeMarketKeeper,
 		&appKeepers.ConsensusParamsKeeper,
-		mockErc20Keeper,
-		evmTrace,
+		nil,
+		evmChainID,
+		evmTracer,
 	)
 
 	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
@@ -510,7 +520,7 @@ func NewAppKeeper(
 		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
 		appKeepers.DistrKeeper,
-		appKeepers.MintKeeper,
+		appKeepers.MintKeeper.Params,
 		govModAddress,
 	)
 
@@ -533,11 +543,11 @@ func NewAppKeeper(
 		precompile.NewAvailableStaticPrecompiles(
 			*appKeepers.StakingKeeper.Keeper,
 			appKeepers.DistrKeeper,
+			appKeepers.TransferKeeper,
 			appKeepers.IBCKeeper.ChannelKeeper,
 			appKeepers.EvmKeeper,
 			*appKeepers.GovKeeper,
 			appKeepers.SlashingKeeper,
-			appKeepers.EvidenceKeeper,
 			appKeepers.AccountKeeper,
 			appKeepers.BankKeeper,
 			wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
@@ -571,7 +581,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(authtypes.ModuleName).WithKeyTable(authtypes.ParamKeyTable())
 	paramsKeeper.Subspace(stakingtypes.ModuleName).WithKeyTable(stakingtypes.ParamKeyTable())
 	paramsKeeper.Subspace(banktypes.ModuleName).WithKeyTable(banktypes.ParamKeyTable())
-	paramsKeeper.Subspace(minttypes.ModuleName).WithKeyTable(minttypes.ParamKeyTable())
+	paramsKeeper.Subspace(minttypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName).WithKeyTable(distrtypes.ParamKeyTable())
 	paramsKeeper.Subspace(slashingtypes.ModuleName).WithKeyTable(slashingtypes.ParamKeyTable())
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govv1types.ParamKeyTable())
@@ -583,7 +593,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ratelimittypes.ModuleName).WithKeyTable(ratelimittypes.ParamKeyTable())
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
-	paramsKeeper.Subspace(vmtypes.ModuleName).WithKeyTable(vmtypes.ParamKeyTable())
+	paramsKeeper.Subspace(vmtypes.ModuleName)
 	paramsKeeper.Subspace(rewardtypes.ModuleName).WithKeyTable(rewardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(volunteertypes.ModuleName)
 

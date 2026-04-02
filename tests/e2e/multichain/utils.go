@@ -2,10 +2,17 @@ package multichain
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	sdkmath "cosmossdk.io/math"
+
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	interchaintest "github.com/cosmos/interchaintest/v10"
 	"github.com/cosmos/interchaintest/v10/chain/cosmos"
 	"github.com/cosmos/interchaintest/v10/chain/cosmos/wasm"
@@ -43,6 +50,30 @@ var (
 			UIDGID:     "1025:1025",
 		},
 	}
+
+	denomMetadata = []banktypes.Metadata{
+		{
+			Description: "november draft description",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "axpla",
+					Exponent: 0,
+					Aliases:  nil,
+				},
+				{
+					Denom:    "xpla",
+					Exponent: 18,
+					Aliases:  nil,
+				},
+			},
+			Base:    "axpla",
+			Display: "xpla",
+			Name:    "XPLA native coin",
+			Symbol:  "XPLA",
+			URI:     "_uri",
+			URIHash: "_uri_hash",
+		},
+	}
 )
 
 func XplaChainSpec(
@@ -53,6 +84,8 @@ func XplaChainSpec(
 ) *interchaintest.ChainSpec {
 
 	genesis := []cosmos.GenesisKV{
+		cosmos.NewGenesisKV("app_state.bank.denom_metadata", denomMetadata),
+
 		cosmos.NewGenesisKV("app_state.gov.params.voting_period", "10s"),
 		cosmos.NewGenesisKV("app_state.gov.params.max_deposit_period", "10s"),
 		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", Denom),
@@ -301,4 +334,50 @@ func WaitForBlocks(ctx context.Context, chain *cosmos.CosmosChain, numBlocks int
 		time.Sleep(100 * time.Millisecond)
 	}
 	return nil
+}
+
+func InstantiateContract2(ctx context.Context, tn *cosmos.ChainNode, keyName string, codeID string, initMessage string, salt string, needsNoAdminFlag bool, extraExecTxArgs ...string) (string, error) {
+	command := []string{"wasm", "instantiate2", codeID, initMessage, salt, "--label", "wasm-contract"}
+	command = append(command, extraExecTxArgs...)
+	if needsNoAdminFlag {
+		command = append(command, "--no-admin")
+	}
+	txHash, err := tn.ExecTx(ctx, keyName, command...)
+	if err != nil {
+		return "", err
+	}
+
+	txResp, err := tn.GetTransaction(tn.CliContext(), txHash)
+	if err != nil {
+		return "", fmt.Errorf("failed to get transaction %s: %w", txHash, err)
+	}
+	if txResp.Code != 0 {
+		return "", fmt.Errorf("error in transaction (code: %d): %s", txResp.Code, txResp.RawLog)
+	}
+
+	stdout, _, err := tn.ExecQuery(ctx, "wasm", "list-contract-by-code", codeID)
+	if err != nil {
+		return "", err
+	}
+
+	contactsRes := cosmos.QueryContractResponse{}
+	if err := json.Unmarshal(stdout, &contactsRes); err != nil {
+		return "", err
+	}
+
+	contractAddress := contactsRes.Contracts[len(contactsRes.Contracts)-1]
+	return contractAddress, nil
+}
+
+func BuildAddr(ctx context.Context, tn *cosmos.ChainNode, codeHash, creatorAddress, salt string) (res string, err error) {
+	stdout, _, err := tn.Exec(ctx, []string{"xplad", "query", "wasm", "build-address", codeHash, creatorAddress, salt}, tn.Chain.Config().Env)
+	if err != nil {
+		return "", err
+	}
+
+	if err := yaml.Unmarshal(stdout, &res); err != nil {
+		return "", err
+	}
+
+	return res, nil
 }

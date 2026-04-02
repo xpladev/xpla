@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -45,11 +46,11 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
@@ -61,8 +62,13 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	evmante "github.com/cosmos/evm/ante"
+	evmantetypes "github.com/cosmos/evm/ante/types"
+	evmaddress "github.com/cosmos/evm/encoding/address"
 	ethenc "github.com/cosmos/evm/encoding/codec"
 	"github.com/cosmos/evm/ethereum/eip712"
+	evmmempool "github.com/cosmos/evm/mempool"
+	srvflags "github.com/cosmos/evm/server/flags"
 	cosmosevmutils "github.com/cosmos/evm/utils"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
@@ -71,16 +77,14 @@ import (
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	"github.com/xpladev/xpla/app/upgrades/v1_8"
+	"github.com/xpladev/xpla/app/upgrades/v1_9"
 	"github.com/xpladev/xpla/docs"
 	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
-	etherminttypes "github.com/xpladev/xpla/legacy/ethermint/types"
 	legacyerc20types "github.com/xpladev/xpla/legacy/ethermint/x/erc20/types"
 	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"
 	legacyfeemarkettypes "github.com/xpladev/xpla/legacy/ethermint/x/feemarket/types"
 	xplaprecompile "github.com/xpladev/xpla/precompile"
-	xplatypes "github.com/xpladev/xpla/types"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -92,7 +96,7 @@ var (
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_8.Upgrade,
+		v1_9.Upgrade,
 	}
 )
 
@@ -102,8 +106,7 @@ var (
 )
 
 var (
-	// TODO: after test, take this values from appOpts
-	evmMaxGasWanted uint64 = 500000 //legacy from ethermintconfig.DefaultMaxTxGasWanted
+	DefaultEvmMaxGasWanted uint64 = 500_000 //legacy from ethermintconfig.DefaultMaxTxGasWanted
 )
 
 // XplaApp extends an ABCI application, but with most of its parameters exported.
@@ -125,6 +128,11 @@ type XplaApp struct { // nolint: golint
 	// simulation manager
 	sm           *module.SimulationManager
 	configurator module.Configurator
+
+	// for evm enable
+	clientCtx          client.Context
+	pendingTxListeners []evmante.PendingTxListener
+	EVMMempool         *evmmempool.ExperimentalEVMMempool
 }
 
 func init() {
@@ -148,9 +156,10 @@ func NewXplaApp(
 	homePath string,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
-	evmAppOptions xplatypes.EVMOptionsFn,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *XplaApp {
+	evmChainID := cast.ToUint64(appOpts.Get(srvflags.EVMChainID))
+
 	legacyAmino := codec.NewLegacyAmino()
 	signingOptions := signing.Options{
 		AddressCodec: address.Bech32Codec{
@@ -194,29 +203,15 @@ func NewXplaApp(
 		txConfig.TxDecoder(),
 		baseAppOptions...)
 
-	evmChainId := uint64(0)
-	if bApp.ChainID() != "" { // ignore standalone cmd case
-		bigintChainId, err := etherminttypes.ParseChainID(bApp.ChainID())
-		if err != nil {
-			panic(err)
-		}
-		evmChainId = bigintChainId.Uint64()
-	}
-
 	// This is needed for the EIP712 txs because currently is using
 	// the deprecated method legacytx.StdSignBytes
 	legacytx.RegressionTestingAminoCodec = legacyAmino
-	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainId)
+	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainID)
 
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
-
-	// initialize the Cosmos EVM application configuration
-	if err := evmAppOptions(evmChainId); err != nil {
-		panic(err)
-	}
 
 	app := &XplaApp{
 		BaseApp:           bApp,
@@ -272,6 +267,7 @@ func NewXplaApp(
 	app.mm.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
 		authtypes.ModuleName,
+		evmtypes.ModuleName,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -323,24 +319,29 @@ func NewXplaApp(
 		panic("error while reading wasm config: " + err.Error())
 	}
 
+	evmMaxGasWanted := cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted))
+	if evmMaxGasWanted == 0 {
+		evmMaxGasWanted = DefaultEvmMaxGasWanted
+	}
 	anteHandler, err := xplaante.NewAnteHandler(
 		xplaante.HandlerOptions{
-			AccountKeeper:   app.AccountKeeper,
-			BankKeeper:      app.BankKeeper,
-			FeegrantKeeper:  app.FeeGrantKeeper,
-			SignModeHandler: txConfig.SignModeHandler(),
-			SigGasConsumer:  xplaante.SigVerificationGasConsumer,
+			ExtensionOptionChecker: evmantetypes.HasDynamicFeeExtensionOption,
+			FeegrantKeeper:         app.FeeGrantKeeper,
+			SignModeHandler:        txConfig.SignModeHandler(),
+			SigGasConsumer:         xplaante.SigVerificationGasConsumer,
 
+			AccountKeeper:         app.AccountKeeper,
+			BankKeeper:            app.BankKeeper,
 			Codec:                 appCodec,
 			IBCKeeper:             app.IBCKeeper,
 			EvmKeeper:             app.EvmKeeper,
 			VolunteerKeeper:       app.VolunteerKeeper,
 			FeeMarketKeeper:       app.FeeMarketKeeper,
-			WasmConfig:            &wasmConfig,
 			BypassMinFeeMsgTypes:  cast.ToStringSlice(appOpts.Get(xplaappparams.BypassMinFeeMsgTypesKey)),
-			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
-			TxFeeChecker:          noOpTxFeeChecker,
 			MaxTxGasWanted:        evmMaxGasWanted,
+			TxFeeChecker:          noOpTxFeeChecker,
+			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
+			WasmConfig:            &wasmConfig,
 		},
 	)
 	if err != nil {
@@ -364,6 +365,12 @@ func NewXplaApp(
 
 	app.setUpgradeHandlers()
 	app.setUpgradeStoreLoaders()
+
+	// set the EVM priority nonce mempool
+	// If you wish to use the noop mempool, remove this codeblock
+	if err := app.configureEVMMempool(appOpts, logger); err != nil {
+		panic(fmt.Sprintf("failed to configure EVM mempool: %s", err.Error()))
+	}
 
 	// At startup, after all modules have been registered, check that all prot
 	// annotations are correct.
@@ -593,9 +600,9 @@ func (app *XplaApp) AutoCliOpts() autocli.AppOptions {
 
 	return autocli.AppOptions{
 		Modules:               modules,
-		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
-		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		AddressCodec:          evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		ValidatorAddressCodec: evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		ConsensusAddressCodec: evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	}
 }
 
@@ -631,4 +638,20 @@ func noOpTxFeeChecker(_ sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
 	}
 
 	return feeTx.GetFee(), 0, nil
+}
+
+func (app *XplaApp) SetClientCtx(clientCtx client.Context) {
+	app.clientCtx = clientCtx
+}
+
+func (app *XplaApp) RegisterPendingTxListener(listener func(common.Hash)) {
+	app.pendingTxListeners = append(app.pendingTxListeners, listener)
+}
+
+func (app *XplaApp) GetMempool() sdkmempool.ExtMempool {
+	return app.EVMMempool
+}
+
+func (app *XplaApp) GetAnteHandler() sdk.AnteHandler {
+	return app.BaseApp.AnteHandler()
 }

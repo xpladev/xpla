@@ -11,7 +11,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	evmanteinterfaces "github.com/cosmos/evm/ante/interfaces"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
 )
 
 const maxBypassMinFeeMsgGasUsage = uint64(1_000_000)
@@ -42,7 +41,10 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	gas := feeTx.GetGas()
 	msgs := feeTx.GetMsgs()
 
-	evmDenom := evmtypes.GetEVMCoinDenom()
+	evmDenom := mpd.evmKeeper.GetParams(ctx).EvmDenom
+	if evmDenom == "" {
+		return ctx, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "evm denom is empty")
+	}
 	minGasPrices := sdk.DecCoins{
 		{
 			Denom:  evmDenom,

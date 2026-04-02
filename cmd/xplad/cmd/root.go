@@ -32,7 +32,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
-	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/ledger"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -45,7 +44,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
@@ -59,11 +57,14 @@ import (
 	"github.com/cosmos/evm/client/debug"
 	"github.com/cosmos/evm/crypto/ethsecp256k1"
 	"github.com/cosmos/evm/crypto/hd"
+	evmaddress "github.com/cosmos/evm/encoding/address"
 	evmserver "github.com/cosmos/evm/server"
 	evmcfg "github.com/cosmos/evm/server/config"
 
 	xpla "github.com/xpladev/xpla/app"
+	"github.com/xpladev/xpla/app/encoding"
 	"github.com/xpladev/xpla/app/params"
+	legacykeyclient "github.com/xpladev/xpla/legacy/ethermint/client"
 	xplatypes "github.com/xpladev/xpla/types"
 )
 
@@ -83,7 +84,6 @@ func NewRootCmd() *cobra.Command {
 		tempDir,
 		initAppOptions,
 		xpla.EmptyWasmOptions,
-		xplatypes.NoOpEVMOptions,
 	)
 	defer func() {
 		if err := tempApplication.Close(); err != nil {
@@ -123,18 +123,19 @@ func NewRootCmd() *cobra.Command {
 			// sets the RPC client needed for SIGN_MODE_TEXTUAL. This sign mode
 			// is only available if the client is online.
 			if !initClientCtx.Offline {
+				txConfig := encoding.NewTxConfig(initClientCtx.Codec, tx.DefaultSignModes)
 				txConfigOpts := tx.ConfigOptions{
 					EnabledSignModes:           append(tx.DefaultSignModes, signing.SignMode_SIGN_MODE_TEXTUAL),
 					TextualCoinMetadataQueryFn: authtxconfig.NewGRPCCoinMetadataQueryFn(initClientCtx),
 				}
-				txConfigWithTextual, err := tx.NewTxConfigWithOptions(
+				txConfig.TxConfig, err = tx.NewTxConfigWithOptions(
 					initClientCtx.Codec,
 					txConfigOpts,
 				)
 				if err != nil {
 					return err
 				}
-				initClientCtx = initClientCtx.WithTxConfig(txConfigWithTextual)
+				initClientCtx = initClientCtx.WithTxConfig(txConfig)
 			}
 
 			if err = client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
@@ -163,9 +164,9 @@ func NewRootCmd() *cobra.Command {
 }
 
 func enrichAutoCliOpts(autoCliOpts autocli.AppOptions, clientCtx client.Context) autocli.AppOptions {
-	autoCliOpts.AddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
-	autoCliOpts.ValidatorAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
-	autoCliOpts.ConsensusAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())
+	autoCliOpts.AddressCodec = evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	autoCliOpts.ValidatorAddressCodec = evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
+	autoCliOpts.ConsensusAddressCodec = evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())
 
 	autoCliOpts.ClientCtx = clientCtx
 
@@ -218,32 +219,30 @@ func initRootCmd(rootCmd *cobra.Command,
 	cfg.Seal()
 
 	ac := appCreator{}
+	sdkAppCreatorWrapper := func(l log.Logger, d dbm.DB, w io.Writer, ao servertypes.AppOptions) servertypes.Application {
+		return ac.newApp(l, d, w, ao)
+	}
 
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(basicManager, xpla.DefaultNodeHome),
-		// XXX check this needed
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome, genutiltypes.DefaultMessageValidator, txConfig.SigningContext().ValidatorAddressCodec()),
-		genutilcli.GenTxCmd(basicManager, txConfig, banktypes.GenesisBalancesIterator{}, xpla.DefaultNodeHome, txConfig.SigningContext().ValidatorAddressCodec()),
-		genutilcli.ValidateGenesisCmd(basicManager),
-		AddGenesisAccountCmd(xpla.DefaultNodeHome),
-		// XXX end
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
-		pruning.Cmd(ac.newApp, xpla.DefaultNodeHome),
-		snapshot.Cmd(ac.newApp),
+		pruning.Cmd(sdkAppCreatorWrapper, xpla.DefaultNodeHome),
+		snapshot.Cmd(sdkAppCreatorWrapper),
 	)
 
 	evmserver.AddCommands(rootCmd, evmserver.NewDefaultStartOptions(ac.newApp, xpla.DefaultNodeHome), ac.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
+	keysCmd := evmclient.KeyCommands(xpla.DefaultNodeHome, true)
+	keysCmd.AddCommand(legacykeyclient.UnsafeExportLegacyEthKeyCommand())
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		// XXX is this enough?
-		// genesisCommand(txConfig, basicManager),
+		genesisCommand(txConfig, basicManager, AddGenesisAccountCmd(xpla.DefaultNodeHome)),
 		queryCommand(),
 		txCommand(basicManager),
-		evmclient.KeyCommands(xpla.DefaultNodeHome, true),
+		keysCmd,
 	)
 }
 
@@ -258,6 +257,14 @@ func addModuleInitFlags(startCmd *cobra.Command) {
 func genesisCommand(txConfig client.TxConfig, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
 	cmd := genutilcli.GenesisCoreCommand(txConfig, basicManager, xpla.DefaultNodeHome)
 
+	// remove default add-genesis-account commands
+	for _, subCmd := range cmd.Commands() {
+		if subCmd.Name() == "add-genesis-account" || subCmd.Name() == "bulk-add-genesis-account" {
+			cmd.RemoveCommand(subCmd)
+		}
+	}
+
+	// change add-genesis-account to custom AddGenesisAccountCmd()
 	for _, subCmd := range cmds {
 		cmd.AddCommand(subCmd)
 	}
@@ -325,7 +332,7 @@ func (a appCreator) newApp(
 	db dbm.DB,
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
-) servertypes.Application {
+) evmserver.Application {
 	var cache storetypes.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
@@ -398,7 +405,6 @@ func (a appCreator) newApp(
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		appOpts,
 		wasmOpts,
-		xplatypes.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -443,7 +449,6 @@ func (a appCreator) appExport(
 		homePath,
 		appOpts,
 		emptyWasmOpts,
-		xplatypes.EvmAppOptions,
 	)
 
 	if height != -1 {

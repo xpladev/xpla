@@ -36,7 +36,7 @@ func NewKeeper(
 ) Keeper {
 	return Keeper{
 		BaseKeeper: bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
-		bek:        NewBaseErc20Keeper(ek),
+		bek:        NewBaseErc20Keeper(ak, ek),
 		bck:        NewBaseCw20Keeper(wk, wmk),
 		ak:         ak,
 	}
@@ -87,22 +87,14 @@ func (k Keeper) SendCoins(ctx context.Context, fromAddr, toAddr sdk.AccAddress, 
 		}
 	}
 
-	if evmCoins.Len() > 0 {
-		if err := k.bek.SendCoins(ctx, fromAddr, toAddr, evmCoins); err != nil {
-			return err
-		}
+	if err := k.bek.SendCoins(ctx, fromAddr, toAddr, evmCoins); err != nil {
+		return err
 	}
-
-	if cw20Coins.Len() > 0 {
-		if err := k.bck.SendCoins(ctx, fromAddr, toAddr, cw20Coins); err != nil {
-			return err
-		}
+	if err := k.bck.SendCoins(ctx, fromAddr, toAddr, cw20Coins); err != nil {
+		return err
 	}
-
-	if cosmosCoins.Len() > 0 {
-		if err := k.BaseKeeper.SendCoins(ctx, fromAddr, toAddr, cosmosCoins); err != nil {
-			return err
-		}
+	if err := k.BaseKeeper.SendCoins(ctx, fromAddr, toAddr, cosmosCoins); err != nil {
+		return err
 	}
 
 	return nil
