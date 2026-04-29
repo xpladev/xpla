@@ -16,7 +16,7 @@ require (
 	cosmossdk.io/x/feegrant v0.2.0
 	cosmossdk.io/x/tx v0.14.0
 	cosmossdk.io/x/upgrade v0.2.0
-	github.com/CosmWasm/wasmd v0.60.5
+	github.com/CosmWasm/wasmd v0.60.6
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft v0.38.21
