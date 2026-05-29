@@ -563,6 +563,7 @@ func NewAppKeeper(
 			appKeepers.DistrKeeper,
 			appKeepers.TransferKeeper,
 			appKeepers.IBCKeeper.ChannelKeeper,
+			appKeepers.IBCKeeper.ClientKeeper,
 			appKeepers.EvmKeeper,
 			*appKeepers.GovKeeper,
 			appKeepers.SlashingKeeper,

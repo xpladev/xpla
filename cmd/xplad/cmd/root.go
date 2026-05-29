@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"os"
-	"path/filepath"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cast"
@@ -19,12 +18,7 @@ import (
 	"cosmossdk.io/log/v2"
 	sdkmath "cosmossdk.io/math"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
-	"github.com/cosmos/cosmos-sdk/store/v2"
-	"github.com/cosmos/cosmos-sdk/store/v2/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/store/v2/snapshots/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -44,7 +38,6 @@ import (
 	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v11/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
@@ -147,7 +140,7 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	initRootCmd(rootCmd, tempApplication.ModuleBasics, tempApplication.GetTxConfig())
+	initRootCmd(rootCmd, tempApplication, tempApplication.GetTxConfig())
 
 	autoCliOpts := enrichAutoCliOpts(tempApplication.AutoCliOpts(), initClientCtx)
 	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
@@ -175,6 +168,8 @@ func enrichAutoCliOpts(autoCliOpts autocli.AppOptions, clientCtx client.Context)
 // return tmcfg.DefaultConfig if no custom configuration is required for the application.
 func initCometConfig() *tmcfg.Config {
 	cfg := tmcfg.DefaultConfig()
+
+	cfg.Mempool.Type = tmcfg.MempoolTypeApp
 
 	// these values put a higher strain on node memory
 	// cfg.P2P.MaxNumInboundPeers = 100
@@ -210,11 +205,12 @@ func initAppConfig() (string, interface{}) {
 }
 
 func initRootCmd(rootCmd *cobra.Command,
-	basicManager module.BasicManager,
+	xplaApp *xpla.XplaApp,
 	txConfig client.TxConfig,
 ) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
+	basicManager := xplaApp.ModuleBasics
 
 	ac := appCreator{}
 	sdkAppCreatorWrapper := func(l log.Logger, d dbm.DB, ao servertypes.AppOptions) servertypes.Application {
@@ -222,7 +218,7 @@ func initRootCmd(rootCmd *cobra.Command,
 	}
 
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(basicManager, xpla.DefaultNodeHome),
+		InitCmd(xplaApp, xpla.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
@@ -330,20 +326,9 @@ func (a appCreator) newApp(
 	db dbm.DB,
 	appOpts servertypes.AppOptions,
 ) evmserver.Application {
-	var cache storetypes.MultiStorePersistentCache
-
-	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
-		cache = store.NewCommitKVStoreCacheManager()
-	}
-
 	var wasmOpts []wasmkeeper.Option
 	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
 		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
-	}
-
-	pruningOpts, err := server.GetPruningOptionsFromFlags(appOpts)
-	if err != nil {
-		panic(err)
 	}
 
 	skipUpgradeHeights := make(map[int64]bool)
@@ -352,56 +337,16 @@ func (a appCreator) newApp(
 	}
 
 	home := cast.ToString(appOpts.Get(flags.FlagHome))
-	chainID := cast.ToString(appOpts.Get(flags.FlagChainID))
-	if chainID == "" {
-		// fallback to genesis chain-id
-		genDocFile := filepath.Join(home, cast.ToString(appOpts.Get("genesis_file")))
-		appGenesis, err := genutiltypes.AppGenesisFromFile(genDocFile)
-		if err != nil {
-			panic(err)
-		}
-
-		chainID = appGenesis.ChainID
-	}
-
-	snapshotDir := filepath.Join(home, "data", "snapshots")
-	snapshotDB, err := dbm.NewDB("metadata", server.GetAppDBBackend(appOpts), snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-
-	snapshotOptions := snapshottypes.NewSnapshotOptions(
-		cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
-		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
-	)
-
-	baseappOptions := []func(*baseapp.BaseApp){
-		baseapp.SetChainID(chainID),
-		baseapp.SetPruning(pruningOpts),
-		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
-		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
-		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
-		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
-		baseapp.SetInterBlockCache(cache),
-		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
-		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
-		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
-		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
-	}
 
 	return xpla.NewXplaApp(
 		logger,
 		db,
 		true,
 		skipUpgradeHeights,
-		cast.ToString(appOpts.Get(flags.FlagHome)),
+		home,
 		appOpts,
 		wasmOpts,
-		baseappOptions...,
+		server.DefaultBaseappOptions(appOpts)...,
 	)
 }
 

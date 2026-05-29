@@ -7,6 +7,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
 
 	evmmempool "github.com/cosmos/evm/mempool"
@@ -31,6 +32,9 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 	if err != nil {
 		return fmt.Errorf("failed to get mempool config: %w", err)
 	}
+	if err := evmserver.ValidateReapBounds(appOpts, mempoolConfig.BlockGasLimit); err != nil {
+		return err
+	}
 
 	txEncoder := evmmempool.NewTxEncoder(app.txConfig)
 	evmRechecker := evmmempool.NewTxRechecker(app.GetAnteHandler(), txEncoder)
@@ -51,6 +55,8 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 	app.SetMempool(evmMempool)
 	checkTxHandler := evmMempool.NewCheckTxHandler(app.txConfig.TxDecoder(), evmserver.GetMempoolCheckTxTimeout(appOpts, logger))
 	app.SetCheckTxHandler(checkTxHandler)
+	app.SetInsertTxHandler(evmMempool.NewInsertTxHandler(app.TxDecode))
+	app.SetReapTxsHandler(evmMempool.NewReapTxsHandler())
 
 	abciProposalHandler := baseapp.NewDefaultProposalHandler(evmMempool, app)
 	abciProposalHandler.SetSignerExtractionAdapter(
@@ -59,6 +65,12 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 		),
 	)
 	app.SetPrepareProposal(abciProposalHandler.PrepareProposalHandler())
+	app.SetProcessProposal(abciProposalHandler.ProcessProposalHandler())
+	app.SetPrepareCheckStater(func(_ sdk.Context) {
+		if !evmMempool.HasEventBus() {
+			evmMempool.NotifyNewBlock()
+		}
+	})
 
 	return nil
 }

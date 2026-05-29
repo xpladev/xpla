@@ -15,9 +15,11 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	evmaddress "github.com/cosmos/evm/encoding/address"
+	ibcutils "github.com/cosmos/evm/ibc"
 	"github.com/cosmos/evm/precompiles/bech32"
 	distprecompile "github.com/cosmos/evm/precompiles/distribution"
 	govprecompile "github.com/cosmos/evm/precompiles/gov"
+	ics02precompile "github.com/cosmos/evm/precompiles/ics02"
 	ics20precompile "github.com/cosmos/evm/precompiles/ics20"
 	"github.com/cosmos/evm/precompiles/p256"
 	slashingprecompile "github.com/cosmos/evm/precompiles/slashing"
@@ -55,6 +57,7 @@ func NewAvailableStaticPrecompiles(
 	distributionKeeper distributionkeeper.Keeper,
 	transferKeeper *ibctransferkeeper.Keeper,
 	channelKeeper *channelkeeper.Keeper,
+	clientKeeper ibcutils.ClientKeeper,
 	evmKeeper *evmkeeper.Keeper,
 	govKeeper govkeeper.Keeper,
 	slashingKeeper slashingkeeper.Keeper,
@@ -106,6 +109,10 @@ func NewAvailableStaticPrecompiles(
 		channelKeeper,
 		MockERC20Keeper{},
 	)
+	ibcClientPrecompile := ics02precompile.NewPrecompile(
+		codec,
+		clientKeeper,
+	)
 
 	govPrecompile := govprecompile.NewPrecompile(
 		govkeeper.NewMsgServerImpl(&govKeeper),
@@ -130,6 +137,7 @@ func NewAvailableStaticPrecompiles(
 	// Stateful precompiles
 	precompiles[stakingPrecompile.Address()] = stakingPrecompile
 	precompiles[distributionPrecompile.Address()] = distributionPrecompile
+	precompiles[ibcClientPrecompile.Address()] = ibcClientPrecompile
 	precompiles[ibcTransferPrecompile.Address()] = ibcTransferPrecompile
 	precompiles[govPrecompile.Address()] = govPrecompile
 	precompiles[slashingPrecompile.Address()] = slashingPrecompile

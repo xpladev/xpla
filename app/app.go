@@ -1,7 +1,7 @@
 package app
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -34,6 +34,7 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/baseapp/txnrunner"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -71,6 +72,7 @@ import (
 	evmmempool "github.com/cosmos/evm/mempool"
 	srvflags "github.com/cosmos/evm/server/flags"
 	cosmosevmutils "github.com/cosmos/evm/utils"
+	vmrunner "github.com/cosmos/evm/x/vm/runner"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
@@ -371,6 +373,7 @@ func NewXplaApp(
 	if err := app.configureEVMMempool(appOpts, logger); err != nil {
 		panic(fmt.Sprintf("failed to configure EVM mempool: %s", err.Error()))
 	}
+	app.setEVMRunner(app.txConfig.TxDecoder())
 
 	// At startup, after all modules have been registered, check that all prot
 	// annotations are correct.
@@ -398,6 +401,10 @@ func NewXplaApp(
 	}
 
 	return app
+}
+
+func (app *XplaApp) setEVMRunner(txDecoder sdk.TxDecoder) {
+	vmrunner.SetRunner(app.BaseApp, txnrunner.NewDefaultRunner(txDecoder))
 }
 
 // Name returns the name of the App
@@ -489,11 +496,6 @@ func (app *XplaApp) LegacyAmino() *codec.LegacyAmino {
 // for modules to register their own custom testing types.
 func (app *XplaApp) AppCodec() codec.Codec {
 	return app.appCodec
-}
-
-// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
-func (app *XplaApp) DefaultGenesis() map[string]json.RawMessage {
-	return app.ModuleBasics.DefaultGenesis(app.appCodec)
 }
 
 // InterfaceRegistry returns Xpla's InterfaceRegistry
@@ -656,4 +658,23 @@ func (app *XplaApp) GetMempool() sdkmempool.ExtMempool {
 
 func (app *XplaApp) GetAnteHandler() sdk.AnteHandler {
 	return app.BaseApp.AnteHandler()
+}
+
+// Close unsubscribes the EVM mempool from the event bus and closes the underlying BaseApp.
+func (app *XplaApp) Close() error {
+	var err error
+	if app.EVMMempool != nil {
+		app.Logger().Info("Shutting down mempool")
+		err = app.EVMMempool.Close()
+	}
+
+	msg := "Application gracefully shutdown"
+	err = errors.Join(err, app.BaseApp.Close())
+	if err == nil {
+		app.Logger().Info(msg)
+	} else {
+		app.Logger().Error(msg, "error", err)
+	}
+
+	return err
 }
