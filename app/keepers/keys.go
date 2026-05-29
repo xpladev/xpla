@@ -78,7 +78,7 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 	appKeepers.memKeys = storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	// ObjectStoreKeys are mounted separately from KV stores.
-	appKeepers.objectKeys = storetypes.NewObjectStoreKeys(evmtypes.ObjectKey)
+	appKeepers.objectKeys = storetypes.NewObjectStoreKeys(banktypes.ObjectStoreKey, evmtypes.ObjectKey)
 }
 
 func (appKeepers *AppKeepers) GetKVStoreKey() map[string]*storetypes.KVStoreKey {

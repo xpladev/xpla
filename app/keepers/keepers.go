@@ -530,6 +530,9 @@ func NewAppKeeper(
 		appKeepers.WasmKeeper,
 		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
 	)
+	appKeepers.BankKeeper.BaseKeeper = appKeepers.BankKeeper.BaseKeeper.WithObjStoreKey(
+		appKeepers.objectKeys[banktypes.ObjectStoreKey],
+	)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
 		appCodec,
