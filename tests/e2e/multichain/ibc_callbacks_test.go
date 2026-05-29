@@ -9,7 +9,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
-	"github.com/cosmos/interchaintest/v10/ibc"
+	"github.com/cosmos/interchaintest/v11/ibc"
 
 	"github.com/stretchr/testify/assert"
 
@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	Sha256SkipEntryPoint          = "4ee07a1474cb1429cfbdba98fb52ca2efc2fe8602f8e1978dbc3f45b71511ca9"
-	SaltHex                       = "74657374696e67" // "testing" hex encoded
+	Sha256SkipEntryPoint = "4ee07a1474cb1429cfbdba98fb52ca2efc2fe8602f8e1978dbc3f45b71511ca9"
+	SaltHex              = "74657374696e67" // "testing" hex encoded
 )
 
 func TestIbcCallbacks(t *testing.T) {

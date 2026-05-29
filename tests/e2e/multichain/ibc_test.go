@@ -8,7 +8,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
-	"github.com/cosmos/interchaintest/v10/ibc"
+	"github.com/cosmos/interchaintest/v11/ibc"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/xpladev/xpla/tests/e2e/multichain"

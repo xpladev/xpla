@@ -17,7 +17,7 @@ tendermint_dir=$(go list -f '{{ .Dir }}' -m github.com/cometbft/cometbft)
 cosmos_proto_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-proto)
 cosmos_sdk_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/cosmos-sdk)
 wasm_dir=$(go list -f '{{ .Dir }}' -m github.com/CosmWasm/wasmd)
-ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v10)
+ibc_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/ibc-go/v11)
 evm_dir=$(go list -f '{{ .Dir }}' -m github.com/cosmos/evm)
 xpla_dir=$(go list -f '{{ .Dir }}' -m github.com/xpladev/xpla)
 

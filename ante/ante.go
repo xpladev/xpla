@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
-	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	ibcante "github.com/cosmos/ibc-go/v11/modules/core/ante"
+	ibckeeper "github.com/cosmos/ibc-go/v11/modules/core/keeper"
 
 	corestoretypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
-	tmlog "cosmossdk.io/log"
+	tmlog "cosmossdk.io/log/v2"
 
-	txsigning "cosmossdk.io/x/tx/signing"
+	txsigning "github.com/cosmos/cosmos-sdk/x/tx/signing"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -134,7 +134,6 @@ func newCosmosAnteHandler(ctx sdk.Context, opts HandlerOptions) sdk.AnteHandler 
 		sigGasConsumer = SigVerificationGasConsumer
 	}
 
-	feemarketParams := opts.FeeMarketKeeper.GetParams(ctx)
 	anteDecorators := []sdk.AnteDecorator{
 		cosmosante.NewRejectMessagesDecorator(), // reject MsgEthereumTxs
 		// disable the Msg types that cannot be included on an authz.MsgExec msgs field
@@ -158,7 +157,6 @@ func newCosmosAnteHandler(ctx sdk.Context, opts HandlerOptions) sdk.AnteHandler 
 		authante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		authante.NewIncrementSequenceDecorator(opts.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(opts.IBCKeeper),
-		evmante.NewGasWantedDecorator(opts.EvmKeeper, opts.FeeMarketKeeper, &feemarketParams),
 	}
 	return sdk.ChainAnteDecorators(anteDecorators...)
 }

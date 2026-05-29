@@ -1,7 +1,7 @@
 package v1_10
 
 import (
-	store "cosmossdk.io/store/types"
+	store "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
 )

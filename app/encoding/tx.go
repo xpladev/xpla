@@ -9,7 +9,7 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 
-	txsigning "cosmossdk.io/x/tx/signing"
+	txsigning "github.com/cosmos/cosmos-sdk/x/tx/signing"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	legacyevmtypes "github.com/xpladev/xpla/legacy/ethermint/x/evm/types"

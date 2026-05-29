@@ -3,14 +3,14 @@ package app
 import (
 	"fmt"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
 
-	evmconfig "github.com/cosmos/evm/config"
 	evmmempool "github.com/cosmos/evm/mempool"
+	evmserver "github.com/cosmos/evm/server"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 )
 
@@ -21,7 +21,7 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 		return nil
 	}
 
-	cosmosPoolMaxTx := evmconfig.GetCosmosPoolMaxTx(appOpts, logger)
+	cosmosPoolMaxTx := evmserver.GetCosmosPoolMaxTx(appOpts, logger)
 	if cosmosPoolMaxTx < 0 {
 		logger.Debug("app-side mempool is disabled, skipping evm mempool configuration")
 		return nil
@@ -32,18 +32,24 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 		return fmt.Errorf("failed to get mempool config: %w", err)
 	}
 
-	evmMempool := evmmempool.NewExperimentalEVMMempool(
+	txEncoder := evmmempool.NewTxEncoder(app.txConfig)
+	evmRechecker := evmmempool.NewTxRechecker(app.GetAnteHandler(), txEncoder)
+	cosmosRechecker := evmmempool.NewTxRechecker(app.GetAnteHandler(), txEncoder)
+	evmMempool := evmmempool.NewMempool(
 		app.CreateQueryContext,
 		logger,
 		app.EvmKeeper,
 		app.FeeMarketKeeper,
 		app.txConfig,
+		evmRechecker,
+		cosmosRechecker,
 		mempoolConfig,
 		cosmosPoolMaxTx,
 	)
+	evmMempool.SetClientCtx(app.clientCtx)
 	app.EVMMempool = evmMempool
 	app.SetMempool(evmMempool)
-	checkTxHandler := evmmempool.NewCheckTxHandler(evmMempool)
+	checkTxHandler := evmMempool.NewCheckTxHandler(app.txConfig.TxDecoder(), evmserver.GetMempoolCheckTxTimeout(appOpts, logger))
 	app.SetCheckTxHandler(checkTxHandler)
 
 	abciProposalHandler := baseapp.NewDefaultProposalHandler(evmMempool, app)
@@ -57,13 +63,8 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 	return nil
 }
 
-// createMempoolConfig creates a new EVMMempoolConfig with the default configuration
+// createMempoolConfig creates a new EVM mempool config with the default configuration
 // and overrides it with values from appOpts if they exist and are non-zero.
-func (app *XplaApp) createMempoolConfig(appOpts servertypes.AppOptions, logger log.Logger) (*evmmempool.EVMMempoolConfig, error) {
-	return &evmmempool.EVMMempoolConfig{
-		AnteHandler:      app.GetAnteHandler(),
-		LegacyPoolConfig: evmconfig.GetLegacyPoolConfig(appOpts, logger),
-		BlockGasLimit:    evmconfig.GetBlockGasLimit(appOpts, logger),
-		MinTip:           evmconfig.GetMinTip(appOpts, logger),
-	}, nil
+func (app *XplaApp) createMempoolConfig(appOpts servertypes.AppOptions, logger log.Logger) (*evmmempool.Config, error) {
+	return evmserver.ResolveMempoolConfig(app.GetAnteHandler(), appOpts, logger), nil
 }

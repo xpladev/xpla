@@ -7,8 +7,8 @@ import (
 
 	_ "embed"
 
-	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/log/v2"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -67,6 +67,10 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 }
 
 func (p PrecompiledBank) Address() common.Address { return Address }
+
+func (PrecompiledBank) Name() string {
+	return "bank"
+}
 
 func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
 	// NOTE: This check avoid panicking when trying to decode the method ID

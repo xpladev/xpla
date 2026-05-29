@@ -25,13 +25,8 @@ func NewGovHooksForBurn(k Keeper, bk types.BankKeeper, gk types.GovKeeper) BankG
 }
 
 // AfterProposalSubmission implements govtypes.GovHooks
-func (h BankGovHooks) AfterProposalSubmission(ctx context.Context, proposalID uint64) error {
+func (h BankGovHooks) AfterProposalSubmission(ctx context.Context, proposalID uint64, proposer sdk.AccAddress) error {
 	res, err := h.govKeeper.Proposal(ctx, &govv1types.QueryProposalRequest{ProposalId: proposalID})
-	if err != nil {
-		return err
-	}
-
-	proposer, err := sdk.AccAddressFromBech32(res.Proposal.Proposer)
 	if err != nil {
 		return err
 	}

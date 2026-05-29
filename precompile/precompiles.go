@@ -25,8 +25,8 @@ import (
 	evmprecompiletypes "github.com/cosmos/evm/precompiles/types"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 
-	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
-	channelkeeper "github.com/cosmos/ibc-go/v10/modules/core/04-channel/keeper"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v11/modules/apps/transfer/keeper"
+	channelkeeper "github.com/cosmos/ibc-go/v11/modules/core/04-channel/keeper"
 
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
@@ -53,7 +53,7 @@ func (p wasmDelegatePrecompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly
 func NewAvailableStaticPrecompiles(
 	stakingKeeper stakingkeeper.Keeper,
 	distributionKeeper distributionkeeper.Keeper,
-	transferKeeper ibctransferkeeper.Keeper,
+	transferKeeper *ibctransferkeeper.Keeper,
 	channelKeeper *channelkeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
 	govKeeper govkeeper.Keeper,

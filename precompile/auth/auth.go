@@ -6,8 +6,8 @@ import (
 
 	_ "embed"
 
-	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/log/v2"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,6 +57,10 @@ func NewPrecompiledAuth(ak AccountKeeper) PrecompiledAuth {
 	p.SetAddress(common.HexToAddress(hexAddress))
 
 	return p
+}
+
+func (PrecompiledAuth) Name() string {
+	return "auth"
 }
 
 func (p PrecompiledAuth) RequiredGas(input []byte) uint64 {

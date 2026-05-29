@@ -6,8 +6,8 @@ import (
 
 	_ "embed"
 
-	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/log/v2"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -65,6 +65,10 @@ func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk p
 	p.SetAddress(common.HexToAddress(hexAddress))
 
 	return &p
+}
+
+func (PrecompiledWasm) Name() string {
+	return "wasm"
 }
 
 func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {

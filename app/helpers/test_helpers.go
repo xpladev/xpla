@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	sdkmath "cosmossdk.io/math"
 
 	"github.com/stretchr/testify/require"
@@ -135,7 +135,6 @@ func setup(chainid string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 	app := xplaapp.NewXplaApp(
 		log.NewNopLogger(),
 		db,
-		nil,
 		true,
 		map[int64]bool{},
 		xplaapp.DefaultNodeHome,
