@@ -169,6 +169,7 @@ func enrichAutoCliOpts(autoCliOpts autocli.AppOptions, clientCtx client.Context)
 func initCometConfig() *tmcfg.Config {
 	cfg := tmcfg.DefaultConfig()
 
+	// XPLA uses Cosmos EVM's app-side mempool as the default and required tx path.
 	cfg.Mempool.Type = tmcfg.MempoolTypeApp
 
 	// these values put a higher strain on node memory

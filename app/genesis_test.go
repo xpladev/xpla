@@ -12,6 +12,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
+	xplaprecompile "github.com/xpladev/xpla/precompile"
 	xplatypes "github.com/xpladev/xpla/types"
 )
 
@@ -49,4 +50,5 @@ func TestDefaultGenesisUsesXplaDenom(t *testing.T) {
 	require.Equal(t, xplatypes.DefaultDenom, evmGenesis.Params.EvmDenom)
 	require.NotNil(t, evmGenesis.Params.ExtendedDenomOptions)
 	require.Equal(t, xplatypes.DefaultDenom, evmGenesis.Params.ExtendedDenomOptions.ExtendedDenom)
+	require.Equal(t, xplaprecompile.DefaultActiveStaticPrecompiles(), evmGenesis.Params.ActiveStaticPrecompiles)
 }

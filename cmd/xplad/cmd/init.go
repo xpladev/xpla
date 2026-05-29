@@ -149,6 +149,7 @@ func InitCmd(app *xpla.XplaApp, defaultNodeHome string) *cobra.Command {
 				return err
 			}
 
+			// XPLA uses Cosmos EVM's app-side mempool as the default and required tx path.
 			cfg.Mempool.Type = cmtcfg.MempoolTypeApp
 			cmtcfg.WriteConfigFile(filepath.Join(cfg.RootDir, "config", "config.toml"), cfg)
 

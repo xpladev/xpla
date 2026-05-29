@@ -8,6 +8,7 @@ import (
 	cosmosevmutils "github.com/cosmos/evm/utils"
 
 	xplaprecompile "github.com/xpladev/xpla/precompile"
+	pwasm "github.com/xpladev/xpla/precompile/wasm"
 )
 
 func TestBlockedModuleAccountAddrsIncludesXplaStaticPrecompiles(t *testing.T) {
@@ -18,4 +19,5 @@ func TestBlockedModuleAccountAddrsIncludesXplaStaticPrecompiles(t *testing.T) {
 		bech32Addr := cosmosevmutils.Bech32StringFromHexAddress(precompile.Hex())
 		require.Truef(t, blockedAddrs[bech32Addr], "expected %s to be blocked", precompile.Hex())
 	}
+	require.Contains(t, xplaprecompile.PrecompiledAddressesXpla, pwasm.DelegatecallAddress)
 }

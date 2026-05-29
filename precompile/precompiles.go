@@ -26,6 +26,7 @@ import (
 	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
 	evmprecompiletypes "github.com/cosmos/evm/precompiles/types"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	ibctransferkeeper "github.com/cosmos/ibc-go/v11/modules/apps/transfer/keeper"
 	channelkeeper "github.com/cosmos/ibc-go/v11/modules/core/04-channel/keeper"
@@ -39,7 +40,28 @@ import (
 const bech32PrecompileBaseGas = 6_000
 
 var PrecompiledAddressesXpla = []common.Address{
-	pbank.Address, pwasm.Address, pauth.Address,
+	pbank.Address,
+	pwasm.Address,
+	pauth.Address,
+	pwasm.DelegatecallAddress,
+}
+
+// DefaultActiveStaticPrecompiles returns XPLA's default active static precompile set.
+func DefaultActiveStaticPrecompiles() []string {
+	activePrecompiles := []string{
+		evmtypes.P256PrecompileAddress,
+		evmtypes.Bech32PrecompileAddress,
+		evmtypes.StakingPrecompileAddress,
+		evmtypes.DistributionPrecompileAddress,
+		evmtypes.GovPrecompileAddress,
+		evmtypes.SlashingPrecompileAddress,
+	}
+
+	for _, precompile := range PrecompiledAddressesXpla {
+		activePrecompiles = append(activePrecompiles, precompile.Hex())
+	}
+
+	return activePrecompiles
 }
 
 type wasmDelegatePrecompile struct {

@@ -24,8 +24,10 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 
 	cosmosPoolMaxTx := evmserver.GetCosmosPoolMaxTx(appOpts, logger)
 	if cosmosPoolMaxTx < 0 {
-		logger.Debug("app-side mempool is disabled, skipping evm mempool configuration")
-		return nil
+		// XPLA runs Cosmos EVM's app-side mempool as the required handler for
+		// CometBFT's app mempool. Disabling it would leave InsertTx/ReapTxs
+		// without handlers, so fail during startup instead of falling back.
+		return fmt.Errorf("mempool.max-txs=%d is unsupported: XPLA requires the Cosmos EVM app-side mempool", cosmosPoolMaxTx)
 	}
 
 	mempoolConfig, err := app.createMempoolConfig(appOpts, logger)

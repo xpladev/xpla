@@ -12,6 +12,7 @@ import (
 
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
+	xplaprecompile "github.com/xpladev/xpla/precompile"
 	xplatypes "github.com/xpladev/xpla/types"
 )
 
@@ -77,6 +78,7 @@ func NewEVMGenesisState(app *XplaApp, genesis GenesisState) *evmtypes.GenesisSta
 	evmGenesis.Params.ExtendedDenomOptions = &evmtypes.ExtendedDenomOptions{
 		ExtendedDenom: xplatypes.DefaultDenom,
 	}
+	evmGenesis.Params.ActiveStaticPrecompiles = xplaprecompile.DefaultActiveStaticPrecompiles()
 
 	return &evmGenesis
 }
