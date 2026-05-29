@@ -51,4 +51,7 @@ func TestDefaultGenesisUsesXplaDenom(t *testing.T) {
 	require.NotNil(t, evmGenesis.Params.ExtendedDenomOptions)
 	require.Equal(t, xplatypes.DefaultDenom, evmGenesis.Params.ExtendedDenomOptions.ExtendedDenom)
 	require.Equal(t, xplaprecompile.DefaultActiveStaticPrecompiles(), evmGenesis.Params.ActiveStaticPrecompiles)
+	require.Contains(t, evmGenesis.Params.ActiveStaticPrecompiles, evmtypes.ICS20PrecompileAddress)
+	require.Contains(t, evmGenesis.Params.ActiveStaticPrecompiles, evmtypes.ICS02PrecompileAddress)
+	require.Equal(t, evmtypes.DefaultPreinstalls, evmGenesis.Preinstalls)
 }

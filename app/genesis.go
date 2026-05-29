@@ -79,6 +79,7 @@ func NewEVMGenesisState(app *XplaApp, genesis GenesisState) *evmtypes.GenesisSta
 		ExtendedDenom: xplatypes.DefaultDenom,
 	}
 	evmGenesis.Params.ActiveStaticPrecompiles = xplaprecompile.DefaultActiveStaticPrecompiles()
+	evmGenesis.Preinstalls = evmtypes.DefaultPreinstalls
 
 	return &evmGenesis
 }

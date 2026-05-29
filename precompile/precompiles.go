@@ -53,8 +53,10 @@ func DefaultActiveStaticPrecompiles() []string {
 		evmtypes.Bech32PrecompileAddress,
 		evmtypes.StakingPrecompileAddress,
 		evmtypes.DistributionPrecompileAddress,
+		evmtypes.ICS20PrecompileAddress,
 		evmtypes.GovPrecompileAddress,
 		evmtypes.SlashingPrecompileAddress,
+		evmtypes.ICS02PrecompileAddress,
 	}
 
 	for _, precompile := range PrecompiledAddressesXpla {

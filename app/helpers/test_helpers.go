@@ -27,8 +27,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	evmtypes "github.com/cosmos/evm/x/vm/types"
-
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	xplaapp "github.com/xpladev/xpla/app"
@@ -142,7 +140,7 @@ func setup(chainid string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		emptyWasmOpts,
 		baseapp.SetChainID(chainid),
 	)
-	return app, app.ModuleBasics.DefaultGenesis(app.AppCodec())
+	return app, app.DefaultGenesis()
 }
 
 func genesisStateWithValSet(t *testing.T,
@@ -229,11 +227,6 @@ func genesisStateWithValSet(t *testing.T,
 	// update total supply
 	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, metadata, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
-
-	// evm
-	evmGenesis := evmtypes.DefaultGenesisState()
-	evmGenesis.Params.EvmDenom = "axpla"
-	genesisState[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 
 	return genesisState
 }
