@@ -133,7 +133,6 @@ type XplaApp struct { // nolint: golint
 	configurator module.Configurator
 
 	// for evm enable
-	clientCtx          client.Context
 	pendingTxListeners []evmante.PendingTxListener
 	EVMMempool         *evmmempool.Mempool
 }
@@ -245,7 +244,8 @@ func NewXplaApp(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(appModules(app, appCodec, txConfig, tmLightClientModule)...)
+	evmModule := newEVMAppModule(app)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, tmLightClientModule, evmModule)...)
 	app.ModuleBasics = newBasicManagerFromManager(app)
 
 	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
@@ -392,6 +392,11 @@ func NewXplaApp(
 		if err := app.LoadLatestVersion(); err != nil {
 			panic(fmt.Sprintf("failed to load latest version: %s", err))
 		}
+
+		evmModule.HydrateGlobals(app.NewContextLegacy(true, tmproto.Header{
+			Height:  app.LastBlockHeight(),
+			ChainID: app.ChainID(),
+		}))
 
 		ctx := app.BaseApp.NewNextBlockContext(tmproto.Header{})
 
@@ -642,10 +647,6 @@ func noOpTxFeeChecker(_ sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
 	}
 
 	return feeTx.GetFee(), 0, nil
-}
-
-func (app *XplaApp) SetClientCtx(clientCtx client.Context) {
-	app.clientCtx = clientCtx
 }
 
 func (app *XplaApp) RegisterPendingTxListener(listener func(common.Hash)) {

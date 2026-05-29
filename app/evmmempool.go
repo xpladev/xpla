@@ -50,7 +50,6 @@ func (app *XplaApp) configureEVMMempool(appOpts servertypes.AppOptions, logger l
 		mempoolConfig,
 		cosmosPoolMaxTx,
 	)
-	evmMempool.SetClientCtx(app.clientCtx)
 	app.EVMMempool = evmMempool
 	app.SetMempool(evmMempool)
 	checkTxHandler := evmMempool.NewCheckTxHandler(app.txConfig.TxDecoder(), evmserver.GetMempoolCheckTxTimeout(appOpts, logger))

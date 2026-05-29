@@ -31,7 +31,7 @@ See detailed instructions in [Local e2e test](./tests/e2e/README.md)
 **Run test:**
 ```bash
 cd tests/e2e/multichain
-go test ./...
+go test -timeout 20m ./...
 ```
 
 ## License

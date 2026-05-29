@@ -87,6 +87,7 @@ func appModules(
 	appCodec codec.Codec,
 	txConfig client.TxEncodingConfig,
 	tmLightClientModule ibctm.LightClientModule,
+	evmModule evm.AppModule,
 ) []module.AppModule {
 	return []module.AppModule{
 		genutil.NewAppModule(
@@ -115,12 +116,16 @@ func appModules(
 		ica.NewAppModule(app.ICAControllerKeeper, app.ICAHostKeeper),
 		pfmrouter.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
 		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.BankKeeper, app.AccountKeeper.AddressCodec()),
+		evmModule,
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 		burn.NewAppModule(appCodec, app.BurnKeeper),
 	}
+}
+
+func newEVMAppModule(app *XplaApp) evm.AppModule {
+	return evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.BankKeeper, app.AccountKeeper.AddressCodec())
 }
 
 // ModuleBasics defines the module BasicManager that is in charge of setting up basic,
