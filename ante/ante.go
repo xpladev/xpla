@@ -12,6 +12,7 @@ import (
 	tmlog "cosmossdk.io/log/v2"
 
 	txsigning "github.com/cosmos/cosmos-sdk/x/tx/signing"
+	"github.com/cosmos/gogoproto/proto"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -24,9 +25,15 @@ import (
 	cosmosante "github.com/cosmos/evm/ante/cosmos"
 	evmante "github.com/cosmos/evm/ante/evm"
 	evmanteinterfaces "github.com/cosmos/evm/ante/interfaces"
+	evmantetypes "github.com/cosmos/evm/ante/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	volunteerante "github.com/xpladev/xpla/x/volunteer/ante"
+)
+
+var (
+	extensionOptionsEthereumTxTypeURL  = "/" + proto.MessageName(&evmtypes.ExtensionOptionsEthereumTx{})
+	extensionOptionDynamicFeeTxTypeURL = "/" + proto.MessageName(&evmantetypes.ExtensionOptionDynamicFeeTx{})
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -99,10 +106,10 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 			eopts := txWithExtensions.GetExtensionOptions()
 			if len(eopts) > 0 {
 				switch typeURL := eopts[0].GetTypeUrl(); typeURL {
-				case "/cosmos.evm.vm.v1.ExtensionOptionsEthereumTx":
+				case extensionOptionsEthereumTxTypeURL:
 					// handle as *evmtypes.MsgEthereumTx
 					anteHandler = newEthAnteHandler(ctx, opts)
-				case "/cosmos.evm.types.v1.ExtensionOptionDynamicFeeTx":
+				case extensionOptionDynamicFeeTxTypeURL:
 					// cosmos-sdk tx with dynamic fee extension
 					anteHandler = newCosmosAnteHandler(ctx, opts)
 				default:
