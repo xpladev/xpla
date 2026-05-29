@@ -471,7 +471,12 @@ func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[s
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	// initialize precompile addresses to block
-	blockedPrecompilesHex := evmtypes.AvailableStaticPrecompiles
+	blockedPrecompilesHex := make(
+		[]string,
+		0,
+		len(evmtypes.AvailableStaticPrecompiles)+len(vm.PrecompiledAddressesPrague)+len(xplaprecompile.PrecompiledAddressesXpla),
+	)
+	blockedPrecompilesHex = append(blockedPrecompilesHex, evmtypes.AvailableStaticPrecompiles...)
 	for _, addr := range vm.PrecompiledAddressesPrague {
 		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
 	}
