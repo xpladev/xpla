@@ -332,7 +332,6 @@ func (x *fastReflection_MsgAddRateLimit) WhichOneof(d protoreflect.OneofDescript
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgAddRateLimit", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -930,7 +929,6 @@ func (x *fastReflection_MsgAddRateLimitResponse) WhichOneof(d protoreflect.Oneof
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgAddRateLimitResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -1412,7 +1410,6 @@ func (x *fastReflection_MsgUpdateRateLimit) WhichOneof(d protoreflect.OneofDescr
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgUpdateRateLimit", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -2010,7 +2007,6 @@ func (x *fastReflection_MsgUpdateRateLimitResponse) WhichOneof(d protoreflect.On
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgUpdateRateLimitResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -2429,7 +2425,6 @@ func (x *fastReflection_MsgRemoveRateLimit) WhichOneof(d protoreflect.OneofDescr
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgRemoveRateLimit", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -2914,7 +2909,6 @@ func (x *fastReflection_MsgRemoveRateLimitResponse) WhichOneof(d protoreflect.On
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgRemoveRateLimitResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -3333,7 +3327,6 @@ func (x *fastReflection_MsgResetRateLimit) WhichOneof(d protoreflect.OneofDescri
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgResetRateLimit", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -3818,7 +3811,6 @@ func (x *fastReflection_MsgResetRateLimitResponse) WhichOneof(d protoreflect.One
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.MsgResetRateLimitResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.

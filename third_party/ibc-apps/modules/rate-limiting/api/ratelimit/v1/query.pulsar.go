@@ -204,7 +204,6 @@ func (x *fastReflection_QueryAllRateLimitsRequest) WhichOneof(d protoreflect.One
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryAllRateLimitsRequest", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -642,7 +641,6 @@ func (x *fastReflection_QueryAllRateLimitsResponse) WhichOneof(d protoreflect.On
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryAllRateLimitsResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -1096,7 +1094,6 @@ func (x *fastReflection_QueryRateLimitRequest) WhichOneof(d protoreflect.OneofDe
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryRateLimitRequest", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -1563,7 +1560,6 @@ func (x *fastReflection_QueryRateLimitResponse) WhichOneof(d protoreflect.OneofD
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryRateLimitResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -1994,7 +1990,6 @@ func (x *fastReflection_QueryRateLimitsByChainIdRequest) WhichOneof(d protorefle
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryRateLimitsByChainIdRequest", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -2475,7 +2470,6 @@ func (x *fastReflection_QueryRateLimitsByChainIdResponse) WhichOneof(d protorefl
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryRateLimitsByChainIdResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -2908,7 +2902,6 @@ func (x *fastReflection_QueryRateLimitsByChannelOrClientIdRequest) WhichOneof(d 
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryRateLimitsByChannelOrClientIdRequest", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -3389,7 +3382,6 @@ func (x *fastReflection_QueryRateLimitsByChannelOrClientIdResponse) WhichOneof(d
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryRateLimitsByChannelOrClientIdResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -3801,7 +3793,6 @@ func (x *fastReflection_QueryAllBlacklistedDenomsRequest) WhichOneof(d protorefl
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryAllBlacklistedDenomsRequest", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -4234,7 +4225,6 @@ func (x *fastReflection_QueryAllBlacklistedDenomsResponse) WhichOneof(d protoref
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryAllBlacklistedDenomsResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -4637,7 +4627,6 @@ func (x *fastReflection_QueryAllWhitelistedAddressesRequest) WhichOneof(d protor
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryAllWhitelistedAddressesRequest", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -5075,7 +5064,6 @@ func (x *fastReflection_QueryAllWhitelistedAddressesResponse) WhichOneof(d proto
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.QueryAllWhitelistedAddressesResponse", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.

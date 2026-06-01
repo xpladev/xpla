@@ -247,7 +247,6 @@ func (x *fastReflection_Path) WhichOneof(d protoreflect.OneofDescriptor) protore
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.Path", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -752,7 +751,6 @@ func (x *fastReflection_Quota) WhichOneof(d protoreflect.OneofDescriptor) protor
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.Quota", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -1284,7 +1282,6 @@ func (x *fastReflection_Flow) WhichOneof(d protoreflect.OneofDescriptor) protore
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.Flow", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -1844,7 +1841,6 @@ func (x *fastReflection_RateLimit) WhichOneof(d protoreflect.OneofDescriptor) pr
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.RateLimit", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -2404,7 +2400,6 @@ func (x *fastReflection_WhitelistedAddressPair) WhichOneof(d protoreflect.OneofD
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.WhitelistedAddressPair", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
@@ -2938,7 +2933,6 @@ func (x *fastReflection_HourEpoch) WhichOneof(d protoreflect.OneofDescriptor) pr
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.HourEpoch", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.

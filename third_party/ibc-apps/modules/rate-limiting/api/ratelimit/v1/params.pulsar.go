@@ -202,7 +202,6 @@ func (x *fastReflection_Params) WhichOneof(d protoreflect.OneofDescriptor) proto
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in ratelimit.v1.Params", d.FullName()))
 	}
-	panic("unreachable")
 }
 
 // GetUnknown retrieves the entire list of unknown fields.
