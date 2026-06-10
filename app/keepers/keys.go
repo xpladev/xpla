@@ -1,11 +1,11 @@
 package keepers
 
 import (
-	routertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/types"
-	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	icacontrollertypes "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/controller/types"
 	icahosttypes "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/host/types"
+	routertypes "github.com/cosmos/ibc-go/v11/modules/apps/packet-forward-middleware/types"
+	ratelimittypes "github.com/cosmos/ibc-go/v11/modules/apps/rate-limiting/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v11/modules/apps/transfer/types"
 	ibcexported "github.com/cosmos/ibc-go/v11/modules/core/exported"
 

@@ -4,12 +4,6 @@ import (
 	"os"
 	"path/filepath"
 
-	pfmrouter "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward"
-	pfmrouterkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/keeper"
-	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/types"
-	ratelimit "github.com/cosmos/ibc-apps/modules/rate-limiting/v10"
-	ratelimitkeeper "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/keeper"
-	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/types"
 	icacontroller "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/controller"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/controller/types"
@@ -17,6 +11,12 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/host/types"
 	ibccallbacks "github.com/cosmos/ibc-go/v11/modules/apps/callbacks"
+	pfmrouter "github.com/cosmos/ibc-go/v11/modules/apps/packet-forward-middleware"
+	pfmrouterkeeper "github.com/cosmos/ibc-go/v11/modules/apps/packet-forward-middleware/keeper"
+	pfmroutertypes "github.com/cosmos/ibc-go/v11/modules/apps/packet-forward-middleware/types"
+	ratelimit "github.com/cosmos/ibc-go/v11/modules/apps/rate-limiting"
+	ratelimitkeeper "github.com/cosmos/ibc-go/v11/modules/apps/rate-limiting/keeper"
+	ratelimittypes "github.com/cosmos/ibc-go/v11/modules/apps/rate-limiting/types"
 	"github.com/cosmos/ibc-go/v11/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v11/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v11/modules/apps/transfer/types"
@@ -119,7 +119,7 @@ type AppKeepers struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	PFMRouterKeeper *pfmrouterkeeper.Keeper
-	RatelimitKeeper ratelimitkeeper.Keeper
+	RatelimitKeeper *ratelimitkeeper.Keeper
 
 	// xpla modules
 	EvmKeeper       *vmkeeper.Keeper
@@ -324,15 +324,14 @@ func NewAppKeeper(
 	)
 
 	// Create RateLimit keeper
-	appKeepers.RatelimitKeeper = *ratelimitkeeper.NewKeeper(
+	appKeepers.RatelimitKeeper = ratelimitkeeper.NewKeeper(
 		appCodec, // BinaryCodec
+		appKeepers.AccountKeeper.AddressCodec(),
 		runtime.NewKVStoreService(appKeepers.keys[ratelimittypes.StoreKey]), // StoreKey
-		appKeepers.GetSubspace(ratelimittypes.ModuleName),                   // param Subspace
-		govModAddress, // authority
-		&appKeepers.BankKeeper,
-		appKeepers.IBCKeeper.ChannelKeeper, // ChannelKeeper
+		appKeepers.IBCKeeper.ChannelKeeper,                                  // ChannelKeeper
 		appKeepers.IBCKeeper.ClientKeeper,
-		appKeepers.IBCKeeper.ChannelKeeper, // ICS4Wrapper
+		&appKeepers.BankKeeper,
+		govModAddress, // authority
 	)
 
 	// ICA Controller keeper
@@ -341,17 +340,6 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[icacontrollertypes.StoreKey]),
 		appKeepers.IBCKeeper.ChannelKeeper,
 		bApp.MsgServiceRouter(),
-		govModAddress,
-	)
-
-	// PFMRouterKeeper must be created before TransferKeeper
-	appKeepers.PFMRouterKeeper = pfmrouterkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(appKeepers.keys[pfmroutertypes.StoreKey]),
-		nil, // Will be zero-value here. Reference is set later on with SetTransferKeeper.
-		appKeepers.IBCKeeper.ChannelKeeper,
-		&appKeepers.BankKeeper,
-		appKeepers.RatelimitKeeper, // ICS4Wrapper
 		govModAddress,
 	)
 
@@ -366,8 +354,15 @@ func NewAppKeeper(
 		govModAddress,
 	)
 
-	// Must be called on PFMRouter AFTER TransferKeeper initialized
-	appKeepers.PFMRouterKeeper.SetTransferKeeper(appKeepers.TransferKeeper)
+	appKeepers.PFMRouterKeeper = pfmrouterkeeper.NewKeeper(
+		appCodec,
+		appKeepers.AccountKeeper.AddressCodec(),
+		runtime.NewKVStoreService(appKeepers.keys[pfmroutertypes.StoreKey]),
+		appKeepers.TransferKeeper,
+		appKeepers.IBCKeeper.ChannelKeeper,
+		&appKeepers.BankKeeper,
+		govModAddress,
+	)
 
 	// wasm start
 	// Stargate Queries
@@ -443,23 +438,16 @@ func NewAppKeeper(
 	// * RecvPacket -> IBC core -> RateLimit -> PFM -> Callbacks -> Transfer (AddRoute)
 	// * SendPacket -> Transfer -> Callbacks -> PFM -> RateLimit -> IBC core (ICS4Wrapper)
 
-	var transferStack porttypes.IBCModule
-	transferStack = transfer.NewIBCModule(appKeepers.TransferKeeper)
-	cbStack := ibccallbacks.NewIBCMiddleware(wasmStackIBCHandler, MaxIBCCallbackGas)
-	cbStack.SetUnderlyingApplication(transferStack)
-	cbStack.SetICS4Wrapper(appKeepers.PFMRouterKeeper)
-
-	pfmStack := pfmrouter.NewIBCMiddleware(
-		cbStack,
-		appKeepers.PFMRouterKeeper,
-		0, // retries on timeout
-		pfmrouterkeeper.DefaultForwardTransferPacketTimeoutTimestamp,
-	)
-	transferStack = &pfmStack
-
-	ratelimitStack := ratelimit.NewIBCMiddleware(appKeepers.RatelimitKeeper, transferStack)
-	transferStack = &ratelimitStack
-	appKeepers.TransferKeeper.WithICS4Wrapper(cbStack)
+	transferStack := porttypes.NewIBCStackBuilder(appKeepers.IBCKeeper.ChannelKeeper).
+		Base(transfer.NewIBCModule(appKeepers.TransferKeeper)).
+		Next(ibccallbacks.NewIBCMiddleware(wasmStackIBCHandler, MaxIBCCallbackGas)).
+		Next(pfmrouter.NewIBCMiddleware(
+			appKeepers.PFMRouterKeeper,
+			0, // retries on timeout
+			pfmrouterkeeper.DefaultForwardTransferPacketTimeoutTimestamp,
+		)).
+		Next(ratelimit.NewIBCMiddleware(appKeepers.RatelimitKeeper)).
+		Build()
 
 	// Create ICAHost Stack
 	var icaHostStack porttypes.IBCModule = icahost.NewIBCModule(appKeepers.ICAHostKeeper)
@@ -605,8 +593,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(distrtypes.ModuleName).WithKeyTable(distrtypes.ParamKeyTable())
 	paramsKeeper.Subspace(slashingtypes.ModuleName).WithKeyTable(slashingtypes.ParamKeyTable())
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govv1types.ParamKeyTable())
-	paramsKeeper.Subspace(pfmroutertypes.ModuleName)
-	paramsKeeper.Subspace(ratelimittypes.ModuleName).WithKeyTable(ratelimittypes.ParamKeyTable())
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(vmtypes.ModuleName)

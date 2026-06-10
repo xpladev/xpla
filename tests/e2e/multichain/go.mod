@@ -35,7 +35,7 @@ require (
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/CosmWasm/wasmd v0.70.0 // indirect
-	github.com/CosmWasm/wasmvm/v3 v3.0.4 // indirect
+	github.com/CosmWasm/wasmvm/v3 v3.0.6 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 // indirect
@@ -122,7 +122,7 @@ require (
 	github.com/envoyproxy/go-control-plane/envoy v1.37.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
 	github.com/ethereum/c-kzg-4844/v2 v2.1.6 // indirect
-	github.com/ethereum/go-ethereum v1.17.0 // indirect
+	github.com/ethereum/go-ethereum v1.17.3 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/flynn/noise v1.1.0 // indirect
@@ -351,7 +351,7 @@ require (
 	google.golang.org/genproto v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
-	google.golang.org/grpc v1.80.0 // indirect
+	google.golang.org/grpc v1.81.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gotest.tools/v3 v3.5.2 // indirect
@@ -370,8 +370,6 @@ replace (
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/cosmos/cosmos-sdk/x/group => cosmossdk.io/x/group v0.2.0-rc.1
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 => ../../../third_party/ibc-apps/middleware/packet-forward-middleware
-	github.com/cosmos/ibc-apps/modules/rate-limiting/v10 => ../../../third_party/ibc-apps/modules/rate-limiting
 
 	github.com/ethereum/go-ethereum => github.com/cosmos/go-ethereum v1.17.2-cosmos-0
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
@@ -382,3 +380,6 @@ replace (
 replace github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232
 
 replace github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.7.0-xpla.1
+
+// PFM and rate-limiting live in ibc-go main after v11.1.0; pin until the next tagged release includes both.
+replace github.com/cosmos/ibc-go/v11 => github.com/cosmos/ibc-go/v11 v11.0.0-20260608142531-f5512b54437b

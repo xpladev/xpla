@@ -22,11 +22,9 @@ require (
 	github.com/cosmos/evm v0.7.0
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/cosmos/gogoproto v1.7.2
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 v10.6.0
-	github.com/cosmos/ibc-apps/modules/rate-limiting/v10 v10.1.1-0.20260427150341-ea0c80382404
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
 	github.com/cosmos/ibc-go/v11 v11.0.0
-	github.com/ethereum/go-ethereum v1.17.0
+	github.com/ethereum/go-ethereum v1.17.3
 	github.com/golang/protobuf v1.5.4
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/go-metrics v0.5.4
@@ -43,7 +41,7 @@ require (
 	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.36.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478
-	google.golang.org/grpc v1.80.0
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -62,7 +60,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
-	github.com/CosmWasm/wasmvm/v3 v3.0.4 // indirect
+	github.com/CosmWasm/wasmvm/v3 v3.0.6 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 // indirect
@@ -196,7 +194,6 @@ require (
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/huandu/skiplist v1.2.1 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
-	github.com/iancoleman/orderedmap v0.3.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -376,10 +373,6 @@ replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 => ./third_party/ibc-apps/middleware/packet-forward-middleware
-
-	github.com/cosmos/ibc-apps/modules/rate-limiting/v10 => ./third_party/ibc-apps/modules/rate-limiting
-
 	// xpla features
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1
 
@@ -400,3 +393,6 @@ replace github.com/ethereum/go-ethereum => github.com/cosmos/go-ethereum v1.17.2
 replace github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232
 
 replace github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.7.0-xpla.1
+
+// PFM and rate-limiting live in ibc-go main after v11.1.0; pin until the next tagged release includes both.
+replace github.com/cosmos/ibc-go/v11 => github.com/cosmos/ibc-go/v11 v11.0.0-20260608142531-f5512b54437b

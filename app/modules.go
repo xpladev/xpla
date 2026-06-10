@@ -1,12 +1,12 @@
 package app
 
 import (
-	pfmrouter "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward"
-	pfmroutertypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/types"
-	ratelimit "github.com/cosmos/ibc-apps/modules/rate-limiting/v10"
-	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/types"
 	ica "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts"
 	icatypes "github.com/cosmos/ibc-go/v11/modules/apps/27-interchain-accounts/types"
+	pfmrouter "github.com/cosmos/ibc-go/v11/modules/apps/packet-forward-middleware"
+	pfmroutertypes "github.com/cosmos/ibc-go/v11/modules/apps/packet-forward-middleware/types"
+	ratelimit "github.com/cosmos/ibc-go/v11/modules/apps/rate-limiting"
+	ratelimittypes "github.com/cosmos/ibc-go/v11/modules/apps/rate-limiting/types"
 	"github.com/cosmos/ibc-go/v11/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v11/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v11/modules/core"
@@ -114,8 +114,8 @@ func appModules(
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		transfer.NewAppModule(app.TransferKeeper),
 		ica.NewAppModule(app.ICAControllerKeeper, app.ICAHostKeeper),
-		pfmrouter.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
-		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
+		pfmrouter.NewAppModule(app.PFMRouterKeeper),
+		ratelimit.NewAppModule(app.RatelimitKeeper),
 		evmModule,
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		reward.NewAppModule(appCodec, app.RewardKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper, app.GetSubspace(rewardtypes.ModuleName)),
