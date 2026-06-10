@@ -46,6 +46,23 @@ var PrecompiledAddressesXpla = []common.Address{
 	pwasm.DelegatecallAddress,
 }
 
+func registeredStaticPrecompileAddresses() []common.Address {
+	return []common.Address{
+		common.HexToAddress(evmtypes.P256PrecompileAddress),
+		common.HexToAddress(evmtypes.Bech32PrecompileAddress),
+		common.HexToAddress(evmtypes.StakingPrecompileAddress),
+		common.HexToAddress(evmtypes.DistributionPrecompileAddress),
+		common.HexToAddress(evmtypes.ICS20PrecompileAddress),
+		common.HexToAddress(evmtypes.GovPrecompileAddress),
+		common.HexToAddress(evmtypes.SlashingPrecompileAddress),
+		common.HexToAddress(evmtypes.ICS02PrecompileAddress),
+		pbank.Address,
+		pwasm.Address,
+		pauth.Address,
+		pwasm.DelegatecallAddress,
+	}
+}
+
 // DefaultActiveStaticPrecompiles returns XPLA's default active static precompile set.
 func DefaultActiveStaticPrecompiles() []string {
 	activePrecompiles := []string{
@@ -64,6 +81,31 @@ func DefaultActiveStaticPrecompiles() []string {
 	}
 
 	return activePrecompiles
+}
+
+// ValidateActiveStaticPrecompiles rejects active precompiles that XPLA does not
+// register in the EVM keeper. Upstream validation only checks address format,
+// duplicates, and sorting; allowing an unregistered address can panic at runtime.
+func ValidateActiveStaticPrecompiles(precompiles []string) error {
+	if err := evmtypes.ValidatePrecompiles(precompiles); err != nil {
+		return err
+	}
+
+	supported := make(map[common.Address]struct{}, len(vm.PrecompiledContractsPrague)+len(registeredStaticPrecompileAddresses()))
+	for address := range vm.PrecompiledContractsPrague {
+		supported[address] = struct{}{}
+	}
+	for _, address := range registeredStaticPrecompileAddresses() {
+		supported[address] = struct{}{}
+	}
+
+	for _, precompile := range precompiles {
+		if _, ok := supported[common.HexToAddress(precompile)]; !ok {
+			return fmt.Errorf("unsupported active static precompile: %s", precompile)
+		}
+	}
+
+	return nil
 }
 
 type wasmDelegatePrecompile struct {

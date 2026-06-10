@@ -368,8 +368,7 @@ func NewXplaApp(
 	app.setUpgradeHandlers()
 	app.setUpgradeStoreLoaders()
 
-	// set the EVM priority nonce mempool
-	// If you wish to use the noop mempool, remove this codeblock
+	// set the EVM priority nonce mempool required by XPLA's app-side mempool path
 	if err := app.configureEVMMempool(appOpts, logger); err != nil {
 		panic(fmt.Sprintf("failed to configure EVM mempool: %s", err.Error()))
 	}

@@ -50,7 +50,6 @@ import (
 
 	"github.com/cosmos/evm/x/feemarket"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
-	evm "github.com/cosmos/evm/x/vm"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	xplaauth "github.com/xpladev/xpla/x/auth"
 	xplabank "github.com/xpladev/xpla/x/bank"
@@ -87,7 +86,7 @@ func appModules(
 	appCodec codec.Codec,
 	txConfig client.TxEncodingConfig,
 	tmLightClientModule ibctm.LightClientModule,
-	evmModule evm.AppModule,
+	evmModule module.AppModule,
 ) []module.AppModule {
 	return []module.AppModule{
 		genutil.NewAppModule(
@@ -122,10 +121,6 @@ func appModules(
 		volunteer.NewAppModule(appCodec, app.VolunteerKeeper),
 		burn.NewAppModule(appCodec, app.BurnKeeper),
 	}
-}
-
-func newEVMAppModule(app *XplaApp) evm.AppModule {
-	return evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.BankKeeper, app.AccountKeeper.AddressCodec())
 }
 
 // ModuleBasics defines the module BasicManager that is in charge of setting up basic,

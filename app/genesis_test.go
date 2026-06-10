@@ -55,3 +55,16 @@ func TestDefaultGenesisUsesXplaDenom(t *testing.T) {
 	require.Contains(t, evmGenesis.Params.ActiveStaticPrecompiles, evmtypes.ICS02PrecompileAddress)
 	require.Equal(t, evmtypes.DefaultPreinstalls, evmGenesis.Preinstalls)
 }
+
+func TestValidateGenesisRejectsUnsupportedEVMPrecompile(t *testing.T) {
+	xpla := newTestApp(t)
+	genesis := xpla.DefaultGenesis()
+
+	var evmGenesis evmtypes.GenesisState
+	xpla.appCodec.MustUnmarshalJSON(genesis[evmtypes.ModuleName], &evmGenesis)
+	evmGenesis.Params.ActiveStaticPrecompiles = []string{evmtypes.BankPrecompileAddress}
+	genesis[evmtypes.ModuleName] = xpla.appCodec.MustMarshalJSON(&evmGenesis)
+
+	err := xpla.ModuleBasics.ValidateGenesis(xpla.appCodec, nil, genesis)
+	require.ErrorContains(t, err, "unsupported active static precompile")
+}
