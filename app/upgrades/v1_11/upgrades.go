@@ -44,9 +44,9 @@ func CreateUpgradeHandler(
 	}
 }
 
-// ApplyEVMV07State reconciles the live v1.10 EVM state with the v0.7 defaults.
-// Values already set by earlier upgrades are preserved; this only fills fields
-// newly required by the v0.7 path and verifies default preinstall conflicts.
+// ApplyEVMV07State reconciles the live v1.10 EVM state with the v0.7 path.
+// Existing on-chain parameter values are preserved unless they must change for
+// the upgrade; default preinstalls are only added after conflict checks.
 func ApplyEVMV07State(ctx sdk.Context, appKeepers *keepers.AppKeepers) error {
 	missingPreinstalls, err := collectMissingDefaultPreinstalls(ctx, appKeepers)
 	if err != nil {
@@ -78,11 +78,6 @@ func applyEVMParams(ctx sdk.Context, appKeepers *keepers.AppKeepers) error {
 		changed = true
 	} else if params.ExtendedDenomOptions.ExtendedDenom != xplatypes.DefaultDenom {
 		return fmt.Errorf("unexpected evm extended denom %q; expected %q", params.ExtendedDenomOptions.ExtendedDenom, xplatypes.DefaultDenom)
-	}
-
-	if params.HistoryServeWindow == 0 {
-		params.HistoryServeWindow = evmtypes.DefaultHistoryServeWindow
-		changed = true
 	}
 
 	activePrecompiles, precompilesChanged, err := mergeActiveStaticPrecompiles(

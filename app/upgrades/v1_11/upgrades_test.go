@@ -20,7 +20,7 @@ import (
 	xplatypes "github.com/xpladev/xpla/types"
 )
 
-func TestApplyEVMV07StatePatchesOnlyMissingLiveFields(t *testing.T) {
+func TestApplyEVMV07StatePatchesRequiredLiveFields(t *testing.T) {
 	xpla, ctx := setupUpgradeState(t)
 
 	params := xpla.EvmKeeper.GetParams(ctx)
@@ -36,7 +36,7 @@ func TestApplyEVMV07StatePatchesOnlyMissingLiveFields(t *testing.T) {
 	require.Equal(t, xplatypes.DefaultDenom, params.EvmDenom)
 	require.NotNil(t, params.ExtendedDenomOptions)
 	require.Equal(t, xplatypes.DefaultDenom, params.ExtendedDenomOptions.ExtendedDenom)
-	require.Equal(t, uint64(types.DefaultHistoryServeWindow), params.HistoryServeWindow)
+	require.Zero(t, params.HistoryServeWindow)
 	require.Equal(t, xplaprecompile.DefaultActiveStaticPrecompiles(), params.ActiveStaticPrecompiles)
 
 	requireDefaultPreinstalls(t, xpla, ctx)
