@@ -34,7 +34,7 @@ require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/CosmWasm/wasmd v0.70.0 // indirect
+	github.com/CosmWasm/wasmd v0.70.2 // indirect
 	github.com/CosmWasm/wasmvm/v3 v3.0.6 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect

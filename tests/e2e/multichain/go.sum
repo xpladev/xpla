@@ -51,8 +51,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/CosmWasm/wasmd v0.70.0 h1:ZpIBgSPsbxIuGYWbtLUYcrFDmzDldjN3bf2ruV78NRc=
-github.com/CosmWasm/wasmd v0.70.0/go.mod h1:GcE5hSsLRKB2RtKNzJbMqPYiZrPu2SrQIadU9PfbmzE=
+github.com/CosmWasm/wasmd v0.70.2 h1:unoJxmDoJWMSwNLsyvLNhbOHgXrjtieuFpS8jzZMtF0=
+github.com/CosmWasm/wasmd v0.70.2/go.mod h1:nRB8RMYHV0FZIbExzwsqcPyIqPVV26MLeHdQWeUmKZU=
 github.com/CosmWasm/wasmvm/v3 v3.0.6 h1:ij0srElmVfTxQWEgU4hnNxhs0LUIrW8sj51alwMRwMo=
 github.com/CosmWasm/wasmvm/v3 v3.0.6/go.mod h1:oknpb1bFERvvKcY7vHRp1F/Y/z66xVrsl7n9uWkOAlM=
 github.com/DELIGHT-LABS/evm v0.7.0-xpla.1 h1:33+Zjfpe2hVtHclrxMSt0GmWPQsJp4nnFMGTDi/MmX4=

@@ -65,6 +65,6 @@ func TestValidateGenesisRejectsUnsupportedEVMPrecompile(t *testing.T) {
 	evmGenesis.Params.ActiveStaticPrecompiles = []string{evmtypes.BankPrecompileAddress}
 	genesis[evmtypes.ModuleName] = xpla.appCodec.MustMarshalJSON(&evmGenesis)
 
-	err := xpla.ModuleBasics.ValidateGenesis(xpla.appCodec, nil, genesis)
+	err := xpla.ModuleBasics.ValidateGenesis(xpla.appCodec, xpla.txConfig, genesis)
 	require.ErrorContains(t, err, "unsupported active static precompile")
 }
