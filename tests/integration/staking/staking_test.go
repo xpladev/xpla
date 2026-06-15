@@ -9,10 +9,10 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/xpladev/xpla/tests/integration/testutil"
 	"github.com/xpladev/xpla/x/staking"
-	stakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 )
 
 func TestDustShare(t *testing.T) {
@@ -45,7 +45,7 @@ func TestDustShare(t *testing.T) {
 		sdk.AccAddress(testutil.Pks[1].Address()), sdk.ValAddress(testutil.Pks[0].Address()), sdkmath.NewInt(1))
 
 	// try to remove all delegation
-	stakingMsgServer := stakingkeeper.NewMsgServerImpl(input.StakingKeeper)
+	stakingMsgServer := stakingkeeper.NewMsgServerImpl(input.StakingKeeper.Keeper)
 	_, err = stakingMsgServer.Undelegate(
 		input.Ctx,
 		stakingtypes.NewMsgUndelegate(
