@@ -81,6 +81,7 @@ import (
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
 	v1_10 "github.com/xpladev/xpla/app/upgrades/v1_10"
+	v1_11 "github.com/xpladev/xpla/app/upgrades/v1_11"
 	"github.com/xpladev/xpla/docs"
 	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
@@ -100,6 +101,7 @@ var (
 
 	Upgrades = []upgrades.Upgrade{
 		v1_10.Upgrade,
+		v1_11.Upgrade,
 	}
 )
 
