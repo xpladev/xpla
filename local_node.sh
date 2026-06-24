@@ -263,11 +263,12 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
   # Fund StakingReverter contract address with axpla for consortium staking tests
   # Only when TEST_SOLIDITY=true
   if [[ ${TEST_SOLIDITY} ]]; then
-    # Contract address is calculated from dev0 address (0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101) with nonce 29
+    # Contract address is calculated from dev0 address (0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101)
+    # after the pre-test WASM uploads have consumed dev0 nonces.
     # This address will be used by the Solidity test: tests/solidity/suites/precompiles/test/1_staking/0_edge_case_revert.js
-    # Pre-calculated Bech32 address: xpla1ajw7ngmsuxpkjryll7prlztcfrys842mvuye9s
-    # Pre-calculated contract address: 0xEc9de9A370e183690C9FFf823f897848C903d55b
-    STAKING_REVERTER_CONTRACT_BECH32="xpla1ajw7ngmsuxpkjryll7prlztcfrys842mvuye9s"
+    # Pre-calculated Bech32 address: xpla1y4u6zzv5fe4khlv6m9edxjzjm7z0u9e67tqemq
+    # Pre-calculated contract address: 0x2579a109944E6b6bFD9Ad972D34852df84fE173A
+    STAKING_REVERTER_CONTRACT_BECH32="xpla1y4u6zzv5fe4khlv6m9edxjzjm7z0u9e67tqemq"
     echo "Funding StakingReverter contract ($STAKING_REVERTER_CONTRACT_BECH32) with axpla in genesis"
     xplad genesis add-genesis-account "$STAKING_REVERTER_CONTRACT_BECH32" 1000000000000000000${DENOM} --keyring-backend "$KEYRING" --home "$CHAINDIR"
   fi
