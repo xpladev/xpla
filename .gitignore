@@ -21,6 +21,7 @@ tools-stamp
 docs/node_modules
 xplad
 !xplad/
+tests/solidity/suites/*/types/ethers-contracts/
 
 # Testing
 coverage.txt
