@@ -102,14 +102,14 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 		stateDB = statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
 	}
 
-	return k.executeTransfer(ctx, stateDB, sender, contractAddress, callFromPrecompile, to, amount)
+	return k.executeTransfer(ctx, stateDB, sender, contractAddress, !callFromPrecompile, callFromPrecompile, to, amount)
 }
 
-func (k Erc20Keeper) executeTransfer(ctx sdk.Context, stateDB *statedb.StateDB, sender sdk.AccAddress, contractAddress common.Address, callFromPrecompile bool, to sdk.AccAddress, amount *big.Int) error {
+func (k Erc20Keeper) executeTransfer(ctx sdk.Context, stateDB *statedb.StateDB, sender sdk.AccAddress, contractAddress common.Address, commit, callFromPrecompile bool, to sdk.AccAddress, amount *big.Int) error {
 	ethSender := common.BytesToAddress(sender.Bytes())
 	ethTo := common.BytesToAddress(to.Bytes())
 
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, true, callFromPrecompile, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, commit, callFromPrecompile, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
 	if err != nil {
 		return err
 	}
