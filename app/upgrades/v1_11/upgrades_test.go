@@ -8,6 +8,8 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
@@ -50,6 +52,24 @@ func TestApplyEVMV07StateRejectsUnexpectedDenom(t *testing.T) {
 	require.NoError(t, xpla.EvmKeeper.SetParams(ctx, params))
 
 	err := v1_11.ApplyEVMV07State(ctx, &xpla.AppKeepers)
+	require.ErrorContains(t, err, "unexpected evm denom")
+}
+
+func TestUpgradeHandlerPropagatesEVMStateError(t *testing.T) {
+	xpla, ctx := setupUpgradeState(t)
+
+	params := xpla.EvmKeeper.GetParams(ctx)
+	params.EvmDenom = "uxpla"
+	require.NoError(t, xpla.EvmKeeper.SetParams(ctx, params))
+
+	handler := v1_11.CreateUpgradeHandler(
+		module.NewManager(),
+		module.NewConfigurator(nil, nil, nil),
+		&xpla.AppKeepers,
+		nil,
+	)
+
+	_, err := handler(ctx, upgradetypes.Plan{}, module.VersionMap{})
 	require.ErrorContains(t, err, "unexpected evm denom")
 }
 
