@@ -1744,32 +1744,34 @@ func (t *EVMIntegrationTestSuite) Test01_CheckBalance() {
 func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	// Prepare parameters
 	networkId, err := t.EthClient.NetworkID(context.Background())
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 
 	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 
 	auth.GasLimit = uint64(1300000)
 	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
 
 	strbin, err := os.ReadFile(filepath.Join(".", "misc", "token.sol.bin"))
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 
 	binbyte, err := hex.DecodeString(string(strbin))
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 
 	parsedAbi, err := TokenInterfaceMetaData.GetAbi()
-	assert.NoError(t.T(), err)
-	assert.NotNil(t.T(), parsedAbi)
+	t.Require().NoError(err)
+	t.Require().NotNil(parsedAbi)
 
 	// Actual deploy
 	address, tx, _, err := abibind.DeployContract(auth, *parsedAbi, binbyte, t.EthClient, "Example Token", "XPLAERC")
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
+	t.Require().NotNil(tx)
 	fmt.Println("Tx hash: ", tx.Hash().String())
 
-	time.Sleep(time.Second*blocktime + 1)
+	_, err = txCheckEvm(t.EthClient, tx.Hash())
+	t.Require().NoError(err)
 
 	fmt.Println("Token address: ", address.String())
 	t.TokenAddress = address
@@ -2456,77 +2458,99 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 func (t *EVMIntegrationTestSuite) Test11_NestedTransfer() {
 	// Prepare parameters
 	networkId, err := t.EthClient.NetworkID(context.Background())
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 
-	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+	t.Require().NoError(err)
 	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 
 	auth.GasLimit = uint64(1300000)
 	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
 
 	strbin, err := os.ReadFile(filepath.Join(".", "misc", "nested_transfer.sol.bin"))
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
 
-	binbyte, _ := hex.DecodeString(string(strbin))
+	binbyte, err := hex.DecodeString(string(strbin))
+	t.Require().NoError(err)
 
 	parsedAbi, err := NestedTransferInterfaceMetaData.GetAbi()
-	assert.NoError(t.T(), err)
-	assert.NotNil(t.T(), parsedAbi)
+	t.Require().NoError(err)
+	t.Require().NotNil(parsedAbi)
 
 	// test contract deploy
 	address, tx, _, err := abibind.DeployContract(auth, *parsedAbi, binbyte, t.EthClient, t.TokenAddress, t.Cw20TokenAddress.String())
-	assert.NoError(t.T(), err)
+	t.Require().NoError(err)
+	t.Require().NotNil(tx)
 	fmt.Println("Tx hash: ", tx.Hash().String())
 
-	time.Sleep(time.Second*blocktime + 1)
+	_, err = txCheckEvm(t.EthClient, tx.Hash())
+	t.Require().NoError(err)
 
 	fmt.Println("Contract address: ", address.String())
 
+	token, err := NewTokenInterface(t.TokenAddress, t.EthClient)
+	t.Require().NoError(err)
+
+	auth, err = abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+	t.Require().NoError(err)
+	auth.GasLimit = uint64(300000)
+	auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
+
+	fundTx, err := token.Transfer(auth, address, big.NewInt(1))
+	t.Require().NoError(err)
+	t.Require().NotNil(fundTx)
+	_, err = txCheckEvm(t.EthClient, fundTx.Hash())
+	t.Require().NoError(err)
+
 	t.Run("transfer by bank", func() {
 		// Prepare parameters
-		store, err := NewNestedTransferInterface(t.TokenAddress, t.EthClient)
-		assert.NoError(t.T(), err)
+		store, err := NewNestedTransferInterface(address, t.EthClient)
+		t.Require().NoError(err)
 
 		amt := new(big.Int).SetInt64(1)
 
-		ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+		ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+		t.Require().NoError(err)
 		auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
-		assert.NoError(t.T(), err)
+		t.Require().NoError(err)
 
 		auth.GasLimit = uint64(300000)
 		auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
 
 		// try to bank transfer
 		tx, err := store.ExecuteBankTransfer(auth, t.UserWallet2.EthAddress, amt)
-		assert.NoError(t.T(), err)
+		t.Require().NoError(err)
+		t.Require().NotNil(tx)
 		fmt.Println("Sent as ", tx.Hash().String())
 
 		_, err = txCheckEvm(t.EthClient, tx.Hash())
-		assert.NoError(t.T(), err)
+		t.Require().NoError(err)
 	})
 
 	t.Run("transfer by wasm fund", func() {
 		// Prepare parameters
-		store, err := NewNestedTransferInterface(t.TokenAddress, t.EthClient)
-		assert.NoError(t.T(), err)
+		store, err := NewNestedTransferInterface(address, t.EthClient)
+		t.Require().NoError(err)
 
 		amt := new(big.Int).SetInt64(1)
 
-		ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+		ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
+		t.Require().NoError(err)
 		auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
-		assert.NoError(t.T(), err)
+		t.Require().NoError(err)
 
 		auth.GasLimit = uint64(300000)
 		auth.GasPrice, _ = new(big.Int).SetString(xplaGasPrice, 10)
 
 		// try to wasm execute
 		tx, err := store.ExecuteTransfer(auth, t.UserWallet2.EthAddress, amt)
-		assert.NoError(t.T(), err)
+		t.Require().NoError(err)
+		t.Require().NotNil(tx)
 		fmt.Println("Sent as ", tx.Hash().String())
 
 		_, err = txCheckEvm(t.EthClient, tx.Hash())
-		assert.NoError(t.T(), err)
+		t.Require().NoError(err)
 	})
 }
 

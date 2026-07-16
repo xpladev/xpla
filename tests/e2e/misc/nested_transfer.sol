@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {WASM_PRECOMPILE_ADDRESS, IWasm} from "../../../precompile/wasm/IWasm.sol";
+import {IWasm} from "../../../precompile/wasm/IWasm.sol";
 import {AUTH_PRECOMPILE_ADDRESS, IAuth} from "../../../precompile/auth/IAuth.sol";
 import {BANK_PRECOMPILE_ADDRESS, IBank} from "../../../precompile/bank/IBank.sol";
-import {Coin} from "../../../precompile/util/Types.sol";
+import {Coin} from "cosmos-evm-contracts/precompiles/common/Types.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+
+address constant WASM_DELEGATECALL_PRECOMPILE_ADDRESS = 0x1000000000000000000000000000000000000044;
 
 contract NetstedTransfer {
     IAuth authContract = IAuth(AUTH_PRECOMPILE_ADDRESS);
-    IWasm wasmContract = IWasm(WASM_PRECOMPILE_ADDRESS);
+    IWasm wasmDelegateContract = IWasm(WASM_DELEGATECALL_PRECOMPILE_ADDRESS);
     IBank bankContract = IBank(BANK_PRECOMPILE_ADDRESS);
 
     string erc20Denom;
@@ -38,7 +40,7 @@ contract NetstedTransfer {
             '"}}'
         );
 
-        wasmContract.executeContract(
+        wasmDelegateContract.executeContract(
             msg.sender,
             evmAddressCw20Contract,
             contractMsg,
@@ -49,6 +51,6 @@ contract NetstedTransfer {
     function executeBankTransfer(address to, uint112 value) external {
         Coin[] memory fund = new Coin[](1);
         fund[0] = Coin({denom: erc20Denom, amount: value});
-        bankContract.send(msg.sender, to, fund);
+        bankContract.send(address(this), to, fund);
     }
 }
