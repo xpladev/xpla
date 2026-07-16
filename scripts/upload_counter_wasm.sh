@@ -20,6 +20,7 @@ LABEL_PRECOMPILE="${LABEL_PRECOMPILE:-wasm_counter_precompile}"
 LABEL_REVERT="${LABEL_REVERT:-wasm_counter_revert}"
 GAS_PRICES="${GAS_PRICES:-280000000000axpla}"
 GAS="${GAS:-2000000}"
+FUND_COUNTER_WASM_AMOUNT="${FUND_COUNTER_WASM_AMOUNT:-}"
 
 # Store code
 TX_OUT=$(xplad tx wasm store "$WASM_PATH" --from "$FROM" --chain-id "$CHAIN_ID" \
@@ -84,6 +85,31 @@ if ! parse_instantiate_address "$TX_HASH"; then
   exit 1
 fi
 COUNTER_WASM_ADDRESS="$CONTRACT_ADDRESS"
+
+if [[ -n "$FUND_COUNTER_WASM_AMOUNT" ]]; then
+  FUND_OUT=$(xplad tx bank send "$FROM" "$COUNTER_WASM_ADDRESS" "${FUND_COUNTER_WASM_AMOUNT}axpla" \
+    --chain-id "$CHAIN_ID" --home "$CHAINDIR" --keyring-backend "$KEYRING" \
+    --gas-prices "$GAS_PRICES" --gas "$GAS" --broadcast-mode sync -y --output json 2>/dev/null || true)
+  if [[ -z "$FUND_OUT" ]]; then
+    echo "Error: wasm contract funding failed." >&2
+    exit 1
+  fi
+  FUND_TX_HASH=$(echo "$FUND_OUT" | jq -r '.txhash')
+  FUND_CODE=""
+  for attempt in $(seq 1 15); do
+    sleep 2
+    FUND_TX_RESPONSE=$(xplad query tx "$FUND_TX_HASH" --home "$CHAINDIR" --output json 2>&1) || true
+    FUND_CODE=$(echo "$FUND_TX_RESPONSE" | jq -r '.code // 0' 2>/dev/null)
+    if [[ "$FUND_CODE" == "0" ]]; then
+      break
+    fi
+  done
+  if [[ "$FUND_CODE" != "0" ]]; then
+    echo "Error: wasm contract funding tx failed or was not indexed." >&2
+    echo "FUND_TX_RESPONSE (last attempt): $FUND_TX_RESPONSE" >&2
+    exit 1
+  fi
+fi
 
 # Brief pause before second instantiate (we already confirmed first tx is in a block via query tx).
 sleep 5

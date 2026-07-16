@@ -372,8 +372,7 @@ function setupNetwork ({ runConfig, timeout }) {
 async function uploadWasmContracts () {
   const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'upload_counter_wasm.sh')
   if (!fs.existsSync(scriptPath)) {
-    logger.warn('WASM upload script not found, skipping WASM test contract uploads')
-    return
+    throw new Error('WASM upload script not found')
   }
 
   const uploads = [
@@ -397,8 +396,7 @@ async function uploadWasmContracts () {
   for (const upload of uploads) {
     const wasmPath = path.join(__dirname, 'suites', 'misc', upload.wasmFile)
     if (!fs.existsSync(wasmPath)) {
-      logger.warn(`${upload.name} not found, skipping upload`)
-      continue
+      throw new Error(`${upload.name} fixture not found: ${wasmPath}`)
     }
 
     try {
@@ -412,16 +410,26 @@ async function uploadWasmContracts () {
       const lastLine = stdout.trim().split('\n').pop()
       const envVars = JSON.parse(lastLine)
 
-      if (envVars.COUNTER_WASM_ADDRESS) {
-        process.env[upload.envName] = envVars.COUNTER_WASM_ADDRESS
-        logger.info(`${upload.envName}=${process.env[upload.envName]}`)
+      if (!envVars.COUNTER_WASM_ADDRESS) {
+        throw new Error(
+          `${upload.name} upload did not return COUNTER_WASM_ADDRESS`
+        )
       }
-      if (upload.revertEnvName && envVars.REVERT_COUNTER_WASM_ADDRESS) {
+
+      process.env[upload.envName] = envVars.COUNTER_WASM_ADDRESS
+      logger.info(`${upload.envName}=${process.env[upload.envName]}`)
+
+      if (upload.revertEnvName) {
+        if (!envVars.REVERT_COUNTER_WASM_ADDRESS) {
+          throw new Error(
+            `${upload.name} upload did not return REVERT_COUNTER_WASM_ADDRESS`
+          )
+        }
         process.env[upload.revertEnvName] = envVars.REVERT_COUNTER_WASM_ADDRESS
         logger.info(`${upload.revertEnvName}=${process.env[upload.revertEnvName]}`)
       }
     } catch (e) {
-      logger.warn(`${upload.name} upload failed: ${e.message}`)
+      throw new Error(`${upload.name} upload failed: ${e.message}`)
     }
   }
 }
