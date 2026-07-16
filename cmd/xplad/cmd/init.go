@@ -35,6 +35,7 @@ type initPrintInfo struct {
 	Moniker    string          `json:"moniker"`
 	ChainID    string          `json:"chain_id"`
 	NodeID     string          `json:"node_id"`
+	GenTxsDir  string          `json:"gentxs_dir"`
 	AppMessage json.RawMessage `json:"app_message"`
 }
 
@@ -139,6 +140,7 @@ func InitCmd(app *xpla.XplaApp, defaultNodeHome string) *cobra.Command {
 				Moniker:    cfg.Moniker,
 				ChainID:    chainID,
 				NodeID:     nodeID,
+				GenTxsDir:  "",
 				AppMessage: appState,
 			}
 			out, err := json.MarshalIndent(toPrint, "", " ")

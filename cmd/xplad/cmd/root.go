@@ -245,6 +245,13 @@ func initRootCmd(rootCmd *cobra.Command,
 func addModuleInitFlags(startCmd *cobra.Command) {
 	wasm.AddModuleInitFlags(startCmd)
 
+	// Cosmos EVM marks its mempool default as explicitly set, which otherwise
+	// prevents app.toml from overriding mempool.max-txs. A CLI value parsed
+	// after this callback still takes precedence by setting Changed again.
+	if flag := startCmd.Flags().Lookup(server.FlagMempoolMaxTxs); flag != nil {
+		flag.Changed = false
+	}
+
 	// min-gas-price follows evm/feemarket module
 	startCmd.Flags().Set(server.FlagMinGasPrices, sdkmath.ZeroInt().String()+xplatypes.DefaultDenom)
 }

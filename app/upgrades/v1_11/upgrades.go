@@ -31,6 +31,10 @@ func CreateUpgradeHandler(
 	return func(c context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		ctx := sdk.UnwrapSDKContext(c)
 
+		// This runs the ibc-go v11.2 in-place migrations on the legacy ibc-apps
+		// stores: PFM 3->4 and rate-limiting 1->2. The PFM migration rejects
+		// legacy nonrefundable in-flight packets instead of changing their refund
+		// semantics during the upgrade.
 		vm, err := mm.RunMigrations(ctx, configurator, fromVM)
 		if err != nil {
 			return vm, err

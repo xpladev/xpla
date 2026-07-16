@@ -98,7 +98,7 @@ require (
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/gogoproto v1.7.2 // indirect
 	github.com/cosmos/iavl v1.2.8 // indirect
-	github.com/cosmos/ibc-go/v11 v11.0.0 // indirect
+	github.com/cosmos/ibc-go/v11 v11.2.0 // indirect
 	github.com/cosmos/ics23/go v0.11.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v1.0.0 // indirect
 	github.com/crate-crypto/go-eth-kzg v1.5.0 // indirect
@@ -380,6 +380,3 @@ replace (
 replace github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232
 
 replace github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.7.0-xpla.1
-
-// PFM and rate-limiting live in ibc-go main after v11.1.0; pin until the next tagged release includes both.
-replace github.com/cosmos/ibc-go/v11 => github.com/cosmos/ibc-go/v11 v11.0.0-20260608142531-f5512b54437b

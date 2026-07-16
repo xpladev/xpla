@@ -10,6 +10,8 @@ import (
 const UpgradeName = "v1_11"
 
 var StoreUpgrades = store.StoreUpgrades{
+	// ibc-go v11.2 keeps the legacy ibc-apps store keys for PFM and
+	// rate-limiting. Their in-place migrations are run by RunMigrations.
 	Added:   []string{},
 	Renamed: nil,
 	Deleted: []string{},

@@ -12,6 +12,11 @@ make install
 make local-image
 ```
 
+## Upgrading
+
+See [UPGRADING.md](./UPGRADING.md) for release-specific state migrations and
+operator configuration changes.
+
 ## Test
 
 ### Unit test & Integration test
