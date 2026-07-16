@@ -37,29 +37,18 @@ The Cosmos EVM server cross-validates this setting against the application
 mempool configuration and refuses to start when an enabled application
 mempool is paired with `type = "flood"` or `type = "nop"`.
 
-### Cosmos EVM v0.7 state migration
+### Cosmos EVM v0.7 state compatibility
 
-The `v1_11` handler reconciles the existing EVM state with the requirements of
-Cosmos EVM v0.7. It preserves compatible on-chain values and aborts instead of
-silently overwriting conflicting state:
+Cosmos EVM v0.7 does not define a module schema migration for the v0.6 to v0.7
+upgrade. The `v1_11` handler therefore does not rewrite existing EVM
+parameters, activate newly available static precompiles, or install default
+preinstalls. Existing on-chain EVM state remains unchanged across the binary
+upgrade.
 
-- `evm_denom` must already equal `axpla`.
-- a missing or empty `extended_denom_options.extended_denom` is initialized to
-  `axpla`; a different non-empty value is rejected.
-- the existing active static precompile set is preserved, canonicalized, and
-  extended with the ICS02 precompile. Invalid, duplicate, or locally
-  unregistered addresses are rejected.
-- every Cosmos EVM v0.7 default preinstall address is checked before any EVM
-  parameter or preinstall state is written. An unused address is installed,
-  and an existing deployment is retained only when its code hash and bytecode
-  exactly match the expected preinstall. An account without the expected code,
-  a different code hash, or different bytecode aborts the upgrade.
-
-Before scheduling the upgrade, rehearse the complete `v1_11` handler against a
-recent production state copy. Confirm that the current EVM parameters satisfy
-the conditions above and that every default preinstall address is either
-unused or contains the exact expected deployment. Treat any mismatch as a
-state conflict that must be investigated before choosing the upgrade height.
+The v0.7 defaults used when creating a new genesis are not applied
+retroactively to a live chain. Enabling the ICS02 precompile, installing
+default preinstalls, or otherwise changing EVM parameters requires a separate,
+explicit chain decision and its own compatibility checks.
 
 ### IBC-Go v11.2 state migration
 
