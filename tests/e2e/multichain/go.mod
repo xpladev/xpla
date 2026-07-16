@@ -379,4 +379,4 @@ replace (
 
 replace github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232
 
-replace github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.7.0-xpla.1
+replace github.com/cosmos/evm => github.com/DELIGHT-LABS/evm-priv-jul2026 v0.7.0-xpla.1-july-2026-hotfix

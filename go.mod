@@ -375,7 +375,7 @@ replace (
 
 	// xpla features
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232
-	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.7.0-xpla.1
+	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm-priv-jul2026 v0.7.0-xpla.1-july-2026-hotfix
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
