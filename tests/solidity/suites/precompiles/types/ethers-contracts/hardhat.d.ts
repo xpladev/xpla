@@ -29,6 +29,8 @@ getContractFactory(name: 'ICounter', signerOrOptions?: ethers.Signer | FactoryOp
 getContractFactory(name: 'Reverter', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Reverter__factory>
 getContractFactory(name: 'Transferer', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Transferer__factory>
 getContractFactory(name: 'StakingReverter', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.StakingReverter__factory>
+getContractFactory(name: 'BankXerc20DoubleSpendPoC', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.BankXerc20DoubleSpendPoC__factory>
+getContractFactory(name: 'PoCToken', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.PoCToken__factory>
 getContractFactory(name: 'IAuth', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.IAuth__factory>
 getContractFactory(name: 'IBank', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.IBank__factory>
 getContractFactory(name: 'IWasm', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.IWasm__factory>
@@ -52,6 +54,8 @@ getContractAt(name: 'ICounter', address: string | ethers.Addressable, signer?: e
 getContractAt(name: 'Reverter', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Reverter>
 getContractAt(name: 'Transferer', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Transferer>
 getContractAt(name: 'StakingReverter', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.StakingReverter>
+getContractAt(name: 'BankXerc20DoubleSpendPoC', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.BankXerc20DoubleSpendPoC>
+getContractAt(name: 'PoCToken', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.PoCToken>
 getContractAt(name: 'IAuth', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.IAuth>
 getContractAt(name: 'IBank', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.IBank>
 getContractAt(name: 'IWasm', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.IWasm>
@@ -75,6 +79,8 @@ deployContract(name: 'ICounter', signerOrOptions?: ethers.Signer | DeployContrac
 deployContract(name: 'Reverter', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Reverter>
 deployContract(name: 'Transferer', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Transferer>
 deployContract(name: 'StakingReverter', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.StakingReverter>
+deployContract(name: 'BankXerc20DoubleSpendPoC', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.BankXerc20DoubleSpendPoC>
+deployContract(name: 'PoCToken', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.PoCToken>
 deployContract(name: 'IAuth', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IAuth>
 deployContract(name: 'IBank', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IBank>
 deployContract(name: 'IWasm', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IWasm>
@@ -98,6 +104,8 @@ deployContract(name: 'ICounter', args: any[], signerOrOptions?: ethers.Signer | 
 deployContract(name: 'Reverter', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Reverter>
 deployContract(name: 'Transferer', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Transferer>
 deployContract(name: 'StakingReverter', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.StakingReverter>
+deployContract(name: 'BankXerc20DoubleSpendPoC', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.BankXerc20DoubleSpendPoC>
+deployContract(name: 'PoCToken', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.PoCToken>
 deployContract(name: 'IAuth', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IAuth>
 deployContract(name: 'IBank', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IBank>
 deployContract(name: 'IWasm', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IWasm>

@@ -26,6 +26,7 @@ import (
 	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
 	evmprecompiletypes "github.com/cosmos/evm/precompiles/types"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
+	"github.com/cosmos/evm/x/vm/statedb"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	ibctransferkeeper "github.com/cosmos/ibc-go/v11/modules/apps/transfer/keeper"
@@ -35,6 +36,7 @@ import (
 	pbank "github.com/xpladev/xpla/precompile/bank"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
+	xbanktypes "github.com/xpladev/xpla/x/bank/types"
 )
 
 const bech32PrecompileBaseGas = 6_000
@@ -116,6 +118,17 @@ func (p wasmDelegatePrecompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly
 	return p.PrecompiledWasm.RunDelegate(evm, contract, readOnly)
 }
 
+type ics20Precompile struct {
+	*ics20precompile.Precompile
+}
+
+func (p ics20Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
+		return p.Execute(ctx, evm.StateDB, contract, readOnly)
+	})
+}
+
 // NewAvailableStaticPrecompiles returns the list of all available static precompiled contracts from Cosmos EVM.
 // NOTE: this should only be used during initialization of the Keeper.
 func NewAvailableStaticPrecompiles(
@@ -168,13 +181,13 @@ func NewAvailableStaticPrecompiles(
 		options.AddressCodec,
 	)
 
-	ibcTransferPrecompile := ics20precompile.NewPrecompile(
+	ibcTransferPrecompile := ics20Precompile{Precompile: ics20precompile.NewPrecompile(
 		bk,
 		stakingKeeper,
 		transferKeeper,
 		channelKeeper,
 		MockERC20Keeper{},
-	)
+	)}
 	ibcClientPrecompile := ics02precompile.NewPrecompile(
 		codec,
 		clientKeeper,

@@ -16,9 +16,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/statedb"
 
 	pbank "github.com/xpladev/xpla/precompile/bank"
 	"github.com/xpladev/xpla/precompile/util"
+	xbanktypes "github.com/xpladev/xpla/x/bank/types"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
@@ -91,6 +93,7 @@ func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
 // Run is the entry point for the basic call.
 func (p *PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
 		return p.Execute(ctx, evm.StateDB, contract, readonly, contract.Caller())
 	})
 }
@@ -98,6 +101,7 @@ func (p *PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool)
 // RunDelegate is the entry point for the delegatecall-only precompile.
 func (p *PrecompiledWasm) RunDelegate(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
 		return p.Execute(ctx, evm.StateDB, contract, readonly, evm.Origin)
 	})
 }

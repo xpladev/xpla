@@ -97,11 +97,19 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 }
 
 func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Address, sender, to sdk.AccAddress, amount *big.Int) error {
+	stateDB, callFromPrecompile := types.EVMStateDBFromContext(ctx)
+	if !callFromPrecompile {
+		stateDB = statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
+	}
+
+	return k.executeTransfer(ctx, stateDB, sender, contractAddress, !callFromPrecompile, callFromPrecompile, to, amount)
+}
+
+func (k Erc20Keeper) executeTransfer(ctx sdk.Context, stateDB *statedb.StateDB, sender sdk.AccAddress, contractAddress common.Address, commit, callFromPrecompile bool, to sdk.AccAddress, amount *big.Int) error {
 	ethSender := common.BytesToAddress(sender.Bytes())
 	ethTo := common.BytesToAddress(to.Bytes())
 
-	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, true, false, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, commit, callFromPrecompile, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
 	if err != nil {
 		return err
 	}
