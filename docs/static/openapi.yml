@@ -115,8 +115,8 @@ components:
                   that the v1 module had. Note: modules should provide info on
                   which versions
 
-                  they can migrate from in the
-                  ModuleDescriptor.can_migration_from field.
+                  they can migrate from in the ModuleDescriptor.can_migrate_from
+                  field.
                 type: string
             type: object
           type: array
@@ -204,7 +204,7 @@ components:
             that the v1 module had. Note: modules should provide info on which
             versions
 
-            they can migrate from in the ModuleDescriptor.can_migration_from
+            they can migrate from in the ModuleDescriptor.can_migrate_from
             field.
           type: string
       type: object
@@ -313,7 +313,7 @@ components:
                       on which versions
 
                       they can migrate from in the
-                      ModuleDescriptor.can_migration_from field.
+                      ModuleDescriptor.can_migrate_from field.
                     type: string
                 type: object
               type: array
@@ -2281,6 +2281,9 @@ components:
                               type: string
                             pub_key:
                               properties:
+                                bls12381:
+                                  format: byte
+                                  type: string
                                 ed25519:
                                   format: byte
                                   type: string
@@ -2454,6 +2457,9 @@ components:
                                     type: string
                                   pub_key:
                                     properties:
+                                      bls12381:
+                                        format: byte
+                                        type: string
                                       ed25519:
                                         format: byte
                                         type: string
@@ -2482,6 +2488,9 @@ components:
                                       type: string
                                     pub_key:
                                       properties:
+                                        bls12381:
+                                          format: byte
+                                          type: string
                                         ed25519:
                                           format: byte
                                           type: string
@@ -2866,6 +2875,9 @@ components:
                                   type: string
                                 pub_key:
                                   properties:
+                                    bls12381:
+                                      format: byte
+                                      type: string
                                     ed25519:
                                       format: byte
                                       type: string
@@ -3040,6 +3052,9 @@ components:
                                         type: string
                                       pub_key:
                                         properties:
+                                          bls12381:
+                                            format: byte
+                                            type: string
                                           ed25519:
                                             format: byte
                                             type: string
@@ -3068,6 +3083,9 @@ components:
                                           type: string
                                         pub_key:
                                           properties:
+                                            bls12381:
+                                              format: byte
+                                              type: string
                                             ed25519:
                                               format: byte
                                               type: string
@@ -3463,6 +3481,9 @@ components:
                                   type: string
                                 pub_key:
                                   properties:
+                                    bls12381:
+                                      format: byte
+                                      type: string
                                     ed25519:
                                       format: byte
                                       type: string
@@ -3637,6 +3658,9 @@ components:
                                         type: string
                                       pub_key:
                                         properties:
+                                          bls12381:
+                                            format: byte
+                                            type: string
                                           ed25519:
                                             format: byte
                                             type: string
@@ -3665,6 +3689,9 @@ components:
                                           type: string
                                         pub_key:
                                           properties:
+                                            bls12381:
+                                              format: byte
+                                              type: string
                                             ed25519:
                                               format: byte
                                               type: string
@@ -3832,6 +3859,259 @@ components:
                   type: array
               type: object
           type: object
+      type: object
+    cosmos.base.tendermint.v1beta1.GetBlockResultsResponse:
+      description: >-
+        GetBlockResultsResponse is the response type for the
+        Query/GetBlockResults RPC method.
+      properties:
+        app_hash:
+          description: app_hash is the app hash after processing this block.
+          format: byte
+          type: string
+        consensus_param_updates:
+          description: >-
+            consensus_param_updates contains any consensus parameter updates for
+            this block.
+          properties:
+            abci:
+              description: >-
+                ABCIParams configure functionality specific to the Application
+                Blockchain Interface.
+              properties:
+                vote_extensions_enable_height:
+                  description: >-
+                    vote_extensions_enable_height configures the first height
+                    during which
+
+                    vote extensions will be enabled. During this specified
+                    height, and for all
+
+                    subsequent heights, precommit messages that do not contain
+                    valid extension data
+
+                    will be considered invalid. Prior to this height, vote
+                    extensions will not
+
+                    be used or accepted by validators on the network.
+
+
+                    Once enabled, vote extensions will be created by the
+                    application in ExtendVote,
+
+                    passed to the application for validation in
+                    VerifyVoteExtension and given
+
+                    to the application to use when proposing a block during
+                    PrepareProposal.
+                  format: int64
+                  type: string
+              type: object
+            authority:
+              description: >-
+                AuthorityParams holds an opaque authority string to be
+                configured and
+
+                interpreted by the application for authorizing parameter changes
+                outside of
+
+                governance. CometBFT only enforces a maximum length.
+              properties:
+                authority:
+                  type: string
+              type: object
+            block:
+              description: BlockParams contains limits on the block size.
+              properties:
+                max_bytes:
+                  format: int64
+                  title: |-
+                    Max block size, in bytes.
+                    Note: must be greater than 0
+                  type: string
+                max_gas:
+                  format: int64
+                  title: |-
+                    Max gas per block.
+                    Note: must be greater or equal to -1
+                  type: string
+              type: object
+            evidence:
+              description: EvidenceParams determine how we handle evidence of malfeasance.
+              properties:
+                max_age_duration:
+                  description: >-
+                    Max age of evidence, in time.
+
+
+                    It should correspond with an app's "unbonding period" or
+                    other similar
+
+                    mechanism for handling [Nothing-At-Stake
+
+                    attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+                  type: string
+                max_age_num_blocks:
+                  description: >-
+                    Max age of evidence, in blocks.
+
+
+                    The basic formula for calculating this is: MaxAgeDuration /
+                    {average block
+
+                    time}.
+                  format: int64
+                  type: string
+                max_bytes:
+                  format: int64
+                  title: >-
+                    This sets the maximum size of total evidence in bytes that
+                    can be committed in a single block.
+
+                    and should fall comfortably under the max block bytes.
+
+                    Default is 1048576 or 1MB
+                  type: string
+              type: object
+            validator:
+              description: >-
+                ValidatorParams restrict the public key types validators can
+                use.
+
+                NOTE: uses ABCI pubkey naming, not Amino names.
+              properties:
+                pub_key_types:
+                  items:
+                    type: string
+                  type: array
+              type: object
+            version:
+              description: VersionParams contains the ABCI application version.
+              properties:
+                app:
+                  format: uint64
+                  type: string
+              type: object
+          type: object
+        finalize_block_events:
+          description: >-
+            finalize_block_events contains consensus-level events emitted during
+            block
+
+            finalization, including slashing, jailing, and validator set
+            updates.
+          items:
+            description: >-
+              Event allows application developers to attach additional
+              information to
+
+              ResponseFinalizeBlock and ResponseCheckTx.
+
+              Later, transactions may be queried using these events.
+            properties:
+              attributes:
+                items:
+                  description: >-
+                    EventAttribute is a single key-value pair, associated with
+                    an event.
+                  properties:
+                    index:
+                      type: boolean
+                    key:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
+              type:
+                type: string
+            type: object
+          type: array
+        height:
+          description: height is the block height.
+          format: int64
+          type: string
+        txs_results:
+          description: txs_results contains the results of each transaction execution.
+          items:
+            description: >-
+              ExecTxResult contains results of executing one individual
+              transaction.
+
+
+              * Its structure is equivalent to #ResponseDeliverTx which will be
+              deprecated/deleted
+            properties:
+              code:
+                format: int64
+                type: integer
+              codespace:
+                type: string
+              data:
+                format: byte
+                type: string
+              events:
+                items:
+                  description: >-
+                    Event allows application developers to attach additional
+                    information to
+
+                    ResponseFinalizeBlock and ResponseCheckTx.
+
+                    Later, transactions may be queried using these events.
+                  properties:
+                    attributes:
+                      items:
+                        description: >-
+                          EventAttribute is a single key-value pair, associated
+                          with an event.
+                        properties:
+                          index:
+                            type: boolean
+                          key:
+                            type: string
+                          value:
+                            type: string
+                        type: object
+                      type: array
+                    type:
+                      type: string
+                  type: object
+                type: array
+              gas_used:
+                format: int64
+                type: string
+              gas_wanted:
+                format: int64
+                type: string
+              info:
+                type: string
+              log:
+                type: string
+            type: object
+          type: array
+        validator_updates:
+          description: validator_updates contains the validator updates for this block.
+          items:
+            properties:
+              power:
+                format: int64
+                type: string
+              pub_key:
+                properties:
+                  bls12381:
+                    format: byte
+                    type: string
+                  ed25519:
+                    format: byte
+                    type: string
+                  secp256k1:
+                    format: byte
+                    type: string
+                title: PublicKey defines the keys available for use with Validators
+                type: object
+            type: object
+          type: array
       type: object
     cosmos.base.tendermint.v1beta1.GetLatestBlockResponse:
       description: >-
@@ -4052,6 +4332,9 @@ components:
                                   type: string
                                 pub_key:
                                   properties:
+                                    bls12381:
+                                      format: byte
+                                      type: string
                                     ed25519:
                                       format: byte
                                       type: string
@@ -4226,6 +4509,9 @@ components:
                                         type: string
                                       pub_key:
                                         properties:
+                                          bls12381:
+                                            format: byte
+                                            type: string
                                           ed25519:
                                             format: byte
                                             type: string
@@ -4254,6 +4540,9 @@ components:
                                           type: string
                                         pub_key:
                                           properties:
+                                            bls12381:
+                                              format: byte
+                                              type: string
                                             ed25519:
                                               format: byte
                                               type: string
@@ -4649,6 +4938,9 @@ components:
                                   type: string
                                 pub_key:
                                   properties:
+                                    bls12381:
+                                      format: byte
+                                      type: string
                                     ed25519:
                                       format: byte
                                       type: string
@@ -4823,6 +5115,9 @@ components:
                                         type: string
                                       pub_key:
                                         properties:
+                                          bls12381:
+                                            format: byte
+                                            type: string
                                           ed25519:
                                             format: byte
                                             type: string
@@ -4851,6 +5146,9 @@ components:
                                           type: string
                                         pub_key:
                                           properties:
+                                            bls12381:
+                                              format: byte
+                                              type: string
                                             ed25519:
                                               format: byte
                                               type: string
@@ -5019,6 +5317,259 @@ components:
               type: object
           type: object
       type: object
+    cosmos.base.tendermint.v1beta1.GetLatestBlockResultsResponse:
+      description: >-
+        GetLatestBlockResultsResponse is the response type for the
+        Query/GetLatestBlockResults RPC method.
+      properties:
+        app_hash:
+          description: app_hash is the app hash after processing this block.
+          format: byte
+          type: string
+        consensus_param_updates:
+          description: >-
+            consensus_param_updates contains any consensus parameter updates for
+            this block.
+          properties:
+            abci:
+              description: >-
+                ABCIParams configure functionality specific to the Application
+                Blockchain Interface.
+              properties:
+                vote_extensions_enable_height:
+                  description: >-
+                    vote_extensions_enable_height configures the first height
+                    during which
+
+                    vote extensions will be enabled. During this specified
+                    height, and for all
+
+                    subsequent heights, precommit messages that do not contain
+                    valid extension data
+
+                    will be considered invalid. Prior to this height, vote
+                    extensions will not
+
+                    be used or accepted by validators on the network.
+
+
+                    Once enabled, vote extensions will be created by the
+                    application in ExtendVote,
+
+                    passed to the application for validation in
+                    VerifyVoteExtension and given
+
+                    to the application to use when proposing a block during
+                    PrepareProposal.
+                  format: int64
+                  type: string
+              type: object
+            authority:
+              description: >-
+                AuthorityParams holds an opaque authority string to be
+                configured and
+
+                interpreted by the application for authorizing parameter changes
+                outside of
+
+                governance. CometBFT only enforces a maximum length.
+              properties:
+                authority:
+                  type: string
+              type: object
+            block:
+              description: BlockParams contains limits on the block size.
+              properties:
+                max_bytes:
+                  format: int64
+                  title: |-
+                    Max block size, in bytes.
+                    Note: must be greater than 0
+                  type: string
+                max_gas:
+                  format: int64
+                  title: |-
+                    Max gas per block.
+                    Note: must be greater or equal to -1
+                  type: string
+              type: object
+            evidence:
+              description: EvidenceParams determine how we handle evidence of malfeasance.
+              properties:
+                max_age_duration:
+                  description: >-
+                    Max age of evidence, in time.
+
+
+                    It should correspond with an app's "unbonding period" or
+                    other similar
+
+                    mechanism for handling [Nothing-At-Stake
+
+                    attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+                  type: string
+                max_age_num_blocks:
+                  description: >-
+                    Max age of evidence, in blocks.
+
+
+                    The basic formula for calculating this is: MaxAgeDuration /
+                    {average block
+
+                    time}.
+                  format: int64
+                  type: string
+                max_bytes:
+                  format: int64
+                  title: >-
+                    This sets the maximum size of total evidence in bytes that
+                    can be committed in a single block.
+
+                    and should fall comfortably under the max block bytes.
+
+                    Default is 1048576 or 1MB
+                  type: string
+              type: object
+            validator:
+              description: >-
+                ValidatorParams restrict the public key types validators can
+                use.
+
+                NOTE: uses ABCI pubkey naming, not Amino names.
+              properties:
+                pub_key_types:
+                  items:
+                    type: string
+                  type: array
+              type: object
+            version:
+              description: VersionParams contains the ABCI application version.
+              properties:
+                app:
+                  format: uint64
+                  type: string
+              type: object
+          type: object
+        finalize_block_events:
+          description: >-
+            finalize_block_events contains consensus-level events emitted during
+            block
+
+            finalization, including slashing, jailing, and validator set
+            updates.
+          items:
+            description: >-
+              Event allows application developers to attach additional
+              information to
+
+              ResponseFinalizeBlock and ResponseCheckTx.
+
+              Later, transactions may be queried using these events.
+            properties:
+              attributes:
+                items:
+                  description: >-
+                    EventAttribute is a single key-value pair, associated with
+                    an event.
+                  properties:
+                    index:
+                      type: boolean
+                    key:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
+              type:
+                type: string
+            type: object
+          type: array
+        height:
+          description: height is the block height.
+          format: int64
+          type: string
+        txs_results:
+          description: txs_results contains the results of each transaction execution.
+          items:
+            description: >-
+              ExecTxResult contains results of executing one individual
+              transaction.
+
+
+              * Its structure is equivalent to #ResponseDeliverTx which will be
+              deprecated/deleted
+            properties:
+              code:
+                format: int64
+                type: integer
+              codespace:
+                type: string
+              data:
+                format: byte
+                type: string
+              events:
+                items:
+                  description: >-
+                    Event allows application developers to attach additional
+                    information to
+
+                    ResponseFinalizeBlock and ResponseCheckTx.
+
+                    Later, transactions may be queried using these events.
+                  properties:
+                    attributes:
+                      items:
+                        description: >-
+                          EventAttribute is a single key-value pair, associated
+                          with an event.
+                        properties:
+                          index:
+                            type: boolean
+                          key:
+                            type: string
+                          value:
+                            type: string
+                        type: object
+                      type: array
+                    type:
+                      type: string
+                  type: object
+                type: array
+              gas_used:
+                format: int64
+                type: string
+              gas_wanted:
+                format: int64
+                type: string
+              info:
+                type: string
+              log:
+                type: string
+            type: object
+          type: array
+        validator_updates:
+          description: validator_updates contains the validator updates for this block.
+          items:
+            properties:
+              power:
+                format: int64
+                type: string
+              pub_key:
+                properties:
+                  bls12381:
+                    format: byte
+                    type: string
+                  ed25519:
+                    format: byte
+                    type: string
+                  secp256k1:
+                    format: byte
+                    type: string
+                title: PublicKey defines the keys available for use with Validators
+                type: object
+            type: object
+          type: array
+      type: object
     cosmos.base.tendermint.v1beta1.GetLatestValidatorSetResponse:
       description: >-
         GetLatestValidatorSetResponse is the response type for the
@@ -5155,6 +5706,18 @@ components:
         GetSyncingResponse is the response type for the Query/GetSyncing RPC
         method.
       properties:
+        earliest_block_height:
+          description: >-
+            earliest_block_height is the earliest block height available on this
+            node.
+          format: int64
+          type: string
+        latest_block_height:
+          description: >-
+            latest_block_height is the latest block height available on this
+            node.
+          format: int64
+          type: string
         syncing:
           type: boolean
       type: object
@@ -5438,7 +6001,7 @@ components:
       description: |-
         DecCoin defines a token with a denomination and a decimal amount.
 
-        NOTE: The amount field is an Dec which implements the custom method
+        NOTE: The amount field is a Dec which implements the custom method
         signatures required by gogoproto.
       properties:
         amount:
@@ -5492,6 +6055,19 @@ components:
                     to the application to use when proposing a block during
                     PrepareProposal.
                   format: int64
+                  type: string
+              type: object
+            authority:
+              description: >-
+                AuthorityParams holds an opaque authority string to be
+                configured and
+
+                interpreted by the application for authorizing parameter changes
+                outside of
+
+                governance. CometBFT only enforces a maximum length.
+              properties:
+                authority:
                   type: string
               type: object
             block:
@@ -5593,13 +6169,10 @@ components:
       properties:
         reward:
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -5609,6 +6182,34 @@ components:
             type: object
           type: array
         validator_address:
+          type: string
+      type: object
+    cosmos.distribution.v1beta1.DelegatorStartingInfo:
+      description: >-
+        DelegatorStartingInfo represents the starting info for a delegator
+        reward
+
+        period. It tracks the previous validator period, the delegation's amount
+        of
+
+        staking token, and the creation height (to check later on if any slashes
+        have
+
+        occurred). NOTE: Even though validators are slashed to whole staking
+        tokens,
+
+        the delegators within the validator may be left with less than a full
+        token,
+
+        thus sdk.Dec is used.
+      properties:
+        height:
+          format: uint64
+          type: string
+        previous_period:
+          format: uint64
+          type: string
+        stake:
           type: string
       type: object
     cosmos.distribution.v1beta1.Params:
@@ -5643,13 +6244,10 @@ components:
         pool:
           description: pool defines community pool's coins.
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -5667,13 +6265,10 @@ components:
         rewards:
           description: rewards defines the rewards accrued by a delegation.
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -5702,7 +6297,7 @@ components:
                     amount.
 
 
-                    NOTE: The amount field is an Dec which implements the custom
+                    NOTE: The amount field is a Dec which implements the custom
                     method
 
                     signatures required by gogoproto.
@@ -5720,13 +6315,10 @@ components:
         total:
           description: total defines the sum of all the rewards.
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -5735,6 +6327,24 @@ components:
                 type: string
             type: object
           type: array
+      type: object
+    cosmos.distribution.v1beta1.QueryDelegatorStartingInfoResponse:
+      description: |-
+        QueryDelegatorStartingInfoResponse is the response type for the
+        Query/DelegatorStartingInfo RPC method.
+      properties:
+        starting_info:
+          description: starting_info defines the starting info of a delegator.
+          properties:
+            height:
+              format: uint64
+              type: string
+            previous_period:
+              format: uint64
+              type: string
+            stake:
+              type: string
+          type: object
       type: object
     cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse:
       description: |-
@@ -5796,7 +6406,7 @@ components:
                   amount.
 
 
-                  NOTE: The amount field is an Dec which implements the custom
+                  NOTE: The amount field is a Dec which implements the custom
                   method
 
                   signatures required by gogoproto.
@@ -5812,6 +6422,37 @@ components:
         QueryValidatorCommissionResponse is the response type for the
         Query/ValidatorCommission RPC method
       type: object
+    cosmos.distribution.v1beta1.QueryValidatorCurrentRewardsResponse:
+      description: |-
+        QueryValidatorCurrentRewardsResponse is the response type for the
+        Query/ValidatorCurrentRewards RPC method.
+      properties:
+        rewards:
+          description: rewards defines the current rewards of a validator.
+          properties:
+            period:
+              format: uint64
+              type: string
+            rewards:
+              items:
+                description: >-
+                  DecCoin defines a token with a denomination and a decimal
+                  amount.
+
+
+                  NOTE: The amount field is a Dec which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+                properties:
+                  amount:
+                    type: string
+                  denom:
+                    type: string
+                type: object
+              type: array
+          type: object
+      type: object
     cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse:
       description: >-
         QueryValidatorDistributionInfoResponse is the response type for the
@@ -5820,13 +6461,10 @@ components:
         commission:
           description: commission defines the commission the validator received.
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -5841,13 +6479,10 @@ components:
         self_bond_rewards:
           description: self_bond_rewards defines the self delegations rewards.
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -5856,6 +6491,57 @@ components:
                 type: string
             type: object
           type: array
+      type: object
+    cosmos.distribution.v1beta1.QueryValidatorHistoricalRewardsResponse:
+      description: |-
+        QueryValidatorHistoricalRewardsResponse is the response type for the
+        Query/ValidatorHistoricalRewards RPC method.
+      properties:
+        rewards:
+          description: rewards defines the historical rewards of a validator.
+          properties:
+            cumulative_reward_ratio:
+              items:
+                description: >-
+                  DecCoin defines a token with a denomination and a decimal
+                  amount.
+
+
+                  NOTE: The amount field is a Dec which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+                properties:
+                  amount:
+                    type: string
+                  denom:
+                    type: string
+                type: object
+              type: array
+            reference_count:
+              format: int64
+              type: integer
+          title: >-
+            ValidatorHistoricalRewards represents historical rewards for a
+            validator.
+
+            Height is implicit within the store key.
+
+            Cumulative reward ratio is the sum from the zeroeth period
+
+            until this period of rewards / tokens, per the spec.
+
+            The reference count indicates the number of objects
+
+            which might need to reference this historical entry at any point.
+
+            ReferenceCount =
+               number of outstanding delegations which ended the associated period (and
+               might need to read that record)
+             + number of slashes which ended the associated period (and might need to
+             read that record)
+             + one per validator for the zeroeth period, set on initialization
+          type: object
       type: object
     cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse:
       description: |-
@@ -5876,7 +6562,7 @@ components:
                   amount.
 
 
-                  NOTE: The amount field is an Dec which implements the custom
+                  NOTE: The amount field is a Dec which implements the custom
                   method
 
                   signatures required by gogoproto.
@@ -5937,13 +6623,10 @@ components:
       properties:
         commission:
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -5952,6 +6635,70 @@ components:
                 type: string
             type: object
           type: array
+      type: object
+    cosmos.distribution.v1beta1.ValidatorCurrentRewards:
+      description: |-
+        ValidatorCurrentRewards represents current rewards and current
+        period for a validator kept as a running counter and incremented
+        each block as long as the validator's tokens remain constant.
+      properties:
+        period:
+          format: uint64
+          type: string
+        rewards:
+          items:
+            description: |-
+              DecCoin defines a token with a denomination and a decimal amount.
+
+              NOTE: The amount field is a Dec which implements the custom method
+              signatures required by gogoproto.
+            properties:
+              amount:
+                type: string
+              denom:
+                type: string
+            type: object
+          type: array
+      type: object
+    cosmos.distribution.v1beta1.ValidatorHistoricalRewards:
+      properties:
+        cumulative_reward_ratio:
+          items:
+            description: |-
+              DecCoin defines a token with a denomination and a decimal amount.
+
+              NOTE: The amount field is a Dec which implements the custom method
+              signatures required by gogoproto.
+            properties:
+              amount:
+                type: string
+              denom:
+                type: string
+            type: object
+          type: array
+        reference_count:
+          format: int64
+          type: integer
+      title: >-
+        ValidatorHistoricalRewards represents historical rewards for a
+        validator.
+
+        Height is implicit within the store key.
+
+        Cumulative reward ratio is the sum from the zeroeth period
+
+        until this period of rewards / tokens, per the spec.
+
+        The reference count indicates the number of objects
+
+        which might need to reference this historical entry at any point.
+
+        ReferenceCount =
+           number of outstanding delegations which ended the associated period (and
+           might need to read that record)
+         + number of slashes which ended the associated period (and might need to
+         read that record)
+         + one per validator for the zeroeth period, set on initialization
       type: object
     cosmos.distribution.v1beta1.ValidatorOutstandingRewards:
       description: >-
@@ -5962,13 +6709,10 @@ components:
       properties:
         rewards:
           items:
-            description: >-
+            description: |-
               DecCoin defines a token with a denomination and a decimal amount.
 
-
-              NOTE: The amount field is an Dec which implements the custom
-              method
-
+              NOTE: The amount field is a Dec which implements the custom method
               signatures required by gogoproto.
             properties:
               amount:
@@ -6457,6 +7201,11 @@ components:
           type: string
       title: EstimateGasResponse defines EstimateGas response
       type: object
+    cosmos.evm.vm.v1.ExtendedDenomOptions:
+      properties:
+        extended_denom:
+          type: string
+      type: object
     cosmos.evm.vm.v1.Log:
       description: >-
         Log represents an protobuf compatible Ethereum Log that defines a
@@ -6482,6 +7231,12 @@ components:
         block_number:
           format: uint64
           title: block_number of the block in which the transaction was included
+          type: string
+        block_timestamp:
+          format: uint64
+          title: >-
+            block_timestamp is the timestamp of the block in which the
+            transaction was
           type: string
         data:
           format: byte
@@ -6516,36 +7271,32 @@ components:
     cosmos.evm.vm.v1.MsgEthereumTx:
       description: MsgEthereumTx encapsulates an Ethereum transaction as an SDK message.
       properties:
-        data:
-          properties:
-            type_url:
-              type: string
-            value:
-              format: byte
-              type: string
-          title: data is inner transaction data of the Ethereum transaction
-          type: object
         from:
+          format: byte
           title: >-
-            from is the ethereum signer address in hex format. This address
-            value is
+            from is the bytes of ethereum signer address. This address value is
+            checked
 
-            checked against the address derived from the signature (V, R, S)
-            using the
+            against the address derived from the signature (V, R, S) using the
 
             secp256k1 elliptic curve
           type: string
-        hash:
-          title: hash of the transaction in hex format
+        raw:
+          format: byte
+          title: raw is the raw ethereum transaction
           type: string
-        size:
-          format: double
-          title: size is the encoded storage size of the transaction (DEPRECATED)
-          type: number
       type: object
     cosmos.evm.vm.v1.MsgEthereumTxResponse:
       description: MsgEthereumTxResponse defines the Msg/EthereumTx response type.
       properties:
+        block_hash:
+          format: byte
+          title: include the block hash for json-rpc to use
+          type: string
+        block_timestamp:
+          format: uint64
+          title: include the block timestamp for json-rpc to use
+          type: string
         gas_used:
           format: uint64
           title: gas_used specifies how much gas was consumed by the transaction
@@ -6555,7 +7306,7 @@ components:
             hash of the ethereum transaction in hex format. This hash differs
             from the
 
-            Tendermint sha256 hash of the transaction bytes. See
+            CometBFT sha256 hash of the transaction bytes. See
 
             https://github.com/tendermint/tendermint/issues/6539 for reference
           type: string
@@ -6592,6 +7343,12 @@ components:
                   block_number of the block in which the transaction was
                   included
                 type: string
+              block_timestamp:
+                format: uint64
+                title: >-
+                  block_timestamp is the timestamp of the block in which the
+                  transaction was
+                type: string
               data:
                 format: byte
                 title: data which is supplied by the contract, usually ABI-encoded
@@ -6623,6 +7380,14 @@ components:
                 type: string
             type: object
           type: array
+        max_used_gas:
+          format: uint64
+          title: >-
+            max_used_gas specifies the gas consumed by the transaction, not
+            including
+
+            refunds
+          type: string
         ret:
           format: byte
           title: >-
@@ -6728,11 +7493,6 @@ components:
             active_static_precompiles defines the slice of hex addresses of the
             precompiled contracts that are active
           type: array
-        allow_unprotected_txs:
-          description: |-
-            allow_unprotected_txs defines if replay-protected (i.e non EIP155
-            signed) transactions can be executed on the state machine.
-          type: boolean
         evm_channels:
           items:
             type: string
@@ -6747,12 +7507,20 @@ components:
 
             transitions.
           type: string
+        extended_denom_options:
+          properties:
+            extended_denom:
+              type: string
+          type: object
         extra_eips:
           items:
             format: int64
             type: string
           title: extra_eips defines the additional EIPs for the vm.Config
           type: array
+        history_serve_window:
+          format: uint64
+          type: string
       title: Params defines the EVM module parameters
       type: object
     cosmos.evm.vm.v1.QueryAccountResponse:
@@ -7069,13 +7837,6 @@ components:
 
                 precompiled contracts that are active
               type: array
-            allow_unprotected_txs:
-              description: >-
-                allow_unprotected_txs defines if replay-protected (i.e non
-                EIP155
-
-                signed) transactions can be executed on the state machine.
-              type: boolean
             evm_channels:
               items:
                 type: string
@@ -7090,12 +7851,20 @@ components:
 
                 transitions.
               type: string
+            extended_denom_options:
+              properties:
+                extended_denom:
+                  type: string
+              type: object
             extra_eips:
               items:
                 format: int64
                 type: string
               title: extra_eips defines the additional EIPs for the vm.Config
               type: array
+            history_serve_window:
+              format: uint64
+              type: string
           title: Params defines the EVM module parameters
           type: object
       type: object
@@ -7117,6 +7886,14 @@ components:
           title: data is the response serialized in bytes
           type: string
       title: QueryTraceBlockResponse defines TraceBlock response
+      type: object
+    cosmos.evm.vm.v1.QueryTraceCallResponse:
+      properties:
+        data:
+          format: byte
+          title: data is the response serialized in bytes
+          type: string
+      title: QueryTraceCallResponse defines TraceCall response
       type: object
     cosmos.evm.vm.v1.QueryTraceTxResponse:
       properties:
@@ -7355,7 +8132,7 @@ components:
         method.
       properties:
         allowance:
-          description: allowance is a allowance granted for grantee by granter.
+          description: allowance is an allowance granted for grantee by granter.
           properties:
             allowance:
               description: allowance can be any of basic, periodic, allowed fee allowance.
@@ -7413,7 +8190,7 @@ components:
             type: object
           type: array
         pagination:
-          description: pagination defines an pagination for the response.
+          description: pagination defines a pagination for the response.
           properties:
             next_key:
               description: |-
@@ -7466,7 +8243,7 @@ components:
             type: object
           type: array
         pagination:
-          description: pagination defines an pagination for the response.
+          description: pagination defines a pagination for the response.
           properties:
             next_key:
               description: |-
@@ -7713,7 +8490,7 @@ components:
             https://docs.cosmos.network/v0.47/modules/gov#proposal-3
           type: string
         proposer:
-          title: proposer is the address of the proposal sumbitter
+          title: proposer is the address of the proposal submitter
           type: string
         status:
           default: PROPOSAL_STATUS_UNSPECIFIED
@@ -7939,7 +8716,7 @@ components:
               type: array
           type: object
         params:
-          description: params defines all the paramaters of x/gov module.
+          description: params defines all the parameters of x/gov module.
           properties:
             burn_proposal_deposit_prevote:
               title: burn deposits if the proposal does not enter voting period
@@ -8152,7 +8929,7 @@ components:
                 https://docs.cosmos.network/v0.47/modules/gov#proposal-3
               type: string
             proposer:
-              title: proposer is the address of the proposal sumbitter
+              title: proposer is the address of the proposal submitter
               type: string
             status:
               default: PROPOSAL_STATUS_UNSPECIFIED
@@ -8300,7 +9077,7 @@ components:
                   https://docs.cosmos.network/v0.47/modules/gov#proposal-3
                 type: string
               proposer:
-                title: proposer is the address of the proposal sumbitter
+                title: proposer is the address of the proposal submitter
                 type: string
               status:
                 default: PROPOSAL_STATUS_UNSPECIFIED
@@ -9479,6 +10256,12 @@ components:
         inflation_rate_change:
           title: maximum annual change in inflation rate
           type: string
+        max_supply:
+          description: |-
+            maximum supply for the token.
+
+            A value of "0" indicates an unlimited (infinite) maximum supply.
+          type: string
         mint_denom:
           title: type of coin to mint
           type: string
@@ -9526,6 +10309,12 @@ components:
               type: string
             inflation_rate_change:
               title: maximum annual change in inflation rate
+              type: string
+            max_supply:
+              description: |-
+                maximum supply for the token.
+
+                A value of "0" indicates an unlimited (infinite) maximum supply.
               type: string
             mint_denom:
               title: type of coin to mint
@@ -10195,7 +10984,7 @@ components:
                   format: uint64
                   type: string
                 title: >-
-                  list of unbonding ids, each uniquely identifing an unbonding
+                  list of unbonding ids, each uniquely identifying an unbonding
                   of this validator
                 type: array
               unbonding_on_hold_ref_count:
@@ -10592,7 +11381,7 @@ components:
                 format: uint64
                 type: string
               title: >-
-                list of unbonding ids, each uniquely identifing an unbonding of
+                list of unbonding ids, each uniquely identifying an unbonding of
                 this validator
               type: array
             unbonding_on_hold_ref_count:
@@ -10768,7 +11557,7 @@ components:
                   format: uint64
                   type: string
                 title: >-
-                  list of unbonding ids, each uniquely identifing an unbonding
+                  list of unbonding ids, each uniquely identifying an unbonding
                   of this validator
                 type: array
               unbonding_on_hold_ref_count:
@@ -11015,7 +11804,7 @@ components:
                       format: uint64
                       type: string
                     title: >-
-                      list of unbonding ids, each uniquely identifing an
+                      list of unbonding ids, each uniquely identifying an
                       unbonding of this validator
                     type: array
                   unbonding_on_hold_ref_count:
@@ -11502,7 +12291,7 @@ components:
                 format: uint64
                 type: string
               title: >-
-                list of unbonding ids, each uniquely identifing an unbonding of
+                list of unbonding ids, each uniquely identifying an unbonding of
                 this validator
               type: array
             unbonding_on_hold_ref_count:
@@ -11758,7 +12547,7 @@ components:
                   format: uint64
                   type: string
                 title: >-
-                  list of unbonding ids, each uniquely identifing an unbonding
+                  list of unbonding ids, each uniquely identifying an unbonding
                   of this validator
                 type: array
               unbonding_on_hold_ref_count:
@@ -12261,8 +13050,8 @@ components:
             format: uint64
             type: string
           title: >-
-            list of unbonding ids, each uniquely identifing an unbonding of this
-            validator
+            list of unbonding ids, each uniquely identifying an unbonding of
+            this validator
           type: array
         unbonding_on_hold_ref_count:
           format: int64
@@ -12833,7 +13622,7 @@ components:
         gas to be used by the transaction. The ratio yields an effective
         "gasprice",
 
-        which must be above some miminum to be accepted into the mempool.
+        which must be above some minimum to be accepted into the mempool.
       properties:
         amount:
           items:
@@ -13109,6 +13898,9 @@ components:
                                   type: string
                                 pub_key:
                                   properties:
+                                    bls12381:
+                                      format: byte
+                                      type: string
                                     ed25519:
                                       format: byte
                                       type: string
@@ -13283,6 +14075,9 @@ components:
                                         type: string
                                       pub_key:
                                         properties:
+                                          bls12381:
+                                            format: byte
+                                            type: string
                                           ed25519:
                                             format: byte
                                             type: string
@@ -13311,6 +14106,9 @@ components:
                                           type: string
                                         pub_key:
                                           properties:
+                                            bls12381:
+                                              format: byte
+                                              type: string
                                             ed25519:
                                               format: byte
                                               type: string
@@ -18098,6 +18896,8 @@ components:
               format: byte
               type: string
           type: object
+        ibc2_port_id:
+          type: string
         ibc_port_id:
           type: string
         label:
@@ -18487,6 +19287,8 @@ components:
                   format: byte
                   type: string
               type: object
+            ibc2_port_id:
+              type: string
             ibc_port_id:
               type: string
             label:
@@ -18721,6 +19523,49 @@ components:
         message:
           type: string
       type: object
+    ibc.applications.gmp.v1.AccountIdentifier:
+      description: AccountIdentifier is used to identify a ICS27 account.
+      properties:
+        client_id:
+          title: The (local) client identifier
+          type: string
+        salt:
+          format: byte
+          title: The salt of the packet
+          type: string
+        sender:
+          title: The sender of the packet
+          type: string
+      type: object
+    ibc.applications.gmp.v1.QueryAccountAddressResponse:
+      description: >-
+        QueryAccountAddressResponse is the response type for the
+        Query/AccountAddress RPC method.
+      properties:
+        account_address:
+          title: The interchain account address
+          type: string
+      type: object
+    ibc.applications.gmp.v1.QueryAccountIdentifierResponse:
+      description: >-
+        QueryAccountIdentifierResponse is the response type for querying the
+        account identifier by account address.
+      properties:
+        account_id:
+          description: AccountIdentifier is used to identify a ICS27 account.
+          properties:
+            client_id:
+              title: The (local) client identifier
+              type: string
+            salt:
+              format: byte
+              title: The salt of the packet
+              type: string
+            sender:
+              title: The sender of the packet
+              type: string
+          type: object
+      type: object
     ibc.applications.interchain_accounts.controller.v1.Params:
       description: >-
         Params defines the set of on-chain interchain accounts parameters.
@@ -18788,6 +19633,496 @@ components:
               description: host_enabled enables or disables the host submodule.
               type: boolean
           type: object
+      type: object
+    ibc.applications.rate_limiting.v1.Flow:
+      description: Flow tracks all the inflows and outflows of a channel.
+      properties:
+        channel_value:
+          title: |-
+            ChannelValue stores the total supply of the denom at the start of
+            the rate limit. This is used as the denominator when checking
+            the rate limit threshold
+            The ChannelValue is fixed for the duration of the rate limit window
+          type: string
+        inflow:
+          title: |-
+            Inflow defines the total amount of inbound transfers for the given
+            rate limit in the current window
+          type: string
+        outflow:
+          title: |-
+            Outflow defines the total amount of outbound transfers for the given
+            rate limit in the current window
+          type: string
+      type: object
+    ibc.applications.rate_limiting.v1.Path:
+      properties:
+        channel_or_client_id:
+          type: string
+        denom:
+          type: string
+      title: Path holds the denom and channelID that define the rate limited route
+      type: object
+    ibc.applications.rate_limiting.v1.QueryAllBlacklistedDenomsResponse:
+      description: QueryAllBlacklistedDenomsResponse returns all the blacklisted denosm.
+      properties:
+        denoms:
+          items:
+            type: string
+          type: array
+      type: object
+    ibc.applications.rate_limiting.v1.QueryAllRateLimitsResponse:
+      description: >-
+        QueryAllRateLimitsResponse returns all the rate limits stored on the
+        chain.
+      properties:
+        rate_limits:
+          items:
+            properties:
+              flow:
+                description: Flow tracks all the inflows and outflows of a channel.
+                properties:
+                  channel_value:
+                    title: >-
+                      ChannelValue stores the total supply of the denom at the
+                      start of
+
+                      the rate limit. This is used as the denominator when
+                      checking
+
+                      the rate limit threshold
+
+                      The ChannelValue is fixed for the duration of the rate
+                      limit window
+                    type: string
+                  inflow:
+                    title: >-
+                      Inflow defines the total amount of inbound transfers for
+                      the given
+
+                      rate limit in the current window
+                    type: string
+                  outflow:
+                    title: >-
+                      Outflow defines the total amount of outbound transfers for
+                      the given
+
+                      rate limit in the current window
+                    type: string
+                type: object
+              path:
+                properties:
+                  channel_or_client_id:
+                    type: string
+                  denom:
+                    type: string
+                title: >-
+                  Path holds the denom and channelID that define the rate
+                  limited route
+                type: object
+              quota:
+                properties:
+                  duration_hours:
+                    format: uint64
+                    title: >-
+                      DurationHours specifies the number of hours before the
+                      rate limit
+
+                      is reset (e.g. 24 indicates that the rate limit is reset
+                      each day)
+                    type: string
+                  max_percent_recv:
+                    title: >-
+                      MaxPercentSend defines the threshold for inflows
+
+                      The threshold is defined as a percentage (e.g. 10
+                      indicates 10%)
+                    type: string
+                  max_percent_send:
+                    title: >-
+                      MaxPercentSend defines the threshold for outflows
+
+                      The threshold is defined as a percentage (e.g. 10
+                      indicates 10%)
+                    type: string
+                title: Quota defines the rate limit thresholds for transfer packets
+                type: object
+            title: >-
+              RateLimit stores all the context about a given rate limit,
+              including
+
+              the relevant denom and channel, rate limit thresholds, and current
+
+              progress towards the limits
+            type: object
+          type: array
+      type: object
+    ibc.applications.rate_limiting.v1.QueryAllWhitelistedAddressesResponse:
+      description: QueryAllWhitelistedAddressesResponse returns all whitelisted pairs.
+      properties:
+        address_pairs:
+          items:
+            properties:
+              receiver:
+                type: string
+              sender:
+                type: string
+            title: |-
+              WhitelistedAddressPair represents a sender-receiver combo that is
+              not subject to rate limit restrictions
+            type: object
+          type: array
+      type: object
+    ibc.applications.rate_limiting.v1.QueryRateLimitResponse:
+      description: >-
+        QueryRateLimitResponse returns a rate limit by denom and
+        channel_or_client_id combination.
+      properties:
+        rate_limit:
+          properties:
+            flow:
+              description: Flow tracks all the inflows and outflows of a channel.
+              properties:
+                channel_value:
+                  title: >-
+                    ChannelValue stores the total supply of the denom at the
+                    start of
+
+                    the rate limit. This is used as the denominator when
+                    checking
+
+                    the rate limit threshold
+
+                    The ChannelValue is fixed for the duration of the rate limit
+                    window
+                  type: string
+                inflow:
+                  title: >-
+                    Inflow defines the total amount of inbound transfers for the
+                    given
+
+                    rate limit in the current window
+                  type: string
+                outflow:
+                  title: >-
+                    Outflow defines the total amount of outbound transfers for
+                    the given
+
+                    rate limit in the current window
+                  type: string
+              type: object
+            path:
+              properties:
+                channel_or_client_id:
+                  type: string
+                denom:
+                  type: string
+              title: >-
+                Path holds the denom and channelID that define the rate limited
+                route
+              type: object
+            quota:
+              properties:
+                duration_hours:
+                  format: uint64
+                  title: >-
+                    DurationHours specifies the number of hours before the rate
+                    limit
+
+                    is reset (e.g. 24 indicates that the rate limit is reset
+                    each day)
+                  type: string
+                max_percent_recv:
+                  title: >-
+                    MaxPercentSend defines the threshold for inflows
+
+                    The threshold is defined as a percentage (e.g. 10 indicates
+                    10%)
+                  type: string
+                max_percent_send:
+                  title: >-
+                    MaxPercentSend defines the threshold for outflows
+
+                    The threshold is defined as a percentage (e.g. 10 indicates
+                    10%)
+                  type: string
+              title: Quota defines the rate limit thresholds for transfer packets
+              type: object
+          title: |-
+            RateLimit stores all the context about a given rate limit, including
+            the relevant denom and channel, rate limit thresholds, and current
+            progress towards the limits
+          type: object
+      type: object
+    ibc.applications.rate_limiting.v1.QueryRateLimitsByChainIDResponse:
+      description: QueryRateLimitsByChainIDResponse returns all rate-limits by a chain.
+      properties:
+        rate_limits:
+          items:
+            properties:
+              flow:
+                description: Flow tracks all the inflows and outflows of a channel.
+                properties:
+                  channel_value:
+                    title: >-
+                      ChannelValue stores the total supply of the denom at the
+                      start of
+
+                      the rate limit. This is used as the denominator when
+                      checking
+
+                      the rate limit threshold
+
+                      The ChannelValue is fixed for the duration of the rate
+                      limit window
+                    type: string
+                  inflow:
+                    title: >-
+                      Inflow defines the total amount of inbound transfers for
+                      the given
+
+                      rate limit in the current window
+                    type: string
+                  outflow:
+                    title: >-
+                      Outflow defines the total amount of outbound transfers for
+                      the given
+
+                      rate limit in the current window
+                    type: string
+                type: object
+              path:
+                properties:
+                  channel_or_client_id:
+                    type: string
+                  denom:
+                    type: string
+                title: >-
+                  Path holds the denom and channelID that define the rate
+                  limited route
+                type: object
+              quota:
+                properties:
+                  duration_hours:
+                    format: uint64
+                    title: >-
+                      DurationHours specifies the number of hours before the
+                      rate limit
+
+                      is reset (e.g. 24 indicates that the rate limit is reset
+                      each day)
+                    type: string
+                  max_percent_recv:
+                    title: >-
+                      MaxPercentSend defines the threshold for inflows
+
+                      The threshold is defined as a percentage (e.g. 10
+                      indicates 10%)
+                    type: string
+                  max_percent_send:
+                    title: >-
+                      MaxPercentSend defines the threshold for outflows
+
+                      The threshold is defined as a percentage (e.g. 10
+                      indicates 10%)
+                    type: string
+                title: Quota defines the rate limit thresholds for transfer packets
+                type: object
+            title: >-
+              RateLimit stores all the context about a given rate limit,
+              including
+
+              the relevant denom and channel, rate limit thresholds, and current
+
+              progress towards the limits
+            type: object
+          type: array
+      type: object
+    ibc.applications.rate_limiting.v1.QueryRateLimitsByChannelOrClientIDResponse:
+      description: >-
+        QueryRateLimitsByChannelOrClientIDResponse returns all rate-limits by a
+        channel or client id.
+      properties:
+        rate_limits:
+          items:
+            properties:
+              flow:
+                description: Flow tracks all the inflows and outflows of a channel.
+                properties:
+                  channel_value:
+                    title: >-
+                      ChannelValue stores the total supply of the denom at the
+                      start of
+
+                      the rate limit. This is used as the denominator when
+                      checking
+
+                      the rate limit threshold
+
+                      The ChannelValue is fixed for the duration of the rate
+                      limit window
+                    type: string
+                  inflow:
+                    title: >-
+                      Inflow defines the total amount of inbound transfers for
+                      the given
+
+                      rate limit in the current window
+                    type: string
+                  outflow:
+                    title: >-
+                      Outflow defines the total amount of outbound transfers for
+                      the given
+
+                      rate limit in the current window
+                    type: string
+                type: object
+              path:
+                properties:
+                  channel_or_client_id:
+                    type: string
+                  denom:
+                    type: string
+                title: >-
+                  Path holds the denom and channelID that define the rate
+                  limited route
+                type: object
+              quota:
+                properties:
+                  duration_hours:
+                    format: uint64
+                    title: >-
+                      DurationHours specifies the number of hours before the
+                      rate limit
+
+                      is reset (e.g. 24 indicates that the rate limit is reset
+                      each day)
+                    type: string
+                  max_percent_recv:
+                    title: >-
+                      MaxPercentSend defines the threshold for inflows
+
+                      The threshold is defined as a percentage (e.g. 10
+                      indicates 10%)
+                    type: string
+                  max_percent_send:
+                    title: >-
+                      MaxPercentSend defines the threshold for outflows
+
+                      The threshold is defined as a percentage (e.g. 10
+                      indicates 10%)
+                    type: string
+                title: Quota defines the rate limit thresholds for transfer packets
+                type: object
+            title: >-
+              RateLimit stores all the context about a given rate limit,
+              including
+
+              the relevant denom and channel, rate limit thresholds, and current
+
+              progress towards the limits
+            type: object
+          type: array
+      type: object
+    ibc.applications.rate_limiting.v1.Quota:
+      properties:
+        duration_hours:
+          format: uint64
+          title: |-
+            DurationHours specifies the number of hours before the rate limit
+            is reset (e.g. 24 indicates that the rate limit is reset each day)
+          type: string
+        max_percent_recv:
+          title: |-
+            MaxPercentSend defines the threshold for inflows
+            The threshold is defined as a percentage (e.g. 10 indicates 10%)
+          type: string
+        max_percent_send:
+          title: |-
+            MaxPercentSend defines the threshold for outflows
+            The threshold is defined as a percentage (e.g. 10 indicates 10%)
+          type: string
+      title: Quota defines the rate limit thresholds for transfer packets
+      type: object
+    ibc.applications.rate_limiting.v1.RateLimit:
+      properties:
+        flow:
+          description: Flow tracks all the inflows and outflows of a channel.
+          properties:
+            channel_value:
+              title: >-
+                ChannelValue stores the total supply of the denom at the start
+                of
+
+                the rate limit. This is used as the denominator when checking
+
+                the rate limit threshold
+
+                The ChannelValue is fixed for the duration of the rate limit
+                window
+              type: string
+            inflow:
+              title: >-
+                Inflow defines the total amount of inbound transfers for the
+                given
+
+                rate limit in the current window
+              type: string
+            outflow:
+              title: >-
+                Outflow defines the total amount of outbound transfers for the
+                given
+
+                rate limit in the current window
+              type: string
+          type: object
+        path:
+          properties:
+            channel_or_client_id:
+              type: string
+            denom:
+              type: string
+          title: >-
+            Path holds the denom and channelID that define the rate limited
+            route
+          type: object
+        quota:
+          properties:
+            duration_hours:
+              format: uint64
+              title: >-
+                DurationHours specifies the number of hours before the rate
+                limit
+
+                is reset (e.g. 24 indicates that the rate limit is reset each
+                day)
+              type: string
+            max_percent_recv:
+              title: |-
+                MaxPercentSend defines the threshold for inflows
+                The threshold is defined as a percentage (e.g. 10 indicates 10%)
+              type: string
+            max_percent_send:
+              title: |-
+                MaxPercentSend defines the threshold for outflows
+                The threshold is defined as a percentage (e.g. 10 indicates 10%)
+              type: string
+          title: Quota defines the rate limit thresholds for transfer packets
+          type: object
+      title: |-
+        RateLimit stores all the context about a given rate limit, including
+        the relevant denom and channel, rate limit thresholds, and current
+        progress towards the limits
+      type: object
+    ibc.applications.rate_limiting.v1.WhitelistedAddressPair:
+      properties:
+        receiver:
+          type: string
+        sender:
+          type: string
+      title: |-
+        WhitelistedAddressPair represents a sender-receiver combo that is
+        not subject to rate limit restrictions
       type: object
     ibc.applications.transfer.v1.Denom:
       description: >-
@@ -18915,7 +20250,14 @@ components:
             type: object
           type: array
         pagination:
-          description: pagination defines the pagination in the response.
+          description: |-
+            PageResponse is to be embedded in gRPC response messages where the
+            corresponding request message has used PageRequest.
+
+             message SomeResponse {
+                     repeated Bar results = 1;
+                     PageResponse page = 2;
+             }
           properties:
             next_key:
               description: |-
@@ -22568,8 +23910,85 @@ components:
         value:
           type: string
       type: object
+    tendermint.abci.ExecTxResult:
+      description: >-
+        ExecTxResult contains results of executing one individual transaction.
+
+
+        * Its structure is equivalent to #ResponseDeliverTx which will be
+        deprecated/deleted
+      properties:
+        code:
+          format: int64
+          type: integer
+        codespace:
+          type: string
+        data:
+          format: byte
+          type: string
+        events:
+          items:
+            description: >-
+              Event allows application developers to attach additional
+              information to
+
+              ResponseFinalizeBlock and ResponseCheckTx.
+
+              Later, transactions may be queried using these events.
+            properties:
+              attributes:
+                items:
+                  description: >-
+                    EventAttribute is a single key-value pair, associated with
+                    an event.
+                  properties:
+                    index:
+                      type: boolean
+                    key:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type: array
+              type:
+                type: string
+            type: object
+          type: array
+        gas_used:
+          format: int64
+          type: string
+        gas_wanted:
+          format: int64
+          type: string
+        info:
+          type: string
+        log:
+          type: string
+      type: object
+    tendermint.abci.ValidatorUpdate:
+      properties:
+        power:
+          format: int64
+          type: string
+        pub_key:
+          properties:
+            bls12381:
+              format: byte
+              type: string
+            ed25519:
+              format: byte
+              type: string
+            secp256k1:
+              format: byte
+              type: string
+          title: PublicKey defines the keys available for use with Validators
+          type: object
+      type: object
     tendermint.crypto.PublicKey:
       properties:
+        bls12381:
+          format: byte
+          type: string
         ed25519:
           format: byte
           type: string
@@ -22663,6 +24082,18 @@ components:
             to the application to use when proposing a block during
             PrepareProposal.
           format: int64
+          type: string
+      type: object
+    tendermint.types.AuthorityParams:
+      description: >-
+        AuthorityParams holds an opaque authority string to be configured and
+
+        interpreted by the application for authorizing parameter changes outside
+        of
+
+        governance. CometBFT only enforces a maximum length.
+      properties:
+        authority:
           type: string
       type: object
     tendermint.types.Block:
@@ -22879,6 +24310,9 @@ components:
                               type: string
                             pub_key:
                               properties:
+                                bls12381:
+                                  format: byte
+                                  type: string
                                 ed25519:
                                   format: byte
                                   type: string
@@ -23052,6 +24486,9 @@ components:
                                     type: string
                                   pub_key:
                                     properties:
+                                      bls12381:
+                                        format: byte
+                                        type: string
                                       ed25519:
                                         format: byte
                                         type: string
@@ -23080,6 +24517,9 @@ components:
                                       type: string
                                     pub_key:
                                       properties:
+                                        bls12381:
+                                          format: byte
+                                          type: string
                                         ed25519:
                                           format: byte
                                           type: string
@@ -23393,6 +24833,19 @@ components:
                 to the application to use when proposing a block during
                 PrepareProposal.
               format: int64
+              type: string
+          type: object
+        authority:
+          description: >-
+            AuthorityParams holds an opaque authority string to be configured
+            and
+
+            interpreted by the application for authorizing parameter changes
+            outside of
+
+            governance. CometBFT only enforces a maximum length.
+          properties:
+            authority:
               type: string
           type: object
         block:
@@ -23838,6 +25291,9 @@ components:
                     type: string
                   pub_key:
                     properties:
+                      bls12381:
+                        format: byte
+                        type: string
                       ed25519:
                         format: byte
                         type: string
@@ -24007,6 +25463,9 @@ components:
                           type: string
                         pub_key:
                           properties:
+                            bls12381:
+                              format: byte
+                              type: string
                             ed25519:
                               format: byte
                               type: string
@@ -24035,6 +25494,9 @@ components:
                             type: string
                           pub_key:
                             properties:
+                              bls12381:
+                                format: byte
+                                type: string
                               ed25519:
                                 format: byte
                                 type: string
@@ -24256,6 +25718,9 @@ components:
                           type: string
                         pub_key:
                           properties:
+                            bls12381:
+                              format: byte
+                              type: string
                             ed25519:
                               format: byte
                               type: string
@@ -24425,6 +25890,9 @@ components:
                                 type: string
                               pub_key:
                                 properties:
+                                  bls12381:
+                                    format: byte
+                                    type: string
                                   ed25519:
                                     format: byte
                                     type: string
@@ -24453,6 +25921,9 @@ components:
                                   type: string
                                 pub_key:
                                   properties:
+                                    bls12381:
+                                      format: byte
+                                      type: string
                                     ed25519:
                                       format: byte
                                       type: string
@@ -24743,6 +26214,9 @@ components:
                   type: string
                 pub_key:
                   properties:
+                    bls12381:
+                      format: byte
+                      type: string
                     ed25519:
                       format: byte
                       type: string
@@ -24769,6 +26243,9 @@ components:
                     type: string
                   pub_key:
                     properties:
+                      bls12381:
+                        format: byte
+                        type: string
                       ed25519:
                         format: byte
                         type: string
@@ -24802,6 +26279,9 @@ components:
                 type: string
               pub_key:
                 properties:
+                  bls12381:
+                    format: byte
+                    type: string
                   ed25519:
                     format: byte
                     type: string
@@ -24967,6 +26447,9 @@ components:
                       type: string
                     pub_key:
                       properties:
+                        bls12381:
+                          format: byte
+                          type: string
                         ed25519:
                           format: byte
                           type: string
@@ -24995,6 +26478,9 @@ components:
                         type: string
                       pub_key:
                         properties:
+                          bls12381:
+                            format: byte
+                            type: string
                           ed25519:
                             format: byte
                             type: string
@@ -25185,6 +26671,9 @@ components:
           type: string
         pub_key:
           properties:
+            bls12381:
+              format: byte
+              type: string
             ed25519:
               format: byte
               type: string
@@ -25219,6 +26708,9 @@ components:
               type: string
             pub_key:
               properties:
+                bls12381:
+                  format: byte
+                  type: string
                 ed25519:
                   format: byte
                   type: string
@@ -25245,6 +26737,9 @@ components:
                 type: string
               pub_key:
                 properties:
+                  bls12381:
+                    format: byte
+                    type: string
                   ed25519:
                     format: byte
                     type: string
@@ -28627,6 +30122,615 @@ paths:
         a valid and supported path, including app, custom, p2p, and store.
       tags:
         - cosmos/base/tendermint
+  /cosmos/base/tendermint/v1beta1/block_results/latest:
+    get:
+      operationId: GetLatestBlockResults
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  GetLatestBlockResultsResponse is the response type for the
+                  Query/GetLatestBlockResults RPC method.
+                properties:
+                  app_hash:
+                    description: app_hash is the app hash after processing this block.
+                    format: byte
+                    type: string
+                  consensus_param_updates:
+                    description: >-
+                      consensus_param_updates contains any consensus parameter
+                      updates for this block.
+                    properties:
+                      abci:
+                        description: >-
+                          ABCIParams configure functionality specific to the
+                          Application Blockchain Interface.
+                        properties:
+                          vote_extensions_enable_height:
+                            description: >-
+                              vote_extensions_enable_height configures the first
+                              height during which
+
+                              vote extensions will be enabled. During this
+                              specified height, and for all
+
+                              subsequent heights, precommit messages that do not
+                              contain valid extension data
+
+                              will be considered invalid. Prior to this height,
+                              vote extensions will not
+
+                              be used or accepted by validators on the network.
+
+
+                              Once enabled, vote extensions will be created by
+                              the application in ExtendVote,
+
+                              passed to the application for validation in
+                              VerifyVoteExtension and given
+
+                              to the application to use when proposing a block
+                              during PrepareProposal.
+                            format: int64
+                            type: string
+                        type: object
+                      authority:
+                        description: >-
+                          AuthorityParams holds an opaque authority string to be
+                          configured and
+
+                          interpreted by the application for authorizing
+                          parameter changes outside of
+
+                          governance. CometBFT only enforces a maximum length.
+                        properties:
+                          authority:
+                            type: string
+                        type: object
+                      block:
+                        description: BlockParams contains limits on the block size.
+                        properties:
+                          max_bytes:
+                            format: int64
+                            title: |-
+                              Max block size, in bytes.
+                              Note: must be greater than 0
+                            type: string
+                          max_gas:
+                            format: int64
+                            title: |-
+                              Max gas per block.
+                              Note: must be greater or equal to -1
+                            type: string
+                        type: object
+                      evidence:
+                        description: >-
+                          EvidenceParams determine how we handle evidence of
+                          malfeasance.
+                        properties:
+                          max_age_duration:
+                            description: >-
+                              Max age of evidence, in time.
+
+
+                              It should correspond with an app's "unbonding
+                              period" or other similar
+
+                              mechanism for handling [Nothing-At-Stake
+
+                              attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+                            type: string
+                          max_age_num_blocks:
+                            description: >-
+                              Max age of evidence, in blocks.
+
+
+                              The basic formula for calculating this is:
+                              MaxAgeDuration / {average block
+
+                              time}.
+                            format: int64
+                            type: string
+                          max_bytes:
+                            format: int64
+                            title: >-
+                              This sets the maximum size of total evidence in
+                              bytes that can be committed in a single block.
+
+                              and should fall comfortably under the max block
+                              bytes.
+
+                              Default is 1048576 or 1MB
+                            type: string
+                        type: object
+                      validator:
+                        description: >-
+                          ValidatorParams restrict the public key types
+                          validators can use.
+
+                          NOTE: uses ABCI pubkey naming, not Amino names.
+                        properties:
+                          pub_key_types:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      version:
+                        description: VersionParams contains the ABCI application version.
+                        properties:
+                          app:
+                            format: uint64
+                            type: string
+                        type: object
+                    type: object
+                  finalize_block_events:
+                    description: >-
+                      finalize_block_events contains consensus-level events
+                      emitted during block
+
+                      finalization, including slashing, jailing, and validator
+                      set updates.
+                    items:
+                      description: >-
+                        Event allows application developers to attach additional
+                        information to
+
+                        ResponseFinalizeBlock and ResponseCheckTx.
+
+                        Later, transactions may be queried using these events.
+                      properties:
+                        attributes:
+                          items:
+                            description: >-
+                              EventAttribute is a single key-value pair,
+                              associated with an event.
+                            properties:
+                              index:
+                                type: boolean
+                              key:
+                                type: string
+                              value:
+                                type: string
+                            type: object
+                          type: array
+                        type:
+                          type: string
+                      type: object
+                    type: array
+                  height:
+                    description: height is the block height.
+                    format: int64
+                    type: string
+                  txs_results:
+                    description: >-
+                      txs_results contains the results of each transaction
+                      execution.
+                    items:
+                      description: >-
+                        ExecTxResult contains results of executing one
+                        individual transaction.
+
+
+                        * Its structure is equivalent to #ResponseDeliverTx
+                        which will be deprecated/deleted
+                      properties:
+                        code:
+                          format: int64
+                          type: integer
+                        codespace:
+                          type: string
+                        data:
+                          format: byte
+                          type: string
+                        events:
+                          items:
+                            description: >-
+                              Event allows application developers to attach
+                              additional information to
+
+                              ResponseFinalizeBlock and ResponseCheckTx.
+
+                              Later, transactions may be queried using these
+                              events.
+                            properties:
+                              attributes:
+                                items:
+                                  description: >-
+                                    EventAttribute is a single key-value pair,
+                                    associated with an event.
+                                  properties:
+                                    index:
+                                      type: boolean
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              type:
+                                type: string
+                            type: object
+                          type: array
+                        gas_used:
+                          format: int64
+                          type: string
+                        gas_wanted:
+                          format: int64
+                          type: string
+                        info:
+                          type: string
+                        log:
+                          type: string
+                      type: object
+                    type: array
+                  validator_updates:
+                    description: >-
+                      validator_updates contains the validator updates for this
+                      block.
+                    items:
+                      properties:
+                        power:
+                          format: int64
+                          type: string
+                        pub_key:
+                          properties:
+                            bls12381:
+                              format: byte
+                              type: string
+                            ed25519:
+                              format: byte
+                              type: string
+                            secp256k1:
+                              format: byte
+                              type: string
+                          title: >-
+                            PublicKey defines the keys available for use with
+                            Validators
+                          type: object
+                      type: object
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: >-
+        GetLatestBlockResults returns the block results for the latest block.
+
+        Block results contain finalize_block_events which include
+        consensus-level
+
+        events like slashing, jailing, and validator set updates.
+      tags:
+        - cosmos/base/tendermint
+  /cosmos/base/tendermint/v1beta1/block_results/{height}:
+    get:
+      operationId: GetBlockResults
+      parameters:
+        - in: path
+          name: height
+          required: true
+          schema:
+            format: int64
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  GetBlockResultsResponse is the response type for the
+                  Query/GetBlockResults RPC method.
+                properties:
+                  app_hash:
+                    description: app_hash is the app hash after processing this block.
+                    format: byte
+                    type: string
+                  consensus_param_updates:
+                    description: >-
+                      consensus_param_updates contains any consensus parameter
+                      updates for this block.
+                    properties:
+                      abci:
+                        description: >-
+                          ABCIParams configure functionality specific to the
+                          Application Blockchain Interface.
+                        properties:
+                          vote_extensions_enable_height:
+                            description: >-
+                              vote_extensions_enable_height configures the first
+                              height during which
+
+                              vote extensions will be enabled. During this
+                              specified height, and for all
+
+                              subsequent heights, precommit messages that do not
+                              contain valid extension data
+
+                              will be considered invalid. Prior to this height,
+                              vote extensions will not
+
+                              be used or accepted by validators on the network.
+
+
+                              Once enabled, vote extensions will be created by
+                              the application in ExtendVote,
+
+                              passed to the application for validation in
+                              VerifyVoteExtension and given
+
+                              to the application to use when proposing a block
+                              during PrepareProposal.
+                            format: int64
+                            type: string
+                        type: object
+                      authority:
+                        description: >-
+                          AuthorityParams holds an opaque authority string to be
+                          configured and
+
+                          interpreted by the application for authorizing
+                          parameter changes outside of
+
+                          governance. CometBFT only enforces a maximum length.
+                        properties:
+                          authority:
+                            type: string
+                        type: object
+                      block:
+                        description: BlockParams contains limits on the block size.
+                        properties:
+                          max_bytes:
+                            format: int64
+                            title: |-
+                              Max block size, in bytes.
+                              Note: must be greater than 0
+                            type: string
+                          max_gas:
+                            format: int64
+                            title: |-
+                              Max gas per block.
+                              Note: must be greater or equal to -1
+                            type: string
+                        type: object
+                      evidence:
+                        description: >-
+                          EvidenceParams determine how we handle evidence of
+                          malfeasance.
+                        properties:
+                          max_age_duration:
+                            description: >-
+                              Max age of evidence, in time.
+
+
+                              It should correspond with an app's "unbonding
+                              period" or other similar
+
+                              mechanism for handling [Nothing-At-Stake
+
+                              attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+                            type: string
+                          max_age_num_blocks:
+                            description: >-
+                              Max age of evidence, in blocks.
+
+
+                              The basic formula for calculating this is:
+                              MaxAgeDuration / {average block
+
+                              time}.
+                            format: int64
+                            type: string
+                          max_bytes:
+                            format: int64
+                            title: >-
+                              This sets the maximum size of total evidence in
+                              bytes that can be committed in a single block.
+
+                              and should fall comfortably under the max block
+                              bytes.
+
+                              Default is 1048576 or 1MB
+                            type: string
+                        type: object
+                      validator:
+                        description: >-
+                          ValidatorParams restrict the public key types
+                          validators can use.
+
+                          NOTE: uses ABCI pubkey naming, not Amino names.
+                        properties:
+                          pub_key_types:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      version:
+                        description: VersionParams contains the ABCI application version.
+                        properties:
+                          app:
+                            format: uint64
+                            type: string
+                        type: object
+                    type: object
+                  finalize_block_events:
+                    description: >-
+                      finalize_block_events contains consensus-level events
+                      emitted during block
+
+                      finalization, including slashing, jailing, and validator
+                      set updates.
+                    items:
+                      description: >-
+                        Event allows application developers to attach additional
+                        information to
+
+                        ResponseFinalizeBlock and ResponseCheckTx.
+
+                        Later, transactions may be queried using these events.
+                      properties:
+                        attributes:
+                          items:
+                            description: >-
+                              EventAttribute is a single key-value pair,
+                              associated with an event.
+                            properties:
+                              index:
+                                type: boolean
+                              key:
+                                type: string
+                              value:
+                                type: string
+                            type: object
+                          type: array
+                        type:
+                          type: string
+                      type: object
+                    type: array
+                  height:
+                    description: height is the block height.
+                    format: int64
+                    type: string
+                  txs_results:
+                    description: >-
+                      txs_results contains the results of each transaction
+                      execution.
+                    items:
+                      description: >-
+                        ExecTxResult contains results of executing one
+                        individual transaction.
+
+
+                        * Its structure is equivalent to #ResponseDeliverTx
+                        which will be deprecated/deleted
+                      properties:
+                        code:
+                          format: int64
+                          type: integer
+                        codespace:
+                          type: string
+                        data:
+                          format: byte
+                          type: string
+                        events:
+                          items:
+                            description: >-
+                              Event allows application developers to attach
+                              additional information to
+
+                              ResponseFinalizeBlock and ResponseCheckTx.
+
+                              Later, transactions may be queried using these
+                              events.
+                            properties:
+                              attributes:
+                                items:
+                                  description: >-
+                                    EventAttribute is a single key-value pair,
+                                    associated with an event.
+                                  properties:
+                                    index:
+                                      type: boolean
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              type:
+                                type: string
+                            type: object
+                          type: array
+                        gas_used:
+                          format: int64
+                          type: string
+                        gas_wanted:
+                          format: int64
+                          type: string
+                        info:
+                          type: string
+                        log:
+                          type: string
+                      type: object
+                    type: array
+                  validator_updates:
+                    description: >-
+                      validator_updates contains the validator updates for this
+                      block.
+                    items:
+                      properties:
+                        power:
+                          format: int64
+                          type: string
+                        pub_key:
+                          properties:
+                            bls12381:
+                              format: byte
+                              type: string
+                            ed25519:
+                              format: byte
+                              type: string
+                            secp256k1:
+                              format: byte
+                              type: string
+                          title: >-
+                            PublicKey defines the keys available for use with
+                            Validators
+                          type: object
+                      type: object
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: GetBlockResults queries block results for given height.
+      tags:
+        - cosmos/base/tendermint
   /cosmos/base/tendermint/v1beta1/blocks/latest:
     get:
       operationId: GetLatestBlock
@@ -28858,6 +30962,9 @@ paths:
                                             type: string
                                           pub_key:
                                             properties:
+                                              bls12381:
+                                                format: byte
+                                                type: string
                                               ed25519:
                                                 format: byte
                                                 type: string
@@ -29033,6 +31140,9 @@ paths:
                                                   type: string
                                                 pub_key:
                                                   properties:
+                                                    bls12381:
+                                                      format: byte
+                                                      type: string
                                                     ed25519:
                                                       format: byte
                                                       type: string
@@ -29061,6 +31171,9 @@ paths:
                                                     type: string
                                                   pub_key:
                                                     properties:
+                                                      bls12381:
+                                                        format: byte
+                                                        type: string
                                                       ed25519:
                                                         format: byte
                                                         type: string
@@ -29465,6 +31578,9 @@ paths:
                                             type: string
                                           pub_key:
                                             properties:
+                                              bls12381:
+                                                format: byte
+                                                type: string
                                               ed25519:
                                                 format: byte
                                                 type: string
@@ -29640,6 +31756,9 @@ paths:
                                                   type: string
                                                 pub_key:
                                                   properties:
+                                                    bls12381:
+                                                      format: byte
+                                                      type: string
                                                     ed25519:
                                                       format: byte
                                                       type: string
@@ -29668,6 +31787,9 @@ paths:
                                                     type: string
                                                   pub_key:
                                                     properties:
+                                                      bls12381:
+                                                        format: byte
+                                                        type: string
                                                       ed25519:
                                                         format: byte
                                                         type: string
@@ -30106,6 +32228,9 @@ paths:
                                             type: string
                                           pub_key:
                                             properties:
+                                              bls12381:
+                                                format: byte
+                                                type: string
                                               ed25519:
                                                 format: byte
                                                 type: string
@@ -30281,6 +32406,9 @@ paths:
                                                   type: string
                                                 pub_key:
                                                   properties:
+                                                    bls12381:
+                                                      format: byte
+                                                      type: string
                                                     ed25519:
                                                       format: byte
                                                       type: string
@@ -30309,6 +32437,9 @@ paths:
                                                     type: string
                                                   pub_key:
                                                     properties:
+                                                      bls12381:
+                                                        format: byte
+                                                        type: string
                                                       ed25519:
                                                         format: byte
                                                         type: string
@@ -30713,6 +32844,9 @@ paths:
                                             type: string
                                           pub_key:
                                             properties:
+                                              bls12381:
+                                                format: byte
+                                                type: string
                                               ed25519:
                                                 format: byte
                                                 type: string
@@ -30888,6 +33022,9 @@ paths:
                                                   type: string
                                                 pub_key:
                                                   properties:
+                                                    bls12381:
+                                                      format: byte
+                                                      type: string
                                                     ed25519:
                                                       format: byte
                                                       type: string
@@ -30916,6 +33053,9 @@ paths:
                                                     type: string
                                                   pub_key:
                                                     properties:
+                                                      bls12381:
+                                                        format: byte
+                                                        type: string
                                                       ed25519:
                                                         format: byte
                                                         type: string
@@ -31239,6 +33379,18 @@ paths:
                   GetSyncingResponse is the response type for the
                   Query/GetSyncing RPC method.
                 properties:
+                  earliest_block_height:
+                    description: >-
+                      earliest_block_height is the earliest block height
+                      available on this node.
+                    format: int64
+                    type: string
+                  latest_block_height:
+                    description: >-
+                      latest_block_height is the latest block height available
+                      on this node.
+                    format: int64
+                    type: string
                   syncing:
                     type: boolean
                 type: object
@@ -31643,6 +33795,19 @@ paths:
                             format: int64
                             type: string
                         type: object
+                      authority:
+                        description: >-
+                          AuthorityParams holds an opaque authority string to be
+                          configured and
+
+                          interpreted by the application for authorizing
+                          parameter changes outside of
+
+                          governance. CometBFT only enforces a maximum length.
+                        properties:
+                          authority:
+                            type: string
+                        type: object
                       block:
                         description: BlockParams contains limits on the block size.
                         properties:
@@ -31771,7 +33936,7 @@ paths:
                         decimal amount.
 
 
-                        NOTE: The amount field is an Dec which implements the
+                        NOTE: The amount field is a Dec which implements the
                         custom method
 
                         signatures required by gogoproto.
@@ -31846,7 +34011,7 @@ paths:
                               decimal amount.
 
 
-                              NOTE: The amount field is an Dec which implements
+                              NOTE: The amount field is a Dec which implements
                               the custom method
 
                               signatures required by gogoproto.
@@ -31869,7 +34034,7 @@ paths:
                         decimal amount.
 
 
-                        NOTE: The amount field is an Dec which implements the
+                        NOTE: The amount field is a Dec which implements the
                         custom method
 
                         signatures required by gogoproto.
@@ -31944,7 +34109,7 @@ paths:
                         decimal amount.
 
 
-                        NOTE: The amount field is an Dec which implements the
+                        NOTE: The amount field is a Dec which implements the
                         custom method
 
                         signatures required by gogoproto.
@@ -31982,6 +34147,74 @@ paths:
                 type: object
           description: An unexpected error response.
       summary: DelegationRewards queries the total rewards accrued by a delegation.
+      tags:
+        - cosmos/distribution/v1beta1
+  /cosmos/distribution/v1beta1/delegators/{delegator_address}/starting_info/{validator_address}:
+    get:
+      operationId: DelegatorStartingInfo
+      parameters:
+        - description: delegator_address defines the delegator address to query for.
+          in: path
+          name: delegator_address
+          required: true
+          schema:
+            type: string
+        - description: validator_address defines the validator address to query for.
+          in: path
+          name: validator_address
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryDelegatorStartingInfoResponse is the response type for
+                  the
+
+                  Query/DelegatorStartingInfo RPC method.
+                properties:
+                  starting_info:
+                    description: starting_info defines the starting info of a delegator.
+                    properties:
+                      height:
+                        format: uint64
+                        type: string
+                      previous_period:
+                        format: uint64
+                        type: string
+                      stake:
+                        type: string
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: DelegatorStartingInfo queries the starting info for a delegator.
       tags:
         - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/delegators/{delegator_address}/validators:
@@ -32184,7 +34417,7 @@ paths:
                         decimal amount.
 
 
-                        NOTE: The amount field is an Dec which implements the
+                        NOTE: The amount field is a Dec which implements the
                         custom method
 
                         signatures required by gogoproto.
@@ -32206,7 +34439,7 @@ paths:
                         decimal amount.
 
 
-                        NOTE: The amount field is an Dec which implements the
+                        NOTE: The amount field is a Dec which implements the
                         custom method
 
                         signatures required by gogoproto.
@@ -32274,8 +34507,8 @@ paths:
                             decimal amount.
 
 
-                            NOTE: The amount field is an Dec which implements
-                            the custom method
+                            NOTE: The amount field is a Dec which implements the
+                            custom method
 
                             signatures required by gogoproto.
                           properties:
@@ -32318,6 +34551,186 @@ paths:
       summary: ValidatorCommission queries accumulated commission for a validator.
       tags:
         - cosmos/distribution/v1beta1
+  /cosmos/distribution/v1beta1/validators/{validator_address}/current_rewards:
+    get:
+      operationId: ValidatorCurrentRewards
+      parameters:
+        - description: validator_address defines the validator address to query for.
+          in: path
+          name: validator_address
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryValidatorCurrentRewardsResponse is the response type for
+                  the
+
+                  Query/ValidatorCurrentRewards RPC method.
+                properties:
+                  rewards:
+                    description: rewards defines the current rewards of a validator.
+                    properties:
+                      period:
+                        format: uint64
+                        type: string
+                      rewards:
+                        items:
+                          description: >-
+                            DecCoin defines a token with a denomination and a
+                            decimal amount.
+
+
+                            NOTE: The amount field is a Dec which implements the
+                            custom method
+
+                            signatures required by gogoproto.
+                          properties:
+                            amount:
+                              type: string
+                            denom:
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: ValidatorCurrentRewards queries current rewards for a validator.
+      tags:
+        - cosmos/distribution/v1beta1
+  /cosmos/distribution/v1beta1/validators/{validator_address}/historical_rewards/{period}:
+    get:
+      operationId: ValidatorHistoricalRewards
+      parameters:
+        - description: validator_address defines the validator address to query for.
+          in: path
+          name: validator_address
+          required: true
+          schema:
+            type: string
+        - description: period defines the period to query historical rewards for.
+          in: path
+          name: period
+          required: true
+          schema:
+            format: uint64
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryValidatorHistoricalRewardsResponse is the response type
+                  for the
+
+                  Query/ValidatorHistoricalRewards RPC method.
+                properties:
+                  rewards:
+                    description: rewards defines the historical rewards of a validator.
+                    properties:
+                      cumulative_reward_ratio:
+                        items:
+                          description: >-
+                            DecCoin defines a token with a denomination and a
+                            decimal amount.
+
+
+                            NOTE: The amount field is a Dec which implements the
+                            custom method
+
+                            signatures required by gogoproto.
+                          properties:
+                            amount:
+                              type: string
+                            denom:
+                              type: string
+                          type: object
+                        type: array
+                      reference_count:
+                        format: int64
+                        type: integer
+                    title: >-
+                      ValidatorHistoricalRewards represents historical rewards
+                      for a validator.
+
+                      Height is implicit within the store key.
+
+                      Cumulative reward ratio is the sum from the zeroeth period
+
+                      until this period of rewards / tokens, per the spec.
+
+                      The reference count indicates the number of objects
+
+                      which might need to reference this historical entry at any
+                      point.
+
+                      ReferenceCount =
+                         number of outstanding delegations which ended the associated period (and
+                         might need to read that record)
+                       + number of slashes which ended the associated period (and might need to
+                       read that record)
+                       + one per validator for the zeroeth period, set on initialization
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: >-
+        ValidatorHistoricalRewards queries historical rewards for a validator at
+        a specific period.
+      tags:
+        - cosmos/distribution/v1beta1
   /cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards:
     get:
       operationId: ValidatorOutstandingRewards
@@ -32354,8 +34767,8 @@ paths:
                             decimal amount.
 
 
-                            NOTE: The amount field is an Dec which implements
-                            the custom method
+                            NOTE: The amount field is a Dec which implements the
+                            custom method
 
                             signatures required by gogoproto.
                           properties:
@@ -33439,6 +35852,13 @@ paths:
           schema:
             format: int64
             type: string
+        - description: state overrides encoded as json.
+          in: query
+          name: overrides
+          required: false
+          schema:
+            format: byte
+            type: string
       responses:
         '200':
           content:
@@ -33524,6 +35944,13 @@ paths:
           schema:
             format: int64
             type: string
+        - description: state overrides encoded as json.
+          in: query
+          name: overrides
+          required: false
+          schema:
+            format: byte
+            type: string
       responses:
         '200':
           content:
@@ -33533,6 +35960,14 @@ paths:
                   MsgEthereumTxResponse defines the Msg/EthereumTx response
                   type.
                 properties:
+                  block_hash:
+                    format: byte
+                    title: include the block hash for json-rpc to use
+                    type: string
+                  block_timestamp:
+                    format: uint64
+                    title: include the block timestamp for json-rpc to use
+                    type: string
                   gas_used:
                     format: uint64
                     title: >-
@@ -33544,7 +35979,7 @@ paths:
                       hash of the ethereum transaction in hex format. This hash
                       differs from the
 
-                      Tendermint sha256 hash of the transaction bytes. See
+                      CometBFT sha256 hash of the transaction bytes. See
 
                       https://github.com/tendermint/tendermint/issues/6539 for
                       reference
@@ -33586,6 +36021,12 @@ paths:
                             block_number of the block in which the transaction
                             was included
                           type: string
+                        block_timestamp:
+                          format: uint64
+                          title: >-
+                            block_timestamp is the timestamp of the block in
+                            which the transaction was
+                          type: string
                         data:
                           format: byte
                           title: >-
@@ -33620,6 +36061,14 @@ paths:
                           type: string
                       type: object
                     type: array
+                  max_used_gas:
+                    format: uint64
+                    title: >-
+                      max_used_gas specifies the gas consumed by the
+                      transaction, not including
+
+                      refunds
+                    type: string
                   ret:
                     format: byte
                     title: >-
@@ -33822,14 +36271,6 @@ paths:
 
                           precompiled contracts that are active
                         type: array
-                      allow_unprotected_txs:
-                        description: >-
-                          allow_unprotected_txs defines if replay-protected (i.e
-                          non EIP155
-
-                          signed) transactions can be executed on the state
-                          machine.
-                        type: boolean
                       evm_channels:
                         items:
                           type: string
@@ -33844,6 +36285,11 @@ paths:
 
                           transitions.
                         type: string
+                      extended_denom_options:
+                        properties:
+                          extended_denom:
+                            type: string
+                        type: object
                       extra_eips:
                         items:
                           format: int64
@@ -33852,6 +36298,9 @@ paths:
                           extra_eips defines the additional EIPs for the
                           vm.Config
                         type: array
+                      history_serve_window:
+                        format: uint64
+                        type: string
                     title: Params defines the EVM module parameters
                     type: object
                 type: object
@@ -34299,100 +36748,389 @@ paths:
         `debug_traceBlockByHash` rpc api
       tags:
         - cosmos/evm/vm
+  /cosmos/evm/vm/v1/trace_call:
+    get:
+      operationId: TraceCall
+      parameters:
+        - description: args uses the same json format as the json rpc api.
+          in: query
+          name: args
+          required: false
+          schema:
+            format: byte
+            type: string
+        - description: gas_cap defines the default gas cap to be used.
+          in: query
+          name: gas_cap
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: proposer_address of the requested block in hex format.
+          in: query
+          name: proposer_address
+          required: false
+          schema:
+            format: byte
+            type: string
+        - description: tracer is a custom javascript tracer.
+          in: query
+          name: trace_config.tracer
+          required: false
+          schema:
+            type: string
+        - description: >-
+            timeout overrides the default timeout of 5 seconds for
+            JavaScript-based
+
+            tracing calls.
+          in: query
+          name: trace_config.timeout
+          required: false
+          schema:
+            type: string
+        - description: >-
+            reexec defines the number of blocks the tracer is willing to go
+            back.
+          in: query
+          name: trace_config.reexec
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: disable_stack switches stack capture.
+          in: query
+          name: trace_config.disable_stack
+          required: false
+          schema:
+            type: boolean
+        - description: disable_storage switches storage capture.
+          in: query
+          name: trace_config.disable_storage
+          required: false
+          schema:
+            type: boolean
+        - description: debug can be used to print output during capture end.
+          in: query
+          name: trace_config.debug
+          required: false
+          schema:
+            type: boolean
+        - description: >-
+            limit defines the maximum length of output, but zero means
+            unlimited.
+          in: query
+          name: trace_config.limit
+          required: false
+          schema:
+            format: int32
+            type: integer
+        - description: homestead_block switch (nil no fork, 0 = already homestead).
+          in: query
+          name: trace_config.overrides.homestead_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            dao_fork_block corresponds to TheDAO hard-fork switch block (nil no
+            fork).
+          in: query
+          name: trace_config.overrides.dao_fork_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            dao_fork_support defines whether the nodes supports or opposes the
+            DAO
+
+            hard-fork.
+          in: query
+          name: trace_config.overrides.dao_fork_support
+          required: false
+          schema:
+            type: boolean
+        - description: >-
+            eip150_block: EIP150 implements the Gas price changes
+
+            (https://github.com/ethereum/EIPs/issues/150) EIP150 HF block (nil
+            no fork).
+          in: query
+          name: trace_config.overrides.eip150_block
+          required: false
+          schema:
+            type: string
+        - description: 'eip155_block: EIP155Block HF block.'
+          in: query
+          name: trace_config.overrides.eip155_block
+          required: false
+          schema:
+            type: string
+        - description: 'eip158_block: EIP158 HF block.'
+          in: query
+          name: trace_config.overrides.eip158_block
+          required: false
+          schema:
+            type: string
+        - description: |-
+            byzantium_block: Byzantium switch block (nil no fork, 0 = already on
+            byzantium).
+          in: query
+          name: trace_config.overrides.byzantium_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            constantinople_block: Constantinople switch block (nil no fork, 0 =
+            already
+
+            activated).
+          in: query
+          name: trace_config.overrides.constantinople_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            petersburg_block: Petersburg switch block (nil same as
+            Constantinople).
+          in: query
+          name: trace_config.overrides.petersburg_block
+          required: false
+          schema:
+            type: string
+        - description: |-
+            istanbul_block: Istanbul switch block (nil no fork, 0 = already on
+            istanbul).
+          in: query
+          name: trace_config.overrides.istanbul_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork,
+            0 =
+
+            already activated).
+          in: query
+          name: trace_config.overrides.muir_glacier_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            berlin_block: Berlin switch block (nil = no fork, 0 = already on
+            berlin).
+          in: query
+          name: trace_config.overrides.berlin_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            london_block: London switch block (nil = no fork, 0 = already on
+            london).
+          in: query
+          name: trace_config.overrides.london_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no
+            fork, 0 =
+
+            already activated).
+          in: query
+          name: trace_config.overrides.arrow_glacier_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no
+            fork, 0 =
+
+            already activated).
+          in: query
+          name: trace_config.overrides.gray_glacier_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            merge_netsplit_block: Virtual fork after The Merge to use as a
+            network
+
+            splitter.
+          in: query
+          name: trace_config.overrides.merge_netsplit_block
+          required: false
+          schema:
+            type: string
+        - description: chain_id is the id of the chain (EIP-155).
+          in: query
+          name: trace_config.overrides.chain_id
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: denom is the denomination used on the EVM.
+          in: query
+          name: trace_config.overrides.denom
+          required: false
+          schema:
+            type: string
+        - description: >-
+            decimals is the real decimal precision of the denomination used on
+            the EVM.
+          in: query
+          name: trace_config.overrides.decimals
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: |-
+            shanghai_time: Shanghai switch time (nil = no fork, 0 = already on
+            shanghai).
+          in: query
+          name: trace_config.overrides.shanghai_time
+          required: false
+          schema:
+            type: string
+        - description: >-
+            cancun_time: Cancun switch time (nil = no fork, 0 = already on
+            cancun).
+          in: query
+          name: trace_config.overrides.cancun_time
+          required: false
+          schema:
+            type: string
+        - description: >-
+            prague_time: Prague switch time (nil = no fork, 0 = already on
+            prague).
+          in: query
+          name: trace_config.overrides.prague_time
+          required: false
+          schema:
+            type: string
+        - description: >-
+            verkle_time: Verkle switch time (nil = no fork, 0 = already on
+            verkle).
+          in: query
+          name: trace_config.overrides.verkle_time
+          required: false
+          schema:
+            type: string
+        - description: 'osaka_time: Osaka switch time (nil = no fork, 0 = already on osaka).'
+          in: query
+          name: trace_config.overrides.osaka_time
+          required: false
+          schema:
+            type: string
+        - description: enable_memory switches memory capture.
+          in: query
+          name: trace_config.enable_memory
+          required: false
+          schema:
+            type: boolean
+        - description: enable_return_data switches the capture of return data.
+          in: query
+          name: trace_config.enable_return_data
+          required: false
+          schema:
+            type: boolean
+        - description: tracer_json_config configures the tracer using a JSON string.
+          in: query
+          name: trace_config.tracer_json_config
+          required: false
+          schema:
+            type: string
+        - description: block_number of requested transaction.
+          in: query
+          name: block_number
+          required: false
+          schema:
+            format: int64
+            type: string
+        - description: block_hash of requested transaction.
+          in: query
+          name: block_hash
+          required: false
+          schema:
+            type: string
+        - description: block_time of requested transaction.
+          in: query
+          name: block_time
+          required: false
+          schema:
+            format: date-time
+            type: string
+        - description: >-
+            chain_id is the the eip155 chain id parsed from the requested block
+            header.
+          in: query
+          name: chain_id
+          required: false
+          schema:
+            format: int64
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    format: byte
+                    title: data is the response serialized in bytes
+                    type: string
+                title: QueryTraceCallResponse defines TraceCall response
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: TraceCall implements the `debug_traceCall` rpc api
+      tags:
+        - cosmos/evm/vm
   /cosmos/evm/vm/v1/trace_tx:
     get:
       operationId: TraceTx
       parameters:
         - description: >-
-            A URL/resource name that uniquely identifies the type of the
-            serialized
+            from is the bytes of ethereum signer address. This address value is
+            checked
 
-            protocol buffer message. This string must contain at least
-
-            one "/" character. The last segment of the URL's path must represent
-
-            the fully qualified name of the type (as in
-
-            `path/google.protobuf.Duration`). The name should be in a canonical
-            form
-
-            (e.g., leading "." is not accepted).
-
-
-            In practice, teams usually precompile into the binary all types that
-            they
-
-            expect it to use in the context of Any. However, for URLs which use
-            the
-
-            scheme `http`, `https`, or no scheme, one can optionally set up a
-            type
-
-            server that maps type URLs to message definitions as follows:
-
-
-            * If no scheme is provided, `https` is assumed.
-
-            * An HTTP GET on the URL must yield a [google.protobuf.Type][]
-              value in binary format, or produce an error.
-            * Applications are allowed to cache lookup results based on the
-              URL, or have them precompiled into a binary to avoid any
-              lookup. Therefore, binary compatibility needs to be preserved
-              on changes to types. (Use versioned type names to manage
-              breaking changes.)
-
-            Note: this functionality is not currently available in the official
-
-            protobuf release, and it is not used for type URLs beginning with
-
-            type.googleapis.com. As of May 2023, there are no widely used type
-            server
-
-            implementations and no plans to implement one.
-
-
-            Schemes other than `http`, `https` (or the empty scheme) might be
-
-            used with implementation specific semantics.
-          in: query
-          name: msg.data.type_url
-          required: false
-          schema:
-            type: string
-        - description: >-
-            Must be a valid serialized protocol buffer of the above specified
-            type.
-          in: query
-          name: msg.data.value
-          required: false
-          schema:
-            format: byte
-            type: string
-        - description: size is the encoded storage size of the transaction (DEPRECATED).
-          in: query
-          name: msg.size
-          required: false
-          schema:
-            format: double
-            type: number
-        - description: hash of the transaction in hex format.
-          in: query
-          name: msg.hash
-          required: false
-          schema:
-            type: string
-        - description: >-
-            from is the ethereum signer address in hex format. This address
-            value is
-
-            checked against the address derived from the signature (V, R, S)
-            using the
+            against the address derived from the signature (V, R, S) using the
 
             secp256k1 elliptic curve.
           in: query
           name: msg.from
           required: false
           schema:
+            format: byte
+            type: string
+        - description: raw is the raw ethereum transaction.
+          in: query
+          name: msg.raw
+          required: false
+          schema:
+            format: byte
             type: string
         - description: tracer is a custom javascript tracer.
           in: query
@@ -34838,7 +37576,7 @@ paths:
                   Query/Allowance RPC method.
                 properties:
                   allowance:
-                    description: allowance is a allowance granted for grantee by granter.
+                    description: allowance is an allowance granted for grantee by granter.
                     properties:
                       allowance:
                         description: >-
@@ -34891,7 +37629,7 @@ paths:
                     type: string
                 type: object
           description: An unexpected error response.
-      summary: Allowance returns granted allwance to the grantee by the granter.
+      summary: Allowance returns granted allowance to the grantee by the granter.
       tags:
         - cosmos/feegrant/v1beta1
   /cosmos/feegrant/v1beta1/allowances/{grantee}:
@@ -35001,7 +37739,7 @@ paths:
                       type: object
                     type: array
                   pagination:
-                    description: pagination defines an pagination for the response.
+                    description: pagination defines a pagination for the response.
                     properties:
                       next_key:
                         description: >-
@@ -35158,7 +37896,7 @@ paths:
                       type: object
                     type: array
                   pagination:
-                    description: pagination defines an pagination for the response.
+                    description: pagination defines a pagination for the response.
                     properties:
                       next_key:
                         description: >-
@@ -35307,7 +38045,7 @@ paths:
                         type: array
                     type: object
                   params:
-                    description: params defines all the paramaters of x/gov module.
+                    description: params defines all the parameters of x/gov module.
                     properties:
                       burn_proposal_deposit_prevote:
                         title: >-
@@ -35710,7 +38448,7 @@ paths:
                             https://docs.cosmos.network/v0.47/modules/gov#proposal-3
                           type: string
                         proposer:
-                          title: proposer is the address of the proposal sumbitter
+                          title: proposer is the address of the proposal submitter
                           type: string
                         status:
                           default: PROPOSAL_STATUS_UNSPECIFIED
@@ -35889,7 +38627,7 @@ paths:
                           https://docs.cosmos.network/v0.47/modules/gov#proposal-3
                         type: string
                       proposer:
-                        title: proposer is the address of the proposal sumbitter
+                        title: proposer is the address of the proposal submitter
                         type: string
                       status:
                         default: PROPOSAL_STATUS_UNSPECIFIED
@@ -37888,6 +40626,14 @@ paths:
                       inflation_rate_change:
                         title: maximum annual change in inflation rate
                         type: string
+                      max_supply:
+                        description: >-
+                          maximum supply for the token.
+
+
+                          A value of "0" indicates an unlimited (infinite)
+                          maximum supply.
+                        type: string
                       mint_denom:
                         title: type of coin to mint
                         type: string
@@ -39328,7 +42074,7 @@ paths:
                             format: uint64
                             type: string
                           title: >-
-                            list of unbonding ids, each uniquely identifing an
+                            list of unbonding ids, each uniquely identifying an
                             unbonding of this validator
                           type: array
                         unbonding_on_hold_ref_count:
@@ -39544,7 +42290,7 @@ paths:
                           format: uint64
                           type: string
                         title: >-
-                          list of unbonding ids, each uniquely identifing an
+                          list of unbonding ids, each uniquely identifying an
                           unbonding of this validator
                         type: array
                       unbonding_on_hold_ref_count:
@@ -39839,7 +42585,7 @@ paths:
                                 format: uint64
                                 type: string
                               title: >-
-                                list of unbonding ids, each uniquely identifing
+                                list of unbonding ids, each uniquely identifying
                                 an unbonding of this validator
                               type: array
                             unbonding_on_hold_ref_count:
@@ -40254,7 +43000,7 @@ paths:
                             format: uint64
                             type: string
                           title: >-
-                            list of unbonding ids, each uniquely identifing an
+                            list of unbonding ids, each uniquely identifying an
                             unbonding of this validator
                           type: array
                         unbonding_on_hold_ref_count:
@@ -40462,7 +43208,7 @@ paths:
                           format: uint64
                           type: string
                         title: >-
-                          list of unbonding ids, each uniquely identifing an
+                          list of unbonding ids, each uniquely identifying an
                           unbonding of this validator
                         type: array
                       unbonding_on_hold_ref_count:
@@ -44232,6 +46978,9 @@ paths:
                                             type: string
                                           pub_key:
                                             properties:
+                                              bls12381:
+                                                format: byte
+                                                type: string
                                               ed25519:
                                                 format: byte
                                                 type: string
@@ -44407,6 +47156,9 @@ paths:
                                                   type: string
                                                 pub_key:
                                                   properties:
+                                                    bls12381:
+                                                      format: byte
+                                                      type: string
                                                     ed25519:
                                                       format: byte
                                                       type: string
@@ -44435,6 +47187,9 @@ paths:
                                                     type: string
                                                   pub_key:
                                                     properties:
+                                                      bls12381:
+                                                        format: byte
+                                                        type: string
                                                       ed25519:
                                                         format: byte
                                                         type: string
@@ -46148,6 +48903,82 @@ paths:
         (https://github.com/cosmos/ibc-go/blob/2c880a22e9f9cc75f62b527ca94aa75ce1106001/proto/ibc/core/client/v1/query.proto#L54)
       tags:
         - cosmos/upgrade/v1beta1
+  /cosmwasm/wasm/v1/build_address:
+    get:
+      operationId: BuildAddress
+      parameters:
+        - description: CodeHash is the hash of the code.
+          in: query
+          name: code_hash
+          required: false
+          schema:
+            type: string
+        - description: CreatorAddress is the address of the contract instantiator.
+          in: query
+          name: creator_address
+          required: false
+          schema:
+            type: string
+        - description: Salt is a hex encoded salt.
+          in: query
+          name: salt
+          required: false
+          schema:
+            type: string
+        - description: >-
+            InitArgs are optional json encoded init args to be used in contract
+            address
+
+            building if provided.
+          in: query
+          name: init_args
+          required: false
+          schema:
+            format: byte
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryBuildAddressResponse is the response type for the
+                  Query/BuildAddress RPC
+
+                  method.
+                properties:
+                  address:
+                    title: Address is the contract address
+                    type: string
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: BuildAddress builds a contract address
+      tags:
+        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/code:
     get:
       operationId: Codes
@@ -46842,82 +49673,6 @@ paths:
       summary: PinnedCodes gets the pinned code ids
       tags:
         - cosmwasm/wasm/v1
-  /cosmwasm/wasm/v1/contract/build_address:
-    get:
-      operationId: BuildAddress
-      parameters:
-        - description: CodeHash is the hash of the code.
-          in: query
-          name: code_hash
-          required: false
-          schema:
-            type: string
-        - description: CreatorAddress is the address of the contract instantiator.
-          in: query
-          name: creator_address
-          required: false
-          schema:
-            type: string
-        - description: Salt is a hex encoded salt.
-          in: query
-          name: salt
-          required: false
-          schema:
-            type: string
-        - description: >-
-            InitArgs are optional json encoded init args to be used in contract
-            address
-
-            building if provided.
-          in: query
-          name: init_args
-          required: false
-          schema:
-            format: byte
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: >-
-                  QueryBuildAddressResponse is the response type for the
-                  Query/BuildAddress RPC
-
-                  method.
-                properties:
-                  address:
-                    title: Address is the contract address
-                    type: string
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    format: int32
-                    type: integer
-                  details:
-                    items:
-                      properties:
-                        type_url:
-                          type: string
-                        value:
-                          format: byte
-                          type: string
-                      type: object
-                    type: array
-                  error:
-                    type: string
-                  message:
-                    type: string
-                type: object
-          description: An unexpected error response.
-      summary: BuildAddress builds a contract address
-      tags:
-        - cosmwasm/wasm/v1
   /cosmwasm/wasm/v1/contract/{address}:
     get:
       operationId: ContractInfo
@@ -46986,6 +49741,8 @@ paths:
                             format: byte
                             type: string
                         type: object
+                      ibc2_port_id:
+                        type: string
                       ibc_port_id:
                         type: string
                       label:
@@ -47680,6 +50437,137 @@ paths:
         files, encoded in JSON.
       tags:
         - cosmwasm/wasm/v1
+  /ibc/apps/gmp/v1/accounts/{account_address}/identifier:
+    get:
+      operationId: AccountIdentifier
+      parameters:
+        - in: path
+          name: account_address
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryAccountIdentifierResponse is the response type for
+                  querying the account identifier by account address.
+                properties:
+                  account_id:
+                    description: AccountIdentifier is used to identify a ICS27 account.
+                    properties:
+                      client_id:
+                        title: The (local) client identifier
+                        type: string
+                      salt:
+                        format: byte
+                        title: The salt of the packet
+                        type: string
+                      sender:
+                        title: The sender of the packet
+                        type: string
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: >-
+        AccountIdentifier queries the account identifier for a given interchain
+        account address.
+      tags:
+        - ibc/apps/gmp
+  /ibc/apps/gmp/v1/clients/{client_id}/accounts/{sender}/{salt}:
+    get:
+      operationId: AccountAddress
+      parameters:
+        - description: The (local) client identifier
+          in: path
+          name: client_id
+          required: true
+          schema:
+            type: string
+        - description: The sender of the packet
+          in: path
+          name: sender
+          required: true
+          schema:
+            type: string
+        - description: The salt of the packet (in hex format)
+          in: path
+          name: salt
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryAccountAddressResponse is the response type for the
+                  Query/AccountAddress RPC method.
+                properties:
+                  account_address:
+                    title: The interchain account address
+                    type: string
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: >-
+        AccountAddress queries the interchain account address for a given
+        client_id, sender, and salt.
+
+        If the account is not registered, the address is computed
+        deterministically
+      tags:
+        - ibc/apps/gmp
   /ibc/apps/interchain_accounts/controller/v1/owners/{owner}/connections/{connection_id}:
     get:
       operationId: InterchainAccount
@@ -47841,6 +50729,635 @@ paths:
       summary: Params queries all parameters of the ICA host submodule.
       tags:
         - ibc/apps/interchain_accounts
+  /ibc/apps/rate-limiting/v1/ratelimit/blacklisted_denoms:
+    get:
+      operationId: AllBlacklistedDenoms
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryAllBlacklistedDenomsResponse returns all the blacklisted
+                  denosm.
+                properties:
+                  denoms:
+                    items:
+                      type: string
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Queries all blacklisted denoms
+      tags:
+        - ibc/apps/rate-limiting
+  /ibc/apps/rate-limiting/v1/ratelimit/ratelimit/{channel_or_client_id}/by_denom:
+    get:
+      operationId: RateLimit
+      parameters:
+        - in: path
+          name: channel_or_client_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: denom
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryRateLimitResponse returns a rate limit by denom and
+                  channel_or_client_id combination.
+                properties:
+                  rate_limit:
+                    properties:
+                      flow:
+                        description: Flow tracks all the inflows and outflows of a channel.
+                        properties:
+                          channel_value:
+                            title: >-
+                              ChannelValue stores the total supply of the denom
+                              at the start of
+
+                              the rate limit. This is used as the denominator
+                              when checking
+
+                              the rate limit threshold
+
+                              The ChannelValue is fixed for the duration of the
+                              rate limit window
+                            type: string
+                          inflow:
+                            title: >-
+                              Inflow defines the total amount of inbound
+                              transfers for the given
+
+                              rate limit in the current window
+                            type: string
+                          outflow:
+                            title: >-
+                              Outflow defines the total amount of outbound
+                              transfers for the given
+
+                              rate limit in the current window
+                            type: string
+                        type: object
+                      path:
+                        properties:
+                          channel_or_client_id:
+                            type: string
+                          denom:
+                            type: string
+                        title: >-
+                          Path holds the denom and channelID that define the
+                          rate limited route
+                        type: object
+                      quota:
+                        properties:
+                          duration_hours:
+                            format: uint64
+                            title: >-
+                              DurationHours specifies the number of hours before
+                              the rate limit
+
+                              is reset (e.g. 24 indicates that the rate limit is
+                              reset each day)
+                            type: string
+                          max_percent_recv:
+                            title: >-
+                              MaxPercentSend defines the threshold for inflows
+
+                              The threshold is defined as a percentage (e.g. 10
+                              indicates 10%)
+                            type: string
+                          max_percent_send:
+                            title: >-
+                              MaxPercentSend defines the threshold for outflows
+
+                              The threshold is defined as a percentage (e.g. 10
+                              indicates 10%)
+                            type: string
+                        title: >-
+                          Quota defines the rate limit thresholds for transfer
+                          packets
+                        type: object
+                    title: >-
+                      RateLimit stores all the context about a given rate limit,
+                      including
+
+                      the relevant denom and channel, rate limit thresholds, and
+                      current
+
+                      progress towards the limits
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: |-
+        Queries a specific rate limit by channel ID and denom
+        Ex:
+         - /ratelimit/{channel_or_client_id}/by_denom?denom={denom}
+      tags:
+        - ibc/apps/rate-limiting
+  /ibc/apps/rate-limiting/v1/ratelimit/ratelimits/{chain_id}:
+    get:
+      operationId: RateLimitsByChainID
+      parameters:
+        - in: path
+          name: chain_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryRateLimitsByChainIDResponse returns all rate-limits by a
+                  chain.
+                properties:
+                  rate_limits:
+                    items:
+                      properties:
+                        flow:
+                          description: >-
+                            Flow tracks all the inflows and outflows of a
+                            channel.
+                          properties:
+                            channel_value:
+                              title: >-
+                                ChannelValue stores the total supply of the
+                                denom at the start of
+
+                                the rate limit. This is used as the denominator
+                                when checking
+
+                                the rate limit threshold
+
+                                The ChannelValue is fixed for the duration of
+                                the rate limit window
+                              type: string
+                            inflow:
+                              title: >-
+                                Inflow defines the total amount of inbound
+                                transfers for the given
+
+                                rate limit in the current window
+                              type: string
+                            outflow:
+                              title: >-
+                                Outflow defines the total amount of outbound
+                                transfers for the given
+
+                                rate limit in the current window
+                              type: string
+                          type: object
+                        path:
+                          properties:
+                            channel_or_client_id:
+                              type: string
+                            denom:
+                              type: string
+                          title: >-
+                            Path holds the denom and channelID that define the
+                            rate limited route
+                          type: object
+                        quota:
+                          properties:
+                            duration_hours:
+                              format: uint64
+                              title: >-
+                                DurationHours specifies the number of hours
+                                before the rate limit
+
+                                is reset (e.g. 24 indicates that the rate limit
+                                is reset each day)
+                              type: string
+                            max_percent_recv:
+                              title: >-
+                                MaxPercentSend defines the threshold for inflows
+
+                                The threshold is defined as a percentage (e.g.
+                                10 indicates 10%)
+                              type: string
+                            max_percent_send:
+                              title: >-
+                                MaxPercentSend defines the threshold for
+                                outflows
+
+                                The threshold is defined as a percentage (e.g.
+                                10 indicates 10%)
+                              type: string
+                          title: >-
+                            Quota defines the rate limit thresholds for transfer
+                            packets
+                          type: object
+                      title: >-
+                        RateLimit stores all the context about a given rate
+                        limit, including
+
+                        the relevant denom and channel, rate limit thresholds,
+                        and current
+
+                        progress towards the limits
+                      type: object
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Queries all the rate limits for a given chain
+      tags:
+        - ibc/apps/rate-limiting
+  /ibc/apps/rate-limiting/v1/ratelimit/ratelimits/{channel_or_client_id}:
+    get:
+      operationId: RateLimitsByChannelOrClientID
+      parameters:
+        - in: path
+          name: channel_or_client_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryRateLimitsByChannelOrClientIDResponse returns all
+                  rate-limits by a channel or client id.
+                properties:
+                  rate_limits:
+                    items:
+                      properties:
+                        flow:
+                          description: >-
+                            Flow tracks all the inflows and outflows of a
+                            channel.
+                          properties:
+                            channel_value:
+                              title: >-
+                                ChannelValue stores the total supply of the
+                                denom at the start of
+
+                                the rate limit. This is used as the denominator
+                                when checking
+
+                                the rate limit threshold
+
+                                The ChannelValue is fixed for the duration of
+                                the rate limit window
+                              type: string
+                            inflow:
+                              title: >-
+                                Inflow defines the total amount of inbound
+                                transfers for the given
+
+                                rate limit in the current window
+                              type: string
+                            outflow:
+                              title: >-
+                                Outflow defines the total amount of outbound
+                                transfers for the given
+
+                                rate limit in the current window
+                              type: string
+                          type: object
+                        path:
+                          properties:
+                            channel_or_client_id:
+                              type: string
+                            denom:
+                              type: string
+                          title: >-
+                            Path holds the denom and channelID that define the
+                            rate limited route
+                          type: object
+                        quota:
+                          properties:
+                            duration_hours:
+                              format: uint64
+                              title: >-
+                                DurationHours specifies the number of hours
+                                before the rate limit
+
+                                is reset (e.g. 24 indicates that the rate limit
+                                is reset each day)
+                              type: string
+                            max_percent_recv:
+                              title: >-
+                                MaxPercentSend defines the threshold for inflows
+
+                                The threshold is defined as a percentage (e.g.
+                                10 indicates 10%)
+                              type: string
+                            max_percent_send:
+                              title: >-
+                                MaxPercentSend defines the threshold for
+                                outflows
+
+                                The threshold is defined as a percentage (e.g.
+                                10 indicates 10%)
+                              type: string
+                          title: >-
+                            Quota defines the rate limit thresholds for transfer
+                            packets
+                          type: object
+                      title: >-
+                        RateLimit stores all the context about a given rate
+                        limit, including
+
+                        the relevant denom and channel, rate limit thresholds,
+                        and current
+
+                        progress towards the limits
+                      type: object
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Queries all the rate limits for a given channel ID
+      tags:
+        - ibc/apps/rate-limiting
+  /ibc/apps/rate-limiting/v1/ratelimit/whitelisted_addresses:
+    get:
+      operationId: AllWhitelistedAddresses
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryAllWhitelistedAddressesResponse returns all whitelisted
+                  pairs.
+                properties:
+                  address_pairs:
+                    items:
+                      properties:
+                        receiver:
+                          type: string
+                        sender:
+                          type: string
+                      title: >-
+                        WhitelistedAddressPair represents a sender-receiver
+                        combo that is
+
+                        not subject to rate limit restrictions
+                      type: object
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Queries all whitelisted address pairs
+      tags:
+        - ibc/apps/rate-limiting
+  /ibc/apps/rate-limiting/v1/ratelimits:
+    get:
+      operationId: AllRateLimits
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryAllRateLimitsResponse returns all the rate limits stored
+                  on the chain.
+                properties:
+                  rate_limits:
+                    items:
+                      properties:
+                        flow:
+                          description: >-
+                            Flow tracks all the inflows and outflows of a
+                            channel.
+                          properties:
+                            channel_value:
+                              title: >-
+                                ChannelValue stores the total supply of the
+                                denom at the start of
+
+                                the rate limit. This is used as the denominator
+                                when checking
+
+                                the rate limit threshold
+
+                                The ChannelValue is fixed for the duration of
+                                the rate limit window
+                              type: string
+                            inflow:
+                              title: >-
+                                Inflow defines the total amount of inbound
+                                transfers for the given
+
+                                rate limit in the current window
+                              type: string
+                            outflow:
+                              title: >-
+                                Outflow defines the total amount of outbound
+                                transfers for the given
+
+                                rate limit in the current window
+                              type: string
+                          type: object
+                        path:
+                          properties:
+                            channel_or_client_id:
+                              type: string
+                            denom:
+                              type: string
+                          title: >-
+                            Path holds the denom and channelID that define the
+                            rate limited route
+                          type: object
+                        quota:
+                          properties:
+                            duration_hours:
+                              format: uint64
+                              title: >-
+                                DurationHours specifies the number of hours
+                                before the rate limit
+
+                                is reset (e.g. 24 indicates that the rate limit
+                                is reset each day)
+                              type: string
+                            max_percent_recv:
+                              title: >-
+                                MaxPercentSend defines the threshold for inflows
+
+                                The threshold is defined as a percentage (e.g.
+                                10 indicates 10%)
+                              type: string
+                            max_percent_send:
+                              title: >-
+                                MaxPercentSend defines the threshold for
+                                outflows
+
+                                The threshold is defined as a percentage (e.g.
+                                10 indicates 10%)
+                              type: string
+                          title: >-
+                            Quota defines the rate limit thresholds for transfer
+                            packets
+                          type: object
+                      title: >-
+                        RateLimit stores all the context about a given rate
+                        limit, including
+
+                        the relevant denom and channel, rate limit thresholds,
+                        and current
+
+                        progress towards the limits
+                      type: object
+                    type: array
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Queries all rate limits
+      tags:
+        - ibc/apps/rate-limiting
   /ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address:
     get:
       operationId: EscrowAddress
@@ -48054,7 +51571,16 @@ paths:
                       type: object
                     type: array
                   pagination:
-                    description: pagination defines the pagination in the response.
+                    description: >-
+                      PageResponse is to be embedded in gRPC response messages
+                      where the
+
+                      corresponding request message has used PageRequest.
+
+                       message SomeResponse {
+                               repeated Bar results = 1;
+                               PageResponse page = 2;
+                       }
                     properties:
                       next_key:
                         description: >-
