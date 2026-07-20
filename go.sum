@@ -1134,8 +1134,8 @@ github.com/wlynxg/anet v0.0.3/go.mod h1:eay5PRQr7fIVAMbTbchTnO9gG65Hg/uYGdc7mguH
 github.com/wlynxg/anet v0.0.5 h1:J3VJGi1gvo0JwZ/P1/Yc/8p63SoW98B5dHkYDmpgvvU=
 github.com/wlynxg/anet v0.0.5/go.mod h1:eay5PRQr7fIVAMbTbchTnO9gG65Hg/uYGdc7mguHxoA=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232 h1:+qcl4PuNhgo5FlXlr/Jm780jdejVrVnrR66Llty0wIU=
-github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232/go.mod h1:Unt21RO+q1EebU6gcUPKYVzpAQSr4KIHjaOmjpz2twA=
+github.com/xpladev/cosmos-sdk v0.54.3-xpla h1:lIX5Np1A01jCXqvMCuoFj/RNLZ9EJDtL7jRE5H51LG0=
+github.com/xpladev/cosmos-sdk v0.54.3-xpla/go.mod h1:Unt21RO+q1EebU6gcUPKYVzpAQSr4KIHjaOmjpz2twA=
 github.com/xpladev/go-ethereum v1.17.2-cosmos-0-xpla-0 h1:K4mkBqFPKJ7baFsaI9pWBh51qIncmRzOUpcKFnEk1vg=
 github.com/xpladev/go-ethereum v1.17.2-cosmos-0-xpla-0/go.mod h1:KHcRXfGOUfUmKg51IhQ0IowiqZ6PqZf08CMtk0g5K1o=
 github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1 h1:0sIH6/K1pE+75byzNDE3BoQ9gdl3KCfjeaAS6DSjnUg=
