@@ -276,8 +276,6 @@ github.com/cosmos/cosmos-sdk/store/v2 v2.0.0 h1:5CFXBU5cHIvxMpz5QBrTwR5DL/W3uZL2
 github.com/cosmos/cosmos-sdk/store/v2 v2.0.0/go.mod h1:XyRyi5fGjIcokBqS1cyA8/QVbVNy4ui8hmpk1gezuHo=
 github.com/cosmos/go-bip39 v1.0.0 h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=
 github.com/cosmos/go-bip39 v1.0.0/go.mod h1:RNJv0H/pOIVgxw6KS7QeX2a0Uo0aKUlfhZ4xuwvCdJw=
-github.com/cosmos/go-ethereum v1.17.2-cosmos-0 h1:V1vadF7/miUwwbNh3iiqNM51aHAG/5mzRCeIdcdostw=
-github.com/cosmos/go-ethereum v1.17.2-cosmos-0/go.mod h1:KHcRXfGOUfUmKg51IhQ0IowiqZ6PqZf08CMtk0g5K1o=
 github.com/cosmos/gogogateway v1.2.0 h1:Ae/OivNhp8DqBi/sh2A8a1D0y638GpL3tkmLQAiKxTE=
 github.com/cosmos/gogogateway v1.2.0/go.mod h1:iQpLkGWxYcnCdz5iAdLcRBSw3h7NXeOkZ4GUkT+tbFI=
 github.com/cosmos/gogoproto v1.4.2/go.mod h1:cLxOsn1ljAHSV527CHOtaIP91kK6cCrZETRBrkzItWU=
@@ -1138,6 +1136,8 @@ github.com/wlynxg/anet v0.0.5/go.mod h1:eay5PRQr7fIVAMbTbchTnO9gG65Hg/uYGdc7mguH
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232 h1:+qcl4PuNhgo5FlXlr/Jm780jdejVrVnrR66Llty0wIU=
 github.com/xpladev/cosmos-sdk v0.0.0-20260528091638-2c4822cc7232/go.mod h1:Unt21RO+q1EebU6gcUPKYVzpAQSr4KIHjaOmjpz2twA=
+github.com/xpladev/go-ethereum v1.17.2-cosmos-0-xpla-0 h1:K4mkBqFPKJ7baFsaI9pWBh51qIncmRzOUpcKFnEk1vg=
+github.com/xpladev/go-ethereum v1.17.2-cosmos-0-xpla-0/go.mod h1:KHcRXfGOUfUmKg51IhQ0IowiqZ6PqZf08CMtk0g5K1o=
 github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1 h1:0sIH6/K1pE+75byzNDE3BoQ9gdl3KCfjeaAS6DSjnUg=
 github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1/go.mod h1:WrM2xEa8koYoH2DgeIuZXNarF7FGuZl3mrIOnp3Dp0o=
 github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 h1:gEOO8jv9F4OT7lGCjxCBTO/36wtF6j2nSip77qHd4x4=
