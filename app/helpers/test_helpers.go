@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	sdkmath "cosmossdk.io/math"
 
 	"github.com/stretchr/testify/require"
@@ -26,8 +26,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
@@ -135,7 +133,6 @@ func setup(chainid string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 	app := xplaapp.NewXplaApp(
 		log.NewNopLogger(),
 		db,
-		nil,
 		true,
 		map[int64]bool{},
 		xplaapp.DefaultNodeHome,
@@ -143,7 +140,7 @@ func setup(chainid string) (*xplaapp.XplaApp, xplaapp.GenesisState) {
 		emptyWasmOpts,
 		baseapp.SetChainID(chainid),
 	)
-	return app, app.ModuleBasics.DefaultGenesis(app.AppCodec())
+	return app, app.DefaultGenesis()
 }
 
 func genesisStateWithValSet(t *testing.T,
@@ -182,9 +179,11 @@ func genesisStateWithValSet(t *testing.T,
 		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), sdk.ValAddress(val.Address).String(), sdkmath.LegacyOneDec()))
 
 	}
-	// set validators and delegations
-	stakingGenesis := stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
-	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
+	var stakingGenesis stakingtypes.GenesisState
+	app.AppCodec().MustUnmarshalJSON(genesisState[stakingtypes.ModuleName], &stakingGenesis)
+	stakingGenesis.Validators = validators
+	stakingGenesis.Delegations = delegations
+	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
 
 	totalSupply := sdk.NewCoins()
 	for _, b := range balances {
@@ -230,11 +229,6 @@ func genesisStateWithValSet(t *testing.T,
 	// update total supply
 	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, metadata, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
-
-	// evm
-	evmGenesis := evmtypes.DefaultGenesisState()
-	evmGenesis.Params.EvmDenom = "axpla"
-	genesisState[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 
 	return genesisState
 }

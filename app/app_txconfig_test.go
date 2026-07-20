@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -56,7 +56,6 @@ func newTestApp(t *testing.T) *XplaApp {
 	return NewXplaApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
-		nil,
 		true,
 		map[int64]bool{},
 		home,

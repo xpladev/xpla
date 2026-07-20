@@ -103,13 +103,29 @@ sed -i 's/"max_deposit_period": "[0-9]\+s"/"max_deposit_period": "4s"/' $XPLAHOM
 sed -i 's/"voting_period": "[0-9]\+s"/"voting_period": "4s"/' $XPLAHOME/config/genesis.json
 sed -i 's/"expedited_voting_period": "[0-9]\+s"/"expedited_voting_period": "3s"/' $XPLAHOME/config/genesis.json
 
-sed -i 's/"0x0000000000000000000000000000000000000800",//' $XPLAHOME/config/genesis.json
-sed -i 's/"0x0000000000000000000000000000000000000801",//' $XPLAHOME/config/genesis.json
-sed -i 's/"0x0000000000000000000000000000000000000802",//' $XPLAHOME/config/genesis.json
-sed -i 's/"0x0000000000000000000000000000000000000803"//' $XPLAHOME/config/genesis.json
-
-sed -i 's/"active_static_precompiles": \[\]/"active_static_precompiles": ["0x0000000000000000000000000000000000000800","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005","0x1000000000000000000000000000000000000044"]/g' $XPLAHOME/config/genesis.json
-sed -i 's/"denom_metadata": \[\]/"denom_metadata": [{"description":"The native staking token for xpla.","denom_units":[{"denom":"axpla","exponent":0,"aliases":["attoxpla"]},{"denom":"xpla","exponent":18,"aliases":[]}],"base":"axpla","display":"xpla","name":"Test XPLA Token","symbol":"XPLA","uri":"","uri_hash":""}]/g' $XPLAHOME/config/genesis.json
+awk '
+/"active_static_precompiles": \[/ {
+    print "    \"active_static_precompiles\": [\"0x0000000000000000000000000000000000000100\",\"0x0000000000000000000000000000000000000400\",\"0x0000000000000000000000000000000000000800\",\"0x0000000000000000000000000000000000000801\",\"0x0000000000000000000000000000000000000802\",\"0x0000000000000000000000000000000000000805\",\"0x0000000000000000000000000000000000000806\",\"0x0000000000000000000000000000000000000807\",\"0x1000000000000000000000000000000000000001\",\"0x1000000000000000000000000000000000000004\",\"0x1000000000000000000000000000000000000005\",\"0x1000000000000000000000000000000000000044\"],"
+    if ($0 !~ /\]/) {
+        while ((getline line) > 0 && line !~ /\]/) {}
+    }
+    next
+}
+{ print }
+' $XPLAHOME/config/genesis.json > $XPLAHOME/config/tmp_genesis.json && mv $XPLAHOME/config/tmp_genesis.json $XPLAHOME/config/genesis.json
+awk '
+/"denom_metadata": \[/ {
+    print "    \"denom_metadata\": [{\"description\":\"The native staking token for xpla.\",\"denom_units\":[{\"denom\":\"axpla\",\"exponent\":0,\"aliases\":[\"attoxpla\"]},{\"denom\":\"xpla\",\"exponent\":18,\"aliases\":[]}],\"base\":\"axpla\",\"display\":\"xpla\",\"name\":\"Test XPLA Token\",\"symbol\":\"XPLA\",\"uri\":\"\",\"uri_hash\":\"\"}],"
+    if ($0 !~ /\]/) {
+        depth = gsub(/\[/, "[") - gsub(/\]/, "]")
+        while (depth > 0 && (getline line) > 0) {
+            depth += gsub(/\[/, "[", line) - gsub(/\]/, "]", line)
+        }
+    }
+    next
+}
+{ print }
+' $XPLAHOME/config/genesis.json > $XPLAHOME/config/tmp_genesis.json && mv $XPLAHOME/config/tmp_genesis.json $XPLAHOME/config/genesis.json
 
 /usr/bin/xplad genesis validate-genesis --home $XPLAHOME
 

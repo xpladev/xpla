@@ -7,8 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	ibcchanneltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	ibcchanneltypes "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
 
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 

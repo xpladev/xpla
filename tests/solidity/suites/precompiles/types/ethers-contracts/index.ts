@@ -3,6 +3,8 @@
 /* eslint-disable */
 import type * as cosmos from './cosmos/index.js';
 export type { cosmos };
+import type * as test from './test/index.js';
+export type { test };
 import type * as xpla from './xpla/index.js';
 export type { xpla };
 export * as factories from './factories';
@@ -44,6 +46,10 @@ export type { Transferer } from './cosmos/testutil/contracts/Reverter.sol/Transf
 export { Transferer__factory } from './factories/cosmos/testutil/contracts/Reverter.sol/Transferer__factory';
 export type { StakingReverter } from './cosmos/testutil/contracts/StakingReverter';
 export { StakingReverter__factory } from './factories/cosmos/testutil/contracts/StakingReverter__factory';
+export type { BankXerc20DoubleSpendPoC } from './test/BankXerc20DoubleSpendPoC.sol/BankXerc20DoubleSpendPoC';
+export { BankXerc20DoubleSpendPoC__factory } from './factories/test/BankXerc20DoubleSpendPoC.sol/BankXerc20DoubleSpendPoC__factory';
+export type { PoCToken } from './test/BankXerc20DoubleSpendPoC.sol/PoCToken';
+export { PoCToken__factory } from './factories/test/BankXerc20DoubleSpendPoC.sol/PoCToken__factory';
 export type { IAuth } from './xpla/auth/IAuth';
 export { IAuth__factory } from './factories/xpla/auth/IAuth__factory';
 export type { IBank } from './xpla/bank/IBank';

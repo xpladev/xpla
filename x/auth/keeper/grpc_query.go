@@ -55,7 +55,7 @@ func (s queryServer) Account(ctx context.Context, req *types.QueryAccountRequest
 
 	any, err := codectypes.NewAnyWithValue(account)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryAccountResponse{Account: any}, nil
@@ -111,7 +111,7 @@ func (s queryServer) AccountInfo(ctx context.Context, req *types.QueryAccountInf
 	if pubKey != nil {
 		pkAny, err = codectypes.NewAnyWithValue(account.GetPubKey())
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 

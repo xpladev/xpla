@@ -37,19 +37,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	authtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.accountKeeper))
 
 	m := authkeeper.NewMigrator(am.accountKeeper.AccountKeeper, cfg.QueryServer(), am.legacySubspace)
-	if err := cfg.RegisterMigration(authtypes.ModuleName, 1, m.Migrate1to2); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 1 to 2: %v", authtypes.ModuleName, err))
-	}
-
-	if err := cfg.RegisterMigration(authtypes.ModuleName, 2, m.Migrate2to3); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 2 to 3: %v", authtypes.ModuleName, err))
-	}
-
-	if err := cfg.RegisterMigration(authtypes.ModuleName, 3, m.Migrate3to4); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 3 to 4: %v", authtypes.ModuleName, err))
-	}
-
-	if err := cfg.RegisterMigration(authtypes.ModuleName, 4, m.Migrate4To5); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 4 to 5", authtypes.ModuleName))
+	if err := cfg.RegisterMigration(authtypes.ModuleName, 5, m.Migrate5to6); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/%s from version 5 to 6: %v", authtypes.ModuleName, err))
 	}
 }

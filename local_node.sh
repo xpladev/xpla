@@ -234,7 +234,7 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
   jq ".app_state[\"gov\"][\"params\"][\"min_deposit\"][0][\"denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"gov\"][\"params\"][\"expedited_min_deposit\"][0][\"denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"evm\"][\"params\"][\"evm_denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["evm"]["params"]["active_static_precompiles"]=["0x0000000000000000000000000000000000000100","0x0000000000000000000000000000000000000400","0x0000000000000000000000000000000000000800","0x0000000000000000000000000000000000000801","0x0000000000000000000000000000000000000805","0x0000000000000000000000000000000000000806","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005", "0x1000000000000000000000000000000000000044"]' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+  jq '.app_state["evm"]["params"]["active_static_precompiles"]=["0x0000000000000000000000000000000000000100","0x0000000000000000000000000000000000000400","0x0000000000000000000000000000000000000800","0x0000000000000000000000000000000000000801","0x0000000000000000000000000000000000000802","0x0000000000000000000000000000000000000805","0x0000000000000000000000000000000000000806","0x0000000000000000000000000000000000000807","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005", "0x1000000000000000000000000000000000000044"]' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"mint\"][\"params\"][\"mint_denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"mint\"][\"params\"][\"inflation_rate_change\"]=\"0.0\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"mint\"][\"params\"][\"inflation_max\"]=\"0.0\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
@@ -250,7 +250,7 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
 
   jq '.consensus.params.block.max_gas="10000000"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
-  jq '.mint.minter.inflation="0.0"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+  jq '.app_state["mint"]["minter"]["inflation"]="0.0"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
   # Change proposal periods
   sed -i.bak 's/"max_deposit_period": "172800s"/"max_deposit_period": "30s"/g' "$GENESIS"
@@ -281,6 +281,7 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
   sed -i.bak 's/timeout_precommit_delta = "500ms"/timeout_precommit_delta = "200ms"/g' "$CONFIG_TOML"
   sed -i.bak 's/timeout_commit = "5s"/timeout_commit = "1s"/g' "$CONFIG_TOML"
   sed -i.bak 's/timeout_broadcast_tx_commit = "10s"/timeout_broadcast_tx_commit = "5s"/g' "$CONFIG_TOML"
+  sed -i.bak 's/type = "flood"/type = "app"/g' "$CONFIG_TOML"
 
   # enable prometheus metrics and all APIs for dev node
   sed -i.bak 's/prometheus = false/prometheus = true/' "$CONFIG_TOML"

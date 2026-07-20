@@ -40,7 +40,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 
 	app := xplahelpers.Setup(s.T(), chainId)
 
-	ctx := app.BaseApp.NewUncachedContext(false, tmproto.Header{
+	ctx := app.BaseApp.NewNextBlockContext(tmproto.Header{
 		ChainID: chainId,
 		Height:  1,
 	})

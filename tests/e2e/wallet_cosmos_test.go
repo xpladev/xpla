@@ -102,6 +102,10 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, isEVM bool) (string
 	defer w.Unlock()
 	var err error
 
+	if err := w.refreshSequenceLocked(); err != nil {
+		return "", err
+	}
+
 	txBuilder := w.EncCfg.TxConfig.NewTxBuilder()
 	txBuilder.SetMemo("")
 
@@ -205,7 +209,14 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, isEVM bool) (string
 		return "", err
 	}
 
-	w.Sequence += 1
+	if err := txCheck(txHash); err != nil {
+		_ = w.refreshSequenceLocked()
+		return txHash, err
+	}
+
+	if err := w.refreshSequenceLocked(); err != nil {
+		return txHash, err
+	}
 
 	return txHash, nil
 }
@@ -214,6 +225,10 @@ func (w *WalletInfo) RefreshSequence() error {
 	w.Lock()
 	defer w.Unlock()
 
+	return w.refreshSequenceLocked()
+}
+
+func (w *WalletInfo) refreshSequenceLocked() error {
 	accountNumber, seq, err := GetAccountNumber(desc.ServiceConn, w.ChainId, w.StringAddress)
 	if err != nil {
 		err = errors.Wrap(err, "RefreshSequence, get account info")

@@ -47,6 +47,34 @@ type Coin struct {
 	Amount *big.Int `json:"amount"`
 }
 
+var txPollInterval = time.Second / 5
+
+func retryUntil(maxAttempts int, delay time.Duration, fn func() (bool, error)) error {
+	var lastErr error
+	for i := 0; i < maxAttempts; i++ {
+		done, err := fn()
+		if done {
+			return nil
+		}
+		if err != nil {
+			lastErr = err
+		}
+		if delay > 0 && i+1 < maxAttempts {
+			time.Sleep(delay)
+		}
+	}
+
+	if lastErr != nil {
+		return lastErr
+	}
+
+	return fmt.Errorf("condition not met after %d attempts", maxAttempts)
+}
+
+func waitForProposalSequenceGap() {
+	time.Sleep(txPollInterval)
+}
+
 func walletSetup() (
 	userWallet1, userWallet2,
 	validatorWallet1, validatorWallet2, validatorWallet3, validatorWallet4, validatorWallet5,
@@ -216,24 +244,22 @@ func txCheck(txHash string) error {
 }
 
 func txCheckEvm(client *web3.Client, txHash common.Hash) (*commontypes.Receipt, error) {
-	var err error
-	var isPending bool
+	var lastErr error
 
 	for i := 0; i < 20; i++ {
 		res, err := client.TransactionReceipt(context.Background(), txHash)
 		if err == nil {
-
+			if res.Status != commontypes.ReceiptStatusSuccessful {
+				return res, fmt.Errorf("EVM tx failed: %s", txHash.String())
+			}
 			return res, nil
 		}
+		lastErr = err
 
 		time.Sleep(time.Second / 5)
 	}
 
-	if isPending {
-		return nil, fmt.Errorf("Pending tx : %s", txHash.String())
-	}
-
-	return nil, err
+	return nil, fmt.Errorf("EVM tx receipt not found for %s: %w", txHash.String(), lastErr)
 }
 
 func applyVoteTallyingProposal(conn *grpc.ClientConn, proposalMsgs []sdk.Msg, title, description string, proposerWallet *WalletInfo, voters []*WalletInfo) error {

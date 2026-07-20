@@ -12,6 +12,11 @@ make install
 make local-image
 ```
 
+## Upgrading
+
+See [UPGRADING.md](./UPGRADING.md) for release-specific state migrations and
+operator configuration changes.
+
 ## Test
 
 ### Unit test & Integration test
@@ -31,7 +36,7 @@ See detailed instructions in [Local e2e test](./tests/e2e/README.md)
 **Run test:**
 ```bash
 cd tests/e2e/multichain
-go test ./...
+go test -timeout 20m ./...
 ```
 
 ## License

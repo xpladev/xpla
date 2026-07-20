@@ -6,7 +6,7 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	sdkmath "cosmossdk.io/math"
 
 	dbm "github.com/cosmos/cosmos-db"
@@ -66,7 +66,6 @@ func CreateTestInput(t *testing.T) TestInput {
 	app := xplaApp.NewXplaApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
-		nil,
 		true,
 		map[int64]bool{},
 		xplaApp.DefaultNodeHome,
@@ -74,7 +73,7 @@ func CreateTestInput(t *testing.T) TestInput {
 		xplaApp.EmptyWasmOptions,
 	)
 
-	ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{Time: time.Now().UTC()})
+	ctx := app.BaseApp.NewNextBlockContext(tmproto.Header{Time: time.Now().UTC()})
 
 	// Params setting
 	keepers := app.AppKeepers

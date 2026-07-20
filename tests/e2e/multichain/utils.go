@@ -13,16 +13,17 @@ import (
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	interchaintest "github.com/cosmos/interchaintest/v10"
-	"github.com/cosmos/interchaintest/v10/chain/cosmos"
-	"github.com/cosmos/interchaintest/v10/chain/cosmos/wasm"
-	"github.com/cosmos/interchaintest/v10/ibc"
-	"github.com/cosmos/interchaintest/v10/testreporter"
+	interchaintest "github.com/cosmos/interchaintest/v11"
+	"github.com/cosmos/interchaintest/v11/chain/cosmos"
+	"github.com/cosmos/interchaintest/v11/chain/cosmos/wasm"
+	"github.com/cosmos/interchaintest/v11/ibc"
+	"github.com/cosmos/interchaintest/v11/testreporter"
 	"github.com/moby/moby/client"
 
 	"go.uber.org/zap/zaptest"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	ethenc "github.com/cosmos/evm/encoding/codec"
 
@@ -121,11 +122,10 @@ func XplaChainSpec(
 	burntypes.RegisterInterfaces(encoding.InterfaceRegistry)
 
 	return &interchaintest.ChainSpec{
-		Name:          "xpla_1",
+		ChainName:     "xpla_1",
 		NumValidators: &numValidators,
 		NumFullNodes:  &numFullNodes,
 		ChainConfig: ibc.ChainConfig{
-			Name:             "xpla_1",
 			Type:             "cosmos",
 			ChainID:          chainID,
 			Images:           version,
@@ -237,19 +237,25 @@ func StartXplaChainAndSimdWithIBC(t *testing.T, ctx context.Context, version []i
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
 		XplaChainSpec(1, 0, "xpla_1-1", version),
 		{
-			Name:    "ibc-go-simd",
-			Version: "v8.7.0",
+			ChainName: "ibc-go-simd",
 			ChainConfig: ibc.ChainConfig{
-				Name:           "ibc-go-simd",
-				Type:           "cosmos",
-				ChainID:        "ibc-go-simd-2",
-				Bin:            "simd",
-				Bech32Prefix:   "cosmos",
-				Denom:          "stake",
-				CoinType:       "118",
-				GasPrices:      "0.00stake",
-				GasAdjustment:  1.5,
-				TrustingPeriod: "168h0m0s",
+				Type:    "cosmos",
+				ChainID: "ibc-go-simd-2",
+				Images: []ibc.DockerImage{
+					{
+						Repository: "ghcr.io/strangelove-ventures/heighliner/ibc-go-simd",
+						Version:    "v8.7.0",
+						UIDGID:     "1025:1025",
+					},
+				},
+				Bin:              "simd",
+				Bech32Prefix:     "cosmos",
+				Denom:            "stake",
+				CoinType:         "118",
+				SigningAlgorithm: "secp256k1",
+				GasPrices:        "0.00stake",
+				GasAdjustment:    1.5,
+				TrustingPeriod:   "168h0m0s",
 			},
 			NumValidators: &numValidators,
 			NumFullNodes:  &numFullNodes,
@@ -261,7 +267,7 @@ func StartXplaChainAndSimdWithIBC(t *testing.T, ctx context.Context, version []i
 	xplaChain := chains[0].(*cosmos.CosmosChain)
 	ibcSimd := chains[1].(*cosmos.CosmosChain)
 
-	rf := interchaintest.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t))
+	rf := interchaintest.NewBuiltinRelayerFactory(ibc.Hermes, zaptest.NewLogger(t))
 	r := rf.Build(t, client, network)
 
 	ibcPathName := "transfer-xpla-simd"
@@ -276,12 +282,19 @@ func StartXplaChainAndSimdWithIBC(t *testing.T, ctx context.Context, version []i
 			Path:    ibcPathName,
 		})
 
-	assert.NoError(t, ic.Build(ctx, eRep, interchaintest.InterchainBuildOptions{
+	require.NoError(t, ic.Build(ctx, eRep, interchaintest.InterchainBuildOptions{
 		TestName:         t.Name(),
 		Client:           client,
 		NetworkID:        network,
-		SkipPathCreation: false,
+		SkipPathCreation: true,
 	}))
+
+	fundRelayerWallet(t, ctx, xplaChain, r)
+	fundRelayerWallet(t, ctx, ibcSimd, r)
+	require.NoError(t, WaitForBlocks(ctx, xplaChain, 2))
+	require.NoError(t, WaitForBlocks(ctx, ibcSimd, 2))
+	require.NoError(t, r.GeneratePath(ctx, eRep, xplaChain.Config().ChainID, ibcSimd.Config().ChainID, ibcPathName))
+	require.NoError(t, r.LinkPath(ctx, eRep, ibcPathName, ibc.DefaultChannelOpts(), ibc.DefaultClientOpts()))
 
 	t.Cleanup(func() {
 		_ = r.StopRelayer(ctx, eRep)
@@ -313,6 +326,31 @@ func StartXplaChainAndSimdWithIBC(t *testing.T, ctx context.Context, version []i
 		ibcPathName: ibcPathName,
 		eRep:        eRep,
 	}
+}
+
+func fundRelayerWallet(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain, r ibc.Relayer) {
+	t.Helper()
+
+	wallet, ok := r.GetWallet(chain.Config().ChainID)
+	require.True(t, ok, "relayer wallet not found for chain %s", chain.Config().ChainID)
+
+	require.NoError(t, chain.SendFunds(ctx, interchaintest.FaucetAccountKeyName, ibc.WalletAmount{
+		Address: wallet.FormattedAddress(),
+		Denom:   chain.Config().Denom,
+		Amount:  relayerWalletBalance(chain),
+	}))
+}
+
+func relayerWalletBalance(chain *cosmos.CosmosChain) sdkmath.Int {
+	amount := sdkmath.NewInt(1_000_000)
+	if chain.Config().CoinDecimals == nil {
+		return amount
+	}
+
+	for i := int64(0); i < *chain.Config().CoinDecimals; i++ {
+		amount = amount.MulRaw(10)
+	}
+	return amount
 }
 
 // WaitForBlocks waits for the specified number of blocks to be produced

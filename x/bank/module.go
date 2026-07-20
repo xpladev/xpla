@@ -25,8 +25,9 @@ type AppModule struct {
 // NewAppModule creates a new AppModule object
 func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, accountKeeper authkeeper.AccountKeeper, ss exported.Subspace) AppModule {
 	return AppModule{
-		AppModule: bank.NewAppModule(cdc, keeper.BaseKeeper, accountKeeper.AccountKeeper, ss),
-		keeper:    keeper,
+		AppModule:      bank.NewAppModule(cdc, keeper.BaseKeeper, accountKeeper.AccountKeeper, ss),
+		keeper:         keeper,
+		legacySubspace: ss,
 	}
 }
 

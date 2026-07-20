@@ -7,8 +7,8 @@ import (
 
 	_ "embed"
 
-	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/log/v2"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,8 +19,10 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/statedb"
 
 	"github.com/xpladev/xpla/precompile/util"
+	xbanktypes "github.com/xpladev/xpla/x/bank/types"
 )
 
 var _ vm.PrecompiledContract = PrecompiledBank{}
@@ -68,6 +70,10 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 
 func (p PrecompiledBank) Address() common.Address { return Address }
 
+func (PrecompiledBank) Name() string {
+	return "bank"
+}
+
 func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
 	// NOTE: This check avoid panicking when trying to decode the method ID
 	if len(input) < 4 {
@@ -87,6 +93,7 @@ func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
 
 func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
 		return p.Execute(ctx, evm.StateDB, contract, readonly)
 	})
 }

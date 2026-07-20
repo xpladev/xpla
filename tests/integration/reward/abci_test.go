@@ -66,7 +66,7 @@ func TestBeginBlocker(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(
 			t, input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 110),
-			val.GetBondedTokens(),
+			val.GetTokens(),
 		)
 	}
 

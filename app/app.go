@@ -1,9 +1,8 @@
 package app
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"math/big"
 	"net/http"
 	"os"
@@ -22,19 +21,20 @@ import (
 
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/gogoproto/proto"
-	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctm "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	sdkmath "cosmossdk.io/math"
-	"cosmossdk.io/x/tx/signing"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/x/tx/signing"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/baseapp/txnrunner"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -72,6 +72,7 @@ import (
 	evmmempool "github.com/cosmos/evm/mempool"
 	srvflags "github.com/cosmos/evm/server/flags"
 	cosmosevmutils "github.com/cosmos/evm/utils"
+	vmrunner "github.com/cosmos/evm/x/vm/runner"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	xplaante "github.com/xpladev/xpla/ante"
@@ -79,7 +80,7 @@ import (
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	v1_10 "github.com/xpladev/xpla/app/upgrades/v1_10"
+	v1_11 "github.com/xpladev/xpla/app/upgrades/v1_11"
 	"github.com/xpladev/xpla/docs"
 	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
@@ -98,7 +99,7 @@ var (
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_10.Upgrade,
+		v1_11.Upgrade,
 	}
 )
 
@@ -132,9 +133,8 @@ type XplaApp struct { // nolint: golint
 	configurator module.Configurator
 
 	// for evm enable
-	clientCtx          client.Context
 	pendingTxListeners []evmante.PendingTxListener
-	EVMMempool         *evmmempool.ExperimentalEVMMempool
+	EVMMempool         *evmmempool.Mempool
 }
 
 func init() {
@@ -152,7 +152,6 @@ func init() {
 func NewXplaApp(
 	logger log.Logger,
 	db dbm.DB,
-	traceStore io.Writer,
 	loadLatest bool,
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
@@ -210,7 +209,6 @@ func NewXplaApp(
 	legacytx.RegressionTestingAminoCodec = legacyAmino
 	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry, evmChainID)
 
-	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
@@ -246,7 +244,8 @@ func NewXplaApp(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(appModules(app, appCodec, txConfig, tmLightClientModule)...)
+	evmModule := newEVMAppModule(app)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, tmLightClientModule, evmModule)...)
 	app.ModuleBasics = newBasicManagerFromManager(app)
 
 	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
@@ -315,6 +314,7 @@ func NewXplaApp(
 	app.MountKVStores(app.GetKVStoreKey())
 	app.MountTransientStores(app.GetTransientStoreKey())
 	app.MountMemoryStores(app.GetMemoryStoreKey())
+	app.MountObjectStores(app.GetObjectStoreKey())
 
 	wasmConfig, err := wasm.ReadNodeConfig(appOpts)
 	if err != nil {
@@ -368,11 +368,11 @@ func NewXplaApp(
 	app.setUpgradeHandlers()
 	app.setUpgradeStoreLoaders()
 
-	// set the EVM priority nonce mempool
-	// If you wish to use the noop mempool, remove this codeblock
+	// set the EVM priority nonce mempool required by XPLA's app-side mempool path
 	if err := app.configureEVMMempool(appOpts, logger); err != nil {
 		panic(fmt.Sprintf("failed to configure EVM mempool: %s", err.Error()))
 	}
+	app.setEVMRunner(app.txConfig.TxDecoder())
 
 	// At startup, after all modules have been registered, check that all prot
 	// annotations are correct.
@@ -392,7 +392,12 @@ func NewXplaApp(
 			panic(fmt.Sprintf("failed to load latest version: %s", err))
 		}
 
-		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+		evmModule.HydrateGlobals(app.NewContextLegacy(true, tmproto.Header{
+			Height:  app.LastBlockHeight(),
+			ChainID: app.ChainID(),
+		}))
+
+		ctx := app.BaseApp.NewNextBlockContext(tmproto.Header{})
 
 		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
 			panic(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
@@ -400,6 +405,10 @@ func NewXplaApp(
 	}
 
 	return app
+}
+
+func (app *XplaApp) setEVMRunner(txDecoder sdk.TxDecoder) {
+	vmrunner.SetRunner(app.BaseApp, txnrunner.NewDefaultRunner(txDecoder))
 }
 
 // Name returns the name of the App
@@ -461,7 +470,12 @@ func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[s
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	// initialize precompile addresses to block
-	blockedPrecompilesHex := evmtypes.AvailableStaticPrecompiles
+	blockedPrecompilesHex := make(
+		[]string,
+		0,
+		len(evmtypes.AvailableStaticPrecompiles)+len(vm.PrecompiledAddressesPrague)+len(xplaprecompile.PrecompiledAddressesXpla),
+	)
+	blockedPrecompilesHex = append(blockedPrecompilesHex, evmtypes.AvailableStaticPrecompiles...)
 	for _, addr := range vm.PrecompiledAddressesPrague {
 		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
 	}
@@ -491,11 +505,6 @@ func (app *XplaApp) LegacyAmino() *codec.LegacyAmino {
 // for modules to register their own custom testing types.
 func (app *XplaApp) AppCodec() codec.Codec {
 	return app.appCodec
-}
-
-// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
-func (app *XplaApp) DefaultGenesis() map[string]json.RawMessage {
-	return app.ModuleBasics.DefaultGenesis(app.appCodec)
 }
 
 // InterfaceRegistry returns Xpla's InterfaceRegistry
@@ -533,7 +542,9 @@ func (app *XplaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 
 // RegisterNodeService allows query minimum-gas-prices in app.toml
 func (app *XplaApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg, func() int64 {
+		return app.CommitMultiStore().EarliestVersion()
+	})
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
@@ -642,10 +653,6 @@ func noOpTxFeeChecker(_ sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
 	return feeTx.GetFee(), 0, nil
 }
 
-func (app *XplaApp) SetClientCtx(clientCtx client.Context) {
-	app.clientCtx = clientCtx
-}
-
 func (app *XplaApp) RegisterPendingTxListener(listener func(common.Hash)) {
 	app.pendingTxListeners = append(app.pendingTxListeners, listener)
 }
@@ -656,4 +663,23 @@ func (app *XplaApp) GetMempool() sdkmempool.ExtMempool {
 
 func (app *XplaApp) GetAnteHandler() sdk.AnteHandler {
 	return app.BaseApp.AnteHandler()
+}
+
+// Close unsubscribes the EVM mempool from the event bus and closes the underlying BaseApp.
+func (app *XplaApp) Close() error {
+	var err error
+	if app.EVMMempool != nil {
+		app.Logger().Info("Shutting down mempool")
+		err = app.EVMMempool.Close()
+	}
+
+	msg := "Application gracefully shutdown"
+	err = errors.Join(err, app.BaseApp.Close())
+	if err == nil {
+		app.Logger().Info(msg)
+	} else {
+		app.Logger().Error(msg, "error", err)
+	}
+
+	return err
 }

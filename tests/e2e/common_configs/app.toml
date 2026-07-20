@@ -10,10 +10,10 @@
 # bypass-min-fee-msg-types = [] will deactivate the bypass - no messages will be allowed to bypass the minimum fee check
 # bypass-min-fee-msg-types = [<MsgType>...] will allow messages of specified type to bypass the minimum fee check
 # removing bypass-min-fee-msg-types from the config file will apply the default values:
-# ["/ibc.core.channel.v1.MsgRecvPacket", "/ibc.core.channel.v1.MsgAcknowledgement", "/ibc.core.client.v1.MsgUpdateClient"]
+# ["/ibc.core.channel.v1.MsgRecvPacket", "/ibc.core.channel.v1.MsgAcknowledgement", "/ibc.core.client.v1.MsgUpdateClient", "/ibc.applications.transfer.v1.MsgTransfer", "/ibc.core.channel.v1.MsgTimeout", "/ibc.core.channel.v1.MsgTimeoutOnClose"]
 #
 # Example:
-# bypass-min-fee-msg-types = ["/ibc.core.channel.v1.MsgRecvPacket", "/ibc.core.channel.v1.MsgAcknowledgement", "/ibc.core.client.v1.MsgUpdateClient"]
+# bypass-min-fee-msg-types = ["/ibc.core.channel.v1.MsgRecvPacket", "/ibc.core.channel.v1.MsgAcknowledgement", "/ibc.core.client.v1.MsgUpdateClient", "/ibc.applications.transfer.v1.MsgTransfer", "/ibc.core.channel.v1.MsgTimeout", "/ibc.core.channel.v1.MsgTimeoutOnClose"]
 bypass-min-fee-msg-types = ["/ibc.core.channel.v1.MsgRecvPacket", "/ibc.core.channel.v1.MsgAcknowledgement", "/ibc.core.client.v1.MsgUpdateClient", "/ibc.applications.transfer.v1.MsgTransfer", "/ibc.core.channel.v1.MsgTimeout", "/ibc.core.channel.v1.MsgTimeoutOnClose", ]
 
 ###############################################################################
@@ -237,12 +237,11 @@ stop-node-on-err = true
 ###############################################################################
 
 [mempool]
-# Setting max-txs to 0 will allow for a unbounded amount of transactions in the mempool.
-# Setting max_txs to negative 1 (-1) will disable transactions from being inserted into the mempool (no-op mempool).
-# Setting max_txs to a positive number (> 0) will limit the number of transactions in the mempool, by the specified amount.
-#
-# Note, this configuration only applies to SDK built-in app-side mempool
-# implementations.
+# XPLA requires Cosmos EVM's app-side mempool because CometBFT is configured
+# with mempool.type = "app".
+# Setting max-txs to 0 will allow for an unbounded amount of transactions in the mempool.
+# Setting max-txs to a positive number (> 0) will limit the number of transactions in the mempool.
+# Setting max-txs to negative 1 (-1) is not supported.
 max-txs = "5000"
 
 ###############################################################################

@@ -2,4 +2,5 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as cosmos from './cosmos';
+export * as test from './test';
 export * as xpla from './xpla';
