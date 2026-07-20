@@ -35,6 +35,11 @@ func TestUpgradeHandlerMigratesIBCMiddlewareState(t *testing.T) {
 	xpla, ctx := setupUpgradeState(t)
 
 	pfmStore := ctx.KVStore(xpla.GetKey(pfmtypes.StoreKey))
+	legacyParamsKey := []byte{0x00}
+	// PFM v7 encoded its default fee percentage as protobuf field 1 containing
+	// the string "0". The v11 migration otherwise decodes this value as an
+	// in-flight packet with an empty timeout height and panics.
+	pfmStore.Set(legacyParamsKey, []byte{0x0a, 0x01, 0x30})
 	pfmKey := setLegacyPFMPacket(t, pfmStore, false)
 
 	rateLimitStore := ctx.KVStore(xpla.GetKey(ratelimittypes.StoreKey))
@@ -59,6 +64,7 @@ func TestUpgradeHandlerMigratesIBCMiddlewareState(t *testing.T) {
 	require.NoError(t, migratedPacket.Unmarshal(pfmStore.Get(pfmKey)))
 	require.Equal(t, "channel-1", migratedPacket.PacketSrcChannelId)
 	require.Equal(t, "transfer", migratedPacket.PacketSrcPortId)
+	require.Nil(t, pfmStore.Get(legacyParamsKey))
 	require.Nil(t, rateLimitStore.Get(pendingSendKey))
 	require.Nil(t, rateLimitStore.Get(pendingReceiveKey))
 	require.Equal(t, []byte("preserved"), rateLimitStore.Get(rateLimitKey))
