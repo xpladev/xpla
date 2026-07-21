@@ -397,7 +397,7 @@ func NewXplaApp(
 			ChainID: app.ChainID(),
 		}))
 
-		ctx := app.BaseApp.NewNextBlockContext(tmproto.Header{})
+		ctx := app.NewContextLegacy(true, tmproto.Header{})
 
 		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
 			panic(fmt.Sprintf("WasmKeeper failed initialize pinned codes %s", err))
