@@ -196,10 +196,15 @@ func NewAppKeeper(
 		appKeepers.AccountKeeper,
 	)
 
+	feeGrantStoreService := runtime.NewKVStoreService(appKeepers.keys[feegrant.StoreKey])
 	appKeepers.FeeGrantKeeper = feegrantkeeper.NewKeeper(
 		appCodec,
-		runtime.NewKVStoreService(appKeepers.keys[feegrant.StoreKey]),
+		feeGrantStoreService,
 		appKeepers.AccountKeeper,
+	)
+	appKeepers.FeeGrantKeeper.FeeAllowanceQueue = newLegacyCompatibleFeeAllowanceQueue(
+		feeGrantStoreService,
+		appKeepers.FeeGrantKeeper.FeeAllowanceQueue,
 	)
 
 	appKeepers.StakingKeeper = xplastakingkeeper.NewKeeper(

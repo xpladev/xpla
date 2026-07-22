@@ -50,6 +50,19 @@ retroactively to a live chain. Enabling the ICS02 precompile, installing
 default preinstalls, or otherwise changing EVM parameters requires a separate,
 explicit chain decision and its own compatibility checks.
 
+### Feegrant expiration queue state compatibility
+
+The v1.10 feegrant keeper stored expiration-queue entries as keys with empty
+values. Cosmos SDK v0.54 reads the same queue through a collections map whose
+canonical boolean value is one byte. XPLA installs a backward-compatible value
+codec for this queue: legacy empty values decode as the presence marker `true`,
+while newly created entries retain the canonical one-byte encoding.
+
+This compatibility path must remain enabled while any pre-v1.11 fee allowance
+with a future expiration can remain on chain. The incompatibility is latent at
+the upgrade height because the end blocker only decodes queue entries after
+their expiration becomes eligible for pruning.
+
 ### IBC-Go v11.2 state migration
 
 The live v1.10 chain stores packet-forward middleware and rate-limiting state
