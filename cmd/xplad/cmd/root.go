@@ -229,6 +229,7 @@ func initRootCmd(rootCmd *cobra.Command,
 	)
 
 	evmserver.AddCommands(rootCmd, evmserver.NewDefaultStartOptions(ac.newApp, xpla.DefaultNodeHome), ac.appExport, addModuleInitFlags)
+	rootCmd.AddCommand(server.ModuleHashByHeightQuery(sdkAppCreatorWrapper))
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	keysCmd := evmclient.KeyCommands(xpla.DefaultNodeHome, true)
