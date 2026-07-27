@@ -215,3 +215,36 @@ func TestExecuteTransferConsumesAllGasOnFailedPrecompileCall(t *testing.T) {
 	require.Equal(t, gasLimit, ctx.GasMeter().GasConsumed())
 	require.True(t, ctx.GasMeter().IsOutOfGas())
 }
+
+func TestExecuteTransferConsumesAllGasOnPrecompileApplyError(t *testing.T) {
+	const (
+		gasLimit    = uint64(100_000)
+		consumedGas = uint64(12_345)
+	)
+
+	ctx := sdk.Context{}.
+		WithContext(context.Background()).
+		WithEventManager(sdk.NewEventManager()).
+		WithGasMeter(storetypes.NewGasMeter(gasLimit))
+	ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
+
+	executor := &recordingERC20EVMExecutor{applyErr: core.ErrIntrinsicGas}
+	stateDB := &statedb.StateDB{}
+	ctx = banktypes.WithEVMStateDB(ctx, stateDB)
+	keeper := Erc20Keeper{ek: executor}
+
+	err := keeper.ExecuteTransfer(
+		ctx,
+		common.HexToAddress("0x2000"),
+		sdk.AccAddress(common.HexToAddress("0x1000").Bytes()),
+		sdk.AccAddress(common.HexToAddress("0x3000").Bytes()),
+		big.NewInt(7),
+	)
+	require.ErrorContains(t, err, core.ErrIntrinsicGas.Error())
+	require.Equal(t, 1, executor.applyCalls)
+	require.Zero(t, executor.callCalls)
+	require.Same(t, stateDB, executor.appliedStateDB)
+	require.Equal(t, gasLimit-consumedGas, executor.appliedMessage.GasLimit)
+	require.Equal(t, gasLimit, ctx.GasMeter().GasConsumed())
+	require.True(t, ctx.GasMeter().IsOutOfGas())
+}

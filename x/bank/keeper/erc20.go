@@ -141,17 +141,19 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 		}
 
 		res, err = k.ek.ApplyMessage(ctx, stateDB, msg, nil, false, true, true)
-		if err == nil && res.Failed() {
-			// A nested VM failure consumes the caller's full remaining gas budget.
+		if err != nil || res.Failed() {
+			// A nested precompile failure consumes the caller's full remaining gas budget.
 			gasMeter := ctx.GasMeter()
 			gasMeter.RefundGas(gasMeter.GasConsumed(), "reset the gas count")
 			gasMeter.ConsumeGas(gasMeter.Limit(), "apply evm transaction")
-			return errorsmod.Wrapf(
-				errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError),
-				"contract call failed: method '%s', contract '%s'",
-				method,
-				contractAddress,
-			)
+			if err == nil {
+				return errorsmod.Wrapf(
+					errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError),
+					"contract call failed: method '%s', contract '%s'",
+					method,
+					contractAddress,
+				)
+			}
 		}
 		if err == nil {
 			ctx.GasMeter().ConsumeGas(res.MaxUsedGas, "apply evm message")
