@@ -94,11 +94,12 @@ func (e *recordingERC20EVMExecutor) CallEVM(
 	return e.callResponse, e.callErr
 }
 
-func TestExecuteTransferBoundsPrecompileCallByRemainingGas(t *testing.T) {
+func TestExecuteTransferBoundsPrecompileCallByRemainingGasAndConsumesMaxUsedGas(t *testing.T) {
 	const (
 		gasLimit    = uint64(100_000)
 		consumedGas = uint64(12_345)
-		nestedUsed  = uint64(1_234)
+		gasUsed     = uint64(1_000)
+		maxUsedGas  = uint64(1_234)
 	)
 
 	ctx := sdk.Context{}.
@@ -117,8 +118,9 @@ func TestExecuteTransferBoundsPrecompileCallByRemainingGas(t *testing.T) {
 	executor := &recordingERC20EVMExecutor{
 		nonce: 9,
 		applyResponse: &evmtypes.MsgEthereumTxResponse{
-			GasUsed: nestedUsed,
-			Ret:     returnData,
+			GasUsed:    gasUsed,
+			MaxUsedGas: maxUsedGas,
+			Ret:        returnData,
 		},
 	}
 	stateDB := &statedb.StateDB{}
@@ -137,7 +139,7 @@ func TestExecuteTransferBoundsPrecompileCallByRemainingGas(t *testing.T) {
 	require.False(t, executor.applyCommit)
 	require.True(t, executor.applyCallFromPrecompile)
 	require.True(t, executor.applyInternal)
-	require.Equal(t, consumedGas+nestedUsed, ctx.GasMeter().GasConsumed())
+	require.Equal(t, consumedGas+maxUsedGas, ctx.GasMeter().GasConsumed())
 }
 
 func TestExecuteTransferKeepsNonPrecompileCallEVMPath(t *testing.T) {

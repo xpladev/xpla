@@ -154,7 +154,7 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 			)
 		}
 		if err == nil {
-			ctx.GasMeter().ConsumeGas(res.GasUsed, "apply evm message")
+			ctx.GasMeter().ConsumeGas(res.MaxUsedGas, "apply evm message")
 		}
 	}
 
