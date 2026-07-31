@@ -282,11 +282,13 @@ replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
+	github.com/cometbft/cometbft => github.com/xpladev/cometbft v0.0.0-20260731075214-d1ce704a8b27
+
 	// xpla features
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla-2
 
 	// xpla features
-	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.0-xpla.3
+	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v1.0.0-rc2.0.20260731075115-e6906e2f5a7c
 
 	// xpla features
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1
