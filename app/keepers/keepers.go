@@ -401,6 +401,11 @@ func NewAppKeeper(
 			Stargate: wasmkeeper.AcceptListStargateQuerier(accepted, bApp.GRPCQueryRouter(), appCodec),
 		})
 	wasmOpts = append(wasmOpts, querierOpts)
+	// Wasmd v0.60.6 applies message handler decorators after its regular options.
+	// This keeps the rollback boundary outside the default handler chain and any
+	// custom message encoders merged into that chain. Preserve this ordering with
+	// a composition regression test when changing the Wasmd version or encoders.
+	wasmOpts = append(wasmOpts, wasmkeeper.WithMessageHandlerDecorator(newWasmEVMStateDBAtomicMessenger))
 
 	wasmDir := filepath.Join(homePath, "data")
 	wasmConfig, err := wasm.ReadNodeConfig(appOpts)

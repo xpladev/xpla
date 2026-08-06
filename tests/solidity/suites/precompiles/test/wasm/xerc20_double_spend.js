@@ -27,6 +27,65 @@ const MAX_FAILED_CALL_GAS_REMAINDER_RATIO = 32n
 // Tests that need to observe rollback/commit therefore spin up a fresh instance
 // (count 0) and assert the absolute value: 3 == committed, 0 == fully rolled back.
 const COUNTER_WASM_CODE_ID = BigInt(process.env.COUNTER_WASM_CODE_ID ?? '1')
+const TYPE_URL_MSG_EXEC = '/cosmos.authz.v1beta1.MsgExec'
+const TYPE_URL_MSG_SEND = '/cosmos.bank.v1beta1.MsgSend'
+
+function concatBytes(...parts) {
+  return ethers.getBytes(ethers.concat(parts))
+}
+
+function encodeVarint(value) {
+  let remaining = BigInt(value)
+  const output = []
+  while (remaining >= 0x80n) {
+    output.push(Number((remaining & 0x7fn) | 0x80n))
+    remaining >>= 7n
+  }
+  output.push(Number(remaining))
+  return Uint8Array.from(output)
+}
+
+function encodeBytesField(fieldNumber, value) {
+  const bytes = ethers.getBytes(value)
+  return concatBytes(
+    encodeVarint((BigInt(fieldNumber) << 3n) | 2n),
+    encodeVarint(bytes.length),
+    bytes
+  )
+}
+
+function encodeStringField(fieldNumber, value) {
+  return encodeBytesField(fieldNumber, ethers.toUtf8Bytes(value))
+}
+
+function encodeAny(typeUrl, value) {
+  return concatBytes(
+    encodeStringField(1, typeUrl),
+    encodeBytesField(2, value)
+  )
+}
+
+function encodeCoin(denom, amount) {
+  return concatBytes(
+    encodeStringField(1, denom),
+    encodeStringField(2, amount.toString())
+  )
+}
+
+function encodeMsgSend(fromAddress, toAddress, coins) {
+  return concatBytes(
+    encodeStringField(1, fromAddress),
+    encodeStringField(2, toAddress),
+    ...coins.map((coin) => encodeBytesField(3, encodeCoin(coin.denom, coin.amount)))
+  )
+}
+
+function encodeMsgExec(grantee, messages) {
+  return concatBytes(
+    encodeStringField(1, grantee),
+    ...messages.map((message) => encodeBytesField(2, message))
+  )
+}
 
 function findEvents(logs, iface, eventName) {
   const events = []
@@ -45,6 +104,27 @@ function findEvents(logs, iface, eventName) {
 
 function normalizeAddress(address) {
   return address.toLowerCase()
+}
+
+async function getTransferLogCounts(receipt, token) {
+  const tokenAddress = await token.getAddress()
+  const transferTopic = token.interface.getEvent('Transfer').topicHash
+  const receiptTransferLogCount = receipt.logs.filter(
+    (log) =>
+      normalizeAddress(log.address) === normalizeAddress(tokenAddress) &&
+      log.topics[0] === transferTopic
+  ).length
+  const providerLogs = await ethers.provider.getLogs({
+    address: tokenAddress,
+    fromBlock: receipt.blockNumber,
+    toBlock: receipt.blockNumber,
+    topics: [transferTopic],
+  })
+
+  return {
+    receiptTransferLogCount,
+    providerTransferLogCount: providerLogs.length,
+  }
 }
 
 function expectNoReceiptLogsFrom(receipt, addresses, message) {
@@ -138,6 +218,22 @@ describe('xerc20 wasm precompile accounting', function () {
       throw new Error('counter query response is missing a counter value')
     }
     return BigInt(counter)
+  }
+
+  async function queryReplyState(target) {
+    const wasm = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS)
+    const data = await wasm.smartContractState.staticCall(
+      target.hex,
+      ethers.toUtf8Bytes('{"reply_caught":{}}')
+    )
+    const decoded = JSON.parse(ethers.toUtf8String(data))
+    if (typeof decoded.caught !== 'boolean') {
+      throw new Error('reply_caught query response is missing a boolean value')
+    }
+    if (typeof decoded.error !== 'string') {
+      throw new Error('reply_caught query response is missing an error value')
+    }
+    return decoded
   }
 
   async function deployAdversarialFixture() {
@@ -303,6 +399,254 @@ describe('xerc20 wasm precompile accounting', function () {
       xerc20Amount
     )
     expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+  })
+
+  it('rolls back xerc20 state and logs when ReplyOnError catches a later native BankMsg failure', async function () {
+    const [deployer, recipient] = await ethers.getSigners()
+    const xerc20Amount = ethers.parseEther('10')
+    const initialSupply = ethers.parseEther('100')
+
+    const Token = await ethers.getContractFactory('PoCToken')
+    const token = await Token.deploy(initialSupply)
+    await token.waitForDeployment()
+
+    const tokenAddress = await token.getAddress()
+    await (await token.transfer(bankSendWasm.hex, xerc20Amount)).wait()
+
+    const wasmNativeBefore = await ethers.provider.getBalance(bankSendWasm.hex)
+    const recipientNativeBefore = await ethers.provider.getBalance(
+      recipient.address
+    )
+    const recipientXerc20Before = await token.balanceOf(recipient.address)
+    const totalSupplyBefore = await token.totalSupply()
+    // Bank SendCoins partitions xERC20 from native coins and executes the EVM
+    // transfer first, so this insufficient native amount fails after xERC20.
+    const insufficientNativeAmount = wasmNativeBefore + 1n
+
+    const recipientBech32 = await bech32.hexToBech32.staticCall(
+      recipient.address,
+      'xpla'
+    )
+    const wasmMsg = JSON.stringify({
+      send_xerc20_reply_on_error: {
+        token: tokenAddress.toLowerCase(),
+        recipient: recipientBech32,
+        amount: xerc20Amount.toString(),
+        native_denom: 'axpla',
+        native_amount: insufficientNativeAmount.toString(),
+      },
+    })
+
+    const wasm = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS)
+    const tx = await wasm.executeContract(
+      deployer.address,
+      bankSendWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      [],
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const replyState = await queryReplyState(bankSendWasm)
+    const transferLogCounts = await getTransferLogCounts(receipt, token)
+
+    expect(
+      {
+        replyCaught: replyState.caught,
+        wasmXerc20Balance: await token.balanceOf(bankSendWasm.hex),
+        recipientXerc20Balance: await token.balanceOf(recipient.address),
+        wasmNativeBalance: await ethers.provider.getBalance(bankSendWasm.hex),
+        recipientNativeBalance: await ethers.provider.getBalance(
+          recipient.address
+        ),
+        totalSupply: await token.totalSupply(),
+        ...transferLogCounts,
+      },
+      'failed ReplyOnError submessage must roll back both bank state and EVM logs'
+    ).to.deep.equal({
+      replyCaught: true,
+      wasmXerc20Balance: xerc20Amount,
+      recipientXerc20Balance: recipientXerc20Before,
+      wasmNativeBalance: wasmNativeBefore,
+      recipientNativeBalance: recipientNativeBefore,
+      totalSupply: totalSupplyBefore,
+      receiptTransferLogCount: 0,
+      providerTransferLogCount: 0,
+    })
+  })
+
+  it('rolls back an earlier xerc20 MsgExec action when a later authz action fails', async function () {
+    const [deployer, recipient] = await ethers.getSigners()
+    const xerc20Amount = ethers.parseEther('10')
+    const initialSupply = ethers.parseEther('100')
+
+    const Token = await ethers.getContractFactory('PoCToken')
+    const token = await Token.deploy(initialSupply)
+    await token.waitForDeployment()
+
+    const tokenAddress = await token.getAddress()
+    const xerc20Denom = `xerc20:${tokenAddress.toLowerCase()}`
+    await (await token.transfer(bankSendWasm.hex, xerc20Amount)).wait()
+
+    const wasmNativeBefore = await ethers.provider.getBalance(bankSendWasm.hex)
+    const recipientNativeBefore = await ethers.provider.getBalance(
+      recipient.address
+    )
+    const recipientXerc20Before = await token.balanceOf(recipient.address)
+    const totalSupplyBefore = await token.totalSupply()
+    const insufficientNativeAmount = wasmNativeBefore + 1n
+    const recipientBech32 = await bech32.hexToBech32.staticCall(
+      recipient.address,
+      'xpla'
+    )
+
+    const xerc20Send = encodeAny(
+      TYPE_URL_MSG_SEND,
+      encodeMsgSend(bankSendWasm.bech32, recipientBech32, [
+        { denom: xerc20Denom, amount: xerc20Amount },
+      ])
+    )
+    const failingNativeSend = encodeAny(
+      TYPE_URL_MSG_SEND,
+      encodeMsgSend(bankSendWasm.bech32, recipientBech32, [
+        { denom: 'axpla', amount: insufficientNativeAmount },
+      ])
+    )
+    const msgExec = encodeMsgExec(bankSendWasm.bech32, [
+      xerc20Send,
+      failingNativeSend,
+    ])
+    const wasmMsg = JSON.stringify({
+      dispatch_any_reply_on_error: {
+        type_url: TYPE_URL_MSG_EXEC,
+        value: Buffer.from(msgExec).toString('base64'),
+      },
+    })
+
+    const wasm = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS)
+    const tx = await wasm.executeContract(
+      deployer.address,
+      bankSendWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      [],
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const replyState = await queryReplyState(bankSendWasm)
+    const transferLogCounts = await getTransferLogCounts(receipt, token)
+
+    // Wasmd's reply payload preserves the SDK codespace/code, but not the
+    // wrapped bank error text. SDK code 5 is ErrInsufficientFunds.
+    expect(replyState.error).to.equal('codespace: sdk, code: 5')
+    expect(
+      {
+        replyCaught: replyState.caught,
+        wasmXerc20Balance: await token.balanceOf(bankSendWasm.hex),
+        recipientXerc20Balance: await token.balanceOf(recipient.address),
+        wasmNativeBalance: await ethers.provider.getBalance(bankSendWasm.hex),
+        recipientNativeBalance: await ethers.provider.getBalance(
+          recipient.address
+        ),
+        totalSupply: await token.totalSupply(),
+        ...transferLogCounts,
+      },
+      'failed MsgExec must roll back successful earlier actions and their EVM logs'
+    ).to.deep.equal({
+      replyCaught: true,
+      wasmXerc20Balance: xerc20Amount,
+      recipientXerc20Balance: recipientXerc20Before,
+      wasmNativeBalance: wasmNativeBefore,
+      recipientNativeBalance: recipientNativeBefore,
+      totalSupply: totalSupplyBefore,
+      receiptTransferLogCount: 0,
+      providerTransferLogCount: 0,
+    })
+  })
+
+  it('commits xerc20 and native MsgExec actions when the authz container succeeds', async function () {
+    const [deployer, recipient] = await ethers.getSigners()
+    const xerc20Amount = ethers.parseEther('10')
+    const nativeAmount = ethers.parseEther('1')
+    const initialSupply = ethers.parseEther('100')
+
+    const Token = await ethers.getContractFactory('PoCToken')
+    const token = await Token.deploy(initialSupply)
+    await token.waitForDeployment()
+
+    const tokenAddress = await token.getAddress()
+    const xerc20Denom = `xerc20:${tokenAddress.toLowerCase()}`
+    await (await token.transfer(bankSendWasm.hex, xerc20Amount)).wait()
+
+    const wasmNativeBefore = await ethers.provider.getBalance(bankSendWasm.hex)
+    const recipientNativeBefore = await ethers.provider.getBalance(
+      recipient.address
+    )
+    const recipientXerc20Before = await token.balanceOf(recipient.address)
+    const totalSupplyBefore = await token.totalSupply()
+    const recipientBech32 = await bech32.hexToBech32.staticCall(
+      recipient.address,
+      'xpla'
+    )
+
+    const xerc20Send = encodeAny(
+      TYPE_URL_MSG_SEND,
+      encodeMsgSend(bankSendWasm.bech32, recipientBech32, [
+        { denom: xerc20Denom, amount: xerc20Amount },
+      ])
+    )
+    const nativeSend = encodeAny(
+      TYPE_URL_MSG_SEND,
+      encodeMsgSend(bankSendWasm.bech32, recipientBech32, [
+        { denom: 'axpla', amount: nativeAmount },
+      ])
+    )
+    const msgExec = encodeMsgExec(bankSendWasm.bech32, [
+      xerc20Send,
+      nativeSend,
+    ])
+    const wasmMsg = JSON.stringify({
+      dispatch_any_reply_on_error: {
+        type_url: TYPE_URL_MSG_EXEC,
+        value: Buffer.from(msgExec).toString('base64'),
+      },
+    })
+
+    const wasm = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS)
+    const tx = await wasm.executeContract(
+      deployer.address,
+      bankSendWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      [{ denom: 'axpla', amount: nativeAmount }],
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const replyState = await queryReplyState(bankSendWasm)
+    const transferLogCounts = await getTransferLogCounts(receipt, token)
+
+    expect(
+      {
+        replyCaught: replyState.caught,
+        replyError: replyState.error,
+        wasmXerc20Balance: await token.balanceOf(bankSendWasm.hex),
+        recipientXerc20Balance: await token.balanceOf(recipient.address),
+        wasmNativeBalance: await ethers.provider.getBalance(bankSendWasm.hex),
+        recipientNativeBalance: await ethers.provider.getBalance(
+          recipient.address
+        ),
+        totalSupply: await token.totalSupply(),
+        ...transferLogCounts,
+      },
+      'successful MsgExec must commit both bank state and EVM logs'
+    ).to.deep.equal({
+      replyCaught: false,
+      replyError: '',
+      wasmXerc20Balance: 0n,
+      recipientXerc20Balance: recipientXerc20Before + xerc20Amount,
+      wasmNativeBalance: wasmNativeBefore,
+      recipientNativeBalance: recipientNativeBefore + nativeAmount,
+      totalSupply: totalSupplyBefore,
+      receiptTransferLogCount: 1,
+      providerTransferLogCount: 1,
+    })
   })
 
   it('keeps xerc20 Funds atomic when the token re-enters the bank precompile', async function () {
