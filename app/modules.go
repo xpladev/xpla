@@ -58,6 +58,8 @@ import (
 	burntypes "github.com/xpladev/xpla/x/burn/types"
 
 	"github.com/xpladev/xpla/x/burn"
+	"github.com/xpladev/xpla/x/dynamicdeflation"
+	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastaking "github.com/xpladev/xpla/x/staking"
@@ -80,6 +82,7 @@ var maccPerms = map[string][]string{
 	feemarkettypes.ModuleName:      nil,
 	rewardtypes.ModuleName:         nil,
 	burntypes.ModuleName:           {authtypes.Burner},
+	dynamicdeflationtypes.PoolName: {authtypes.Burner},
 	banktypes.ModuleName:           nil,
 }
 
@@ -100,6 +103,7 @@ func appModules(
 		xplabank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
+		dynamicdeflation.NewAppModule(appCodec, app.DynamicDeflationKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		xplastaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
@@ -179,6 +183,7 @@ NOTE: staking module is required if HistoricalEntries param > 0
 func orderBeginBlockers() []string {
 	return []string{
 		minttypes.ModuleName,
+		dynamicdeflationtypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -259,6 +264,7 @@ func orderInitBlockers() []string {
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		minttypes.ModuleName,
+		dynamicdeflationtypes.ModuleName,
 		crisistypes.ModuleName,
 		// evm module denomination is used by the fees module, in AnteHandle
 		evmtypes.ModuleName,
