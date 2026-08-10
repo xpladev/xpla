@@ -4,6 +4,7 @@ import (
 	store "cosmossdk.io/store/types"
 
 	"github.com/xpladev/xpla/app/upgrades"
+	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 )
 
 // UpgradeName is the on-chain software-upgrade plan name for the v1.12 release.
@@ -13,8 +14,6 @@ var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
-		Added:   []string{},
-		Renamed: nil,
-		Deleted: []string{},
+		Added: []string{dynamicdeflationtypes.StoreKey},
 	},
 }
