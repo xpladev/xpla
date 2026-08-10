@@ -1,4 +1,4 @@
-package v1_11
+package v1_12
 
 import (
 	store "cosmossdk.io/store/types"
@@ -6,7 +6,8 @@ import (
 	"github.com/xpladev/xpla/app/upgrades"
 )
 
-const UpgradeName = "v1_11"
+// UpgradeName is the on-chain software-upgrade plan name for the v1.12 release.
+const UpgradeName = "v1_12"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
