@@ -7,7 +7,7 @@
   "scripts": {
     "get-contracts": "mkdir -p ./contracts/xpla && rsync -avm --include='*/' --exclude='**/ERC20Minter_OpenZeppelinV5.sol' --exclude='**/WEVMOS.sol' --exclude='**/ERC20NoMetadata.sol' --include='*.sol' --exclude='*' ../../../../precompile/ ./contracts/xpla/",
     "clean-contracts": "rm -rf ./contracts/xpla/*",
-    "test-ganache": "hardhat test",
+    "test-ganache": "echo 'Skipping precompiles: this suite requires the Cosmos network'",
     "test-cosmos": "pnpm run get-contracts && hardhat test --network cosmos && pnpm run clean-contracts"
   },
   "devDependencies": {
