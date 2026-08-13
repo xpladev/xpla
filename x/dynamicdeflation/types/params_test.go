@@ -16,8 +16,8 @@ func TestDefaultParams(t *testing.T) {
 	require.True(t, p.Enabled)
 	require.True(t, p.AllocationRate.Equal(sdkmath.LegacyNewDecWithPrec(20, 2)))
 	require.Equal(t, uint64(100_000), p.SettlementIntervalBlocks)
-	require.Equal(t, "10000000000000000000000", p.MinFeeAmount.Amount.String())
-	require.Equal(t, "500000000000000000000000", p.MaxFeeAmount.Amount.String())
+	require.Equal(t, "69444000000000000000000", p.MinFeeAmount.Amount.String())
+	require.Equal(t, "3472222000000000000000000", p.MaxFeeAmount.Amount.String())
 }
 
 func TestParamsValidate(t *testing.T) {

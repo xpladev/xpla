@@ -11,8 +11,8 @@ import (
 
 var (
 	DefaultAllocationRate = sdkmath.LegacyNewDecWithPrec(20, 2)
-	DefaultMinFeeAmount   = sdk.NewCoin(TargetDenom, sdkmath.NewIntWithDecimal(10_000, 18))
-	DefaultMaxFeeAmount   = sdk.NewCoin(TargetDenom, sdkmath.NewIntWithDecimal(500_000, 18))
+	DefaultMinFeeAmount   = sdk.NewCoin(TargetDenom, sdkmath.NewIntWithDecimal(69_444, 18))
+	DefaultMaxFeeAmount   = sdk.NewCoin(TargetDenom, sdkmath.NewIntWithDecimal(3_472_222, 18))
 )
 
 const DefaultSettlementIntervalBlocks uint64 = 100_000

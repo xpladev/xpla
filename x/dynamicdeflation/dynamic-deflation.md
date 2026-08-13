@@ -31,15 +31,18 @@ allocated = floor(gross * allocation_rate)
 distribution_remainder = gross - allocated
 ```
 
-It transfers `allocated` from FeeCollector to the `dynamicdeflation` module
-account and leaves `distribution_remainder` in FeeCollector for the standard
-distribution module. It does not move, track, burn, or fund the Community Pool
-with any other denomination. If `allocated` is zero, it does not perform a bank
-transfer.
+It transfers `allocated` from FeeCollector to the `dynamic_deflation_pool`
+module account and leaves `distribution_remainder` in FeeCollector for the
+standard distribution module. It does not move, track, burn, or fund the
+Community Pool with any other denomination. If `allocated` is zero, it does not
+perform a bank transfer.
 
-The module account is named `dynamicdeflation`, has the `Burner` permission,
-and remains covered by the application's blocked module-address policy. Its
-balance must not be treated as a general-purpose deposit account.
+The dedicated Dynamic Deflation Pool module account is named
+`dynamic_deflation_pool`, has the `Burner` permission, and remains covered by
+the application's blocked module-address policy. The `dynamicdeflation` name
+continues to identify the module and its store; it is not registered as a
+separate module account. The Pool balance must not be treated as a
+general-purpose deposit account.
 
 The following conservation rule applies to every observed block:
 
@@ -80,7 +83,7 @@ occurs at the first multiple of the active interval at or after `H`.
 For each period, let:
 
 - `F` be `gross_amount`, the sum of all observed FeeCollector `gross` amounts;
-- `T` be `allocated_amount`, the sum routed to the dynamicdeflation module account;
+- `T` be `allocated_amount`, the sum routed to the Dynamic Deflation Pool;
 - `Min` be `min_fee_amount`; and
 - `Max` be `max_fee_amount`.
 
@@ -104,8 +107,8 @@ burn + community = T
 
 The community amount is sent through the existing distribution Community Pool
 using `FundCommunityPool`. The burn amount is destroyed immediately from the
-`dynamicdeflation` module account with `BurnCoins`. There is no Burn Pending
-account, burn proposal, or later governance approval. **Automatic burn is
+`dynamic_deflation_pool` module account with `BurnCoins`. There is no Burn
+Pending account, burn proposal, or later governance approval. **Automatic burn is
 irreversible once the block is committed.** Existing Community Pool balances
 are never included in this calculation or moved by settlement.
 
@@ -116,10 +119,15 @@ The default parameter values are:
 | Parameter | Default |
 | --- | --- |
 | `enabled` | `true` |
-| `allocation_rate` | `0.20` |
+| `allocation_rate` | `0.20` (Dynamic Deflation Pool 20%, standard distribution 80%) |
 | `settlement_interval_blocks` | `100000` |
-| `min_fee_amount` | `10000 XPLA` (`10000 * 10^18 axpla`) |
-| `max_fee_amount` | `500000 XPLA` (`500000 * 10^18 axpla`) |
+| `min_fee_amount` | `69,444 XPLA` (`69444 * 10^18 axpla`) |
+| `max_fee_amount` | `3,472,222 XPLA` (`3472222 * 10^18 axpla`) |
+
+At the nominal 1 XPLA fee for a transaction with a 100,000 gas limit, the Min
+and Max amounts correspond to 69,444 and 3,472,222 fee-paying transactions.
+The consensus calculation still uses the complete FeeCollector `axpla` amount
+described above; it does not maintain a separate transaction counter.
 
 Governance updates all fields atomically through `MsgUpdateParams`. `Params`
 are candidate settings for the next period. When a period starts, the module
@@ -178,12 +186,14 @@ values.
 | --- | --- | --- |
 | `Params` | Inspect the candidate configuration for the next period. | `enabled`, `allocation_rate`, `settlement_interval_blocks`, `min_fee_amount`, `max_fee_amount` |
 | `CurrentPeriod` | Inspect the active snapshot and accumulated amounts. | `start_height`, `end_height`, `active_config`, `gross_amount`, `allocated_amount` |
-| `Status` | Compare the module account balance with the active period allocation. | `module_balance`, `allocated_amount`, `surplus_amount`, `deficit_amount` |
+| `Status` | Compare the Dynamic Deflation Pool balance with the active period allocation. | `module_balance`, `allocated_amount`, `surplus_amount`, `deficit_amount` |
 
 `Status.allocated_amount` is the active period's allocated amount.
-`module_balance` is the module account's actual `axpla` balance. A balance above
-the allocated amount appears as `surplus_amount`; a balance below it appears as
-`deficit_amount`. Other denominations are not part of these settlement amounts.
+`module_balance` is retained for API compatibility and reports the
+`dynamic_deflation_pool` module account's actual `axpla` balance. A balance
+above the allocated amount appears as `surplus_amount`; a balance below it
+appears as `deficit_amount`. Other denominations are not part of these
+settlement amounts.
 
 A surplus is observable but is not automatically burned or transferred to the
 Community Pool. A deficit is an invariant violation: the module does not settle
@@ -234,15 +244,15 @@ Community Pool funding, burn, or state-validation error rolls back all dynamic
 deflation changes and returns a BeginBlock error. The application does not
 ignore the error and continue to distribution.
 
-Settlement operates on `CurrentPeriod.allocated_amount`, not the module
-account's complete balance. Before settlement, the module requires the actual
-`axpla` balance to cover that allocated amount:
+Settlement operates on `CurrentPeriod.allocated_amount`, not the Dynamic
+Deflation Pool's complete balance. Before settlement, the module requires the
+Pool's actual `axpla` balance to cover that allocated amount:
 
 - If the balance is lower, settlement fails closed without a partial burn or
   Community Pool transfer.
 - If the balance is higher, only the allocated amount is settled and the surplus
-  remains in the module account.
-- Other denominations in the module account are never settled.
+  remains in the Dynamic Deflation Pool.
+- Other denominations in the Dynamic Deflation Pool are never settled.
 
 Operators should alert on any non-zero `deficit_amount`. A non-zero
 `surplus_amount` also requires investigation, even though it does not block
