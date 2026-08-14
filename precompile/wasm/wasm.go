@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -89,17 +90,42 @@ func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
 // Run is the entry point for the basic call.
 func (p *PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		ctx, writeCache := cacheNativeWasmContext(ctx)
 		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
-		return p.Execute(ctx, evm.StateDB, contract, readonly, contract.Caller())
+
+		actionEntryGas := ctx.GasMeter().GasConsumed()
+		bz, err := p.Execute(ctx, evm.StateDB, contract, readonly, contract.Caller())
+		if err != nil {
+			chargeFailedExecutionGas(contract, ctx.GasMeter().GasConsumed()-actionEntryGas)
+			return bz, err
+		}
+		writeCache()
+		return bz, nil
 	})
 }
 
 // RunDelegate is the entry point for the delegatecall-only precompile.
 func (p *PrecompiledWasm) RunDelegate(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		ctx, writeCache := cacheNativeWasmContext(ctx)
 		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
-		return p.Execute(ctx, evm.StateDB, contract, readonly, evm.Origin)
+
+		actionEntryGas := ctx.GasMeter().GasConsumed()
+		bz, err := p.Execute(ctx, evm.StateDB, contract, readonly, evm.Origin)
+		if err != nil {
+			chargeFailedExecutionGas(contract, ctx.GasMeter().GasConsumed()-actionEntryGas)
+			return bz, err
+		}
+		writeCache()
+		return bz, nil
 	})
+}
+
+func chargeFailedExecutionGas(contract *vm.Contract, gas uint64) {
+	if gas > contract.Gas {
+		gas = contract.Gas
+	}
+	contract.UseGas(gas, nil, tracing.GasChangeCallFailedExecution)
 }
 
 func (p PrecompiledWasm) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *vm.Contract, readOnly bool, caller common.Address) ([]byte, error) {

@@ -6,6 +6,7 @@ import (
 
 	_ "embed"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,8 +14,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/cosmos/evm/x/vm/statedb"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/xpladev/xpla/x/bank/types"
 )
 
@@ -102,19 +106,68 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 		stateDB = statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
 	}
 
-	return k.executeTransfer(ctx, stateDB, sender, contractAddress, !callFromPrecompile, callFromPrecompile, to, amount)
-}
-
-func (k Erc20Keeper) executeTransfer(ctx sdk.Context, stateDB *statedb.StateDB, sender sdk.AccAddress, contractAddress common.Address, commit, callFromPrecompile bool, to sdk.AccAddress, amount *big.Int) error {
 	ethSender := common.BytesToAddress(sender.Bytes())
 	ethTo := common.BytesToAddress(to.Bytes())
+	method := types.GetErc20Method(types.Transfer)
 
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, commit, callFromPrecompile, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
+	var (
+		res *evmtypes.MsgEthereumTxResponse
+		err error
+	)
+
+	if !callFromPrecompile {
+		res, err = k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, true, false, nil, method, ethTo, amount)
+	} else {
+		var data []byte
+		data, err = ABI.Pack(method, ethTo, amount)
+		if err != nil {
+			return errorsmod.Wrap(
+				evmtypes.ErrABIPack,
+				errorsmod.Wrap(err, "failed to create transaction data").Error(),
+			)
+		}
+
+		msg := core.Message{
+			From:       ethSender,
+			To:         &contractAddress,
+			Nonce:      k.ek.GetNonce(ctx, ethSender),
+			Value:      big.NewInt(0),
+			GasLimit:   ctx.GasMeter().GasRemaining(),
+			GasPrice:   big.NewInt(0),
+			GasTipCap:  big.NewInt(0),
+			GasFeeCap:  big.NewInt(0),
+			Data:       data,
+			AccessList: ethtypes.AccessList{},
+		}
+
+		res, err = k.ek.ApplyMessage(ctx, stateDB, msg, nil, false, true, true)
+		if err != nil || res.Failed() {
+			// A nested precompile failure consumes the caller's full remaining gas budget.
+			gasMeter := ctx.GasMeter()
+			gasMeter.RefundGas(gasMeter.GasConsumed(), "reset the gas count")
+			gasMeter.ConsumeGas(gasMeter.Limit(), "apply evm transaction")
+			if err == nil {
+				return errorsmod.Wrapf(
+					errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError),
+					"contract call failed: method '%s', contract '%s'",
+					method,
+					contractAddress,
+				)
+			}
+		}
+		if err == nil {
+			ctx.GasMeter().ConsumeGas(res.MaxUsedGas, "apply evm message")
+		}
+	}
+
 	if err != nil {
+		if callFromPrecompile {
+			return errorsmod.Wrapf(err, "contract call failed: method '%s', contract '%s'", method, contractAddress)
+		}
 		return err
 	}
 
-	unpacked, err := ABI.Unpack(types.GetErc20Method(types.Transfer), res.Return())
+	unpacked, err := ABI.Unpack(method, res.Return())
 	if err != nil {
 		return err
 	}
