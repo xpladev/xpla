@@ -390,6 +390,15 @@ async function uploadWasmContracts () {
         LABEL_REVERT: 'xerc20_bank_send_revert'
       },
       envName: 'XERC20_BANK_SEND_WASM_ADDRESS'
+    },
+    {
+      name: 'Any dispatch WASM',
+      wasmFile: 'any_dispatch.wasm',
+      labels: {
+        LABEL_PRECOMPILE: 'wasm_any_dispatch_precompile',
+        LABEL_REVERT: 'wasm_any_dispatch_revert'
+      },
+      envName: 'ANY_DISPATCH_WASM_ADDRESS'
     }
   ]
 

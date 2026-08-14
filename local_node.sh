@@ -263,6 +263,10 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
   # Fund StakingReverter contract address with axpla for consortium staking tests
   # Only when TEST_SOLIDITY=true
   if [[ ${TEST_SOLIDITY} ]]; then
+    # Allow the Wasm Any gov-container regression to submit a proposal without
+    # transferring a deposit into the blocked gov module account via StateDB.
+    jq '.app_state["gov"]["params"]["min_deposit_ratio"]="0.000000000000000000"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+
     # Contract address is calculated from dev0 address (0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101)
     # after the pre-test WASM uploads have consumed dev0 nonces.
     # This address will be used by the Solidity test: tests/solidity/suites/precompiles/test/1_staking/0_edge_case_revert.js
