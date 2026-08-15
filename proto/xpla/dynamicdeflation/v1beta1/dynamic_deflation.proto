@@ -1,0 +1,44 @@
+syntax = "proto3";
+package xpla.dynamicdeflation.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/dynamicdeflation/types";
+
+import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
+// Params defines the dynamic deflation parameters used for the next period.
+message Params {
+  option (amino.name) = "xpladev/x/dynamicdeflation/Params";
+  option (gogoproto.goproto_stringer) = false;
+
+  bool enabled = 1;
+  string allocation_rate = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  uint64 settlement_interval_blocks = 3;
+  cosmos.base.v1beta1.Coin min_fee_amount = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.base.v1beta1.Coin max_fee_amount = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// CurrentPeriod tracks the active observation period.
+message CurrentPeriod {
+  int64 start_height = 1;
+  int64 end_height = 2;
+  Params active_config = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string gross_amount = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  string allocated_amount = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+package xpla.dynamicdeflation.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/dynamicdeflation/types";
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "xpla/dynamicdeflation/v1beta1/dynamic_deflation.proto";
+
+// GenesisState defines the dynamic deflation module genesis state.
+message GenesisState {
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  CurrentPeriod current_period = 2;
+}

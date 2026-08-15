@@ -6,72 +6,95 @@
 
 - [xpla/burn/v1beta1/burn.proto](#xpla/burn/v1beta1/burn.proto)
     - [BurnProposal](#xpla.burn.v1beta1.BurnProposal)
-  
+
 - [xpla/burn/v1beta1/genesis.proto](#xpla/burn/v1beta1/genesis.proto)
     - [GenesisState](#xpla.burn.v1beta1.GenesisState)
-  
+
 - [xpla/burn/v1beta1/query.proto](#xpla/burn/v1beta1/query.proto)
     - [QueryOngoingProposalRequest](#xpla.burn.v1beta1.QueryOngoingProposalRequest)
     - [QueryOngoingProposalResponse](#xpla.burn.v1beta1.QueryOngoingProposalResponse)
     - [QueryOngoingProposalsRequest](#xpla.burn.v1beta1.QueryOngoingProposalsRequest)
     - [QueryOngoingProposalsResponse](#xpla.burn.v1beta1.QueryOngoingProposalsResponse)
-  
+
     - [Query](#xpla.burn.v1beta1.Query)
-  
+
 - [xpla/burn/v1beta1/tx.proto](#xpla/burn/v1beta1/tx.proto)
     - [MsgBurn](#xpla.burn.v1beta1.MsgBurn)
     - [MsgBurnResponse](#xpla.burn.v1beta1.MsgBurnResponse)
-  
+
     - [Msg](#xpla.burn.v1beta1.Msg)
-  
+
+- [xpla/dynamicdeflation/v1beta1/dynamic_deflation.proto](#xpla/dynamicdeflation/v1beta1/dynamic_deflation.proto)
+    - [CurrentPeriod](#xpla.dynamicdeflation.v1beta1.CurrentPeriod)
+    - [Params](#xpla.dynamicdeflation.v1beta1.Params)
+
+- [xpla/dynamicdeflation/v1beta1/genesis.proto](#xpla/dynamicdeflation/v1beta1/genesis.proto)
+    - [GenesisState](#xpla.dynamicdeflation.v1beta1.GenesisState)
+
+- [xpla/dynamicdeflation/v1beta1/query.proto](#xpla/dynamicdeflation/v1beta1/query.proto)
+    - [QueryCurrentPeriodRequest](#xpla.dynamicdeflation.v1beta1.QueryCurrentPeriodRequest)
+    - [QueryCurrentPeriodResponse](#xpla.dynamicdeflation.v1beta1.QueryCurrentPeriodResponse)
+    - [QueryParamsRequest](#xpla.dynamicdeflation.v1beta1.QueryParamsRequest)
+    - [QueryParamsResponse](#xpla.dynamicdeflation.v1beta1.QueryParamsResponse)
+    - [QueryStatusRequest](#xpla.dynamicdeflation.v1beta1.QueryStatusRequest)
+    - [QueryStatusResponse](#xpla.dynamicdeflation.v1beta1.QueryStatusResponse)
+
+    - [Query](#xpla.dynamicdeflation.v1beta1.Query)
+
+- [xpla/dynamicdeflation/v1beta1/tx.proto](#xpla/dynamicdeflation/v1beta1/tx.proto)
+    - [MsgUpdateParams](#xpla.dynamicdeflation.v1beta1.MsgUpdateParams)
+    - [MsgUpdateParamsResponse](#xpla.dynamicdeflation.v1beta1.MsgUpdateParamsResponse)
+
+    - [Msg](#xpla.dynamicdeflation.v1beta1.Msg)
+
 - [xpla/reward/v1beta1/reward.proto](#xpla/reward/v1beta1/reward.proto)
     - [Params](#xpla.reward.v1beta1.Params)
-  
+
 - [xpla/reward/v1beta1/genesis.proto](#xpla/reward/v1beta1/genesis.proto)
     - [GenesisState](#xpla.reward.v1beta1.GenesisState)
-  
+
 - [xpla/reward/v1beta1/query.proto](#xpla/reward/v1beta1/query.proto)
     - [QueryParamsRequest](#xpla.reward.v1beta1.QueryParamsRequest)
     - [QueryParamsResponse](#xpla.reward.v1beta1.QueryParamsResponse)
     - [QueryPoolRequest](#xpla.reward.v1beta1.QueryPoolRequest)
     - [QueryPoolResponse](#xpla.reward.v1beta1.QueryPoolResponse)
-  
+
     - [Query](#xpla.reward.v1beta1.Query)
-  
+
 - [xpla/reward/v1beta1/tx.proto](#xpla/reward/v1beta1/tx.proto)
     - [MsgFundRewardPool](#xpla.reward.v1beta1.MsgFundRewardPool)
     - [MsgFundRewardPoolResponse](#xpla.reward.v1beta1.MsgFundRewardPoolResponse)
     - [MsgUpdateParams](#xpla.reward.v1beta1.MsgUpdateParams)
     - [MsgUpdateParamsResponse](#xpla.reward.v1beta1.MsgUpdateParamsResponse)
-  
+
     - [Msg](#xpla.reward.v1beta1.Msg)
-  
+
 - [xpla/volunteer/v1beta1/volunteervalidator.proto](#xpla/volunteer/v1beta1/volunteervalidator.proto)
     - [VolunteerValidator](#xpla.volunteer.v1beta1.VolunteerValidator)
-  
+
 - [xpla/volunteer/v1beta1/genesis.proto](#xpla/volunteer/v1beta1/genesis.proto)
     - [GenesisState](#xpla.volunteer.v1beta1.GenesisState)
-  
+
 - [xpla/volunteer/v1beta1/proposal.proto](#xpla/volunteer/v1beta1/proposal.proto)
     - [RegisterVolunteerValidatorProposal](#xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposal)
     - [RegisterVolunteerValidatorProposalWithDeposit](#xpla.volunteer.v1beta1.RegisterVolunteerValidatorProposalWithDeposit)
     - [UnregisterVolunteerValidatorProposal](#xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposal)
     - [UnregisterVolunteerValidatorProposalWithDeposit](#xpla.volunteer.v1beta1.UnregisterVolunteerValidatorProposalWithDeposit)
-  
+
 - [xpla/volunteer/v1beta1/query.proto](#xpla/volunteer/v1beta1/query.proto)
     - [QueryVolunteerValidatorsRequest](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsRequest)
     - [QueryVolunteerValidatorsResponse](#xpla.volunteer.v1beta1.QueryVolunteerValidatorsResponse)
-  
+
     - [Query](#xpla.volunteer.v1beta1.Query)
-  
+
 - [xpla/volunteer/v1beta1/tx.proto](#xpla/volunteer/v1beta1/tx.proto)
     - [MsgRegisterVolunteerValidator](#xpla.volunteer.v1beta1.MsgRegisterVolunteerValidator)
     - [MsgRegisterVolunteerValidatorResponse](#xpla.volunteer.v1beta1.MsgRegisterVolunteerValidatorResponse)
     - [MsgUnregisterVolunteerValidator](#xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidator)
     - [MsgUnregisterVolunteerValidatorResponse](#xpla.volunteer.v1beta1.MsgUnregisterVolunteerValidatorResponse)
-  
+
     - [Msg](#xpla.volunteer.v1beta1.Msg)
-  
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -274,6 +297,251 @@ Msg defines the burn service.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `Burn` | [MsgBurn](#xpla.burn.v1beta1.MsgBurn) | [MsgBurnResponse](#xpla.burn.v1beta1.MsgBurnResponse) | Burn defines a method for burning coins from an account. | |
+
+ <!-- end services -->
+
+
+
+<a name="xpla/dynamicdeflation/v1beta1/dynamic_deflation.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/dynamicdeflation/v1beta1/dynamic_deflation.proto
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.CurrentPeriod"></a>
+
+### CurrentPeriod
+CurrentPeriod tracks the active observation period.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `start_height` | [int64](#int64) |  |  |
+| `end_height` | [int64](#int64) |  |  |
+| `active_config` | [Params](#xpla.dynamicdeflation.v1beta1.Params) |  |  |
+| `gross_amount` | [string](#string) |  |  |
+| `allocated_amount` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.Params"></a>
+
+### Params
+Params defines the dynamic deflation parameters used for the next period.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `enabled` | [bool](#bool) |  |  |
+| `allocation_rate` | [string](#string) |  |  |
+| `settlement_interval_blocks` | [uint64](#uint64) |  |  |
+| `min_fee_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `max_fee_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/dynamicdeflation/v1beta1/genesis.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/dynamicdeflation/v1beta1/genesis.proto
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.GenesisState"></a>
+
+### GenesisState
+GenesisState defines the dynamic deflation module genesis state.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `params` | [Params](#xpla.dynamicdeflation.v1beta1.Params) |  |  |
+| `current_period` | [CurrentPeriod](#xpla.dynamicdeflation.v1beta1.CurrentPeriod) |  |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="xpla/dynamicdeflation/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/dynamicdeflation/v1beta1/query.proto
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.QueryCurrentPeriodRequest"></a>
+
+### QueryCurrentPeriodRequest
+QueryCurrentPeriodRequest is the request for Query/CurrentPeriod.
+
+
+
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.QueryCurrentPeriodResponse"></a>
+
+### QueryCurrentPeriodResponse
+QueryCurrentPeriodResponse is the response for Query/CurrentPeriod.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `current_period` | [CurrentPeriod](#xpla.dynamicdeflation.v1beta1.CurrentPeriod) |  |  |
+
+
+
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.QueryParamsRequest"></a>
+
+### QueryParamsRequest
+QueryParamsRequest is the request for Query/Params.
+
+
+
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.QueryParamsResponse"></a>
+
+### QueryParamsResponse
+QueryParamsResponse is the response for Query/Params.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `params` | [Params](#xpla.dynamicdeflation.v1beta1.Params) |  |  |
+
+
+
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.QueryStatusRequest"></a>
+
+### QueryStatusRequest
+QueryStatusRequest is the request for Query/Status.
+
+
+
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.QueryStatusResponse"></a>
+
+### QueryStatusResponse
+QueryStatusResponse reports the Dynamic Deflation Pool balance and allocated
+amount. module_balance is retained for API compatibility.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `module_balance` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `allocated_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `surplus_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `deficit_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="xpla.dynamicdeflation.v1beta1.Query"></a>
+
+### Query
+Query defines the dynamic deflation gRPC query service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `Params` | [QueryParamsRequest](#xpla.dynamicdeflation.v1beta1.QueryParamsRequest) | [QueryParamsResponse](#xpla.dynamicdeflation.v1beta1.QueryParamsResponse) | Params queries the candidate parameters for the next period. | GET|/xpla/dynamicdeflation/v1beta1/params|
+| `CurrentPeriod` | [QueryCurrentPeriodRequest](#xpla.dynamicdeflation.v1beta1.QueryCurrentPeriodRequest) | [QueryCurrentPeriodResponse](#xpla.dynamicdeflation.v1beta1.QueryCurrentPeriodResponse) | CurrentPeriod queries the active period, if one exists. | GET|/xpla/dynamicdeflation/v1beta1/current_period|
+| `Status` | [QueryStatusRequest](#xpla.dynamicdeflation.v1beta1.QueryStatusRequest) | [QueryStatusResponse](#xpla.dynamicdeflation.v1beta1.QueryStatusResponse) | Status compares the Dynamic Deflation Pool balance with the allocated amount. | GET|/xpla/dynamicdeflation/v1beta1/status|
+
+ <!-- end services -->
+
+
+
+<a name="xpla/dynamicdeflation/v1beta1/tx.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## xpla/dynamicdeflation/v1beta1/tx.proto
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.MsgUpdateParams"></a>
+
+### MsgUpdateParams
+MsgUpdateParams is the Msg/UpdateParams request type.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authority` | [string](#string) |  |  |
+| `params` | [Params](#xpla.dynamicdeflation.v1beta1.Params) |  |  |
+
+
+
+
+
+
+<a name="xpla.dynamicdeflation.v1beta1.MsgUpdateParamsResponse"></a>
+
+### MsgUpdateParamsResponse
+MsgUpdateParamsResponse is the Msg/UpdateParams response type.
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="xpla.dynamicdeflation.v1beta1.Msg"></a>
+
+### Msg
+Msg defines the dynamic deflation Msg service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `UpdateParams` | [MsgUpdateParams](#xpla.dynamicdeflation.v1beta1.MsgUpdateParams) | [MsgUpdateParamsResponse](#xpla.dynamicdeflation.v1beta1.MsgUpdateParamsResponse) | UpdateParams atomically replaces all module parameters. | |
 
  <!-- end services -->
 

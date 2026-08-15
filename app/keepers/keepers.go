@@ -78,6 +78,8 @@ import (
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	burnkeeper "github.com/xpladev/xpla/x/burn/keeper"
 	burntypes "github.com/xpladev/xpla/x/burn/types"
+	dynamicdeflationkeeper "github.com/xpladev/xpla/x/dynamicdeflation/keeper"
+	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
@@ -124,9 +126,10 @@ type AppKeepers struct {
 	EvmKeeper       *vmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
 
-	RewardKeeper    rewardkeeper.Keeper
-	VolunteerKeeper volunteerkeeper.Keeper
-	BurnKeeper      burnkeeper.Keeper
+	RewardKeeper           rewardkeeper.Keeper
+	DynamicDeflationKeeper dynamicdeflationkeeper.Keeper
+	VolunteerKeeper        volunteerkeeper.Keeper
+	BurnKeeper             burnkeeper.Keeper
 }
 
 func NewAppKeeper(
@@ -522,6 +525,15 @@ func NewAppKeeper(
 		appKeepers.EvmKeeper,
 		appKeepers.WasmKeeper,
 		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
+	)
+
+	appKeepers.DynamicDeflationKeeper = dynamicdeflationkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(appKeepers.keys[dynamicdeflationtypes.StoreKey]),
+		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+		appKeepers.DistrKeeper,
+		govModAddress,
 	)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
