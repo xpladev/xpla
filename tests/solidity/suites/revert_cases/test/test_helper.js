@@ -117,13 +117,23 @@ async function analyzeFailedTransaction(txHash, ethers) {
 }
 
 /**
- * Helper function to verify decoded revert reason
+ * Helper function to verify decoded revert reason.
+ * After StateDB CacheContext Commit, some OOGs surface as an RPC
+ * Internal/execution error with empty revert data instead of an ABI string.
  */
 function verifyTransactionRevert(analysis, expectedRevertReason) {
     expect(analysis).to.not.be.null;
     expect(analysis.status).to.equal(0); // Failed transaction
-    expect(analysis.errorData).to.not.be.null;
-    expect(analysis.decodedReason).to.include(expectedRevertReason, "unexpected revert reason");
+    if (analysis.decodedReason) {
+        expect(analysis.errorData).to.not.be.null;
+        expect(analysis.decodedReason).to.include(expectedRevertReason, "unexpected revert reason");
+        return;
+    }
+    const msg = analysis.errorMessage || '';
+    expect(msg.toLowerCase()).to.include(
+        expectedRevertReason.toLowerCase(),
+        "unexpected revert reason",
+    );
 }
 
 /**

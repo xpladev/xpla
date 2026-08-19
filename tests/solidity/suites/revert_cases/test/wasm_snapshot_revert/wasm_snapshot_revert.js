@@ -15,6 +15,13 @@ const { ethers } = await hre.network.connect();
 const GET_COUNTER_QUERY = '{"get_count":{}}';
 const INCREMENT_MSG = '{"increment":{}}'; // increment -> submsg no_op -> reply (counter 1->2->3)
 
+// Measured success gas after StateDB CacheContext Commit:
+//   Case 1 (EOA executeContract) ≈ 259678
+//   Case 2 (WasmSnapshotRevertCaller) ≈ 286983
+// Keep these just below that so WASM increment starts then OOGs and the snapshot rolls back.
+const CASE1_OOG_GAS_LIMIT = 259_500
+const CASE2_OOG_GAS_LIMIT = 286_500
+
 describe('WASM Snapshot Revert', function () {
     let caller;
     let wasm;
@@ -70,7 +77,7 @@ describe('WASM Snapshot Revert', function () {
                 counterWasmAddress,
                 ethers.toUtf8Bytes(INCREMENT_MSG),
                 funds,
-                { gasLimit: 259_670 }
+                { gasLimit: CASE1_OOG_GAS_LIMIT }
             );
         try {
             await tx.wait();
@@ -97,7 +104,7 @@ describe('WASM Snapshot Revert', function () {
         const tx = await caller.callExecuteWithLocalCounter(
             counterWasmAddress,
             ethers.toUtf8Bytes(INCREMENT_MSG),
-            { gasLimit: 286980 }
+            { gasLimit: CASE2_OOG_GAS_LIMIT }
         );
 
         // tx.wait() may throw (revert) or timeout; verify via JSON-RPC receipt.
@@ -108,7 +115,9 @@ describe('WASM Snapshot Revert', function () {
             analysis = await analyzeFailedTransaction(error.receipt.hash, ethers);
         }
 
-        verifyTransactionRevert(analysis, "out of gas");
+        // Inner precompile OOG is wrapped by the 63/64 call rule, so the outer
+        // tx reverts with "execution reverted" rather than a top-level OOG.
+        verifyTransactionRevert(analysis, "execution reverted");
 
         // Key point: on revert, local counter must rollback to 0 (not 1).
         const afterLocal = await caller.counter();
