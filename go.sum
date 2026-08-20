@@ -911,8 +911,8 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0/go.mod h1:ZXNYxsqcloTdSy/rNShjY
 github.com/decred/dcrd/lru v1.0.0/go.mod h1:mxKOwFd7lFjN2GZYsiz/ecgqR6kkYAl+0pz0tEMk218=
 github.com/deepmap/oapi-codegen v1.6.0 h1:w/d1ntwh91XI0b/8ja7+u5SvA4IFfM0UNNLmiDR1gg0=
 github.com/deepmap/oapi-codegen v1.6.0/go.mod h1:ryDa9AgbELGeB+YEXE1dR53yAjHwFvE9iAUlWl9Al3M=
-github.com/delight-labs/evm-priv-jul2026 v0.6.0-xpla.3-july-2026-hotfix.0.20260819024818-e62bed98e67b h1:CT2IpE6jdUW53ZjJNZuUK8Ewn63lWqWhrZqESl/GY1A=
-github.com/delight-labs/evm-priv-jul2026 v0.6.0-xpla.3-july-2026-hotfix.0.20260819024818-e62bed98e67b/go.mod h1:QnaJDtxqon2mywiYqxM8VwW8FKeFazi0au0qzVpFAG8=
+github.com/delight-labs/evm-priv-jul2026 v0.6.0-xpla.4-august-2026-hotfix h1:aTIExgQgcHqTmZA0z0bikQ6qYQ8EO1N9GNGSb9NppVw=
+github.com/delight-labs/evm-priv-jul2026 v0.6.0-xpla.4-august-2026-hotfix/go.mod h1:QnaJDtxqon2mywiYqxM8VwW8FKeFazi0au0qzVpFAG8=
 github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f/go.mod h1:xH/i4TFMt8koVQZ6WFms69WAsDWr2XsYL3Hkl7jkoLE=
 github.com/desertbit/timer v1.0.1 h1:yRpYNn5Vaaj6QXecdLMPMJsW81JLiI1eokUft5nBmeo=
 github.com/desertbit/timer v1.0.1/go.mod h1:htRrYeY5V/t4iu1xCJ5XsQvp4xve8QulXXctAzxqcwE=
