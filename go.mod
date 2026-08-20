@@ -286,7 +286,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla-2
 
 	// xpla features
-	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.0-xpla.3
+	github.com/cosmos/evm => github.com/delight-labs/evm-priv-jul2026 v0.6.0-xpla.4-august-2026-hotfix
 
 	// xpla features
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1
