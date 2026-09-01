@@ -24,9 +24,12 @@ func NewBaseCw20Keeper(wk types.WasmKeeper, wmk types.WasmMsgServer) BaseCw20Kee
 }
 
 func (k BaseCw20Keeper) GetSupply(goCtx context.Context, contractAddress string) sdk.Coin {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	tokenContractAddress, err := sdk.AccAddressFromBech32(contractAddress)
+	if err != nil {
+		return sdk.Coin{Denom: types.CW20 + types.TYPE_SEPARATOR + contractAddress, Amount: sdkmath.ZeroInt()}
+	}
 
-	tokenContractAddress := sdk.MustAccAddressFromBech32(contractAddress)
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	tokenInfo, err := k.cw20keeper.QueryTokenInfo(ctx, tokenContractAddress)
 	if err != nil {
 		return types.NewCw20Coin(contractAddress, sdkmath.ZeroInt())
@@ -51,7 +54,10 @@ func (k Cw20SendKeeper) SendCoins(goCtx context.Context, fromAddr sdk.AccAddress
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	for _, coin := range amt {
-		tokenType, address := types.ParseDenom(coin.Denom)
+		tokenType, address, err := types.ParseDenom(coin.Denom)
+		if err != nil {
+			return sdkerrors.ErrInvalidCoins.Wrapf("invalid token denom %q: %v", coin.Denom, err)
+		}
 		if tokenType == types.Cw20 {
 			contractAddress, err := sdk.AccAddressFromBech32(address)
 			if err != nil {
@@ -78,8 +84,12 @@ type Cw20ViewKeeper struct {
 
 // GetBalance implements keeper.ViewKeeper.
 func (e Cw20ViewKeeper) GetBalance(goCtx context.Context, addr sdk.AccAddress, cw20Address string) sdk.Coin {
+	contractAddress, err := sdk.AccAddressFromBech32(cw20Address)
+	if err != nil {
+		return sdk.Coin{Denom: types.CW20 + types.TYPE_SEPARATOR + cw20Address, Amount: sdkmath.ZeroInt()}
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	contractAddress := sdk.MustAccAddressFromBech32(cw20Address)
 
 	balanceReq := &types.QueryMsg_Balance{
 		Address: addr.String(),

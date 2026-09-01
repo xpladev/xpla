@@ -2,16 +2,17 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	cosmosbanktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/stretchr/testify/require"
@@ -22,76 +23,69 @@ import (
 	banktypes "github.com/xpladev/xpla/x/bank/types"
 )
 
-type recordingERC20EVMExecutor struct {
-	banktypes.EvmKeeper
+func TestErc20ViewKeeperRejectsInvalidContractAddressWithoutCallingEVM(t *testing.T) {
+	executor := &recordingERC20EVMExecutor{}
+	viewKeeper := Erc20ViewKeeper{erc20keeper: Erc20Keeper{ek: executor}}
 
-	nonce uint64
+	var coin sdk.Coin
+	require.NotPanics(t, func() {
+		coin = viewKeeper.GetBalance(context.Background(), sdk.AccAddress{1}, "invalid")
+	})
 
-	applyCalls              int
-	appliedStateDB          *statedb.StateDB
-	appliedMessage          core.Message
-	applyCommit             bool
-	applyCallFromPrecompile bool
-	applyInternal           bool
-	applyResponse           *evmtypes.MsgEthereumTxResponse
-	applyErr                error
-
-	callCalls          int
-	callStateDB        *statedb.StateDB
-	callFrom           common.Address
-	callContract       common.Address
-	callCommit         bool
-	callFromPrecompile bool
-	callGasCap         *big.Int
-	callMethod         string
-	callArgs           []interface{}
-	callResponse       *evmtypes.MsgEthereumTxResponse
-	callErr            error
+	require.True(t, coin.Amount.IsZero())
+	require.Zero(t, executor.callCalls)
 }
 
-func (e *recordingERC20EVMExecutor) ApplyMessage(
-	_ sdk.Context,
-	stateDB *statedb.StateDB,
-	msg core.Message,
-	_ *tracing.Hooks,
-	commit bool,
-	callFromPrecompile bool,
-	internal bool,
-) (*evmtypes.MsgEthereumTxResponse, error) {
-	e.applyCalls++
-	e.appliedStateDB = stateDB
-	e.appliedMessage = msg
-	e.applyCommit = commit
-	e.applyCallFromPrecompile = callFromPrecompile
-	e.applyInternal = internal
-	return e.applyResponse, e.applyErr
+func TestErc20BaseKeeperRejectsInvalidContractAddressWithoutCallingEVM(t *testing.T) {
+	executor := &recordingERC20EVMExecutor{}
+	keeper := NewBaseErc20Keeper(nil, executor)
+
+	var coin sdk.Coin
+	require.NotPanics(t, func() {
+		coin = keeper.GetSupply(context.Background(), "invalid")
+	})
+
+	require.True(t, coin.Amount.IsZero())
+	require.Zero(t, executor.callCalls)
 }
 
-func (e *recordingERC20EVMExecutor) GetNonce(_ sdk.Context, _ common.Address) uint64 {
-	return e.nonce
+func TestErc20ViewKeeperReturnsZeroOnQueryError(t *testing.T) {
+	executor := &recordingERC20EVMExecutor{callErr: errors.New("query failed")}
+	viewKeeper := Erc20ViewKeeper{
+		erc20keeper: Erc20Keeper{
+			ak: moduleAccountKeeper{
+				moduleAccount: authtypes.NewEmptyModuleAccount(cosmosbanktypes.ModuleName),
+			},
+			ek: executor,
+		},
+	}
+	ctx := sdk.Context{}.
+		WithContext(context.Background()).
+		WithEventManager(sdk.NewEventManager())
+
+	var coin sdk.Coin
+	require.NotPanics(t, func() {
+		coin = viewKeeper.GetBalance(ctx, sdk.AccAddress{1}, "A2dC463DD29be4C8a28dB0C09D89b0AA89Fc9546")
+	})
+
+	require.True(t, coin.Amount.IsZero())
+	require.Equal(t, 1, executor.callCalls)
 }
 
-func (e *recordingERC20EVMExecutor) CallEVM(
-	_ sdk.Context,
-	stateDB *statedb.StateDB,
-	_ abi.ABI,
-	from, contract common.Address,
-	commit bool,
-	callFromPrecompile bool,
-	gasCap *big.Int,
-	method string,
-	args ...interface{},
-) (*evmtypes.MsgEthereumTxResponse, error) {
-	e.callCalls++
-	e.callStateDB = stateDB
-	e.callFrom = from
-	e.callContract = contract
-	e.callCommit = commit
-	e.callFromPrecompile = callFromPrecompile
-	e.callGasCap = gasCap
-	e.callMethod = method
-	e.callArgs = args
-	return e.callResponse, e.callErr
+func TestErc20BaseKeeperReturnsZeroOnSupplyQueryError(t *testing.T) {
+	executor := &recordingERC20EVMExecutor{callErr: errors.New("query failed")}
+	keeper := NewBaseErc20Keeper(
+		moduleAccountKeeper{moduleAccount: authtypes.NewEmptyModuleAccount(cosmosbanktypes.ModuleName)},
+		executor,
+	)
+	ctx := sdk.Context{}.
+		WithContext(context.Background()).
+		WithEventManager(sdk.NewEventManager())
+
+	coin := keeper.GetSupply(ctx, "A2dC463DD29be4C8a28dB0C09D89b0AA89Fc9546")
+
+	require.True(t, coin.Amount.IsZero())
+	require.Equal(t, 1, executor.callCalls)
 }
 
 func TestExecuteTransferBoundsPrecompileCallByRemainingGasAndConsumesMaxUsedGas(t *testing.T) {

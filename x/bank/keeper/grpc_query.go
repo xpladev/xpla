@@ -4,6 +4,7 @@ import (
 	"context"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	xbanktypes "github.com/xpladev/xpla/x/bank/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -19,7 +20,7 @@ func (k Keeper) Balance(ctx context.Context, req *banktypes.QueryBalanceRequest)
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := sdk.ValidateDenom(req.Denom); err != nil {
+	if _, _, err := xbanktypes.ParseDenom(req.Denom); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -47,7 +48,7 @@ func (k Keeper) SpendableBalanceByDenom(ctx context.Context, req *banktypes.Quer
 		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
 	}
 
-	if err := sdk.ValidateDenom(req.Denom); err != nil {
+	if _, _, err := xbanktypes.ParseDenom(req.Denom); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -65,7 +66,7 @@ func (k Keeper) SupplyOf(c context.Context, req *banktypes.QuerySupplyOfRequest)
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := sdk.ValidateDenom(req.Denom); err != nil {
+	if _, _, err := xbanktypes.ParseDenom(req.Denom); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 

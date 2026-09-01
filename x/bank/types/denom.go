@@ -1,10 +1,12 @@
 package types
 
 import (
+	"fmt"
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -29,18 +31,31 @@ func NewErc20Coin(contractAddress string, amount sdkmath.Int) sdk.Coin {
 	return sdk.NewCoin(ERC20+TYPE_SEPARATOR+contractAddress, amount)
 }
 
-func ParseDenom(denom string) (TokenType, string) {
-	res := strings.Split(denom, TYPE_SEPARATOR)
-
-	if len(res) == 2 {
-		if strings.HasPrefix(denom, ERC20) {
-			return Erc20, res[1]
-		}
-
-		if strings.HasPrefix(denom, CW20) {
-			return Cw20, res[1]
-		}
+// ParseDenom validates and classifies a denom. Malformed denoms using the
+// reserved xerc20 or xcw20 prefixes return an error instead of falling back to
+// the native Cosmos bank path.
+func ParseDenom(denom string) (TokenType, string, error) {
+	if err := sdk.ValidateDenom(denom); err != nil {
+		return Cosmos, denom, err
 	}
 
-	return Cosmos, denom
+	tokenType, contractAddress, found := strings.Cut(denom, TYPE_SEPARATOR)
+	if !found {
+		return Cosmos, denom, nil
+	}
+
+	switch tokenType {
+	case ERC20:
+		if !common.IsHexAddress(contractAddress) {
+			return Cosmos, denom, fmt.Errorf("invalid ERC20 contract address %q", contractAddress)
+		}
+		return Erc20, contractAddress, nil
+	case CW20:
+		if _, err := sdk.AccAddressFromBech32(contractAddress); err != nil {
+			return Cosmos, denom, fmt.Errorf("invalid CW20 contract address %q: %w", contractAddress, err)
+		}
+		return Cw20, contractAddress, nil
+	default:
+		return Cosmos, denom, nil
+	}
 }
