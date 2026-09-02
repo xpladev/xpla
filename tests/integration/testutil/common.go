@@ -69,7 +69,7 @@ func CreateTestInput(t *testing.T) TestInput {
 		nil,
 		true,
 		map[int64]bool{},
-		xplaApp.DefaultNodeHome,
+		t.TempDir(),
 		xplaApp.EmptyAppOptions{},
 		xplaApp.EmptyWasmOptions,
 	)
