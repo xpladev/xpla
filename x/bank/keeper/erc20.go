@@ -52,9 +52,10 @@ func NewErc20Keeper(ak banktypes.AccountKeeper, ek types.EvmKeeper) Erc20Keeper 
 func (k Erc20Keeper) QueryTotalSupply(ctx sdk.Context, contractAddress common.Address) (sdkmath.Int, error) {
 	moduleAccount := k.ak.GetModuleAccount(ctx, banktypes.ModuleName)
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
+	gasCap := new(big.Int).SetUint64(ctx.GasMeter().GasRemaining())
 
 	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, nil, types.GetErc20Method(types.TotalSupply))
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, gasCap, types.GetErc20Method(types.TotalSupply))
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
@@ -78,9 +79,10 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 	moduleAccount := k.ak.GetModuleAccount(ctx, banktypes.ModuleName)
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
 	ethAccount := common.BytesToAddress(account.Bytes())
+	gasCap := new(big.Int).SetUint64(ctx.GasMeter().GasRemaining())
 
 	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, nil, types.GetErc20Method(types.BalanceOf), ethAccount)
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, gasCap, types.GetErc20Method(types.BalanceOf), ethAccount)
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}

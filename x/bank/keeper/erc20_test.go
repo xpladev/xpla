@@ -23,6 +23,10 @@ import (
 	banktypes "github.com/xpladev/xpla/x/bank/types"
 )
 
+type queryAccountKeeper struct {
+	cosmosbanktypes.AccountKeeper
+}
+
 func TestErc20ViewKeeperRejectsInvalidContractAddressWithoutCallingEVM(t *testing.T) {
 	executor := &recordingERC20EVMExecutor{}
 	viewKeeper := Erc20ViewKeeper{erc20keeper: Erc20Keeper{ek: executor}}
@@ -61,7 +65,8 @@ func TestErc20ViewKeeperReturnsZeroOnQueryError(t *testing.T) {
 	}
 	ctx := sdk.Context{}.
 		WithContext(context.Background()).
-		WithEventManager(sdk.NewEventManager())
+		WithEventManager(sdk.NewEventManager()).
+		WithGasMeter(storetypes.NewGasMeter(100_000))
 
 	var coin sdk.Coin
 	require.NotPanics(t, func() {
@@ -80,12 +85,130 @@ func TestErc20BaseKeeperReturnsZeroOnSupplyQueryError(t *testing.T) {
 	)
 	ctx := sdk.Context{}.
 		WithContext(context.Background()).
-		WithEventManager(sdk.NewEventManager())
+		WithEventManager(sdk.NewEventManager()).
+		WithGasMeter(storetypes.NewGasMeter(100_000))
 
 	coin := keeper.GetSupply(ctx, "A2dC463DD29be4C8a28dB0C09D89b0AA89Fc9546")
 
 	require.True(t, coin.Amount.IsZero())
 	require.Equal(t, 1, executor.callCalls)
+}
+
+func (queryAccountKeeper) GetModuleAccount(_ context.Context, moduleName string) sdk.ModuleAccountI {
+	return authtypes.NewEmptyModuleAccount(moduleName)
+}
+
+func TestERC20QueriesPassRemainingGasCap(t *testing.T) {
+	const (
+		gasLimit    = uint64(100_000)
+		consumedGas = uint64(12_345)
+	)
+
+	contract := common.HexToAddress("0x2000")
+	account := sdk.AccAddress(common.HexToAddress("0x3000").Bytes())
+	totalSupplyReturn, err := ABI.Methods[banktypes.GetErc20Method(banktypes.TotalSupply)].Outputs.Pack(big.NewInt(42))
+	require.NoError(t, err)
+	balanceReturn, err := ABI.Methods[banktypes.GetErc20Method(banktypes.BalanceOf)].Outputs.Pack(big.NewInt(7))
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name       string
+		method     string
+		returnData []byte
+		query      func(Erc20Keeper, sdk.Context) error
+	}{
+		{
+			name:       "total supply",
+			method:     banktypes.GetErc20Method(banktypes.TotalSupply),
+			returnData: totalSupplyReturn,
+			query: func(keeper Erc20Keeper, ctx sdk.Context) error {
+				_, err := keeper.QueryTotalSupply(ctx, contract)
+				return err
+			},
+		},
+		{
+			name:       "balance",
+			method:     banktypes.GetErc20Method(banktypes.BalanceOf),
+			returnData: balanceReturn,
+			query: func(keeper Erc20Keeper, ctx sdk.Context) error {
+				_, err := keeper.QueryBalanceOf(ctx, contract, account)
+				return err
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := sdk.Context{}.
+				WithContext(context.Background()).
+				WithEventManager(sdk.NewEventManager()).
+				WithGasMeter(storetypes.NewGasMeter(gasLimit))
+			ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
+
+			executor := &recordingERC20EVMExecutor{
+				callResponse: &evmtypes.MsgEthereumTxResponse{Ret: tc.returnData},
+			}
+			keeper := Erc20Keeper{ak: queryAccountKeeper{}, ek: executor}
+
+			require.NoError(t, tc.query(keeper, ctx))
+			require.Equal(t, 1, executor.callCalls)
+			require.NotNil(t, executor.callGasCap)
+			require.Zero(t, executor.callGasCap.Cmp(new(big.Int).SetUint64(gasLimit-consumedGas)))
+			require.Equal(t, tc.method, executor.callMethod)
+			require.False(t, executor.callCommit)
+			require.False(t, executor.callFromPrecompile)
+		})
+	}
+}
+
+func TestERC20QueryPropagatesParentLimitedOutOfGas(t *testing.T) {
+	const (
+		gasLimit    = uint64(100_000)
+		consumedGas = uint64(12_345)
+	)
+
+	ctx := sdk.Context{}.
+		WithContext(context.Background()).
+		WithEventManager(sdk.NewEventManager()).
+		WithGasMeter(storetypes.NewGasMeter(gasLimit))
+	ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
+
+	executor := &recordingERC20EVMExecutor{
+		callConsumeGas: gasLimit - consumedGas,
+		callErr:        vm.ErrOutOfGas,
+	}
+	keeper := Erc20Keeper{ak: queryAccountKeeper{}, ek: executor}
+
+	_, err := keeper.QueryTotalSupply(ctx, common.HexToAddress("0x2000"))
+	require.ErrorContains(t, err, vm.ErrOutOfGas.Error())
+	require.Equal(t, gasLimit, ctx.GasMeter().GasConsumed())
+	require.True(t, ctx.GasMeter().IsOutOfGas())
+}
+
+func TestERC20QueryDoesNotDoubleChargeEVMGas(t *testing.T) {
+	const (
+		gasLimit    = uint64(100_000)
+		consumedGas = uint64(12_345)
+		evmGasUsed  = uint64(1_234)
+	)
+
+	ctx := sdk.Context{}.
+		WithContext(context.Background()).
+		WithEventManager(sdk.NewEventManager()).
+		WithGasMeter(storetypes.NewGasMeter(gasLimit))
+	ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
+	returnData, err := ABI.Methods[banktypes.GetErc20Method(banktypes.TotalSupply)].Outputs.Pack(big.NewInt(42))
+	require.NoError(t, err)
+
+	executor := &recordingERC20EVMExecutor{
+		callConsumeGas: evmGasUsed,
+		callResponse:   &evmtypes.MsgEthereumTxResponse{GasUsed: evmGasUsed, Ret: returnData},
+	}
+	keeper := Erc20Keeper{ak: queryAccountKeeper{}, ek: executor}
+
+	_, err = keeper.QueryTotalSupply(ctx, common.HexToAddress("0x2000"))
+	require.NoError(t, err)
+	require.Equal(t, consumedGas+evmGasUsed, ctx.GasMeter().GasConsumed())
 }
 
 func TestExecuteTransferBoundsPrecompileCallByRemainingGasAndConsumesMaxUsedGas(t *testing.T) {

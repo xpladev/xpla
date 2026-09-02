@@ -42,6 +42,7 @@ type recordingERC20EVMExecutor struct {
 	callGasCap         *big.Int
 	callMethod         string
 	callArgs           []interface{}
+	callConsumeGas     uint64
 	callResponse       *evmtypes.MsgEthereumTxResponse
 	callErr            error
 }
@@ -83,7 +84,7 @@ func (e *recordingERC20EVMExecutor) GetNonce(_ sdk.Context, _ common.Address) ui
 }
 
 func (e *recordingERC20EVMExecutor) CallEVM(
-	_ sdk.Context,
+	ctx sdk.Context,
 	stateDB *statedb.StateDB,
 	_ abi.ABI,
 	from, contract common.Address,
@@ -102,5 +103,8 @@ func (e *recordingERC20EVMExecutor) CallEVM(
 	e.callGasCap = gasCap
 	e.callMethod = method
 	e.callArgs = args
+	if e.callConsumeGas > 0 {
+		ctx.GasMeter().ConsumeGas(e.callConsumeGas, "mock EVM call")
+	}
 	return e.callResponse, e.callErr
 }
