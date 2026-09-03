@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/xpladev/xpla/tests/integration/testutil"
 	"github.com/xpladev/xpla/x/staking"
+	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
 
 func TestDustShare(t *testing.T) {
@@ -49,4 +50,47 @@ func TestDustShare(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(delegations))
 	assert.Equal(t, sdk.AccAddress(testutil.Pks[1].Address()).String(), delegations[0].DelegatorAddress)
+}
+
+func TestApplyValidatorUpdatesSkipsOrphanVolunteer(t *testing.T) {
+	input := testutil.CreateTestInput(t)
+	valAddr := sdk.ValAddress(testutil.Pks[0].Address())
+
+	require.NoError(t, input.VolunteerKeeper.SetVolunteerValidator(
+		input.Ctx,
+		valAddr,
+		volunteertypes.NewVolunteerValidator(valAddr, 0),
+	))
+
+	var err error
+	require.NotPanics(t, func() {
+		_, err = input.StakingKeeper.ApplyAndReturnValidatorSetUpdates(input.Ctx)
+	})
+	require.NoError(t, err)
+}
+
+func TestApplyValidatorUpdatesStopsAtPowerIteratorExhaustion(t *testing.T) {
+	input := testutil.CreateTestInput(t)
+	valAddr := sdk.ValAddress(testutil.Pks[0].Address())
+	stake := input.StakingKeeper.TokensFromConsensusPower(input.Ctx, 100)
+
+	require.NoError(t, input.InitAccountWithCoins(
+		sdk.AccAddress(testutil.Pks[0].Address()),
+		sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, stake)),
+	))
+	input.StakingHandler.CreateValidator(valAddr, testutil.Pks[0], stake, true)
+
+	validator, err := input.StakingKeeper.GetValidator(input.Ctx, valAddr)
+	require.NoError(t, err)
+	require.NoError(t, input.StakingKeeper.DeleteValidatorByPowerIndex(input.Ctx, validator))
+	require.NoError(t, input.VolunteerKeeper.SetVolunteerValidator(
+		input.Ctx,
+		valAddr,
+		volunteertypes.NewVolunteerValidator(valAddr, 0),
+	))
+
+	require.NotPanics(t, func() {
+		_, err = input.StakingKeeper.ApplyAndReturnValidatorSetUpdates(input.Ctx)
+	})
+	require.NoError(t, err)
 }
