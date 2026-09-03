@@ -142,6 +142,9 @@ func (p PrecompiledBank) balance(ctx sdk.Context, method *abi.Method, args []int
 	if err != nil {
 		return nil, err
 	}
+	if _, _, err := xbanktypes.ParseDenom(denom); err != nil {
+		return nil, err
+	}
 
 	coin := p.bk.GetBalance(ctx, address, denom)
 
@@ -151,6 +154,9 @@ func (p PrecompiledBank) balance(ctx sdk.Context, method *abi.Method, args []int
 func (p PrecompiledBank) supplyOf(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
 	denom, err := util.GetString(args[0])
 	if err != nil {
+		return nil, err
+	}
+	if _, _, err := xbanktypes.ParseDenom(denom); err != nil {
 		return nil, err
 	}
 
