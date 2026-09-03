@@ -4,7 +4,7 @@ This document provides the policies that the XPLA core team has in place for han
 ## Reporting a Vulnerability
 Thank you for taking time to improve the security of the XPLA Chain. We appreciate your efforts and responsible disclosure and will make every effort to acknowledge your contributions.
 
-Please report any security issues via email to [security@xpla.io](mailto:security@xpla.io), [security@delightlabs.io](mailto:security@delightlabs.io), or [security@zenaad.com](mailto:security@zenaad.com) with the following details:
+Please report any security issues via email to [security@xpla.io](mailto:security@xpla.io), [security@delightlabs.io](mailto:security@delightlabs.io), [security@zenaad.com](mailto:security@zenaad.com), [kade@metamagnet.org](mailto:kade@metamagnet.org), or  [sam@metamagnet.org](mailto:sam@metamagnet.org) with the following details:
 - Your name
 - Your affiliation (if applicable)
 - Technical description of the issue, including steps to reproduce
