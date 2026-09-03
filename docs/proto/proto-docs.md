@@ -210,6 +210,11 @@ QueryOngoingProposalsRequest is the request type for the
 Query/OngoingProposals RPC method.
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `pagination` | [cosmos.base.query.v1beta1.PageRequest](#cosmos.base.query.v1beta1.PageRequest) |  | pagination defines an optional pagination for the request. |
+
+
 
 
 
@@ -224,6 +229,7 @@ Query/OngoingProposals RPC method.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `proposals` | [BurnProposal](#xpla.burn.v1beta1.BurnProposal) | repeated |  |
+| `pagination` | [cosmos.base.query.v1beta1.PageResponse](#cosmos.base.query.v1beta1.PageResponse) |  | pagination defines the pagination in the response. |
 
 
 
@@ -945,6 +951,11 @@ UnregisterVolunteerValidatorProposalWithDeposit
 QueryVolunteerValidatorsRequest
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `pagination` | [cosmos.base.query.v1beta1.PageRequest](#cosmos.base.query.v1beta1.PageRequest) |  | pagination defines an optional pagination for the request. |
+
+
 
 
 
@@ -958,6 +969,7 @@ QueryVolunteerValidatorsResponse
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `volunteer_validators` | [string](#string) | repeated |  |
+| `pagination` | [cosmos.base.query.v1beta1.PageResponse](#cosmos.base.query.v1beta1.PageResponse) |  | pagination defines the pagination in the response. |
 
 
 
