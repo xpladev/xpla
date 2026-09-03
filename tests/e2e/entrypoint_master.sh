@@ -65,7 +65,7 @@ do
         --ip="192.167.100.$IDX" \
         --keyring-backend test \
         --home $XPLAHOME \
-        --gas-prices 8500000000axpla
+        --gas-prices 280000000000axpla
 
 done
 
