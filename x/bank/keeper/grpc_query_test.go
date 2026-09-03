@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -77,7 +78,8 @@ func TestGRPCBalanceReturnsZeroForValidUnrecordedAccount(t *testing.T) {
 	accountAddress := sdk.AccAddress(bytes.Repeat([]byte{1}, 20))
 	ctx := sdk.Context{}.
 		WithContext(context.Background()).
-		WithEventManager(sdk.NewEventManager())
+		WithEventManager(sdk.NewEventManager()).
+		WithGasMeter(storetypes.NewGasMeter(100_000))
 
 	response, err := keeper.Balance(ctx, &banktypes.QueryBalanceRequest{
 		Address: accountAddress.String(),
