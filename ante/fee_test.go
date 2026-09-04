@@ -71,4 +71,10 @@ func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
 	oracleTx, err := s.CreateTestTx(privs, accNums, accSeqs, s.ctx.ChainID())
 	_, err = antehandler(s.ctx, oracleTx, false)
 	s.Require().NoError(err, "expected min fee bypass for IBC messages")
+
+	s.ctx = s.ctx.WithIsCheckTx(false)
+
+	// local minimum fee bypass configuration must not affect DeliverTx
+	_, err = antehandler(s.ctx, oracleTx, false)
+	s.Require().ErrorIs(err, sdkerrors.ErrInsufficientFee)
 }

@@ -53,7 +53,7 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	}
 
 	// Short-circuit if min gas price is 0 or if simulating
-	if minGasPrice.IsZero() || simulate || (mpd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
+	if minGasPrice.IsZero() || simulate || (ctx.IsCheckTx() && mpd.bypassMinFeeMsgs(msgs) && gas <= uint64(len(msgs))*maxBypassMinFeeMsgGasUsage) {
 		return next(ctx, tx, simulate)
 	}
 
