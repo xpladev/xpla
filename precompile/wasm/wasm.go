@@ -332,6 +332,9 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, se
 	}
 
 	contractAccount := p.ak.GetAccount(ctx, contractAddress)
+	if contractAccount == nil {
+		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	}
 
 	msg, err := util.GetByteArray(args[2])
 	if err != nil {
@@ -380,6 +383,9 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 	}
 
 	contractAccount := p.ak.GetAccount(ctx, contractAddress)
+	if contractAccount == nil {
+		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	}
 
 	codeId, err := util.GetBigInt(args[2])
 	if err != nil {
@@ -418,6 +424,9 @@ func (p PrecompiledWasm) smartContractState(ctx sdk.Context, method *abi.Method,
 	}
 
 	contractAccount := p.ak.GetAccount(ctx, contractAddress)
+	if contractAccount == nil {
+		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	}
 
 	queryData, err := util.GetByteArray(args[1])
 	if err != nil {
