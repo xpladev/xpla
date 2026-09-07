@@ -6,6 +6,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
@@ -49,9 +50,20 @@ func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
 
 	// antehandler errors with insufficient fees
 	_, err = antehandler(s.ctx, tx, false)
-	s.Require().Error(err, "expected error due to low fee")
+	s.Require().ErrorIs(err, sdkerrors.ErrInsufficientFee)
+
+	// simulations bypass minimum fee checks
+	_, err = antehandler(s.ctx, tx, true)
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithIsCheckTx(false)
+
+	// antehandler errors with insufficient fees during DeliverTx
+	_, err = antehandler(s.ctx, tx, false)
+	s.Require().ErrorIs(err, sdkerrors.ErrInsufficientFee)
 
 	// ensure no fees for certain IBC msgs
+	s.ctx = s.ctx.WithIsCheckTx(true)
 	s.Require().NoError(s.txBuilder.SetMsgs(
 		ibcchanneltypes.NewMsgRecvPacket(ibcchanneltypes.Packet{}, nil, ibcclienttypes.Height{}, ""),
 	))
@@ -62,7 +74,7 @@ func (s *IntegrationTestSuite) TestMinGasPriceDecorator() {
 
 	s.ctx = s.ctx.WithIsCheckTx(false)
 
-	// antehandler should not error since we do not check min gas prices in DeliverTx
-	_, err = antehandler(s.ctx, tx, false)
-	s.Require().NoError(err, "unexpected error during DeliverTx")
+	// local minimum fee bypass configuration must not affect DeliverTx
+	_, err = antehandler(s.ctx, oracleTx, false)
+	s.Require().ErrorIs(err, sdkerrors.ErrInsufficientFee)
 }
