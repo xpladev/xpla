@@ -2,11 +2,20 @@ name: Create and Push Docker Image
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing source tag to build (for example v1.12.1)
+        required: true
+        type: string
+      publish:
+        description: Push the image to GHCR
+        default: false
+        type: boolean
 
   push:
     tags:
-      - "v[0-9]+\\.[0-9]+\\.[0-9]+"
-      - "v[0-9]+\\.[0-9]+\\.[0-9]+-*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
 
 jobs:
   build-and-push-image:
@@ -17,10 +26,43 @@ jobs:
 
     steps:
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
+
+      # Keep Heighliner's v1.7.6 build stage; replace its unavailable runtime.
+      - name: Prepare Heighliner Dockerfile
+        env:
+          SOURCE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ ! "$SOURCE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Expected a version tag such as v1.12.1"
+            exit 1
+          fi
+          mkdir -p dockerfile/cosmos
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/strangelove-ventures/heighliner/98a256e2d23bf5a34a2ea3971156aaee5a0a3a19/dockerfile/cosmos/Dockerfile -o "$RUNNER_TEMP/cosmos.Dockerfile"
+          sed '/^# Use minimal busybox/,$d' "$RUNNER_TEMP/cosmos.Dockerfile" > dockerfile/cosmos/Dockerfile
+          cat >> dockerfile/cosmos/Dockerfile <<'EOF'
+          # Public runtime replaces the unavailable infra-toolkit image.
+          FROM alpine:3.22.5 AS runtime
+          RUN apk add --no-cache ca-certificates jq \
+              && addgroup --gid 1025 -S heighliner \
+              && adduser --uid 1025 -S heighliner -G heighliner
+          LABEL org.opencontainers.image.source="https://github.com/xpladev/xpla"
+          COPY --from=build-env /root/dir_abs /root/dir_abs
+          COPY --from=build-env /root/dir_abs.list /root/dir_abs.list
+          RUN set -eu; i=0; while read -r dir; do \
+                mkdir -p "$(dirname "$dir")"; \
+                mv "/root/dir_abs/$i" "$dir"; \
+                i=$((i+1)); \
+              done < /root/dir_abs.list
+          COPY --from=build-env /root/bin /bin
+          COPY --from=build-env /root/lib /lib
+          WORKDIR /home/heighliner
+          USER heighliner
+          EOF
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v2
+        if: github.event_name == 'push' || inputs.publish
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -29,6 +71,11 @@ jobs:
       - name: Build and push Docker image
         uses: strangelove-ventures/heighliner-build-action@v1.0.3
         with:
+          heighliner-tag: v1.7.6
+          buildkit-tag: v0.33.0
+          git-ref: ${{ inputs.tag || github.ref_name }}
+          tag: ${{ inputs.tag || github.ref_name }}
+          skip: ${{ github.event_name != 'push' && !inputs.publish }}
           chain: xpla
           dockerfile: cosmos
           build-target: make install
