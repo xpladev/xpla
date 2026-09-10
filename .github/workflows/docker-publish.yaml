@@ -4,13 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: GHCR image tag to publish (e.g. v1.12.1)
+        description: Existing Git tag to build and publish (e.g. v1.12.1)
         required: true
         type: string
   push:
     tags:
-      - "v[0-9]+\\.[0-9]+\\.[0-9]+"
-      - "v[0-9]+\\.[0-9]+\\.[0-9]+-*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: read
@@ -30,21 +33,28 @@ jobs:
             platform: linux/arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
     steps:
-      - name: Check out
+      - name: Check out build definition
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: recipe
 
-      - name: Set image name and tag
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', env.TAG) || github.sha }}
+          path: source
+
+      - name: Prepare build context
         id: meta
+        working-directory: source
         run: |
-          echo "image=ghcr.io/$(printf '%s' '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-          if [ -n "${{ inputs.tag }}" ]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.ref_type }}" = tag ]; then
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          fi
+          # Build historical sources with the current image definition.
+          cp ../recipe/Dockerfile ../recipe/.dockerignore .
+          echo "image=ghcr.io/$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
@@ -59,38 +69,25 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: .
-          file: Dockerfile
+          context: source
+          file: source/Dockerfile
           target: publish
           platforms: ${{ matrix.platform }}
           push: true
           provenance: false
-          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}-${{ matrix.arch }}
+          tags: ${{ steps.meta.outputs.image }}:${{ env.TAG }}-${{ matrix.arch }}
           build-args: |
-            GIT_VERSION=${{ steps.meta.outputs.tag }}
-            GIT_COMMIT=${{ github.sha }}
+            GIT_VERSION=${{ env.TAG }}
+            GIT_COMMIT=${{ steps.meta.outputs.commit }}
           cache-from: type=gha,scope=xpla-publish-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=xpla-publish-${{ matrix.arch }}
 
   publish:
     needs: build
     runs-on: ubuntu-24.04
+    env:
+      IMAGE: ${{ needs.build.outputs.image }}
     steps:
-      - name: Set image name and tag
-        id: meta
-        run: |
-          echo "image=ghcr.io/$(printf '%s' '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-          if [ -n "${{ inputs.tag }}" ]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.ref_type }}" = tag ]; then
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
-
       - name: Log in to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -101,6 +98,6 @@ jobs:
       - name: Create multi-arch image
         run: |
           docker buildx imagetools create \
-            -t "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}" \
-            "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}-amd64" \
-            "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}-arm64"
+            -t "$IMAGE:$TAG" \
+            "$IMAGE:$TAG-amd64" \
+            "$IMAGE:$TAG-arm64"

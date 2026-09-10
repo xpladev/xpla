@@ -38,5 +38,4 @@ FROM alpine:3.22 AS publish
 RUN apk add --no-cache ca-certificates
 COPY --from=build /workspace/build/xplad /bin/xplad
 EXPOSE 9090 8545 26656 26657
-# Alpine's default shell command must not become the node image's default.
-CMD []
+CMD ["/bin/xplad", "version"]
