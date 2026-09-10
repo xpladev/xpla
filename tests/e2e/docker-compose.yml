@@ -7,9 +7,10 @@ services:
 
     build:
       context: ../../.
-      target: runtime
+      target: publish
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:rw
 
     ports:
@@ -30,6 +31,7 @@ services:
     pull_policy: never
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:ro
 
     depends_on:
@@ -52,6 +54,7 @@ services:
     pull_policy: never
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:ro
 
     depends_on:
@@ -74,6 +77,7 @@ services:
     pull_policy: never
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:ro
 
     depends_on:
@@ -96,6 +100,7 @@ services:
     pull_policy: never
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:ro
 
     depends_on:
@@ -118,6 +123,7 @@ services:
     pull_policy: never
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:ro
 
     depends_on:
@@ -140,6 +146,7 @@ services:
     pull_policy: never
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:ro
 
     depends_on:
@@ -162,6 +169,7 @@ services:
     pull_policy: never
 
     volumes:
+      - .:/opt/tests/e2e:ro
       - ~/genesis:/genesis:ro
 
     depends_on:
