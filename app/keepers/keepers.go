@@ -74,6 +74,7 @@ import (
 	vmtypes "github.com/cosmos/evm/x/vm/types"
 
 	"github.com/xpladev/xpla/precompile"
+	xplatypes "github.com/xpladev/xpla/types"
 	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	burnkeeper "github.com/xpladev/xpla/x/burn/keeper"
@@ -499,6 +500,8 @@ func NewAppKeeper(
 	)
 
 	evmTracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
+	// Historical EVM stores may predate the CoinInfo key. Stored values
+	// still take precedence over this fallback.
 	appKeepers.EvmKeeper = vmkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[vmtypes.StoreKey],
@@ -513,7 +516,7 @@ func NewAppKeeper(
 		nil,
 		evmChainID,
 		evmTracer,
-	)
+	).WithDefaultEvmCoinInfo(xplatypes.DefaultXPLACoinInfo())
 
 	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
 		appCodec,
