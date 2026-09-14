@@ -1,4 +1,4 @@
-package v1_12
+package v1_13
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/xpladev/xpla/app/keepers"
 )
 
-// CreateUpgradeHandler creates the v1_12 upgrade handler. The EVM hotfix does
+// CreateUpgradeHandler creates the v1_13 upgrade handler. The EVM hotfix does
 // not change module consensus versions or store layouts, so the standard module
 // migrations are sufficient for this binary upgrade.
 func CreateUpgradeHandler(
