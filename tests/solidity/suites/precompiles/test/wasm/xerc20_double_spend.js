@@ -7,6 +7,7 @@ import {
   WASM_DELEGATE_PRECOMPILE_ADDRESS,
   WASM_PRECOMPILE_ADDRESS,
   findEvent,
+  waitWithTimeout,
 } from '../common.js'
 
 const { ethers } = await hre.network.connect()
@@ -314,15 +315,15 @@ describe('xerc20 wasm precompile accounting', function () {
     const freshCounter = await instantiateFreshCounter()
     expect(await getCounter(freshCounter)).to.equal(0n)
 
-    await expect(
-      poc.exploitViaWasmFunds(
-        freshCounter.hex,
-        ethers.toUtf8Bytes(INCREMENT_MSG),
-        directRecipient.address,
-        amount,
-        { gasLimit: LARGE_GAS_LIMIT }
-      )
-    ).to.revert(ethers)
+    const tx = await poc.exploitViaWasmFunds(
+      freshCounter.hex,
+      ethers.toUtf8Bytes(INCREMENT_MSG),
+      directRecipient.address,
+      amount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await waitWithTimeout(tx, 20000)
+    expect(receipt.status).to.equal(0)
 
     const deployerBalance = await token.balanceOf(deployer.address)
     const pocBalance = await token.balanceOf(pocAddress)
