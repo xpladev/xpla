@@ -8,11 +8,11 @@ import (
 	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 )
 
-func TestRegistersV112Upgrade(t *testing.T) {
+func TestRegistersV114Upgrade(t *testing.T) {
 	require.Len(t, Upgrades, 1)
 
 	upgrade := Upgrades[0]
-	require.Equal(t, "v1_13", upgrade.UpgradeName)
+	require.Equal(t, "v1_14", upgrade.UpgradeName)
 	require.NotNil(t, upgrade.CreateUpgradeHandler)
 	require.Equal(t, []string{dynamicdeflationtypes.StoreKey}, upgrade.StoreUpgrades.Added)
 	require.Empty(t, upgrade.StoreUpgrades.Renamed)

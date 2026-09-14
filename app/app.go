@@ -78,7 +78,7 @@ import (
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	v1_13 "github.com/xpladev/xpla/app/upgrades/v1_13"
+	v1_14 "github.com/xpladev/xpla/app/upgrades/v1_14"
 	"github.com/xpladev/xpla/docs"
 	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
@@ -97,7 +97,7 @@ var (
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_13.Upgrade,
+		v1_14.Upgrade,
 	}
 )
 
