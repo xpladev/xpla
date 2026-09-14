@@ -19,7 +19,7 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	xplaapp "github.com/xpladev/xpla/app"
-	v1_12 "github.com/xpladev/xpla/app/upgrades/v1_12"
+	v1_13 "github.com/xpladev/xpla/app/upgrades/v1_13"
 	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 )
 
@@ -82,10 +82,10 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	require.NoError(t, err)
 	_, exists := versionMap[dynamicdeflationtypes.ModuleName]
 	require.False(t, exists)
-	require.True(t, app.UpgradeKeeper.HasHandler(v1_12.UpgradeName))
+	require.True(t, app.UpgradeKeeper.HasHandler(v1_13.UpgradeName))
 
 	require.NoError(t, app.UpgradeKeeper.ApplyUpgrade(ctx, upgradetypes.Plan{
-		Name:   v1_12.UpgradeName,
+		Name:   v1_13.UpgradeName,
 		Height: upgradeHeight,
 	}))
 

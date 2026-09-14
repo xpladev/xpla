@@ -12,7 +12,7 @@ func TestRegistersV112Upgrade(t *testing.T) {
 	require.Len(t, Upgrades, 1)
 
 	upgrade := Upgrades[0]
-	require.Equal(t, "v1_12", upgrade.UpgradeName)
+	require.Equal(t, "v1_13", upgrade.UpgradeName)
 	require.NotNil(t, upgrade.CreateUpgradeHandler)
 	require.Equal(t, []string{dynamicdeflationtypes.StoreKey}, upgrade.StoreUpgrades.Added)
 	require.Empty(t, upgrade.StoreUpgrades.Renamed)

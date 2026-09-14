@@ -1,4 +1,4 @@
-package v1_12
+package v1_13
 
 import (
 	store "cosmossdk.io/store/types"
@@ -7,8 +7,8 @@ import (
 	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 )
 
-// UpgradeName is the on-chain software-upgrade plan name for the v1.12 release.
-const UpgradeName = "v1_12"
+// UpgradeName is the on-chain software-upgrade plan name for the v1.13 release.
+const UpgradeName = "v1_13"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
