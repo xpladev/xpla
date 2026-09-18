@@ -1,6 +1,6 @@
 import hre from 'hardhat'
 import { expect } from 'chai'
-import { LARGE_GAS_LIMIT } from '../common.js'
+import { LARGE_GAS_LIMIT, waitWithTimeout } from '../common.js'
 
 const { ethers } = await hre.network.connect()
 
@@ -26,14 +26,14 @@ describe('xerc20 bank precompile double spend PoC', function () {
     await (await token.transfer(pocAddress, amount)).wait()
     const totalSupplyBefore = await token.totalSupply()
 
-    await expect(
-      poc.exploit(
-        bankRecipient.address,
-        directRecipient.address,
-        amount,
-        { gasLimit: LARGE_GAS_LIMIT }
-      )
-    ).to.revert(ethers)
+    const tx = await poc.exploit(
+      bankRecipient.address,
+      directRecipient.address,
+      amount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await waitWithTimeout(tx, 20000)
+    expect(receipt.status).to.equal(0)
 
     const deployerBalance = await token.balanceOf(deployer.address)
     const pocBalance = await token.balanceOf(pocAddress)
