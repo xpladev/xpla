@@ -17,7 +17,7 @@ require (
 	cosmossdk.io/x/tx v0.14.0
 	cosmossdk.io/x/upgrade v0.2.0
 	github.com/CosmWasm/wasmd v0.60.6
-	github.com/CosmWasm/wasmvm/v2 v2.3.2
+	github.com/CosmWasm/wasmvm/v2 v2.3.5-rc.3
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft v0.38.21
@@ -281,6 +281,10 @@ require (
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+
+	// CosmWasm security patch
+	github.com/CosmWasm/wasmd => github.com/CosmWasm/priv_wasmd_sec v0.60.9-rc.3
+	github.com/CosmWasm/wasmvm/v2 => github.com/CosmWasm/priv_wasmvm_sec/v2 v2.3.5-rc.3
 
 	// xpla features
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla-2
