@@ -17,7 +17,7 @@ import (
 
 const targetGasPriceAxpla int64 = 10_000_000_000_000
 
-// CreateUpgradeHandler creates the v1.12 binary upgrade handler.
+// CreateUpgradeHandler creates the v1.14 binary upgrade handler.
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,

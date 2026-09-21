@@ -153,8 +153,8 @@ Disabling the module does not act as an emergency pause:
 4. After governance re-enables the module, the following BeginBlock starts a
    complete new period using the latest parameters.
 
-The v1.12 binary registers its activation handler under the on-chain upgrade
-name `v1_12`. That handler adds the `dynamicdeflation` store, initializes
+The v1.14 binary registers its activation handler under the on-chain upgrade
+name `v1_14`. That handler adds the `dynamicdeflation` store, initializes
 the module through `RunMigrations`, and sets the existing distribution parameter
 `community_tax` to zero while preserving the other distribution parameters.
 It also configures the on-chain fee market so a transaction with a 100,000 gas

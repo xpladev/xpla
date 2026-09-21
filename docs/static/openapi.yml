@@ -6457,6 +6457,13 @@ components:
           type: string
       title: EstimateGasResponse defines EstimateGas response
       type: object
+    cosmos.evm.vm.v1.ExtendedDenomOptions:
+      properties:
+        extended_denom:
+          title: extended_denom defines the extended denom used by the EVM
+          type: string
+      title: ExtendedDenomOptions defines the extended denom options for the EVM
+      type: object
     cosmos.evm.vm.v1.Log:
       description: >-
         Log represents an protobuf compatible Ethereum Log that defines a
@@ -6482,6 +6489,12 @@ components:
         block_number:
           format: uint64
           title: block_number of the block in which the transaction was included
+          type: string
+        block_timestamp:
+          format: uint64
+          title: >-
+            block_timestamp is the timestamp of the block in which the
+            transaction was
           type: string
         data:
           format: byte
@@ -6516,36 +6529,32 @@ components:
     cosmos.evm.vm.v1.MsgEthereumTx:
       description: MsgEthereumTx encapsulates an Ethereum transaction as an SDK message.
       properties:
-        data:
-          properties:
-            type_url:
-              type: string
-            value:
-              format: byte
-              type: string
-          title: data is inner transaction data of the Ethereum transaction
-          type: object
         from:
+          format: byte
           title: >-
-            from is the ethereum signer address in hex format. This address
-            value is
+            from is the bytes of ethereum signer address. This address value is
+            checked
 
-            checked against the address derived from the signature (V, R, S)
-            using the
+            against the address derived from the signature (V, R, S) using the
 
             secp256k1 elliptic curve
           type: string
-        hash:
-          title: hash of the transaction in hex format
+        raw:
+          format: byte
+          title: raw is the raw ethereum transaction
           type: string
-        size:
-          format: double
-          title: size is the encoded storage size of the transaction (DEPRECATED)
-          type: number
       type: object
     cosmos.evm.vm.v1.MsgEthereumTxResponse:
       description: MsgEthereumTxResponse defines the Msg/EthereumTx response type.
       properties:
+        block_hash:
+          format: byte
+          title: block_hash is included for json-rpc to use
+          type: string
+        block_timestamp:
+          format: uint64
+          title: block_timestamp is included for json-rpc to use
+          type: string
         gas_used:
           format: uint64
           title: gas_used specifies how much gas was consumed by the transaction
@@ -6555,7 +6564,7 @@ components:
             hash of the ethereum transaction in hex format. This hash differs
             from the
 
-            Tendermint sha256 hash of the transaction bytes. See
+            CometBFT sha256 hash of the transaction bytes. See
 
             https://github.com/tendermint/tendermint/issues/6539 for reference
           type: string
@@ -6592,6 +6601,12 @@ components:
                   block_number of the block in which the transaction was
                   included
                 type: string
+              block_timestamp:
+                format: uint64
+                title: >-
+                  block_timestamp is the timestamp of the block in which the
+                  transaction was
+                type: string
               data:
                 format: byte
                 title: data which is supplied by the contract, usually ABI-encoded
@@ -6623,6 +6638,14 @@ components:
                 type: string
             type: object
           type: array
+        max_used_gas:
+          format: uint64
+          title: >-
+            max_used_gas specifies the gas consumed by the transaction, not
+            including
+
+            refunds
+          type: string
         ret:
           format: byte
           title: >-
@@ -6728,11 +6751,6 @@ components:
             active_static_precompiles defines the slice of hex addresses of the
             precompiled contracts that are active
           type: array
-        allow_unprotected_txs:
-          description: |-
-            allow_unprotected_txs defines if replay-protected (i.e non EIP155
-            signed) transactions can be executed on the state machine.
-          type: boolean
         evm_channels:
           items:
             type: string
@@ -6747,12 +6765,29 @@ components:
 
             transitions.
           type: string
+        extended_denom_options:
+          properties:
+            extended_denom:
+              title: extended_denom defines the extended denom used by the EVM
+              type: string
+          title: >-
+            extended_denom_options defines the extended denom options for the
+            EVM
+          type: object
         extra_eips:
           items:
             format: int64
             type: string
           title: extra_eips defines the additional EIPs for the vm.Config
           type: array
+        history_serve_window:
+          format: uint64
+          title: >-
+            history_serve_window defines the block range for serving historical
+            EVM
+
+            state
+          type: string
       title: Params defines the EVM module parameters
       type: object
     cosmos.evm.vm.v1.QueryAccountResponse:
@@ -7069,13 +7104,6 @@ components:
 
                 precompiled contracts that are active
               type: array
-            allow_unprotected_txs:
-              description: >-
-                allow_unprotected_txs defines if replay-protected (i.e non
-                EIP155
-
-                signed) transactions can be executed on the state machine.
-              type: boolean
             evm_channels:
               items:
                 type: string
@@ -7090,12 +7118,29 @@ components:
 
                 transitions.
               type: string
+            extended_denom_options:
+              properties:
+                extended_denom:
+                  title: extended_denom defines the extended denom used by the EVM
+                  type: string
+              title: >-
+                extended_denom_options defines the extended denom options for
+                the EVM
+              type: object
             extra_eips:
               items:
                 format: int64
                 type: string
               title: extra_eips defines the additional EIPs for the vm.Config
               type: array
+            history_serve_window:
+              format: uint64
+              title: >-
+                history_serve_window defines the block range for serving
+                historical EVM
+
+                state
+              type: string
           title: Params defines the EVM module parameters
           type: object
       type: object
@@ -7117,6 +7162,14 @@ components:
           title: data is the response serialized in bytes
           type: string
       title: QueryTraceBlockResponse defines TraceBlock response
+      type: object
+    cosmos.evm.vm.v1.QueryTraceCallResponse:
+      properties:
+        data:
+          format: byte
+          title: data is the response serialized in bytes
+          type: string
+      title: QueryTraceCallResponse defines TraceCall response
       type: object
     cosmos.evm.vm.v1.QueryTraceTxResponse:
       properties:
@@ -25466,6 +25519,264 @@ components:
             type: object
           type: array
       type: object
+    xpla.dynamicdeflation.v1beta1.CurrentPeriod:
+      description: CurrentPeriod tracks the active observation period.
+      properties:
+        active_config:
+          description: >-
+            Params defines the dynamic deflation parameters used for the next
+            period.
+          properties:
+            allocation_rate:
+              type: string
+            enabled:
+              type: boolean
+            max_fee_amount:
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+              properties:
+                amount:
+                  type: string
+                denom:
+                  type: string
+              type: object
+            min_fee_amount:
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+              properties:
+                amount:
+                  type: string
+                denom:
+                  type: string
+              type: object
+            settlement_interval_blocks:
+              format: uint64
+              type: string
+          type: object
+        allocated_amount:
+          type: string
+        end_height:
+          format: int64
+          type: string
+        gross_amount:
+          type: string
+        start_height:
+          format: int64
+          type: string
+      type: object
+    xpla.dynamicdeflation.v1beta1.Params:
+      description: >-
+        Params defines the dynamic deflation parameters used for the next
+        period.
+      properties:
+        allocation_rate:
+          type: string
+        enabled:
+          type: boolean
+        max_fee_amount:
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+          properties:
+            amount:
+              type: string
+            denom:
+              type: string
+          type: object
+        min_fee_amount:
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+          properties:
+            amount:
+              type: string
+            denom:
+              type: string
+          type: object
+        settlement_interval_blocks:
+          format: uint64
+          type: string
+      type: object
+    xpla.dynamicdeflation.v1beta1.QueryCurrentPeriodResponse:
+      description: QueryCurrentPeriodResponse is the response for Query/CurrentPeriod.
+      properties:
+        current_period:
+          description: CurrentPeriod tracks the active observation period.
+          properties:
+            active_config:
+              description: >-
+                Params defines the dynamic deflation parameters used for the
+                next period.
+              properties:
+                allocation_rate:
+                  type: string
+                enabled:
+                  type: boolean
+                max_fee_amount:
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                  properties:
+                    amount:
+                      type: string
+                    denom:
+                      type: string
+                  type: object
+                min_fee_amount:
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                  properties:
+                    amount:
+                      type: string
+                    denom:
+                      type: string
+                  type: object
+                settlement_interval_blocks:
+                  format: uint64
+                  type: string
+              type: object
+            allocated_amount:
+              type: string
+            end_height:
+              format: int64
+              type: string
+            gross_amount:
+              type: string
+            start_height:
+              format: int64
+              type: string
+          type: object
+      type: object
+    xpla.dynamicdeflation.v1beta1.QueryParamsResponse:
+      description: QueryParamsResponse is the response for Query/Params.
+      properties:
+        params:
+          description: >-
+            Params defines the dynamic deflation parameters used for the next
+            period.
+          properties:
+            allocation_rate:
+              type: string
+            enabled:
+              type: boolean
+            max_fee_amount:
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+              properties:
+                amount:
+                  type: string
+                denom:
+                  type: string
+              type: object
+            min_fee_amount:
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+              properties:
+                amount:
+                  type: string
+                denom:
+                  type: string
+              type: object
+            settlement_interval_blocks:
+              format: uint64
+              type: string
+          type: object
+      type: object
+    xpla.dynamicdeflation.v1beta1.QueryStatusResponse:
+      description: >-
+        QueryStatusResponse reports the Dynamic Deflation Pool balance and
+        allocated
+
+        amount. module_balance is retained for API compatibility.
+      properties:
+        allocated_amount:
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+          properties:
+            amount:
+              type: string
+            denom:
+              type: string
+          type: object
+        deficit_amount:
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+          properties:
+            amount:
+              type: string
+            denom:
+              type: string
+          type: object
+        module_balance:
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+          properties:
+            amount:
+              type: string
+            denom:
+              type: string
+          type: object
+        surplus_amount:
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+          properties:
+            amount:
+              type: string
+            denom:
+              type: string
+          type: object
+      type: object
     xpla.reward.v1beta1.Params:
       description: Params defines the set of params for the reward module.
       properties:
@@ -33484,6 +33795,13 @@ paths:
           schema:
             format: int64
             type: string
+        - description: overrides contains state overrides encoded as json.
+          in: query
+          name: overrides
+          required: false
+          schema:
+            format: byte
+            type: string
       responses:
         '200':
           content:
@@ -33569,6 +33887,13 @@ paths:
           schema:
             format: int64
             type: string
+        - description: overrides contains state overrides encoded as json.
+          in: query
+          name: overrides
+          required: false
+          schema:
+            format: byte
+            type: string
       responses:
         '200':
           content:
@@ -33578,6 +33903,14 @@ paths:
                   MsgEthereumTxResponse defines the Msg/EthereumTx response
                   type.
                 properties:
+                  block_hash:
+                    format: byte
+                    title: block_hash is included for json-rpc to use
+                    type: string
+                  block_timestamp:
+                    format: uint64
+                    title: block_timestamp is included for json-rpc to use
+                    type: string
                   gas_used:
                     format: uint64
                     title: >-
@@ -33589,7 +33922,7 @@ paths:
                       hash of the ethereum transaction in hex format. This hash
                       differs from the
 
-                      Tendermint sha256 hash of the transaction bytes. See
+                      CometBFT sha256 hash of the transaction bytes. See
 
                       https://github.com/tendermint/tendermint/issues/6539 for
                       reference
@@ -33631,6 +33964,12 @@ paths:
                             block_number of the block in which the transaction
                             was included
                           type: string
+                        block_timestamp:
+                          format: uint64
+                          title: >-
+                            block_timestamp is the timestamp of the block in
+                            which the transaction was
+                          type: string
                         data:
                           format: byte
                           title: >-
@@ -33665,6 +34004,14 @@ paths:
                           type: string
                       type: object
                     type: array
+                  max_used_gas:
+                    format: uint64
+                    title: >-
+                      max_used_gas specifies the gas consumed by the
+                      transaction, not including
+
+                      refunds
+                    type: string
                   ret:
                     format: byte
                     title: >-
@@ -33867,14 +34214,6 @@ paths:
 
                           precompiled contracts that are active
                         type: array
-                      allow_unprotected_txs:
-                        description: >-
-                          allow_unprotected_txs defines if replay-protected (i.e
-                          non EIP155
-
-                          signed) transactions can be executed on the state
-                          machine.
-                        type: boolean
                       evm_channels:
                         items:
                           type: string
@@ -33889,6 +34228,17 @@ paths:
 
                           transitions.
                         type: string
+                      extended_denom_options:
+                        properties:
+                          extended_denom:
+                            title: >-
+                              extended_denom defines the extended denom used by
+                              the EVM
+                            type: string
+                        title: >-
+                          extended_denom_options defines the extended denom
+                          options for the EVM
+                        type: object
                       extra_eips:
                         items:
                           format: int64
@@ -33897,6 +34247,14 @@ paths:
                           extra_eips defines the additional EIPs for the
                           vm.Config
                         type: array
+                      history_serve_window:
+                        format: uint64
+                        title: >-
+                          history_serve_window defines the block range for
+                          serving historical EVM
+
+                          state
+                        type: string
                     title: Params defines the EVM module parameters
                     type: object
                 type: object
@@ -34344,100 +34702,396 @@ paths:
         `debug_traceBlockByHash` rpc api
       tags:
         - cosmos/evm/vm
+  /cosmos/evm/vm/v1/trace_call:
+    get:
+      operationId: TraceCall
+      parameters:
+        - description: args uses the same json format as the json rpc api.
+          in: query
+          name: args
+          required: false
+          schema:
+            format: byte
+            type: string
+        - description: gas_cap defines the default gas cap to be used.
+          in: query
+          name: gas_cap
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: proposer_address of the requested block in hex format.
+          in: query
+          name: proposer_address
+          required: false
+          schema:
+            format: byte
+            type: string
+        - description: tracer is a custom javascript tracer.
+          in: query
+          name: trace_config.tracer
+          required: false
+          schema:
+            type: string
+        - description: >-
+            timeout overrides the default timeout of 5 seconds for
+            JavaScript-based
+
+            tracing calls.
+          in: query
+          name: trace_config.timeout
+          required: false
+          schema:
+            type: string
+        - description: >-
+            reexec defines the number of blocks the tracer is willing to go
+            back.
+          in: query
+          name: trace_config.reexec
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: disable_stack switches stack capture.
+          in: query
+          name: trace_config.disable_stack
+          required: false
+          schema:
+            type: boolean
+        - description: disable_storage switches storage capture.
+          in: query
+          name: trace_config.disable_storage
+          required: false
+          schema:
+            type: boolean
+        - description: debug can be used to print output during capture end.
+          in: query
+          name: trace_config.debug
+          required: false
+          schema:
+            type: boolean
+        - description: >-
+            limit defines the maximum length of output, but zero means
+            unlimited.
+          in: query
+          name: trace_config.limit
+          required: false
+          schema:
+            format: int32
+            type: integer
+        - description: homestead_block switch (nil no fork, 0 = already homestead).
+          in: query
+          name: trace_config.overrides.homestead_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            dao_fork_block corresponds to TheDAO hard-fork switch block (nil no
+            fork).
+          in: query
+          name: trace_config.overrides.dao_fork_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            dao_fork_support defines whether the nodes supports or opposes the
+            DAO
+
+            hard-fork.
+          in: query
+          name: trace_config.overrides.dao_fork_support
+          required: false
+          schema:
+            type: boolean
+        - description: >-
+            eip150_block: EIP150 implements the Gas price changes
+
+            (https://github.com/ethereum/EIPs/issues/150) EIP150 HF block (nil
+            no fork).
+          in: query
+          name: trace_config.overrides.eip150_block
+          required: false
+          schema:
+            type: string
+        - description: 'eip155_block: EIP155Block HF block.'
+          in: query
+          name: trace_config.overrides.eip155_block
+          required: false
+          schema:
+            type: string
+        - description: 'eip158_block: EIP158 HF block.'
+          in: query
+          name: trace_config.overrides.eip158_block
+          required: false
+          schema:
+            type: string
+        - description: |-
+            byzantium_block: Byzantium switch block (nil no fork, 0 = already on
+            byzantium).
+          in: query
+          name: trace_config.overrides.byzantium_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            constantinople_block: Constantinople switch block (nil no fork, 0 =
+            already
+
+            activated).
+          in: query
+          name: trace_config.overrides.constantinople_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            petersburg_block: Petersburg switch block (nil same as
+            Constantinople).
+          in: query
+          name: trace_config.overrides.petersburg_block
+          required: false
+          schema:
+            type: string
+        - description: |-
+            istanbul_block: Istanbul switch block (nil no fork, 0 = already on
+            istanbul).
+          in: query
+          name: trace_config.overrides.istanbul_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork,
+            0 =
+
+            already activated).
+          in: query
+          name: trace_config.overrides.muir_glacier_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            berlin_block: Berlin switch block (nil = no fork, 0 = already on
+            berlin).
+          in: query
+          name: trace_config.overrides.berlin_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            london_block: London switch block (nil = no fork, 0 = already on
+            london).
+          in: query
+          name: trace_config.overrides.london_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no
+            fork, 0 =
+
+            already activated).
+          in: query
+          name: trace_config.overrides.arrow_glacier_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no
+            fork, 0 =
+
+            already activated).
+          in: query
+          name: trace_config.overrides.gray_glacier_block
+          required: false
+          schema:
+            type: string
+        - description: >-
+            merge_netsplit_block: Virtual fork after The Merge to use as a
+            network
+
+            splitter.
+          in: query
+          name: trace_config.overrides.merge_netsplit_block
+          required: false
+          schema:
+            type: string
+        - description: chain_id is the id of the chain (EIP-155).
+          in: query
+          name: trace_config.overrides.chain_id
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: denom is the denomination used on the EVM.
+          in: query
+          name: trace_config.overrides.denom
+          required: false
+          schema:
+            type: string
+        - description: >-
+            decimals is the real decimal precision of the denomination used on
+            the EVM.
+          in: query
+          name: trace_config.overrides.decimals
+          required: false
+          schema:
+            format: uint64
+            type: string
+        - description: |-
+            shanghai_time: Shanghai switch time (nil = no fork, 0 = already on
+            shanghai).
+          in: query
+          name: trace_config.overrides.shanghai_time
+          required: false
+          schema:
+            type: string
+        - description: >-
+            cancun_time: Cancun switch time (nil = no fork, 0 = already on
+            cancun).
+          in: query
+          name: trace_config.overrides.cancun_time
+          required: false
+          schema:
+            type: string
+        - description: >-
+            prague_time: Prague switch time (nil = no fork, 0 = already on
+            prague).
+          in: query
+          name: trace_config.overrides.prague_time
+          required: false
+          schema:
+            type: string
+        - description: >-
+            verkle_time: Verkle switch time (nil = no fork, 0 = already on
+            verkle).
+          in: query
+          name: trace_config.overrides.verkle_time
+          required: false
+          schema:
+            type: string
+        - description: 'osaka_time: Osaka switch time (nil = no fork, 0 = already on osaka).'
+          in: query
+          name: trace_config.overrides.osaka_time
+          required: false
+          schema:
+            type: string
+        - description: enable_memory switches memory capture.
+          in: query
+          name: trace_config.enable_memory
+          required: false
+          schema:
+            type: boolean
+        - description: enable_return_data switches the capture of return data.
+          in: query
+          name: trace_config.enable_return_data
+          required: false
+          schema:
+            type: boolean
+        - description: tracer_json_config configures the tracer using a JSON string.
+          in: query
+          name: trace_config.tracer_json_config
+          required: false
+          schema:
+            type: string
+        - description: block_number of requested transaction.
+          in: query
+          name: block_number
+          required: false
+          schema:
+            format: int64
+            type: string
+        - description: block_hash of requested transaction.
+          in: query
+          name: block_hash
+          required: false
+          schema:
+            type: string
+        - description: block_time of requested transaction.
+          in: query
+          name: block_time
+          required: false
+          schema:
+            format: date-time
+            type: string
+        - description: >-
+            chain_id is the the eip155 chain id parsed from the requested block
+            header.
+          in: query
+          name: chain_id
+          required: false
+          schema:
+            format: int64
+            type: string
+        - description: overrides contains state overrides in JSON format.
+          in: query
+          name: overrides
+          required: false
+          schema:
+            format: byte
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    format: byte
+                    title: data is the response serialized in bytes
+                    type: string
+                title: QueryTraceCallResponse defines TraceCall response
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: TraceCall implements the `debug_traceCall` rpc api
+      tags:
+        - cosmos/evm/vm
   /cosmos/evm/vm/v1/trace_tx:
     get:
       operationId: TraceTx
       parameters:
         - description: >-
-            A URL/resource name that uniquely identifies the type of the
-            serialized
+            from is the bytes of ethereum signer address. This address value is
+            checked
 
-            protocol buffer message. This string must contain at least
-
-            one "/" character. The last segment of the URL's path must represent
-
-            the fully qualified name of the type (as in
-
-            `path/google.protobuf.Duration`). The name should be in a canonical
-            form
-
-            (e.g., leading "." is not accepted).
-
-
-            In practice, teams usually precompile into the binary all types that
-            they
-
-            expect it to use in the context of Any. However, for URLs which use
-            the
-
-            scheme `http`, `https`, or no scheme, one can optionally set up a
-            type
-
-            server that maps type URLs to message definitions as follows:
-
-
-            * If no scheme is provided, `https` is assumed.
-
-            * An HTTP GET on the URL must yield a [google.protobuf.Type][]
-              value in binary format, or produce an error.
-            * Applications are allowed to cache lookup results based on the
-              URL, or have them precompiled into a binary to avoid any
-              lookup. Therefore, binary compatibility needs to be preserved
-              on changes to types. (Use versioned type names to manage
-              breaking changes.)
-
-            Note: this functionality is not currently available in the official
-
-            protobuf release, and it is not used for type URLs beginning with
-
-            type.googleapis.com. As of May 2023, there are no widely used type
-            server
-
-            implementations and no plans to implement one.
-
-
-            Schemes other than `http`, `https` (or the empty scheme) might be
-
-            used with implementation specific semantics.
-          in: query
-          name: msg.data.type_url
-          required: false
-          schema:
-            type: string
-        - description: >-
-            Must be a valid serialized protocol buffer of the above specified
-            type.
-          in: query
-          name: msg.data.value
-          required: false
-          schema:
-            format: byte
-            type: string
-        - description: size is the encoded storage size of the transaction (DEPRECATED).
-          in: query
-          name: msg.size
-          required: false
-          schema:
-            format: double
-            type: number
-        - description: hash of the transaction in hex format.
-          in: query
-          name: msg.hash
-          required: false
-          schema:
-            type: string
-        - description: >-
-            from is the ethereum signer address in hex format. This address
-            value is
-
-            checked against the address derived from the signature (V, R, S)
-            using the
+            against the address derived from the signature (V, R, S) using the
 
             secp256k1 elliptic curve.
           in: query
           name: msg.from
           required: false
           schema:
+            format: byte
+            type: string
+        - description: raw is the raw ethereum transaction.
+          in: query
+          name: msg.raw
+          required: false
+          schema:
+            format: byte
             type: string
         - description: tracer is a custom javascript tracer.
           in: query
@@ -53991,6 +54645,295 @@ paths:
       summary: Query all ongoing burn proposals
       tags:
         - xpla/burn/v1beta1
+  /xpla/dynamicdeflation/v1beta1/current_period:
+    get:
+      operationId: CurrentPeriod
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryCurrentPeriodResponse is the response for
+                  Query/CurrentPeriod.
+                properties:
+                  current_period:
+                    description: CurrentPeriod tracks the active observation period.
+                    properties:
+                      active_config:
+                        description: >-
+                          Params defines the dynamic deflation parameters used
+                          for the next period.
+                        properties:
+                          allocation_rate:
+                            type: string
+                          enabled:
+                            type: boolean
+                          max_fee_amount:
+                            description: >-
+                              Coin defines a token with a denomination and an
+                              amount.
+
+
+                              NOTE: The amount field is an Int which implements
+                              the custom method
+
+                              signatures required by gogoproto.
+                            properties:
+                              amount:
+                                type: string
+                              denom:
+                                type: string
+                            type: object
+                          min_fee_amount:
+                            description: >-
+                              Coin defines a token with a denomination and an
+                              amount.
+
+
+                              NOTE: The amount field is an Int which implements
+                              the custom method
+
+                              signatures required by gogoproto.
+                            properties:
+                              amount:
+                                type: string
+                              denom:
+                                type: string
+                            type: object
+                          settlement_interval_blocks:
+                            format: uint64
+                            type: string
+                        type: object
+                      allocated_amount:
+                        type: string
+                      end_height:
+                        format: int64
+                        type: string
+                      gross_amount:
+                        type: string
+                      start_height:
+                        format: int64
+                        type: string
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: CurrentPeriod queries the active period, if one exists.
+      tags:
+        - xpla/dynamicdeflation/v1beta1
+  /xpla/dynamicdeflation/v1beta1/params:
+    get:
+      operationId: Params
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: QueryParamsResponse is the response for Query/Params.
+                properties:
+                  params:
+                    description: >-
+                      Params defines the dynamic deflation parameters used for
+                      the next period.
+                    properties:
+                      allocation_rate:
+                        type: string
+                      enabled:
+                        type: boolean
+                      max_fee_amount:
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
+
+
+                          NOTE: The amount field is an Int which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                        properties:
+                          amount:
+                            type: string
+                          denom:
+                            type: string
+                        type: object
+                      min_fee_amount:
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
+
+
+                          NOTE: The amount field is an Int which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                        properties:
+                          amount:
+                            type: string
+                          denom:
+                            type: string
+                        type: object
+                      settlement_interval_blocks:
+                        format: uint64
+                        type: string
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: Params queries the candidate parameters for the next period.
+      tags:
+        - xpla/dynamicdeflation/v1beta1
+  /xpla/dynamicdeflation/v1beta1/status:
+    get:
+      operationId: Status
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: >-
+                  QueryStatusResponse reports the Dynamic Deflation Pool balance
+                  and allocated
+
+                  amount. module_balance is retained for API compatibility.
+                properties:
+                  allocated_amount:
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                    properties:
+                      amount:
+                        type: string
+                      denom:
+                        type: string
+                    type: object
+                  deficit_amount:
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                    properties:
+                      amount:
+                        type: string
+                      denom:
+                        type: string
+                    type: object
+                  module_balance:
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                    properties:
+                      amount:
+                        type: string
+                      denom:
+                        type: string
+                    type: object
+                  surplus_amount:
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                    properties:
+                      amount:
+                        type: string
+                      denom:
+                        type: string
+                    type: object
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    format: int32
+                    type: integer
+                  details:
+                    items:
+                      properties:
+                        type_url:
+                          type: string
+                        value:
+                          format: byte
+                          type: string
+                      type: object
+                    type: array
+                  error:
+                    type: string
+                  message:
+                    type: string
+                type: object
+          description: An unexpected error response.
+      summary: |-
+        Status compares the Dynamic Deflation Pool balance with the allocated
+        amount.
+      tags:
+        - xpla/dynamicdeflation/v1beta1
   /xpla/reward/v1beta1/params:
     get:
       operationId: Params
