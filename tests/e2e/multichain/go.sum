@@ -655,10 +655,16 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/CosmWasm/priv_wasmvm_sec/v2 v2.3.5-rc.3 h1:J512lxTeSEkMUpT7+3/Pc2Hje/3UwVWVZvDbFukLhpw=
+github.com/CosmWasm/priv_wasmvm_sec/v2 v2.3.5-rc.3/go.mod h1:RzLlMwFRLaTwPM0DdHFA0m/APT5muKjU6t3ZxCrpXJ0=
 github.com/CosmWasm/wasmd v0.60.5 h1:70ceYlseadurjcKcSlwPWfE+H4SgWm4JGMosFMcbFWs=
 github.com/CosmWasm/wasmd v0.60.5/go.mod h1:/taccDYUgTMDzjKzndSUodV3AmMuxZKTuOp0m92GdcA=
+github.com/CosmWasm/wasmd v0.60.6 h1:fHv//SyVv/L6SS33fxMC2JGAUxy3ZyUlIOb6U3vkJvo=
+github.com/CosmWasm/wasmd v0.60.6/go.mod h1:2Fs7Y8CEvtgjv5moPdOGLbZ6Vv49bypD5xu3DY0s4Hc=
 github.com/CosmWasm/wasmvm/v2 v2.3.2 h1:LO6+G9iG3Hg6EezxfMWX5TMx6a5DbuKGwZv6BSdtXfA=
 github.com/CosmWasm/wasmvm/v2 v2.3.2/go.mod h1:RzLlMwFRLaTwPM0DdHFA0m/APT5muKjU6t3ZxCrpXJ0=
+github.com/DELIGHT-LABS/evm v0.6.3-xpla.1 h1:VgUfhCTgjlPbn+e/fdiBXpmeN9bGLJXfhevaD7E1Xrk=
+github.com/DELIGHT-LABS/evm v0.6.3-xpla.1/go.mod h1:QnaJDtxqon2mywiYqxM8VwW8FKeFazi0au0qzVpFAG8=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go v4.8.3+incompatible h1:fNGaYSuObuQb5nzeTQqowRAd9bpDIRRV4/gUtIBjh8Q=
 github.com/DataDog/datadog-go v4.8.3+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
@@ -1690,6 +1696,8 @@ github.com/urfave/cli/v2 v2.27.5/go.mod h1:3Sevf16NykTbInEnD0yKkjDAeZDS0A6bzhBH5
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xpladev/cosmos-sdk v0.53.6-xpla h1:6vdNwdkblOMf9vSp6pISCDkzY5XyUmwrVX+4ECInUVM=
 github.com/xpladev/cosmos-sdk v0.53.6-xpla/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla-2 h1:6/ffVxMEIGJGqsDVF8fyRuVIaZ78Ftuo3iZvHAvAlcU=
+github.com/xpladev/cosmos-sdk v0.53.6-xpla-2/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
 github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60 h1:PJDWiQ4uJa79tvK8rBMeN+K4dRi6kxfD3A8pJHZYe2Q=
 github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60/go.mod h1:MUrVrODPlGdehAzc2KjUPEVHLtA7WChEvrFLs5kWa9E=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm h1:kelMWZ91b/rfeMnIkk57w4rPSPm9wHlChFocIU1oIdU=
