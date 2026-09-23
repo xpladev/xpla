@@ -44,7 +44,6 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	abibind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	web3 "github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stretchr/testify/assert"
@@ -1746,9 +1745,7 @@ func (t *EVMIntegrationTestSuite) Test02_DeployTokenContract() {
 	networkId, err := t.EthClient.NetworkID(context.Background())
 	assert.NoError(t.T(), err)
 
-	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
-	assert.NoError(t.T(), err)
-	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+	auth, err := t.UserWallet1.NewTransactor(context.Background(), networkId)
 	assert.NoError(t.T(), err)
 
 	auth.GasLimit = uint64(1300000)
@@ -1787,9 +1784,7 @@ func (t *EVMIntegrationTestSuite) Test03_ExecuteTokenContractAndQueryOnEvmJsonRp
 	multiplier, _ := new(big.Int).SetString("1000000000000000000", 10)
 	amt := new(big.Int).Mul(big.NewInt(10), multiplier)
 
-	ethPrivkey, err := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
-	assert.NoError(t.T(), err)
-	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+	auth, err := t.UserWallet1.NewTransactor(context.Background(), networkId)
 	assert.NoError(t.T(), err)
 
 	auth.GasLimit = uint64(300000)
@@ -2458,8 +2453,7 @@ func (t *EVMIntegrationTestSuite) Test11_NestedTransfer() {
 	networkId, err := t.EthClient.NetworkID(context.Background())
 	assert.NoError(t.T(), err)
 
-	ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
-	auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+	auth, err := t.UserWallet1.NewTransactor(context.Background(), networkId)
 	assert.NoError(t.T(), err)
 
 	auth.GasLimit = uint64(1300000)
@@ -2490,8 +2484,7 @@ func (t *EVMIntegrationTestSuite) Test11_NestedTransfer() {
 
 		amt := new(big.Int).SetInt64(1)
 
-		ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
-		auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+		auth, err := t.UserWallet1.NewTransactor(context.Background(), networkId)
 		assert.NoError(t.T(), err)
 
 		auth.GasLimit = uint64(300000)
@@ -2513,8 +2506,7 @@ func (t *EVMIntegrationTestSuite) Test11_NestedTransfer() {
 
 		amt := new(big.Int).SetInt64(1)
 
-		ethPrivkey, _ := ethcrypto.ToECDSA(t.UserWallet1.CosmosWalletInfo.PrivKey.Bytes())
-		auth, err := abibind.NewKeyedTransactorWithChainID(ethPrivkey, networkId)
+		auth, err := t.UserWallet1.NewTransactor(context.Background(), networkId)
 		assert.NoError(t.T(), err)
 
 		auth.GasLimit = uint64(300000)
