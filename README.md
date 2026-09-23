@@ -15,6 +15,8 @@ make local-image
 ## Test
 
 ### Unit test & Integration test
+Requires Node.js and pnpm.
+
 ```bash
 make test
 ```
@@ -30,6 +32,7 @@ See detailed instructions in [Local e2e test](./tests/e2e/README.md)
 
 **Run test:**
 ```bash
+make test-contracts-compile
 cd tests/e2e/multichain
 go test ./...
 ```
