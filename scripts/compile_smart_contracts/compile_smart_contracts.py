@@ -1,16 +1,18 @@
 """
-Compile Solidity smart contracts in this repository with Hardhat.
+Compile Solidity interfaces and test contracts with their existing compiler setups.
 
 Prerequisite: contracts/solidity/precompiles directory must exist (or will be created).
 
 Usage:
-    python3 compile_smart_contracts.py --compile   # compile all under precompile/
+    python3 compile_smart_contracts.py --compile   # precompile/ and tests/solidity/
+    python3 compile_smart_contracts.py --compile-tests
     python3 compile_smart_contracts.py --clean
 """
 
 import json
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -309,6 +311,20 @@ def compile_files(repo_path: Path):
     copy_compiled_contracts_back_to_source(found_contracts, compiled_dir)
 
 
+def compile_test_contracts(repo_path: Path):
+    """Build test artifacts without starting a chain or running the suites."""
+    workspace = repo_path / "tests" / "solidity"
+    subprocess.run(["pnpm", "install", "--frozen-lockfile"], cwd=workspace, check=True)
+
+    for suite in sorted((workspace / "suites").iterdir()):
+        if (suite / "hardhat.config.js").is_file():
+            subprocess.run(["pnpm", "run", "get-contracts"], cwd=suite, check=True)
+            subprocess.run(["pnpm", "exec", "hardhat", "compile"], cwd=suite, check=True)
+            subprocess.run(["pnpm", "run", "clean-contracts"], cwd=suite, check=True)
+        elif (suite / "truffle-config.js").is_file():
+            subprocess.run(["pnpm", "exec", "truffle", "compile", "--all"], cwd=suite, check=True)
+
+
 if __name__ == "__main__":
     if not is_os_repo(REPO_PATH):
         raise ValueError(
@@ -317,11 +333,15 @@ if __name__ == "__main__":
 
     if len(sys.argv) != 2:
         raise ValueError(
-            "Wrong usage. Use --compile or --clean.",
+            "Wrong usage. Use --compile, --compile-tests or --clean.",
         )
 
     if sys.argv[1] == "--compile":
         compile_files(REPO_PATH)
+        compile_test_contracts(REPO_PATH)
+
+    elif sys.argv[1] == "--compile-tests":
+        compile_test_contracts(REPO_PATH)
 
     elif sys.argv[1] == "--clean":
         clean_up_hardhat_project(CONTRACTS_TARGET.parent.parent)
