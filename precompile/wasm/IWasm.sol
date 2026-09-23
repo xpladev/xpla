@@ -26,7 +26,7 @@ interface IWasm {
     event InstantiateContract(
         address indexed sender,
         address indexed contractAddress,
-        uint256 indexed codeId,
+        uint64 indexed codeId,
         address admin,
         string label,
         bytes msg,
@@ -63,7 +63,7 @@ interface IWasm {
     event MigrateContract(
         address indexed sender,
         address indexed contractAddress,
-        uint256 indexed codeId,
+        uint64 indexed codeId,
         bytes msg,
         bytes data
     );
@@ -72,7 +72,7 @@ interface IWasm {
     function instantiateContract(
         address sender,
         address admin,
-        uint256 codeId,
+        uint64 codeId,
         string calldata label,
         bytes calldata msg,
         Coin[] memory funds
@@ -80,7 +80,7 @@ interface IWasm {
     function instantiateContract2(
         address sender,
         address admin,
-        uint256 codeId,
+        uint64 codeId,
         string calldata label,
         bytes calldata msg,
         Coin[] memory funds,
@@ -96,7 +96,7 @@ interface IWasm {
     function migrateContract(
         address sender,
         address contractAddress,
-        uint256 codeId,
+        uint64 codeId,
         bytes calldata msg
     ) external returns (bytes calldata data);
     

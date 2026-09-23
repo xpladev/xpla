@@ -7,6 +7,7 @@ import (
 
 	_ "embed"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
@@ -184,6 +186,22 @@ func (p PrecompiledBank) send(ctx sdk.Context, stateDB vm.StateDB, sender common
 	coins, err := util.GetCoins(args[2])
 	if err != nil {
 		return nil, err
+	}
+
+	if !coins.IsValid() {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidCoins, coins.String())
+	}
+
+	if !coins.IsAllPositive() {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidCoins, coins.String())
+	}
+
+	if err := p.bk.IsSendEnabledCoins(ctx, coins...); err != nil {
+		return nil, err
+	}
+
+	if p.bk.BlockedAddr(toAddress) {
+		return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", toAddress.String())
 	}
 
 	err = p.bk.SendCoins(ctx, fromAddress, toAddress, coins)
