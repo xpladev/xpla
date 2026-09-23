@@ -35,6 +35,15 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	require.NoError(t, distributionParams.ValidateBasic())
 	require.NoError(t, app.DistrKeeper.Params.Set(ctx, distributionParams))
 
+	rewardParams, err := app.RewardKeeper.GetParams(ctx)
+	require.NoError(t, err)
+	rewardParams.FeePoolRate = sdkmath.LegacyMustNewDecFromStr("0.9")
+	rewardParams.CommunityPoolRate = sdkmath.LegacyMustNewDecFromStr("0.1")
+	rewardParams.ReserveRate = sdkmath.LegacyZeroDec()
+	rewardParams.ReserveAccount = "xpla10ksn9528f82uwnmz3sgr4n42l0nucmzntjrg00"
+	rewardParams.RewardDistributeAccount = "xpla19dacf8gzsvuj9txzw0wmtfpdg8swpd4jxl3ks2"
+	require.NoError(t, app.RewardKeeper.SetParams(ctx, rewardParams))
+
 	feeMarketParams := app.FeeMarketKeeper.GetParams(ctx)
 	feeMarketParams.NoBaseFee = true
 	feeMarketParams.BaseFeeChangeDenominator = 13
@@ -45,6 +54,20 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	feeMarketParams.MinGasMultiplier = sdkmath.LegacyMustNewDecFromStr("0.75")
 	require.NoError(t, feeMarketParams.Validate())
 	require.NoError(t, app.FeeMarketKeeper.SetParams(ctx, feeMarketParams))
+
+	evmParams := app.EvmKeeper.GetParams(ctx)
+	evmParams.ActiveStaticPrecompiles = []string{
+		"0x0000000000000000000000000000000000000100",
+		"0x0000000000000000000000000000000000000400",
+		"0x0000000000000000000000000000000000000800",
+		"0x0000000000000000000000000000000000000801",
+		"0x0000000000000000000000000000000000000805",
+		"0x0000000000000000000000000000000000000806",
+		"0x1000000000000000000000000000000000000005",
+	}
+	evmParams.EVMChannels = []string{"channel-7"}
+	evmParams.HistoryServeWindow = 1234
+	require.NoError(t, app.EvmKeeper.SetParams(ctx, evmParams))
 
 	require.NoError(t, app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, sdk.NewCoins(
 		axpla(107),
@@ -110,6 +133,13 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	expectedDistributionParams.CommunityTax = sdkmath.LegacyZeroDec()
 	require.Equal(t, expectedDistributionParams, updatedDistributionParams)
 
+	updatedRewardParams, err := app.RewardKeeper.GetParams(ctx)
+	require.NoError(t, err)
+	expectedRewardParams := rewardParams
+	expectedRewardParams.FeePoolRate = sdkmath.LegacyOneDec()
+	expectedRewardParams.CommunityPoolRate = sdkmath.LegacyZeroDec()
+	require.Equal(t, expectedRewardParams, updatedRewardParams)
+
 	updatedFeeMarketParams := app.FeeMarketKeeper.GetParams(ctx)
 	expectedGasPrice := sdkmath.LegacyNewDec(10_000_000_000_000)
 	expectedFeeMarketParams := feeMarketParams
@@ -125,6 +155,22 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 			TruncateInt(),
 	)
 	require.True(t, app.FeeMarketKeeper.CalculateBaseFee(ctx).Equal(expectedGasPrice))
+
+	expectedEVMParams := evmParams
+	expectedEVMParams.ActiveStaticPrecompiles = []string{
+		"0x0000000000000000000000000000000000000100",
+		"0x0000000000000000000000000000000000000400",
+		"0x0000000000000000000000000000000000000800",
+		"0x0000000000000000000000000000000000000801",
+		"0x0000000000000000000000000000000000000802",
+		"0x0000000000000000000000000000000000000805",
+		"0x0000000000000000000000000000000000000806",
+		"0x1000000000000000000000000000000000000001",
+		"0x1000000000000000000000000000000000000004",
+		"0x1000000000000000000000000000000000000005",
+		"0x1000000000000000000000000000000000000044",
+	}
+	require.Equal(t, expectedEVMParams, app.EvmKeeper.GetParams(ctx))
 
 	require.Equal(t, feeCollectorBefore, app.BankKeeper.GetAllBalances(ctx, feeCollectorAddress))
 	feePoolAfter, err := app.DistrKeeper.FeePool.Get(ctx)
