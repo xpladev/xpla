@@ -41,7 +41,6 @@ func CreateUpgradeHandler(
 		for _, address := range []string{
 			pbank.Address.Hex(),
 			pwasm.Address.Hex(),
-			pwasm.DelegatecallAddress.Hex(),
 			pauth.Address.Hex(),
 			evmtypes.ICS20PrecompileAddress,
 		} {
