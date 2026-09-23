@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/evm/precompiles/bech32"
 	distprecompile "github.com/cosmos/evm/precompiles/distribution"
 	govprecompile "github.com/cosmos/evm/precompiles/gov"
-	ics20precompile "github.com/cosmos/evm/precompiles/ics20"
 	"github.com/cosmos/evm/precompiles/p256"
 	slashingprecompile "github.com/cosmos/evm/precompiles/slashing"
 	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
@@ -30,6 +29,7 @@ import (
 
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
+	pics20 "github.com/xpladev/xpla/precompile/ics20"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 )
@@ -99,7 +99,7 @@ func NewAvailableStaticPrecompiles(
 		options.AddressCodec,
 	)
 
-	ibcTransferPrecompile := ics20precompile.NewPrecompile(
+	ibcTransferPrecompile := pics20.NewPrecompile(
 		bk,
 		stakingKeeper,
 		transferKeeper,
