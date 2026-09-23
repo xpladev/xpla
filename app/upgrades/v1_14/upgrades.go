@@ -72,6 +72,7 @@ func CreateUpgradeHandler(
 		}
 		rewardParams.FeePoolRate = sdkmath.LegacyOneDec()
 		rewardParams.CommunityPoolRate = sdkmath.LegacyZeroDec()
+		rewardParams.ReserveRate = sdkmath.LegacyZeroDec()
 		if err := appKeepers.RewardKeeper.SetParams(ctx, rewardParams); err != nil {
 			return nil, fmt.Errorf("set reward params: %w", err)
 		}
