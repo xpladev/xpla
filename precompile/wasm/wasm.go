@@ -190,7 +190,7 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, stateDB vm.StateDB
 		return nil, err
 	}
 
-	codeId, err := util.GetBigInt(args[2])
+	codeId, err := util.GetUint64(args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, stateDB vm.StateDB
 	instantiateMsg := &wasmtypes.MsgInstantiateContract{
 		Sender: fromAddress.String(),
 		Admin:  admin.String(),
-		CodeID: codeId.Uint64(),
+		CodeID: codeId,
 		Label:  label,
 		Msg:    msg,
 		Funds:  coins,
@@ -231,7 +231,7 @@ func (p PrecompiledWasm) instantiateContract(ctx sdk.Context, stateDB vm.StateDB
 
 	contractAddress := common.BytesToAddress(cosmosContractAddress.Bytes())
 
-	err = p.EmitInstantiateContractEvent(ctx, stateDB, sender, common.BytesToAddress(admin.Bytes()), contractAddress, codeId.BigInt(), label, msg, coins, res.Data)
+	err = p.EmitInstantiateContractEvent(ctx, stateDB, sender, common.BytesToAddress(admin.Bytes()), contractAddress, codeId, label, msg, coins, res.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, stateDB vm.StateD
 		return nil, err
 	}
 
-	codeId, err := util.GetBigInt(args[2])
+	codeId, err := util.GetUint64(args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, stateDB vm.StateD
 	instantiate2Msg := &wasmtypes.MsgInstantiateContract2{
 		Sender: fromAddress.String(),
 		Admin:  admin.String(),
-		CodeID: codeId.Uint64(),
+		CodeID: codeId,
 		Label:  label,
 		Msg:    msg,
 		Funds:  coins,
@@ -308,7 +308,7 @@ func (p PrecompiledWasm) instantiateContract2(ctx sdk.Context, stateDB vm.StateD
 
 	contractAddress := common.BytesToAddress(cosmosContractAddress.Bytes())
 
-	err = p.EmitInstantiateContractEvent(ctx, stateDB, sender, common.BytesToAddress(admin.Bytes()), contractAddress, codeId.BigInt(), label, msg, coins, res.Data)
+	err = p.EmitInstantiateContractEvent(ctx, stateDB, sender, common.BytesToAddress(admin.Bytes()), contractAddress, codeId, label, msg, coins, res.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -387,7 +387,7 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
 	}
 
-	codeId, err := util.GetBigInt(args[2])
+	codeId, err := util.GetUint64(args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +400,7 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 	migrateMsg := &wasmtypes.MsgMigrateContract{
 		Sender:   fromAddress.String(),
 		Contract: contractAccount.GetAddress().String(),
-		CodeID:   codeId.Uint64(),
+		CodeID:   codeId,
 		Msg:      msg,
 	}
 
@@ -409,7 +409,7 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, err
 	}
 
-	err = p.EmitMigrateContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), codeId.BigInt(), msg, res.Data)
+	err = p.EmitMigrateContractEvent(ctx, stateDB, sender, common.BytesToAddress(contractAddress.Bytes()), codeId, msg, res.Data)
 	if err != nil {
 		return nil, err
 	}
