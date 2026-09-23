@@ -3,6 +3,7 @@ package v1_14
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	sdkmath "cosmossdk.io/math"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -10,8 +11,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	"github.com/xpladev/xpla/app/keepers"
+	pauth "github.com/xpladev/xpla/precompile/auth"
+	pbank "github.com/xpladev/xpla/precompile/bank"
+	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 )
 
@@ -31,6 +36,24 @@ func CreateUpgradeHandler(
 			return nil, err
 		}
 
+		// Active precompile contract
+		evmParams := appKeepers.EvmKeeper.GetParams(ctx)
+		for _, address := range []string{
+			pbank.Address.Hex(),
+			pwasm.Address.Hex(),
+			pwasm.DelegatecallAddress.Hex(),
+			pauth.Address.Hex(),
+			evmtypes.ICS20PrecompileAddress,
+		} {
+			if !slices.Contains(evmParams.ActiveStaticPrecompiles, address) {
+				evmParams.ActiveStaticPrecompiles = append(evmParams.ActiveStaticPrecompiles, address)
+			}
+		}
+		if err := appKeepers.EvmKeeper.SetParams(ctx, evmParams); err != nil {
+			return nil, fmt.Errorf("set EVM params: %w", err)
+		}
+
+		// active dynamic deflation module
 		params, err := appKeepers.DistrKeeper.Params.Get(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("get distribution params: %w", err)
@@ -41,6 +64,16 @@ func CreateUpgradeHandler(
 		}
 		if err := appKeepers.DistrKeeper.Params.Set(ctx, params); err != nil {
 			return nil, fmt.Errorf("set distribution params: %w", err)
+		}
+
+		rewardParams, err := appKeepers.RewardKeeper.GetParams(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("get reward params: %w", err)
+		}
+		rewardParams.FeePoolRate = sdkmath.LegacyOneDec()
+		rewardParams.CommunityPoolRate = sdkmath.LegacyZeroDec()
+		if err := appKeepers.RewardKeeper.SetParams(ctx, rewardParams); err != nil {
+			return nil, fmt.Errorf("set reward params: %w", err)
 		}
 
 		// A transfer with a 100,000 gas limit must pay 1 XPLA (10^18 axpla):
