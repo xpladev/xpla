@@ -655,10 +655,10 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/CosmWasm/wasmd v0.60.5 h1:70ceYlseadurjcKcSlwPWfE+H4SgWm4JGMosFMcbFWs=
-github.com/CosmWasm/wasmd v0.60.5/go.mod h1:/taccDYUgTMDzjKzndSUodV3AmMuxZKTuOp0m92GdcA=
-github.com/CosmWasm/wasmvm/v2 v2.3.2 h1:LO6+G9iG3Hg6EezxfMWX5TMx6a5DbuKGwZv6BSdtXfA=
-github.com/CosmWasm/wasmvm/v2 v2.3.2/go.mod h1:RzLlMwFRLaTwPM0DdHFA0m/APT5muKjU6t3ZxCrpXJ0=
+github.com/CosmWasm/wasmd v0.60.9 h1:dZQoMIxvFOOHDtrw68SCgUBN4QeFs5V5Wtlv5KkU7Ss=
+github.com/CosmWasm/wasmd v0.60.9/go.mod h1:UO8AZAQHUCyn5HprE2FNavzdNjK3h7K6N2w0UaFX/L4=
+github.com/CosmWasm/wasmvm/v2 v2.3.5 h1:TSScSAzlQV56/ixhjOmZu5kaENBf8ED1r6gEzpDu62s=
+github.com/CosmWasm/wasmvm/v2 v2.3.5/go.mod h1:RzLlMwFRLaTwPM0DdHFA0m/APT5muKjU6t3ZxCrpXJ0=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go v4.8.3+incompatible h1:fNGaYSuObuQb5nzeTQqowRAd9bpDIRRV4/gUtIBjh8Q=
 github.com/DataDog/datadog-go v4.8.3+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
@@ -894,6 +894,8 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1/go.mod h1:hyedUtir6IdtD/7lIxGeC
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 h1:NMZiJj8QnKe1LgsbDayM4UoHwbvwDRwnI3hwNaAHRnc=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0/go.mod h1:ZXNYxsqcloTdSy/rNShjYzMhyjf0LaoftYK0p+A3h40=
 github.com/decred/dcrd/lru v1.0.0/go.mod h1:mxKOwFd7lFjN2GZYsiz/ecgqR6kkYAl+0pz0tEMk218=
+github.com/delight-labs/evm v0.6.0-xpla.5 h1:idFfwsdps+NZsg/4CsuZ7OI80pdLuWpzagGTYeouIv0=
+github.com/delight-labs/evm v0.6.0-xpla.5/go.mod h1:QnaJDtxqon2mywiYqxM8VwW8FKeFazi0au0qzVpFAG8=
 github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f/go.mod h1:xH/i4TFMt8koVQZ6WFms69WAsDWr2XsYL3Hkl7jkoLE=
 github.com/desertbit/timer v1.0.1 h1:yRpYNn5Vaaj6QXecdLMPMJsW81JLiI1eokUft5nBmeo=
 github.com/desertbit/timer v1.0.1/go.mod h1:htRrYeY5V/t4iu1xCJ5XsQvp4xve8QulXXctAzxqcwE=
@@ -1690,8 +1692,6 @@ github.com/urfave/cli/v2 v2.27.5/go.mod h1:3Sevf16NykTbInEnD0yKkjDAeZDS0A6bzhBH5
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xpladev/cosmos-sdk v0.53.6-xpla h1:6vdNwdkblOMf9vSp6pISCDkzY5XyUmwrVX+4ECInUVM=
 github.com/xpladev/cosmos-sdk v0.53.6-xpla/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
-github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60 h1:PJDWiQ4uJa79tvK8rBMeN+K4dRi6kxfD3A8pJHZYe2Q=
-github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60/go.mod h1:MUrVrODPlGdehAzc2KjUPEVHLtA7WChEvrFLs5kWa9E=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm h1:kelMWZ91b/rfeMnIkk57w4rPSPm9wHlChFocIU1oIdU=
 github.com/xpladev/go-ethereum v1.16.2-xpla-evm/go.mod h1:X5CIOyo8SuK1Q5GnaEizQVLHT/DfsiGWuNeVdQcEMNA=
 github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 h1:gEOO8jv9F4OT7lGCjxCBTO/36wtF6j2nSip77qHd4x4=
