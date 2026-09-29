@@ -7,7 +7,7 @@ toolchain go1.24.5
 require (
 	cosmossdk.io/math v1.5.3
 	github.com/cosmos/cosmos-sdk v0.53.6
-	github.com/cosmos/evm v0.5.1
+	github.com/cosmos/evm v0.6.0
 	github.com/cosmos/interchaintest/v10 v10.0.1
 	github.com/moby/moby v27.5.1+incompatible
 	github.com/stretchr/testify v1.11.1
@@ -41,8 +41,8 @@ require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/CosmWasm/wasmd v0.60.5 // indirect
-	github.com/CosmWasm/wasmvm/v2 v2.3.2 // indirect
+	github.com/CosmWasm/wasmd v0.60.9 // indirect
+	github.com/CosmWasm/wasmvm/v2 v2.3.5 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
@@ -275,7 +275,7 @@ replace (
 
 	// Interchaintest
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla
-	github.com/cosmos/evm => github.com/xpladev/evm-sec-papyrus v0.0.0-20260219053313-d1acb7d17c60
+	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.3-xpla.1
 
 	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.16.2-xpla-evm
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
