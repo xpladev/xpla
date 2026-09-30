@@ -2174,7 +2174,7 @@ func (t *EVMIntegrationTestSuite) Test09_InstantiateWithPrecompiledWasm() {
 			Amount: big.NewInt(0),
 		},
 	}
-	instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, zeroFund)
+	instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, uint64(1), "testtoken", initMsg, zeroFund)
 	assert.NoError(t.T(), err)
 
 	resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
@@ -2316,7 +2316,7 @@ func (t *EVMIntegrationTestSuite) Test10_PrecompiledAuthContract() {
 				Amount: big.NewInt(0),
 			},
 		}
-		instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, big.NewInt(1), "testtoken", initMsg, zeroFund)
+		instantiateWasm, err := pwasm.ABI.Pack(string(pwasm.InstantiateContract), t.UserWallet1.EthAddress, t.UserWallet1.EthAddress, uint64(1), "testtoken", initMsg, zeroFund)
 		assert.NoError(t.T(), err)
 
 		resBiz, err := t.UserWallet1.SendTx(t.EthClient, pwasm.Address, big.NewInt(0), instantiateWasm)
