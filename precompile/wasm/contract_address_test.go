@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -36,7 +35,7 @@ func TestContractMethodsRejectMissingAccount(t *testing.T) {
 
 	t.Run("migrate", func(t *testing.T) {
 		_, err := precompile.migrateContract(sdk.Context{}, nil, sender, nil, []interface{}{
-			sender, contractAddress, big.NewInt(1), []byte(`{}`),
+			sender, contractAddress, uint64(1), []byte(`{}`),
 		})
 
 		require.EqualError(t, err, expectedErr.Error())
@@ -74,7 +73,7 @@ func TestContractMethodsUseOriginalAccountAddress(t *testing.T) {
 	require.Equal(t, originalAddress.String(), msgServer.executeMsg.Contract)
 
 	_, err = precompile.migrateContract(sdk.Context{}, nil, sender, nil, []interface{}{
-		sender, contractAddress, big.NewInt(1), []byte(`{}`),
+		sender, contractAddress, uint64(1), []byte(`{}`),
 	})
 	require.ErrorIs(t, err, msgServerErr)
 	require.Equal(t, originalAddress.String(), msgServer.migrateMsg.Contract)
