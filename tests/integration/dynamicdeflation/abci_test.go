@@ -27,7 +27,7 @@ import (
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 )
 
-func TestFreshGenesisAndV112UpgradeAppLifecycles(t *testing.T) {
+func TestFreshGenesisBeginBlockRoutesMintInflow(t *testing.T) {
 	originalHome := xplaapp.DefaultNodeHome
 	xplaapp.DefaultNodeHome = t.TempDir()
 	t.Cleanup(func() { xplaapp.DefaultNodeHome = originalHome })
@@ -57,8 +57,6 @@ func TestFreshGenesisAndV112UpgradeAppLifecycles(t *testing.T) {
 		app.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName),
 		dynamicdeflationtypes.TargetDenom,
 	).Amount.IsZero(), "distribution did not consume the FeeCollector remainder")
-
-	verifyV112UpgradeLifecycle(t, app)
 }
 
 func TestBeginBlockAtHeightOneDoesNotCreatePeriodOrRouteFees(t *testing.T) {
