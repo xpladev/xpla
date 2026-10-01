@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/evm/x/vm/statedb"
 	"github.com/ethereum/go-ethereum/core/vm"
 
+	pcommon "github.com/xpladev/xpla/precompile/common"
 	xbanktypes "github.com/xpladev/xpla/x/bank/types"
 )
 
@@ -31,6 +32,12 @@ func NewPrecompile(
 func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) ([]byte, error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
 		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
-		return p.Execute(ctx, evm.StateDB, contract, readonly)
+
+		initialGas := ctx.GasMeter().GasConsumed()
+		bz, err := p.Execute(ctx, evm.StateDB, contract, readonly)
+		if err != nil {
+			pcommon.ChargeFailedExecutionGas(contract, ctx.GasMeter().GasConsumed()-initialGas)
+		}
+		return bz, err
 	})
 }

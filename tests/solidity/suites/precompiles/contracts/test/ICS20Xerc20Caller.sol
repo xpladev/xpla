@@ -22,6 +22,7 @@ contract ICS20Xerc20Caller {
     error ForcedOuterRevert();
     event SendResult(uint64 sequence, uint256 balanceAfter, bool reuseSuccess, bytes reuseReturnData);
     event ChildResult(bool success, bytes returnData);
+    event TransferGas(bool success, bytes returnData, uint256 gasBefore, uint256 gasAfter);
 
     constructor(IERC20 token_, string memory denom_) {
         token = token_;
@@ -67,6 +68,18 @@ contract ICS20Xerc20Caller {
         if (directAmount != 0) require(token.transfer(recipient, directAmount), "direct transfer failed");
         first = _send(channel, receiver, timeoutTimestamp, firstAmount);
         second = _send(channel, receiver, timeoutTimestamp, secondAmount);
+    }
+
+    function trySend(string memory channel, string memory receiver, uint64 timeoutTimestamp,
+        uint256 amount, uint256 callGas) external
+    {
+        bytes memory data = abi.encodeCall(IICS20Xerc20.transfer,
+            ("transfer", channel, denom, amount, address(this), receiver,
+                IICS20Xerc20.Height(0, 0), timeoutTimestamp, ""));
+        uint256 gasBefore = gasleft();
+        (bool success, bytes memory result) = address(ICS20).call{gas: callGas}(data);
+        uint256 gasAfter = gasleft();
+        emit TransferGas(success, result, gasBefore, gasAfter);
     }
 
     function _send(string memory channel, string memory receiver, uint64 timeoutTimestamp, uint256 amount)
