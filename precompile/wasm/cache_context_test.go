@@ -22,12 +22,16 @@ func TestCacheNativeWasmContextKeepsWritesInsideStateDBSnapshot(t *testing.T) {
 		WithGasMeter(storetypes.NewInfiniteGasMeter())
 
 	wasmCtx, writeWasm := cacheNativeWasmContext(ctx)
+	require.Same(t, ctx.GasMeter(), wasmCtx.GasMeter())
 	wasmCtx.KVStore(key).Set([]byte("counter"), []byte("1"))
+	wasmCtx.EventManager().EmitEvent(sdk.NewEvent("wasm_execute"))
+	require.Empty(t, ctx.EventManager().Events())
 
 	subCtx, writeSubmessage := wasmCtx.CacheContext()
 	subCtx.KVStore(key).Set([]byte("reply"), []byte("2"))
 	writeSubmessage()
 	writeWasm()
+	require.Equal(t, sdk.Events{sdk.NewEvent("wasm_execute")}, ctx.EventManager().Events())
 
 	require.Equal(t, []byte("1"), snapshotStore.GetKVStore(key).Get([]byte("counter")))
 	require.Equal(t, []byte("2"), snapshotStore.GetKVStore(key).Get([]byte("reply")))
@@ -49,8 +53,10 @@ func TestCacheNativeWasmContextDiscardsFailedAction(t *testing.T) {
 
 	wasmCtx, _ := cacheNativeWasmContext(ctx)
 	wasmCtx.KVStore(key).Set([]byte("counter"), []byte("1"))
+	wasmCtx.EventManager().EmitEvent(sdk.NewEvent("wasm_execute"))
 
 	require.Nil(t, snapshotStore.GetKVStore(key).Get([]byte("counter")))
+	require.Empty(t, ctx.EventManager().Events())
 }
 
 func setupSnapshotContext(t *testing.T) (*snapshotmulti.Store, *cachekv.Store, *storetypes.KVStoreKey) {

@@ -7,7 +7,7 @@ toolchain go1.24.5
 require (
 	cosmossdk.io/math v1.5.3
 	github.com/cosmos/cosmos-sdk v0.53.6
-	github.com/cosmos/evm v0.6.0
+	github.com/cosmos/evm v0.6.3
 	github.com/cosmos/interchaintest/v10 v10.0.1
 	github.com/moby/moby v27.5.1+incompatible
 	github.com/stretchr/testify v1.11.1
@@ -272,9 +272,10 @@ replace (
 	// Fix schnorrkel compatibility issues
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
+	github.com/CosmWasm/wasmvm/v2 => github.com/CosmWasm/priv_wasmvm_sec/v2 v2.3.5-rc.3
 
 	// Interchaintest
-	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla
+	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla-2
 	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.3-xpla.1
 
 	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.16.2-xpla-evm

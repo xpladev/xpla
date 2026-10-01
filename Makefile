@@ -148,7 +148,7 @@ build-release-arm64: go.sum $(BUILDDIR)/
 	$(DOCKER) rm -f xpla-builder
 
 .PHONY: test
-test: go.sum
+test: go.sum test-contracts-compile
 	go clean -testcache
 	go test -short -p 1 ./...
 
@@ -209,10 +209,14 @@ contracts-clean:
 	@echo "Cleaning up the contracts directory..."
 	@python3 ./scripts/compile_smart_contracts/compile_smart_contracts.py --clean
 
-# Compile precompile Solidity contracts.
+# Compile precompile interfaces and Solidity test contracts.
 contracts-compile:
 	@echo "Compiling smart contracts..."
 	@python3 ./scripts/compile_smart_contracts/compile_smart_contracts.py --compile
+
+.PHONY: test-contracts-compile
+test-contracts-compile:
+	@python3 ./scripts/compile_smart_contracts/compile_smart_contracts.py --compile-tests
 
 ###############################################################################
 ###                                Docker                                   ###

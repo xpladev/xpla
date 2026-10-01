@@ -31,14 +31,6 @@ const (
 	REST_TIMEOUT = 2 // in sec
 )
 
-type EVMWalletInfo struct {
-	CosmosWalletInfo *WalletInfo
-
-	EthAddress    ethcommon.Address
-	StringAddress string
-	Nonce         uint64
-}
-
 type Method string
 
 func NewEVMWalletInfo(mnemonics string) (*EVMWalletInfo, error) {

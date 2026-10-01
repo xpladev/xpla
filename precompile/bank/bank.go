@@ -23,6 +23,7 @@ import (
 	cmn "github.com/cosmos/evm/precompiles/common"
 	"github.com/cosmos/evm/x/vm/statedb"
 
+	pcommon "github.com/xpladev/xpla/precompile/common"
 	"github.com/xpladev/xpla/precompile/util"
 	xbanktypes "github.com/xpladev/xpla/x/bank/types"
 )
@@ -92,7 +93,13 @@ func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
 func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
 		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
-		return p.Execute(ctx, evm.StateDB, contract, readonly)
+
+		initialGas := ctx.GasMeter().GasConsumed()
+		bz, err := p.Execute(ctx, evm.StateDB, contract, readonly)
+		if err != nil {
+			pcommon.ChargeFailedExecutionGas(contract, ctx.GasMeter().GasConsumed()-initialGas)
+		}
+		return bz, err
 	})
 }
 

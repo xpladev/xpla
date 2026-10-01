@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/evm/precompiles/bech32"
 	distprecompile "github.com/cosmos/evm/precompiles/distribution"
 	govprecompile "github.com/cosmos/evm/precompiles/gov"
-	ics20precompile "github.com/cosmos/evm/precompiles/ics20"
 	"github.com/cosmos/evm/precompiles/p256"
 	slashingprecompile "github.com/cosmos/evm/precompiles/slashing"
 	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
@@ -30,6 +29,7 @@ import (
 
 	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
+	pics20 "github.com/xpladev/xpla/precompile/ics20"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 )
@@ -37,15 +37,7 @@ import (
 const bech32PrecompileBaseGas = 6_000
 
 var PrecompiledAddressesXpla = []common.Address{
-	pbank.Address, pwasm.Address, pauth.Address,
-}
-
-type wasmDelegatePrecompile struct {
-	*pwasm.PrecompiledWasm
-}
-
-func (p wasmDelegatePrecompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) ([]byte, error) {
-	return p.PrecompiledWasm.RunDelegate(evm, contract, readOnly)
+	pbank.Address, pwasm.Address, pwasm.DelegatecallAddress, pauth.Address,
 }
 
 // NewAvailableStaticPrecompiles returns the list of all available static precompiled contracts from Cosmos EVM.
@@ -99,7 +91,7 @@ func NewAvailableStaticPrecompiles(
 		options.AddressCodec,
 	)
 
-	ibcTransferPrecompile := ics20precompile.NewPrecompile(
+	ibcTransferPrecompile := pics20.NewPrecompile(
 		bk,
 		stakingKeeper,
 		transferKeeper,
@@ -140,7 +132,7 @@ func NewAvailableStaticPrecompiles(
 	precompiles[pwasm.Address] = precompileWasm
 	precompiles[pauth.Address] = pauth.NewPrecompiledAuth(authAk)
 	// delegatecall wasm
-	precompiles[pwasm.DelegatecallAddress] = wasmDelegatePrecompile{PrecompiledWasm: precompileWasm}
+	precompiles[pwasm.DelegatecallAddress] = pwasm.NewDelegatePrecompile(precompileWasm)
 
 	return precompiles
 }

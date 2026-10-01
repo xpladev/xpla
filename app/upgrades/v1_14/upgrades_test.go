@@ -1,4 +1,4 @@
-package dynamicdeflation_test
+package v1_14_test
 
 import (
 	"bytes"
@@ -14,17 +14,35 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	xplaapp "github.com/xpladev/xpla/app"
+	apphelpers "github.com/xpladev/xpla/app/helpers"
 	v1_14 "github.com/xpladev/xpla/app/upgrades/v1_14"
+	pauth "github.com/xpladev/xpla/precompile/auth"
+	pbank "github.com/xpladev/xpla/precompile/bank"
+	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 )
 
-func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
-	t.Helper()
+func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
+	originalHome := xplaapp.DefaultNodeHome
+	xplaapp.DefaultNodeHome = t.TempDir()
+	t.Cleanup(func() { xplaapp.DefaultNodeHome = originalHome })
+
+	app := apphelpers.Setup(t, "v1-14-upgrade")
+	_, err := app.Commit()
+	require.NoError(t, err)
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: app.LastBlockHeight() + 1,
+		Hash:   app.LastCommitID().Hash,
+	})
+	require.NoError(t, err)
+	_, err = app.Commit()
+	require.NoError(t, err)
+
 	const upgradeHeight int64 = 100
 	ctx := app.BaseApp.NewUncachedContext(false, tmproto.Header{Height: upgradeHeight})
 
@@ -34,6 +52,15 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	distributionParams.WithdrawAddrEnabled = false
 	require.NoError(t, distributionParams.ValidateBasic())
 	require.NoError(t, app.DistrKeeper.Params.Set(ctx, distributionParams))
+
+	rewardParams, err := app.RewardKeeper.GetParams(ctx)
+	require.NoError(t, err)
+	rewardParams.FeePoolRate = sdkmath.LegacyMustNewDecFromStr("0.9")
+	rewardParams.CommunityPoolRate = sdkmath.LegacyMustNewDecFromStr("0.1")
+	rewardParams.ReserveRate = sdkmath.LegacyZeroDec()
+	rewardParams.ReserveAccount = "xpla10ksn9528f82uwnmz3sgr4n42l0nucmzntjrg00"
+	rewardParams.RewardDistributeAccount = "xpla19dacf8gzsvuj9txzw0wmtfpdg8swpd4jxl3ks2"
+	require.NoError(t, app.RewardKeeper.SetParams(ctx, rewardParams))
 
 	feeMarketParams := app.FeeMarketKeeper.GetParams(ctx)
 	feeMarketParams.NoBaseFee = true
@@ -45,6 +72,20 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	feeMarketParams.MinGasMultiplier = sdkmath.LegacyMustNewDecFromStr("0.75")
 	require.NoError(t, feeMarketParams.Validate())
 	require.NoError(t, app.FeeMarketKeeper.SetParams(ctx, feeMarketParams))
+
+	evmParams := app.EvmKeeper.GetParams(ctx)
+	evmParams.ActiveStaticPrecompiles = []string{
+		evmtypes.P256PrecompileAddress,
+		evmtypes.Bech32PrecompileAddress,
+		evmtypes.StakingPrecompileAddress,
+		evmtypes.DistributionPrecompileAddress,
+		evmtypes.GovPrecompileAddress,
+		evmtypes.SlashingPrecompileAddress,
+		pauth.Address.Hex(),
+	}
+	evmParams.EVMChannels = []string{"channel-7"}
+	evmParams.HistoryServeWindow = 1234
+	require.NoError(t, app.EvmKeeper.SetParams(ctx, evmParams))
 
 	require.NoError(t, app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, sdk.NewCoins(
 		axpla(107),
@@ -110,6 +151,13 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	expectedDistributionParams.CommunityTax = sdkmath.LegacyZeroDec()
 	require.Equal(t, expectedDistributionParams, updatedDistributionParams)
 
+	updatedRewardParams, err := app.RewardKeeper.GetParams(ctx)
+	require.NoError(t, err)
+	expectedRewardParams := rewardParams
+	expectedRewardParams.FeePoolRate = sdkmath.LegacyOneDec()
+	expectedRewardParams.CommunityPoolRate = sdkmath.LegacyZeroDec()
+	require.Equal(t, expectedRewardParams, updatedRewardParams)
+
 	updatedFeeMarketParams := app.FeeMarketKeeper.GetParams(ctx)
 	expectedGasPrice := sdkmath.LegacyNewDec(10_000_000_000_000)
 	expectedFeeMarketParams := feeMarketParams
@@ -126,6 +174,23 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 	)
 	require.True(t, app.FeeMarketKeeper.CalculateBaseFee(ctx).Equal(expectedGasPrice))
 
+	expectedEVMParams := evmParams
+	expectedEVMParams.ActiveStaticPrecompiles = []string{
+		evmtypes.P256PrecompileAddress,
+		evmtypes.Bech32PrecompileAddress,
+		evmtypes.StakingPrecompileAddress,
+		evmtypes.DistributionPrecompileAddress,
+		evmtypes.ICS20PrecompileAddress,
+		evmtypes.GovPrecompileAddress,
+		evmtypes.SlashingPrecompileAddress,
+		pbank.Address.Hex(),
+		pwasm.Address.Hex(),
+		pauth.Address.Hex(),
+	}
+	updatedEVMParams := app.EvmKeeper.GetParams(ctx)
+	require.Equal(t, expectedEVMParams, updatedEVMParams)
+	require.NotContains(t, updatedEVMParams.ActiveStaticPrecompiles, pwasm.DelegatecallAddress.Hex())
+
 	require.Equal(t, feeCollectorBefore, app.BankKeeper.GetAllBalances(ctx, feeCollectorAddress))
 	feePoolAfter, err := app.DistrKeeper.FeePool.Get(ctx)
 	require.NoError(t, err)
@@ -137,52 +202,10 @@ func verifyV112UpgradeLifecycle(t *testing.T, app *xplaapp.XplaApp) {
 		ctx.KVStore(app.GetKey(distrtypes.StoreKey)),
 		distrtypes.ParamsKey.Bytes(),
 	))
+}
 
-	validators, err := app.StakingKeeper.GetAllValidators(ctx)
-	require.NoError(t, err)
-	require.Len(t, validators, 1)
-	consAddress, err := validators[0].GetConsAddr()
-	require.NoError(t, err)
-	ctx = ctx.WithVoteInfos([]abci.VoteInfo{{
-		Validator: abci.Validator{
-			Address: consAddress,
-			Power:   validators[0].GetConsensusPower(sdk.DefaultPowerReduction),
-		},
-		BlockIdFlag: tmproto.BlockIDFlagCommit,
-	}})
-	app.DistrKeeper.SetPreviousProposerConsAddr(ctx, consAddress)
-	feePoolBeforeDistribution, err := app.DistrKeeper.FeePool.Get(ctx)
-	require.NoError(t, err)
-	supplyBeforeSettlement := app.BankKeeper.GetSupply(ctx, dynamicdeflationtypes.TargetDenom).Amount
-
-	require.NoError(t, app.DynamicDeflationKeeper.BeginBlock(ctx))
-	period, err := app.DynamicDeflationKeeper.CurrentPeriodStore.Get(ctx)
-	require.NoError(t, err)
-	require.Equal(t, upgradeHeight, period.StartHeight)
-	require.Equal(t, int64(100_000), period.EndHeight)
-	require.Equal(t, sdkmath.NewInt(100), period.GrossAmount)
-	require.Equal(t, sdkmath.NewInt(20), period.AllocatedAmount)
-
-	require.NoError(t, distribution.BeginBlocker(ctx, app.DistrKeeper))
-	feePoolAfterDistribution, err := app.DistrKeeper.FeePool.Get(ctx)
-	require.NoError(t, err)
-	require.Equal(t, feePoolBeforeDistribution.CommunityPool, feePoolAfterDistribution.CommunityPool)
-
-	ctx = ctx.WithBlockHeight(period.EndHeight - 1).WithVoteInfos(nil)
-	require.NoError(t, app.DynamicDeflationKeeper.BeginBlock(ctx))
-	require.Empty(t, eventAttributesByType(ctx, dynamicdeflationtypes.EventTypeSettled))
-
-	ctx = ctx.WithBlockHeight(period.EndHeight)
-	require.NoError(t, app.DynamicDeflationKeeper.BeginBlock(ctx))
-	events := eventAttributesByType(ctx, dynamicdeflationtypes.EventTypeSettled)
-	require.Len(t, events, 1)
-	require.Equal(t, "100", events[0][dynamicdeflationtypes.AttributeKeyStartHeight])
-	require.Equal(t, "100000", events[0][dynamicdeflationtypes.AttributeKeySettlementHeight])
-	require.Equal(t, "20", events[0][dynamicdeflationtypes.AttributeKeyBurn])
-	require.Equal(t, "0", events[0][dynamicdeflationtypes.AttributeKeyCommunity])
-	require.Equal(t, sdkmath.NewInt(20), supplyBeforeSettlement.Sub(
-		app.BankKeeper.GetSupply(ctx, dynamicdeflationtypes.TargetDenom).Amount,
-	))
+func axpla(amount int64) sdk.Coin {
+	return sdk.NewInt64Coin(dynamicdeflationtypes.TargetDenom, amount)
 }
 
 func clearStore(t *testing.T, store storetypes.KVStore) {

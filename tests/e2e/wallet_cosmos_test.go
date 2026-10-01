@@ -4,20 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktype "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	txtype "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	cosmwasmtype "github.com/CosmWasm/wasmd/x/wasm/types"
 
@@ -31,21 +26,6 @@ const (
 	Prefix  = "xpla"
 	ChainID = "localtest_1-1"
 )
-
-type WalletInfo struct {
-	sync.Mutex
-
-	IsSrc         bool
-	ChainId       string
-	Prefix        string
-	StringAddress string
-	ByteAddress   sdktype.AccAddress
-	PrivKey       cryptotypes.PrivKey
-	PubKey        cryptotypes.PubKey
-	AccountNumber uint64
-	Sequence      uint64
-	EncCfg        moduletestutil.TestEncodingConfig
-}
 
 func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 	// derive key
@@ -76,7 +56,7 @@ func NewWalletInfo(mnemonics string) (*WalletInfo, error) {
 
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	accountNumber, seq, err := GetAccountNumber(desc.ServiceConn, ChainID, stringAddress)
+	accountNumber, seq, err := GetAccountNumber(context.Background(), desc.GetConnectionWithContext(context.Background()), stringAddress)
 	if err != nil {
 		err = errors.Wrap(err, "NewWalletInfo, get account info")
 		return nil, err
@@ -121,44 +101,9 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, isEVM bool) (string
 		}
 	}
 
-	// sign
-	sigV2 := signing.SignatureV2{
-		PubKey: w.PrivKey.PubKey(),
-		Data: &signing.SingleSignatureData{
-			SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
-			Signature: nil,
-		},
-		Sequence: w.Sequence,
-	}
-
-	err = txBuilder.SetSignatures(sigV2)
+	txBytes, err := w.SignTx(context.Background(), chainId, txBuilder)
 	if err != nil {
-		err = errors.Wrap(err, "SendTx, SetSignatures")
-		return "", err
-	}
-
-	signerData := authsigning.SignerData{
-		ChainID:       chainId,
-		AccountNumber: w.AccountNumber,
-		Sequence:      w.Sequence,
-	}
-
-	sigV2, err = tx.SignWithPrivKey(
-		context.Background(), signing.SignMode_SIGN_MODE_DIRECT, signerData, txBuilder, w.PrivKey, w.EncCfg.TxConfig, w.Sequence)
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, do sign")
-		return "", err
-	}
-
-	err = txBuilder.SetSignatures(sigV2)
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, set signatures")
-		return "", err
-	}
-
-	txBytes, err := w.EncCfg.TxConfig.TxEncoder()(txBuilder.GetTx())
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, tx byte encode for simulate")
+		err = errors.Wrap(err, "SendTx, sign for simulate")
 		return "", err
 	}
 
@@ -178,31 +123,22 @@ func (w *WalletInfo) SendTx(chainId string, msg sdktype.Msg, isEVM bool) (string
 	fee := sdktype.NewCoin(xplatypes.DefaultDenom, feeAmt.RoundInt())
 	txBuilder.SetFeeAmount(sdktype.NewCoins(fee))
 
-	// sign
-	sigV2, err = tx.SignWithPrivKey(
-		context.Background(), signing.SignMode_SIGN_MODE_DIRECT, signerData, txBuilder, w.PrivKey, w.EncCfg.TxConfig, w.Sequence)
+	txBytes, err = w.SignTx(context.Background(), chainId, txBuilder)
 	if err != nil {
-		err = errors.Wrap(err, "SendTx, do sign")
+		err = errors.Wrap(err, "SendTx, sign")
 		return "", err
 	}
 
-	err = txBuilder.SetSignatures(sigV2)
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, set signature")
-		return "", err
-	}
-
-	// broadcast tx
-	txBytes, err = w.EncCfg.TxConfig.TxEncoder()(txBuilder.GetTx())
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, tx byte encode")
-		return "", err
-	}
-
-	txHash, err := BroadcastTx(desc.ServiceConn, w.ChainId, txBytes, txtype.BroadcastMode_BROADCAST_MODE_SYNC)
-	if err != nil {
-		err = errors.Wrap(err, "SendTx, tx broadcast")
-		return "", err
+	var txHash string
+	if os.Getenv("GOLANG_TESTING") != "true" {
+		response, err := BroadcastTx(context.Background(), desc.ServiceConn, txBytes, txtype.BroadcastMode_BROADCAST_MODE_SYNC)
+		if err != nil {
+			return "", errors.Wrap(err, "SendTx, tx broadcast")
+		}
+		if response.Code != 0 {
+			return "", errors.Errorf("Tx failed with code %d", response.Code)
+		}
+		txHash = response.TxHash
 	}
 
 	w.Sequence += 1
@@ -214,7 +150,7 @@ func (w *WalletInfo) RefreshSequence() error {
 	w.Lock()
 	defer w.Unlock()
 
-	accountNumber, seq, err := GetAccountNumber(desc.ServiceConn, w.ChainId, w.StringAddress)
+	accountNumber, seq, err := GetAccountNumber(context.Background(), desc.GetConnectionWithContext(context.Background()), w.StringAddress)
 	if err != nil {
 		err = errors.Wrap(err, "RefreshSequence, get account info")
 		return err
@@ -251,47 +187,4 @@ func GenerateContractExecMessage(senderAddress, contractAddress string, param []
 		Funds:    coins,
 	}
 
-}
-
-func GetAccountNumber(conn *grpc.ClientConn, chainId, address string) (uint64, uint64, error) {
-	client := authtypes.NewQueryClient(desc.GetConnectionWithContext(context.Background()))
-
-	res, err := client.Account(context.Background(), &authtypes.QueryAccountRequest{Address: address})
-	if err != nil {
-		err = errors.Wrap(err, "GetAccountNumber")
-		return 0, 0, err
-	}
-
-	var baseAccount authtypes.BaseAccount
-	err = baseAccount.Unmarshal(res.Account.Value)
-	if err != nil {
-		err = errors.Wrap(err, "GetAccountNumber, unmarshalling")
-		return 0, 0, err
-	}
-
-	return baseAccount.GetAccountNumber(), baseAccount.GetSequence(), nil
-}
-
-func BroadcastTx(conn *grpc.ClientConn, chainId string, txBytes []byte, mode txtype.BroadcastMode) (string, error) {
-	client := txtype.NewServiceClient(desc.ServiceConn)
-
-	if currtestingenv := os.Getenv("GOLANG_TESTING"); currtestingenv != "true" {
-		res, err := client.BroadcastTx(context.Background(), &txtype.BroadcastTxRequest{
-			TxBytes: txBytes,
-			Mode:    mode,
-		})
-
-		if err != nil {
-			err = errors.Wrap(err, "broadcastTx")
-			return "", err
-		}
-
-		if res.TxResponse.Code != 0 {
-			return "", errors.Errorf("Tx failed with code %d", res.TxResponse.Code)
-		}
-
-		return res.TxResponse.TxHash, nil
-	}
-
-	return "", nil
 }
