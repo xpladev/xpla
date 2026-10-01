@@ -1140,125 +1140,229 @@ describe('xerc20 wasm precompile accounting', function () {
     expect(await getCounter(freshCounter)).to.equal(3n)
   })
 
-  it('calibrates token gas burn and fails atomically when it exceeds the caller frame', async function () {
-    const calibration = await deployAdversarialFixture()
-    await (
-      await calibration.token.configureCallback(
-        ethers.ZeroAddress,
-        '0x',
-        false,
-        GAS_BURN_ITERATIONS
+  for (const delegate of [false, true]) {
+    const mode = delegate ? 'delegate' : 'regular'
+    it(`calibrates ${mode} token gas burn and fails atomically when it exceeds the caller frame`, async function () {
+      const calibration = await deployAdversarialFixture()
+      await (
+        await calibration.token.configureCallback(
+          ethers.ZeroAddress,
+          '0x',
+          false,
+          GAS_BURN_ITERATIONS
+        )
+      ).wait()
+      const directTransferGas = await calibration.token.transfer.estimateGas(
+        calibration.callbackRecipient.address,
+        1n
       )
-    ).wait()
-    const directTransferGas = await calibration.token.transfer.estimateGas(
-      calibration.callbackRecipient.address,
-      1n
-    )
-    expect(
-      directTransferGas > LOW_CALLER_GAS_LIMIT,
-      `direct ERC20 transfer gas ${directTransferGas} must exceed the low caller limit ${LOW_CALLER_GAS_LIMIT}`
-    ).to.equal(true)
-    expect(
-      directTransferGas < BigInt(LARGE_GAS_LIMIT),
-      `direct ERC20 transfer gas ${directTransferGas} must fit within the high-gas positive control ${LARGE_GAS_LIMIT}`
-    ).to.equal(true)
+      expect(
+        directTransferGas > LOW_CALLER_GAS_LIMIT,
+        `direct ERC20 transfer gas ${directTransferGas} must exceed the low caller limit ${LOW_CALLER_GAS_LIMIT}`
+      ).to.equal(true)
+      expect(
+        directTransferGas < BigInt(LARGE_GAS_LIMIT),
+        `direct ERC20 transfer gas ${directTransferGas} must fit within the high-gas positive control ${LARGE_GAS_LIMIT}`
+      ).to.equal(true)
 
-    const highGas = await deployAdversarialFixture()
-    const highGasBurnBefore = await highGas.token.burnAccumulator()
-    const highGasCounter = await instantiateFreshCounter()
-    expect(await getCounter(highGasCounter)).to.equal(0n)
+      const highGas = await deployAdversarialFixture()
+      const highGasBurnBefore = await highGas.token.burnAccumulator()
+      const highGasCounter = await instantiateFreshCounter()
+      expect(await getCounter(highGasCounter)).to.equal(0n)
 
-    await (
-      await highGas.token.configureCallback(
-        ethers.ZeroAddress,
-        '0x',
-        false,
-        GAS_BURN_ITERATIONS
+      await (
+        await highGas.token.configureCallback(
+          ethers.ZeroAddress,
+          '0x',
+          false,
+          GAS_BURN_ITERATIONS
+        )
+      ).wait()
+
+      const execute = delegate ? 'executeDelegateWasmFunds' : 'executeWasmFunds'
+      const highGasSender = delegate
+        ? highGas.deployer.address
+        : await highGas.poc.getAddress()
+      const highGasBalanceBefore = await highGas.token.balanceOf(highGasSender)
+      const highGasTx = await highGas.poc[execute](
+        highGasCounter.hex,
+        ethers.toUtf8Bytes(INCREMENT_MSG),
+        highGas.transferAmount,
+        { gasLimit: LARGE_GAS_LIMIT }
       )
-    ).wait()
-
-    const highGasTx = await highGas.poc.executeWasmFunds(
-      highGasCounter.hex,
-      ethers.toUtf8Bytes(INCREMENT_MSG),
-      highGas.transferAmount,
-      { gasLimit: LARGE_GAS_LIMIT }
-    )
-    const highGasReceipt = await highGasTx.wait()
-    expect(findEvent(highGasReceipt.logs, highGas.token.interface, 'TransferProbe'))
-      .to.exist
-    expect(await highGas.token.burnAccumulator()).to.not.equal(
-      highGasBurnBefore
-    )
-    expect(await highGas.token.balanceOf(await highGas.poc.getAddress())).to.equal(
-      0n
-    )
-    expect(await highGas.token.balanceOf(highGasCounter.hex)).to.equal(
-      highGas.transferAmount
-    )
-    // High-gas positive control: the execute commits, so counter must reach 3.
-    expect(await getCounter(highGasCounter)).to.equal(3n)
-
-    const { token, poc, transferAmount } = await deployAdversarialFixture()
-    const burnAccumulatorBefore = await token.burnAccumulator()
-    const lowGasCounter = await instantiateFreshCounter()
-    expect(await getCounter(lowGasCounter)).to.equal(0n)
-
-    await (
-      await token.configureCallback(
-        ethers.ZeroAddress,
-        '0x',
-        false,
-        GAS_BURN_ITERATIONS
+      const highGasReceipt = await highGasTx.wait()
+      expect(findEvent(highGasReceipt.logs, highGas.token.interface, 'TransferProbe'))
+        .to.exist
+      expect(await highGas.token.burnAccumulator()).to.not.equal(
+        highGasBurnBefore
       )
-    ).wait()
+      expect(await highGas.token.balanceOf(highGasSender)).to.equal(
+        highGasBalanceBefore - highGas.transferAmount
+      )
+      expect(await highGas.token.balanceOf(highGasCounter.hex)).to.equal(
+        highGas.transferAmount
+      )
+      // High-gas positive control: the execute commits, so counter must reach 3.
+      expect(await getCounter(highGasCounter)).to.equal(3n)
 
-    const tx = await poc.tryExecuteWasmFunds(
-      lowGasCounter.hex,
-      ethers.toUtf8Bytes(INCREMENT_MSG),
-      transferAmount,
-      { gasLimit: LOW_CALLER_GAS_LIMIT }
-    )
-    const receipt = await tx.wait()
+      const { token, poc, transferAmount } = await deployAdversarialFixture()
+      const burnAccumulatorBefore = await token.burnAccumulator()
+      const lowGasCounter = await instantiateFreshCounter()
+      expect(await getCounter(lowGasCounter)).to.equal(0n)
 
-    const callResult = findEvent(
-      receipt.logs,
-      poc.interface,
-      'WasmFundsCallResult'
-    )
-    expect(callResult).to.exist
-    expect(callResult.args.success).to.equal(false)
+      await (
+        await token.configureCallback(
+          ethers.ZeroAddress,
+          '0x',
+          false,
+          GAS_BURN_ITERATIONS
+        )
+      ).wait()
 
-    const gasProbe = findEvent(
-      receipt.logs,
-      poc.interface,
-      'WasmFundsGasProbe'
-    )
-    expect(gasProbe).to.exist
-    expect(
-      gasProbe.args.gasBeforeCall < LOW_CALLER_GAS_LIMIT,
-      `wasm call gas ${gasProbe.args.gasBeforeCall} must be below tx gas limit ${LOW_CALLER_GAS_LIMIT}`
-    ).to.equal(true)
+      const tryExecute = delegate
+        ? 'tryExecuteDelegateWasmFunds'
+        : 'tryExecuteWasmFunds'
+      const lowGasSender = delegate
+        ? (await ethers.getSigners())[0].address
+        : await poc.getAddress()
+      const lowGasBalanceBefore = await token.balanceOf(lowGasSender)
+      const totalSupplyBefore = await token.totalSupply()
+      const tx = await poc[tryExecute](
+        lowGasCounter.hex,
+        ethers.toUtf8Bytes(INCREMENT_MSG),
+        transferAmount,
+        { gasLimit: LOW_CALLER_GAS_LIMIT }
+      )
+      const receipt = await tx.wait()
 
-    expect(
-      gasProbe.args.gasAfterCall * MAX_FAILED_CALL_GAS_REMAINDER_RATIO <
-        gasProbe.args.gasBeforeCall,
-      `failed wasm call did not charge the outer frame enough: gas before ${gasProbe.args.gasBeforeCall}, gas after ${gasProbe.args.gasAfterCall}`
-    ).to.equal(true)
+      const callResult = findEvent(
+        receipt.logs,
+        poc.interface,
+        'WasmFundsCallResult'
+      )
+      expect(callResult).to.exist
+      expect(callResult.args.success).to.equal(false)
 
-    expect(findEvent(receipt.logs, token.interface, 'TransferProbe')).to.equal(
-      null
-    )
-    expect(await token.burnAccumulator()).to.equal(burnAccumulatorBefore)
-    expect(await token.balanceOf(await poc.getAddress())).to.equal(
-      transferAmount
-    )
-    expect(await token.balanceOf(lowGasCounter.hex)).to.equal(0n)
-    // Low-gas execute reverts and is caught: the whole wasm execute rolls back,
-    // so the fresh counter must remain at 0 (no partial/contaminated state).
-    const counterAfter = await getCounter(lowGasCounter)
-    expect(
-      counterAfter,
-      `wasm counter changed across the low-gas reverted call from 0 to ${counterAfter}`
-    ).to.equal(0n)
-  })
+      const gasProbe = findEvent(
+        receipt.logs,
+        poc.interface,
+        'WasmFundsGasProbe'
+      )
+      expect(gasProbe).to.exist
+      expect(
+        gasProbe.args.gasBeforeCall < LOW_CALLER_GAS_LIMIT,
+        `wasm call gas ${gasProbe.args.gasBeforeCall} must be below tx gas limit ${LOW_CALLER_GAS_LIMIT}`
+      ).to.equal(true)
+
+      expect(
+        gasProbe.args.gasAfterCall * MAX_FAILED_CALL_GAS_REMAINDER_RATIO <
+          gasProbe.args.gasBeforeCall,
+        `failed wasm call did not charge the outer frame enough: gas before ${gasProbe.args.gasBeforeCall}, gas after ${gasProbe.args.gasAfterCall}`
+      ).to.equal(true)
+
+      const frameGasUsed = gasProbe.args.gasBeforeCall - gasProbe.args.gasAfterCall
+      expect(receipt.gasUsed >= frameGasUsed).to.equal(true)
+      expect(receipt.gasUsed < LOW_CALLER_GAS_LIMIT).to.equal(true)
+      const revertedAddresses = [
+        await token.getAddress(),
+        BANK_PRECOMPILE_ADDRESS,
+        WASM_PRECOMPILE_ADDRESS,
+        WASM_DELEGATE_PRECOMPILE_ADDRESS,
+      ]
+      expectNoReceiptLogsFrom(receipt, revertedAddresses, 'failed wasm action must remove native and token logs')
+      await expectNoProviderLogsFrom(revertedAddresses, receipt)
+
+      expect(findEvent(receipt.logs, token.interface, 'TransferProbe')).to.equal(
+        null
+      )
+      expect(await token.burnAccumulator()).to.equal(burnAccumulatorBefore)
+      expect(await token.balanceOf(lowGasSender)).to.equal(lowGasBalanceBefore)
+      expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+      expect(await token.balanceOf(lowGasCounter.hex)).to.equal(0n)
+      // Low-gas execute reverts and is caught: the whole wasm execute rolls back,
+      // so the fresh counter must remain at 0 (no partial/contaminated state).
+      const counterAfter = await getCounter(lowGasCounter)
+      expect(
+        counterAfter,
+        `wasm counter changed across the low-gas reverted call from 0 to ${counterAfter}`
+      ).to.equal(0n)
+    })
+
+    it(`settles ${mode} SDK gas exhaustion and discards the Wasm cache`, async function () {
+      const PoC = await ethers.getContractFactory('BankXerc20DoubleSpendPoC')
+      const poc = await PoC.deploy(ethers.ZeroAddress, '')
+      await poc.waitForDeployment()
+      const successCounter = await instantiateFreshCounter()
+      const successReceipt = await (await poc.tryExecuteWasmSDKGas(
+        successCounter.hex, delegate, 1_000_000n, { gasLimit: 2_000_000n }
+      )).wait()
+      const success = findEvent(successReceipt.logs, poc.interface, 'WasmFundsCallResult')
+      expect(success.args.success).to.equal(true)
+      expect(await getCounter(successCounter)).to.equal(3n)
+
+      const failedCounter = await instantiateFreshCounter()
+      const budget = 150_000n
+      const receipt = await (await poc.tryExecuteWasmSDKGas(
+        failedCounter.hex, delegate, budget, { gasLimit: 2_000_000n }
+      )).wait()
+      expect(receipt.status).to.equal(1)
+      const result = findEvent(receipt.logs, poc.interface, 'WasmFundsCallResult')
+      const gas = findEvent(receipt.logs, poc.interface, 'WasmFundsGasProbe')
+      expect(result.args.success).to.equal(false)
+      // Upstream SDK OOG becomes vm.ErrOutOfGas with empty return data, while
+      // an ordinary native error retains the ABI Error(string) payload.
+      expect(result.args.returnData).to.equal('0x')
+      const used = gas.args.gasBeforeCall - gas.args.gasAfterCall
+      expect(used >= budget).to.equal(true)
+      expect(used < budget + 10_000n).to.equal(true)
+      expect(gas.args.gasAfterCall > 1_000_000n).to.equal(true)
+      expect(await getCounter(failedCounter)).to.equal(0n)
+      const revertedAddresses = [WASM_PRECOMPILE_ADDRESS, WASM_DELEGATE_PRECOMPILE_ADDRESS]
+      expectNoReceiptLogsFrom(receipt, revertedAddresses, 'SDK gas panic must discard Wasm events')
+      await expectNoProviderLogsFrom(revertedAddresses, receipt)
+    })
+
+    it(`preserves ${mode} wasm errors and discards funds and logs`, async function () {
+      const { deployer, token, poc, transferAmount } = await deployAdversarialFixture()
+      const counter = await instantiateFreshCounter()
+      const sender = delegate ? deployer.address : await poc.getAddress()
+      const balanceBefore = await token.balanceOf(sender)
+      const supplyBefore = await token.totalSupply()
+      const tryExecute = delegate
+        ? 'tryExecuteDelegateWasmFunds'
+        : 'tryExecuteWasmFunds'
+      // Funds transfer succeeds before CosmWasm rejects this unknown execute variant.
+      const tx = await poc[tryExecute](
+        counter.hex,
+        ethers.toUtf8Bytes('{"unknown_execute_variant":{}}'),
+        transferAmount,
+        { gasLimit: LARGE_GAS_LIMIT }
+      )
+      const receipt = await tx.wait()
+      const result = findEvent(receipt.logs, poc.interface, 'WasmFundsCallResult')
+      expect(result.args.success).to.equal(false)
+      expect(ethers.dataSlice(result.args.returnData, 0, 4)).to.equal('0x08c379a0')
+      const [reason] = ethers.AbiCoder.defaultAbiCoder().decode(
+        ['string'],
+        ethers.dataSlice(result.args.returnData, 4)
+      )
+      expect(reason).to.include('unknown variant')
+      expect(reason.toLowerCase()).not.to.include('out of gas')
+      const gas = findEvent(receipt.logs, poc.interface, 'WasmFundsGasProbe')
+      expect(gas.args.gasAfterCall > gas.args.gasBeforeCall / 2n).to.equal(true)
+      expect(receipt.gasUsed >= gas.args.gasBeforeCall - gas.args.gasAfterCall).to.equal(true)
+      expect(await token.balanceOf(sender)).to.equal(balanceBefore)
+      expect(await token.balanceOf(counter.hex)).to.equal(0n)
+      expect(await token.totalSupply()).to.equal(supplyBefore)
+      expect(await getCounter(counter)).to.equal(0n)
+      const revertedAddresses = [
+        await token.getAddress(),
+        BANK_PRECOMPILE_ADDRESS,
+        WASM_PRECOMPILE_ADDRESS,
+        WASM_DELEGATE_PRECOMPILE_ADDRESS,
+      ]
+      expectNoReceiptLogsFrom(receipt, revertedAddresses, 'ordinary wasm error must discard funds and logs')
+      await expectNoProviderLogsFrom(revertedAddresses, receipt)
+    })
+  }
 })

