@@ -20,7 +20,8 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: '0.8.18'
+      version: '0.8.18',
+      compilerRoots: ['https://binaries.soliditylang.org/wasm/']
     }
   }
 }
