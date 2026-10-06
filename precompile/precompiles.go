@@ -80,6 +80,7 @@ func NewAvailableStaticPrecompiles(
 		bk,
 		options.AddressCodec,
 	)
+	stakingPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	distributionPrecompile := distprecompile.NewPrecompile(
 		distributionKeeper,
@@ -89,6 +90,7 @@ func NewAvailableStaticPrecompiles(
 		bk,
 		options.AddressCodec,
 	)
+	distributionPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	ibcTransferPrecompile := pics20.NewPrecompile(
 		bk,
@@ -97,6 +99,7 @@ func NewAvailableStaticPrecompiles(
 		channelKeeper,
 		MockERC20Keeper{},
 	)
+	ibcTransferPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	govPrecompile := govprecompile.NewPrecompile(
 		govkeeper.NewMsgServerImpl(&govKeeper),
@@ -105,6 +108,7 @@ func NewAvailableStaticPrecompiles(
 		codec,
 		options.AddressCodec,
 	)
+	govPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	slashingPrecompile := slashingprecompile.NewPrecompile(
 		slashingKeeper,
@@ -113,6 +117,7 @@ func NewAvailableStaticPrecompiles(
 		options.ValidatorAddrCodec,
 		options.ConsensusAddrCodec,
 	)
+	slashingPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile

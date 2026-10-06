@@ -57,7 +57,7 @@ func NewPrecompiledWasm(wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) *
 		Precompile: cmn.Precompile{
 			KvGasConfig:           storetypes.KVGasConfig(),
 			TransientKVGasConfig:  storetypes.TransientGasConfig(),
-			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
+			BalanceHandlerFactory: pbank.NewExactBalanceHandlerFactory(bk),
 		},
 		ABI: ABI,
 		wms: wms,

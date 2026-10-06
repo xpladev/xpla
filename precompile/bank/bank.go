@@ -61,7 +61,7 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 		Precompile: cmn.Precompile{
 			KvGasConfig:           storetypes.KVGasConfig(),
 			TransientKVGasConfig:  storetypes.TransientGasConfig(),
-			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
+			BalanceHandlerFactory: NewExactBalanceHandlerFactory(bk),
 		},
 		ABI: ABI,
 		bk:  bk,
