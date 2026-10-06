@@ -40,7 +40,6 @@ var (
 type PrecompiledWasm struct {
 	cmn.Precompile
 	abi.ABI
-	ak  AccountKeeper
 	wms WasmMsgServer
 	wk  WasmKeeper
 }
@@ -53,7 +52,7 @@ func init() {
 	}
 }
 
-func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) *PrecompiledWasm {
+func NewPrecompiledWasm(wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) *PrecompiledWasm {
 	p := PrecompiledWasm{
 		Precompile: cmn.Precompile{
 			KvGasConfig:           storetypes.KVGasConfig(),
@@ -61,7 +60,6 @@ func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk p
 			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
 		},
 		ABI: ABI,
-		ak:  ak,
 		wms: wms,
 		wk:  wk,
 	}
@@ -324,9 +322,9 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, err
 	}
 
-	contractAccount := p.ak.GetAccount(ctx, contractAddress)
-	if contractAccount == nil {
-		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	msg, err := util.GetByteArray(args[2])
@@ -341,7 +339,7 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, se
 
 	executeMsg := &wasmtypes.MsgExecuteContract{
 		Sender:   fromAddress.String(),
-		Contract: contractAccount.GetAddress().String(),
+		Contract: resolvedAddress.String(),
 		Msg:      msg,
 		Funds:    coins,
 	}
@@ -375,9 +373,9 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, err
 	}
 
-	contractAccount := p.ak.GetAccount(ctx, contractAddress)
-	if contractAccount == nil {
-		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	codeId, err := util.GetUint64(args[2])
@@ -392,7 +390,7 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 
 	migrateMsg := &wasmtypes.MsgMigrateContract{
 		Sender:   fromAddress.String(),
-		Contract: contractAccount.GetAddress().String(),
+		Contract: resolvedAddress.String(),
 		CodeID:   codeId,
 		Msg:      msg,
 	}
@@ -416,9 +414,9 @@ func (p PrecompiledWasm) smartContractState(ctx sdk.Context, method *abi.Method,
 		return nil, err
 	}
 
-	contractAccount := p.ak.GetAccount(ctx, contractAddress)
-	if contractAccount == nil {
-		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	queryData, err := util.GetByteArray(args[1])
@@ -426,7 +424,7 @@ func (p PrecompiledWasm) smartContractState(ctx sdk.Context, method *abi.Method,
 		return nil, err
 	}
 
-	res, err := p.wk.QuerySmart(ctx, contractAccount.GetAddress(), queryData)
+	res, err := p.wk.QuerySmart(ctx, resolvedAddress, queryData)
 	if err != nil {
 		return nil, err
 	}

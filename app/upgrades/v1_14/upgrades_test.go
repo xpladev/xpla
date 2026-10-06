@@ -2,16 +2,23 @@ package v1_14_test
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"cosmossdk.io/collections"
+	ccodec "cosmossdk.io/collections/codec"
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -44,7 +51,7 @@ func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
 	require.NoError(t, err)
 
 	const upgradeHeight int64 = 100
-	ctx := app.BaseApp.NewUncachedContext(false, tmproto.Header{Height: upgradeHeight})
+	ctx := app.NewUncachedContext(false, tmproto.Header{Height: upgradeHeight, Time: time.Unix(upgradeHeight, 0).UTC()})
 
 	distributionParams, err := app.DistrKeeper.Params.Get(ctx)
 	require.NoError(t, err)
@@ -125,6 +132,32 @@ func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
 	require.False(t, exists)
 	require.True(t, app.UpgradeKeeper.HasHandler(v1_14.UpgradeName))
 
+	creator := sdk.AccAddress(bytes.Repeat([]byte{0x71}, 20))
+	app.AccountKeeper.SetAccount(ctx, app.AccountKeeper.NewAccountWithAddress(ctx, creator))
+	wasmCode, err := os.ReadFile(filepath.Join("..", "..", "..", "tests", "solidity", "suites", "misc", "any_dispatch.wasm"))
+	require.NoError(t, err)
+	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(&app.WasmKeeper)
+	codeID, _, err := contractKeeper.Create(ctx, creator, wasmCode, nil)
+	require.NoError(t, err)
+	contractAddress, _, err := contractKeeper.Instantiate(ctx, codeID, creator, nil, []byte(`{}`), "v1.14 alias rebuild", nil)
+	require.NoError(t, err)
+	require.Len(t, contractAddress, 32)
+	contractAlias := sdk.AccAddress(bytes.Clone(contractAddress[len(contractAddress)-20:]))
+	app.AccountKeeper.SetAccount(ctx, app.AccountKeeper.NewAccountWithAddress(ctx, contractAlias))
+
+	govAlias := app.AccountKeeper.GetModuleAddress("gov")
+	maliciousGovTarget := sdk.AccAddress(append(bytes.Repeat([]byte{0x72}, 12), govAlias...))
+	arbitraryAlias := sdk.AccAddress(bytes.Repeat([]byte{0x73}, 20))
+	arbitraryTarget := sdk.AccAddress(append(bytes.Repeat([]byte{0x74}, 12), arbitraryAlias...))
+	legacyAliases := collections.NewMap(
+		collections.NewSchemaBuilder(runtime.NewKVStoreService(app.GetKey(authtypes.StoreKey))),
+		collections.NewPrefix("sliceAddress"), "legacy_slice_address",
+		sdk.AccAddressKey, ccodec.KeyToValueCodec(sdk.AccAddressKey),
+	)
+	require.NoError(t, legacyAliases.Set(ctx, govAlias, maliciousGovTarget))
+	require.NoError(t, legacyAliases.Set(ctx, arbitraryAlias, arbitraryTarget))
+	require.NoError(t, legacyAliases.Set(ctx, contractAlias, arbitraryTarget))
+
 	require.NoError(t, app.UpgradeKeeper.ApplyUpgrade(ctx, upgradetypes.Plan{
 		Name:   v1_14.UpgradeName,
 		Height: upgradeHeight,
@@ -202,6 +235,17 @@ func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
 		ctx.KVStore(app.GetKey(distrtypes.StoreKey)),
 		distrtypes.ParamsKey.Bytes(),
 	))
+
+	resolvedContract, found, err := app.WasmKeeper.ResolveWasmAlias(ctx, contractAlias)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, contractAddress, resolvedContract)
+	require.Equal(t, contractAlias, app.AccountKeeper.GetAccount(ctx, contractAlias).GetAddress(), "exact EOA remains authoritative")
+	_, found, err = app.WasmKeeper.ResolveWasmAlias(ctx, arbitraryAlias)
+	require.NoError(t, err)
+	require.False(t, found)
+	require.Equal(t, 1, countAliasEntries(t, ctx.KVStore(app.GetKey(wasmtypes.StoreKey)), "wasmAlias"), "only the authoritative contract mapping survives")
+	require.Zero(t, countAliasEntries(t, ctx.KVStore(app.GetKey(authtypes.StoreKey)), "sliceAddress"), "all legacy auth mappings must be removed")
 }
 
 func axpla(amount int64) sdk.Coin {
@@ -246,4 +290,16 @@ func hasValidatorRewardState(snapshot map[string][]byte) bool {
 		}
 	}
 	return false
+}
+
+func countAliasEntries(t *testing.T, store storetypes.KVStore, prefix string) int {
+	t.Helper()
+	iterator := storetypes.KVStorePrefixIterator(store, collections.NewPrefix(prefix).Bytes())
+	defer func() { require.NoError(t, iterator.Close()) }()
+	count := 0
+	for ; iterator.Valid(); iterator.Next() {
+		count++
+	}
+	require.NoError(t, iterator.Error())
+	return count
 }

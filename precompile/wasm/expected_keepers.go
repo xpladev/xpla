@@ -7,10 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type AccountKeeper interface {
-	GetAccount(ctx context.Context, addr sdk.AccAddress) (acc sdk.AccountI)
-}
-
 type WasmMsgServer interface {
 	InstantiateContract(ctx context.Context, msg *wasmtypes.MsgInstantiateContract) (*wasmtypes.MsgInstantiateContractResponse, error)
 	InstantiateContract2(ctx context.Context, msg *wasmtypes.MsgInstantiateContract2) (*wasmtypes.MsgInstantiateContract2Response, error)
@@ -19,5 +15,6 @@ type WasmMsgServer interface {
 }
 
 type WasmKeeper interface {
+	ResolveContractAddress(ctx context.Context, evmAddr sdk.AccAddress) (sdk.AccAddress, error)
 	QuerySmart(ctx context.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
 }

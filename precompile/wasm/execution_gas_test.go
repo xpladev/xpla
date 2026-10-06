@@ -30,23 +30,53 @@ type gasRecordingWasmServer struct {
 	execute func(context.Context, *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error)
 }
 
+func setTestContractMetadata(t *testing.T, input testutil.TestInput, address sdk.AccAddress) {
+	t.Helper()
+	key := input.App.EvmKeeper.KVStoreKeys()[wasmtypes.StoreKey]
+	input.Ctx.KVStore(key).Set(wasmtypes.GetContractAddressKey(address), input.App.AppCodec().MustMarshal(&wasmtypes.ContractInfo{}))
+}
+
 func (s gasRecordingWasmServer) ExecuteContract(ctx context.Context, msg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
 	return s.execute(ctx, msg)
 }
 
 func TestWasmEntryPointGasSettlement(t *testing.T) {
-	for _, delegate := range []bool{false, true} {
-		mode := "regular"
-		if delegate {
-			mode = "delegate"
-		}
-		for _, outcome := range []string{"success", "ordinary error", "SDK OOG panic"} {
-			t.Run(mode+"/"+outcome, func(t *testing.T) {
+	callModes := []struct {
+		name     string
+		delegate bool
+	}{
+		{name: "regular"},
+		{name: "delegate", delegate: true},
+	}
+	tests := []struct {
+		name      string
+		actionErr error
+		outOfGas  bool
+		wantErr   error
+	}{
+		{name: "success"},
+		{
+			name:      "ordinary error",
+			actionErr: errors.New("native action failed"),
+			wantErr:   vm.ErrExecutionReverted,
+		},
+		{
+			name:     "SDK OOG panic",
+			outOfGas: true,
+			wantErr:  vm.ErrOutOfGas,
+		},
+	}
+
+	for _, mode := range callModes {
+		for _, tc := range tests {
+			t.Run(mode.name+"/"+tc.name, func(t *testing.T) {
 				input := testutil.CreateTestInput(t)
 				sender := common.HexToAddress("0x1234")
 				target := common.HexToAddress("0x5678")
-				account := input.AccountKeeper.NewAccountWithAddress(input.Ctx, sdk.AccAddress(target.Bytes()))
+				wasmAddress := sdk.AccAddress(target.Bytes())
+				account := input.AccountKeeper.NewAccountWithAddress(input.Ctx, wasmAddress)
 				input.AccountKeeper.SetAccount(input.Ctx, account)
+				setTestContractMetadata(t, input, wasmAddress)
 				const budget, initialGas = uint64(1_000_000), uint64(30)
 				ctx := input.Ctx.WithGasMeter(storetypes.NewGasMeter(budget)).WithEventManager(sdk.NewEventManager())
 				ctx.GasMeter().ConsumeGas(initialGas, "before native wrapper")
@@ -56,7 +86,6 @@ func TestWasmEntryPointGasSettlement(t *testing.T) {
 				key := input.App.EvmKeeper.KVStoreKeys()[wasmtypes.StoreKey]
 				var actionCtx sdk.Context
 				calls := 0
-				failure := errors.New("native action failed")
 				server := gasRecordingWasmServer{execute: func(goCtx context.Context, msg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
 					actionCtx = sdk.UnwrapSDKContext(goCtx)
 					calls++
@@ -67,17 +96,17 @@ func TestWasmEntryPointGasSettlement(t *testing.T) {
 					actionCtx.KVStore(key).Set([]byte("gas-settlement"), []byte("written"))
 					actionCtx.EventManager().EmitEvent(sdk.NewEvent("native_action"))
 					actionCtx.GasMeter().ConsumeGas(100, "native work")
-					switch outcome {
-					case "ordinary error":
-						return nil, failure
-					case "SDK OOG panic":
+					if tc.actionErr != nil {
+						return nil, tc.actionErr
+					}
+					if tc.outOfGas {
 						actionCtx.GasMeter().ConsumeGas(actionCtx.GasMeter().GasRemaining()+1, "native OOG")
 					}
 					return &wasmtypes.MsgExecuteContractResponse{Data: []byte("native return data")}, nil
 				}}
-				p := wasm.NewPrecompiledWasm(input.AccountKeeper, server, input.App.WasmKeeper, input.BankKeeper)
+				p := wasm.NewPrecompiledWasm(server, input.App.WasmKeeper, input.BankKeeper)
 				caller, address := sender, wasm.Address
-				if delegate {
+				if mode.delegate {
 					caller, address = common.HexToAddress("0x9999"), wasm.DelegatecallAddress
 				}
 				contract := vm.NewContract(caller, address, uint256.NewInt(0), budget, nil)
@@ -86,7 +115,7 @@ func TestWasmEntryPointGasSettlement(t *testing.T) {
 				require.NoError(t, err)
 				snapshot := db.Snapshot()
 				var bz []byte
-				if delegate {
+				if mode.delegate {
 					bz, err = p.RunDelegate(evm, contract, false)
 				} else {
 					bz, err = p.Run(evm, contract, false)
@@ -96,7 +125,7 @@ func TestWasmEntryPointGasSettlement(t *testing.T) {
 				require.Equal(t, budget-consumed, contract.Gas, "the SDK delta must be settled exactly once")
 				cacheCtx, cacheErr := db.GetCacheContext()
 				require.NoError(t, cacheErr)
-				if outcome == "success" {
+				if tc.wantErr == nil {
 					require.NoError(t, err)
 					values, unpackErr := wasm.ABI.Unpack("executeContract", bz)
 					require.NoError(t, unpackErr)
@@ -108,13 +137,12 @@ func TestWasmEntryPointGasSettlement(t *testing.T) {
 					require.Nil(t, cacheCtx.KVStore(key).Get([]byte("gas-settlement")))
 					require.Empty(t, cacheCtx.EventManager().Events())
 					require.Empty(t, db.Logs())
-					if outcome == "ordinary error" {
-						require.Same(t, vm.ErrExecutionReverted, err)
+					require.Same(t, tc.wantErr, err)
+					if tc.actionErr != nil {
 						reason, unpackErr := abi.UnpackRevert(bz)
 						require.NoError(t, unpackErr)
-						require.Equal(t, failure.Error(), reason)
+						require.Equal(t, tc.actionErr.Error(), reason)
 					} else {
-						require.Same(t, vm.ErrOutOfGas, err)
 						require.Nil(t, bz)
 						require.Equal(t, uint64(29), contract.Gas, "only upstream HandleGasError settles the panic")
 					}

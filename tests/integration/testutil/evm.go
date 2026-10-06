@@ -46,6 +46,8 @@ type EVMReceiptRecorder struct {
 	receipts []*ethtypes.Receipt
 }
 
+func (r *EVMReceiptRecorder) Len() int { return len(r.receipts) }
+
 // PostTxProcessing records the outer transaction receipt and copies its log slice.
 func (r *EVMReceiptRecorder) PostTxProcessing(
 	_ sdk.Context,

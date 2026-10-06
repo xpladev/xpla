@@ -14,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -41,7 +42,6 @@ import (
 
 	xplaApp "github.com/xpladev/xpla/app"
 	xplatypes "github.com/xpladev/xpla/types"
-	authkeeper "github.com/xpladev/xpla/x/auth/keeper"
 	bankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
@@ -184,7 +184,7 @@ func CreateTestInput(t *testing.T) TestInput {
 		App:             app,
 		Ctx:             ctx,
 		Cdc:             app.LegacyAmino(),
-		AccountKeeper:   keepers.AccountKeeper,
+		AccountKeeper:   keepers.AccountKeeper.AccountKeeper,
 		BankKeeper:      keepers.BankKeeper,
 		RewardKeeper:    keepers.RewardKeeper,
 		StakingKeeper:   keepers.StakingKeeper,
@@ -213,6 +213,15 @@ func (ti *TestInput) InitAccountWithCoins(addr sdk.AccAddress, coins sdk.Coins) 
 // Test block timestamps use the block height as Unix seconds.
 func (ti *TestInput) CommitTransaction(t *testing.T, txBytes []byte) *abci.ExecTxResult {
 	t.Helper()
+	result := ti.CommitTransactionResult(t, txBytes)
+	require.Zero(t, result.Code, result.Log)
+	return result
+}
+
+// CommitTransactionResult executes and commits one transaction, returning SDK
+// failures so callers can assert ante-handler rollback.
+func (ti *TestInput) CommitTransactionResult(t *testing.T, txBytes []byte) *abci.ExecTxResult {
+	t.Helper()
 	height := ti.App.LastBlockHeight() + 1
 	block, err := ti.App.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Txs: [][]byte{txBytes}, Height: height, Time: time.Unix(height, 0).UTC(),
@@ -222,7 +231,5 @@ func (ti *TestInput) CommitTransaction(t *testing.T, txBytes []byte) *abci.ExecT
 	_, err = ti.App.Commit()
 	require.NoError(t, err)
 	require.Len(t, block.TxResults, 1)
-	result := block.TxResults[0]
-	require.Zero(t, result.Code, result.Log)
-	return result
+	return block.TxResults[0]
 }

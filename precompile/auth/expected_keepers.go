@@ -4,10 +4,10 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	xplaauthtypes "github.com/xpladev/xpla/x/auth/types"
 )
 
 type AccountKeeper interface {
-	GetAccount(ctx context.Context, addr sdk.AccAddress) (acc sdk.AccountI)
-	HasAccount(ctx context.Context, addr sdk.AccAddress) bool
 	GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI
+	ResolveAccountAddress(ctx context.Context, addr sdk.AccAddress, wasmKeeper xplaauthtypes.WasmKeeper) (sdk.AccAddress, error)
 }
