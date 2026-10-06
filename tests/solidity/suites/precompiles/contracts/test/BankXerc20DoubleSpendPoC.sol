@@ -372,7 +372,7 @@ contract BankXerc20DoubleSpendPoC {
         uint256 nativeAmount
     ) external {
         uint256 senderBalanceBefore = address(this).balance;
-        uint256 wasmBalanceBefore = wasmContract.balance;
+        uint256 wasmBalanceBefore = WASM.balance(wasmContract, "axpla");
         require(
             senderBalanceBefore >= nativeAmount,
             "insufficient native seed"
@@ -388,7 +388,7 @@ contract BankXerc20DoubleSpendPoC {
             "native sender balance not updated"
         );
         require(
-            wasmContract.balance == wasmBalanceBefore + nativeAmount,
+            WASM.balance(wasmContract, "axpla") == wasmBalanceBefore + nativeAmount,
             "native wasm balance not updated"
         );
     }

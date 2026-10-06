@@ -3,6 +3,7 @@ package wasm
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	_ "embed"
 
@@ -42,6 +43,7 @@ type PrecompiledWasm struct {
 	abi.ABI
 	wms WasmMsgServer
 	wk  WasmKeeper
+	bk  pbank.BankKeeper
 }
 
 func init() {
@@ -62,6 +64,7 @@ func NewPrecompiledWasm(wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) *
 		ABI: ABI,
 		wms: wms,
 		wk:  wk,
+		bk:  bk,
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
@@ -140,6 +143,8 @@ func (p PrecompiledWasm) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *
 		bz, err = p.executeContract(ctx, stateDB, caller, method, args)
 	case MigrateContract:
 		bz, err = p.migrateContract(ctx, stateDB, caller, method, args)
+	case Balance:
+		bz, err = p.balance(ctx, method, args)
 	case SmartContractState:
 		bz, err = p.smartContractState(ctx, method, args)
 	default:
@@ -430,4 +435,29 @@ func (p PrecompiledWasm) smartContractState(ctx sdk.Context, method *abi.Method,
 	}
 
 	return method.Outputs.Pack(res)
+}
+
+// balance returns the native bank balance of the exact resolved Wasm account.
+func (p PrecompiledWasm) balance(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+	contractAddress, err := util.GetAccAddress(args[0])
+	if err != nil {
+		return nil, err
+	}
+	denom, err := util.GetString(args[1])
+	if err != nil {
+		return nil, err
+	}
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
+	}
+	tokenType, _, err := xbanktypes.ParseDenom(denom)
+	if err != nil {
+		return nil, err
+	}
+	if tokenType != xbanktypes.Cosmos {
+		return nil, fmt.Errorf("unsupported Wasm bank balance denom %q", denom)
+	}
+	coin := p.bk.GetBalance(ctx, resolvedAddress, denom)
+	return method.Outputs.Pack(coin.Amount.BigInt())
 }
