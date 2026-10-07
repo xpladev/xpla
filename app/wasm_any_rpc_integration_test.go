@@ -8,10 +8,8 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
-	"unsafe"
 
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
@@ -50,6 +48,7 @@ import (
 
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplatypes "github.com/xpladev/xpla/types"
+	xplawasmkeeper "github.com/xpladev/xpla/x/wasm/keeper"
 )
 
 const outerWasmAnyGasLimit = uint64(10_000_000)
@@ -238,17 +237,9 @@ func actualPrecompileWasmKeeper(
 	precompile, ok := contract.(*pwasm.PrecompiledWasm)
 	require.True(t, ok)
 
-	msgServer := privateTestField(t, precompile, "wms").Interface()
-	serverValue := reflect.ValueOf(msgServer)
-	require.Equal(t, reflect.Pointer, serverValue.Kind())
-	keeperField := serverValue.Elem().FieldByName("keeper")
-	require.True(t, keeperField.IsValid())
-	keeperValue := reflect.NewAt(
-		keeperField.Type(), unsafe.Pointer(keeperField.UnsafeAddr()), //nolint:gosec
-	).Elem()
-	keeper, ok := keeperValue.Interface().(*wasmkeeper.Keeper)
+	keeper, ok := privateTestField(t, precompile, "wk").Interface().(*xplawasmkeeper.Keeper)
 	require.True(t, ok)
-	return keeper
+	return &keeper.Keeper
 }
 
 func initializeWasmAnyGenesis(t *testing.T, xpla *XplaApp) []byte {

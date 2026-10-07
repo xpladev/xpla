@@ -31,6 +31,10 @@ func CreateUpgradeHandler(
 ) upgradetypes.UpgradeHandler {
 	return func(c context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		ctx := sdk.UnwrapSDKContext(c)
+		if err := migrateWasmAliases(ctx, appKeepers); err != nil {
+			return nil, err
+		}
+
 		updatedVM, err := mm.RunMigrations(ctx, configurator, fromVM)
 		if err != nil {
 			return nil, err

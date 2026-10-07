@@ -13,5 +13,6 @@ const (
 	ExecuteContract      MethodWasm = "executeContract"
 	MigrateContract      MethodWasm = "migrateContract"
 
+	Balance            MethodWasm = "balance"
 	SmartContractState MethodWasm = "smartContractState"
 )

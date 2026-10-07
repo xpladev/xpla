@@ -9,32 +9,33 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-
 	"github.com/xpladev/xpla/x/auth/keeper"
+	"github.com/xpladev/xpla/x/auth/types"
 )
 
+// AppModule extends the SDK auth module only at the account Query boundary.
 type AppModule struct {
 	auth.AppModule
 
-	accountKeeper keeper.AccountKeeper
-
-	// legacySubspace is used solely for migration of x/params managed parameters
+	accountKeeper  keeper.AccountKeeper
+	wasmKeeper     types.WasmKeeper
 	legacySubspace exported.Subspace
 }
 
-// NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, accountKeeper keeper.AccountKeeper, randGenAccountsFn authtypes.RandomGenesisAccountsFn, ss exported.Subspace) AppModule {
+var _ module.HasServices = AppModule{}
+
+func NewAppModule(cdc codec.Codec, accountKeeper keeper.AccountKeeper, randGenAccountsFn authtypes.RandomGenesisAccountsFn, ss exported.Subspace, wasmKeeper types.WasmKeeper) AppModule {
 	return AppModule{
 		AppModule:      auth.NewAppModule(cdc, accountKeeper.AccountKeeper, randGenAccountsFn, ss),
 		accountKeeper:  accountKeeper,
+		wasmKeeper:     wasmKeeper,
 		legacySubspace: ss,
 	}
 }
 
-// RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	authtypes.RegisterMsgServer(cfg.MsgServer(), authkeeper.NewMsgServerImpl(am.accountKeeper.AccountKeeper))
-	authtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.accountKeeper))
+	authtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.accountKeeper, am.wasmKeeper))
 
 	m := authkeeper.NewMigrator(am.accountKeeper.AccountKeeper, cfg.QueryServer(), am.legacySubspace)
 	if err := cfg.RegisterMigration(authtypes.ModuleName, 1, m.Migrate1to2); err != nil {

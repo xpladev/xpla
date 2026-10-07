@@ -266,12 +266,12 @@ func setupWasmAnyIntegration(t *testing.T, unguarded bool) *wasmAnyIntegrationFi
 	)
 	require.NoError(t, err)
 
-	selectedMessenger := currentTestWasmMessenger(t, &xpla.WasmKeeper)
+	selectedMessenger := currentTestWasmMessenger(t, &xpla.WasmKeeper.Keeper)
 	if unguarded {
-		selectedMessenger = newUnguardedWasmMessenger(xpla, &xpla.WasmKeeper)
+		selectedMessenger = newUnguardedWasmMessenger(xpla, &xpla.WasmKeeper.Keeper)
 	}
 	recorder := &wasmAnyMessengerRecorder{nested: selectedMessenger}
-	setTestWasmResponseMessenger(t, &xpla.WasmKeeper, recorder)
+	setTestWasmResponseMessenger(t, &xpla.WasmKeeper.Keeper, recorder)
 
 	return &wasmAnyIntegrationFixture{
 		app:            xpla,

@@ -17,6 +17,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	evmconfig "github.com/cosmos/evm/server/config"
 	"github.com/cosmos/evm/x/vm/statedb"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
@@ -259,11 +260,13 @@ func TestExecuteTransferBoundsPrecompileCallByRemainingGasAndConsumesMaxUsedGas(
 	require.Equal(t, consumedGas+maxUsedGas, ctx.GasMeter().GasConsumed())
 }
 
-func TestExecuteTransferKeepsNonPrecompileCallEVMPath(t *testing.T) {
+func TestExecuteTransferCommitsNativeCallAndConsumesGasUsed(t *testing.T) {
+	const consumedGas = uint64(12_345)
 	ctx := sdk.Context{}.
 		WithContext(context.Background()).
 		WithEventManager(sdk.NewEventManager()).
 		WithGasMeter(storetypes.NewGasMeter(100_000))
+	ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
 	from := common.HexToAddress("0x1000")
 	contract := common.HexToAddress("0x2000")
 	to := common.HexToAddress("0x3000")
@@ -271,7 +274,10 @@ func TestExecuteTransferKeepsNonPrecompileCallEVMPath(t *testing.T) {
 	returnData, err := ABI.Methods[banktypes.GetErc20Method(banktypes.Transfer)].Outputs.Pack(true)
 	require.NoError(t, err)
 	executor := &recordingERC20EVMExecutor{
-		callResponse: &evmtypes.MsgEthereumTxResponse{Ret: returnData},
+		nonce: 9,
+		applyResponse: &evmtypes.MsgEthereumTxResponse{
+			Ret: returnData, GasUsed: 1_000, MaxUsedGas: 1_234,
+		},
 	}
 	keeper := Erc20Keeper{ek: executor}
 
@@ -283,16 +289,59 @@ func TestExecuteTransferKeepsNonPrecompileCallEVMPath(t *testing.T) {
 		amount,
 	)
 	require.NoError(t, err)
-	require.Zero(t, executor.applyCalls)
-	require.Equal(t, 1, executor.callCalls)
-	require.NotNil(t, executor.callStateDB)
-	require.Equal(t, from, executor.callFrom)
-	require.Equal(t, contract, executor.callContract)
-	require.True(t, executor.callCommit)
-	require.False(t, executor.callFromPrecompile)
-	require.Nil(t, executor.callGasCap)
-	require.Equal(t, banktypes.GetErc20Method(banktypes.Transfer), executor.callMethod)
-	require.Equal(t, []interface{}{to, amount}, executor.callArgs)
+	require.Equal(t, 1, executor.applyCalls)
+	require.Zero(t, executor.callCalls)
+	require.NotNil(t, executor.appliedStateDB)
+	require.Equal(t, from, executor.appliedMessage.From)
+	require.Equal(t, contract, *executor.appliedMessage.To)
+	require.Equal(t, uint64(9), executor.appliedMessage.Nonce)
+	require.Equal(t, evmconfig.DefaultGasCap, executor.appliedMessage.GasLimit)
+	expectedData, err := ABI.Pack(banktypes.GetErc20Method(banktypes.Transfer), to, amount)
+	require.NoError(t, err)
+	require.Equal(t, expectedData, executor.appliedMessage.Data)
+	require.True(t, executor.applyCommit)
+	require.False(t, executor.applyCallFromPrecompile)
+	require.True(t, executor.applyInternal)
+	require.Equal(t, consumedGas+1_000, ctx.GasMeter().GasConsumed())
+}
+
+func TestExecuteTransferPreservesNativeFailureGas(t *testing.T) {
+	const (
+		gasLimit    = uint64(100_000)
+		consumedGas = uint64(12_345)
+	)
+	for _, tc := range []struct {
+		name     string
+		response *evmtypes.MsgEthereumTxResponse
+		err      error
+		wantErr  error
+		wantGas  uint64
+	}{
+		{
+			name: "apply error", err: core.ErrIntrinsicGas,
+			wantErr: core.ErrIntrinsicGas, wantGas: consumedGas,
+		},
+		{
+			name: "execution failure", response: &evmtypes.MsgEthereumTxResponse{VmError: vm.ErrExecutionReverted.Error()},
+			wantErr: evmtypes.ErrVMExecution, wantGas: gasLimit,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := sdk.Context{}.
+				WithContext(context.Background()).
+				WithEventManager(sdk.NewEventManager()).
+				WithGasMeter(storetypes.NewGasMeter(gasLimit))
+			ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
+			executor := &recordingERC20EVMExecutor{applyResponse: tc.response, applyErr: tc.err}
+			keeper := Erc20Keeper{ek: executor}
+			err := keeper.ExecuteTransfer(ctx, common.HexToAddress("0x2000"),
+				sdk.AccAddress(common.HexToAddress("0x1000").Bytes()),
+				sdk.AccAddress(common.HexToAddress("0x3000").Bytes()), big.NewInt(7))
+			require.ErrorIs(t, err, tc.wantErr)
+			require.ErrorContains(t, err, "contract call failed: method 'transfer'")
+			require.Equal(t, tc.wantGas, ctx.GasMeter().GasConsumed())
+		})
+	}
 }
 
 func TestExecuteTransferConsumesAllGasOnFailedPrecompileCall(t *testing.T) {

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
@@ -19,9 +18,8 @@ func TestContractMethodsRejectMissingAccount(t *testing.T) {
 	contractAddress := common.HexToAddress("0x0000000000000000000000000000000000000001")
 	sender := common.HexToAddress("0x0000000000000000000000000000000000000002")
 	precompile := PrecompiledWasm{
-		ak:  stubAccountKeeper{},
 		wms: &stubWasmMsgServer{},
-		wk:  &stubWasmKeeper{},
+		wk:  &stubWasmKeeper{resolveErr: wasmtypes.ErrNoSuchContractFn(sdk.AccAddress(contractAddress.Bytes()).String())},
 	}
 	expectedErr := wasmtypes.ErrNoSuchContractFn(sdk.AccAddress(contractAddress.Bytes()).String())
 
@@ -50,18 +48,17 @@ func TestContractMethodsRejectMissingAccount(t *testing.T) {
 	})
 }
 
-func TestContractMethodsUseOriginalAccountAddress(t *testing.T) {
+func TestContractMethodsUseRegisteredWasmAddress(t *testing.T) {
 	originalAddress := sdk.AccAddress(bytes.Repeat([]byte{0x1}, 32))
 	contractAddress := common.BytesToAddress(originalAddress)
 	sender := common.HexToAddress("0x0000000000000000000000000000000000000002")
-	accountKeeper := stubAccountKeeper{
-		account: authtypes.NewBaseAccountWithAddress(originalAddress),
-	}
 	msgServerErr := errors.New("stop after capturing message")
 	msgServer := &stubWasmMsgServer{err: msgServerErr}
-	wasmKeeper := &stubWasmKeeper{err: errors.New("stop after capturing query")}
+	wasmKeeper := &stubWasmKeeper{
+		resolvedAddress: originalAddress,
+		err:             errors.New("stop after capturing query"),
+	}
 	precompile := PrecompiledWasm{
-		ak:  accountKeeper,
 		wms: msgServer,
 		wk:  wasmKeeper,
 	}
@@ -85,12 +82,22 @@ func TestContractMethodsUseOriginalAccountAddress(t *testing.T) {
 	require.Equal(t, originalAddress, wasmKeeper.contractAddress)
 }
 
-type stubAccountKeeper struct {
-	account sdk.AccountI
-}
+func TestContractMethodsPreserveExactTwentyByteWasmAddress(t *testing.T) {
+	contractAddress := common.HexToAddress("0x0000000000000000000000000000000000000001")
+	exactAddress := sdk.AccAddress(contractAddress.Bytes())
+	sender := common.HexToAddress("0x0000000000000000000000000000000000000002")
+	msgServerErr := errors.New("stop after capturing message")
+	msgServer := &stubWasmMsgServer{err: msgServerErr}
+	precompile := PrecompiledWasm{
+		wms: msgServer,
+		wk:  &stubWasmKeeper{resolvedAddress: exactAddress},
+	}
 
-func (s stubAccountKeeper) GetAccount(context.Context, sdk.AccAddress) sdk.AccountI {
-	return s.account
+	_, err := precompile.executeContract(sdk.Context{}, nil, sender, nil, []interface{}{
+		sender, contractAddress, []byte(`{}`), sdk.Coins{},
+	})
+	require.ErrorIs(t, err, msgServerErr)
+	require.Equal(t, exactAddress.String(), msgServer.executeMsg.Contract)
 }
 
 type stubWasmMsgServer struct {
@@ -118,8 +125,14 @@ func (s *stubWasmMsgServer) MigrateContract(_ context.Context, msg *wasmtypes.Ms
 }
 
 type stubWasmKeeper struct {
+	resolvedAddress sdk.AccAddress
+	resolveErr      error
 	err             error
 	contractAddress sdk.AccAddress
+}
+
+func (s *stubWasmKeeper) ResolveContractAddress(context.Context, sdk.AccAddress) (sdk.AccAddress, error) {
+	return s.resolvedAddress, s.resolveErr
 }
 
 func (s *stubWasmKeeper) QuerySmart(_ context.Context, contractAddress sdk.AccAddress, _ []byte) ([]byte, error) {

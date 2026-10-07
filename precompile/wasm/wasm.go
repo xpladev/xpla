@@ -3,6 +3,7 @@ package wasm
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	_ "embed"
 
@@ -40,9 +41,9 @@ var (
 type PrecompiledWasm struct {
 	cmn.Precompile
 	abi.ABI
-	ak  AccountKeeper
 	wms WasmMsgServer
 	wk  WasmKeeper
+	bk  pbank.BankKeeper
 }
 
 func init() {
@@ -53,17 +54,17 @@ func init() {
 	}
 }
 
-func NewPrecompiledWasm(ak AccountKeeper, wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) *PrecompiledWasm {
+func NewPrecompiledWasm(wms WasmMsgServer, wk WasmKeeper, bk pbank.BankKeeper) *PrecompiledWasm {
 	p := PrecompiledWasm{
 		Precompile: cmn.Precompile{
 			KvGasConfig:           storetypes.KVGasConfig(),
 			TransientKVGasConfig:  storetypes.TransientGasConfig(),
-			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
+			BalanceHandlerFactory: pbank.NewExactBalanceHandlerFactory(bk),
 		},
 		ABI: ABI,
-		ak:  ak,
 		wms: wms,
 		wk:  wk,
+		bk:  bk,
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
@@ -142,6 +143,8 @@ func (p PrecompiledWasm) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *
 		bz, err = p.executeContract(ctx, stateDB, caller, method, args)
 	case MigrateContract:
 		bz, err = p.migrateContract(ctx, stateDB, caller, method, args)
+	case Balance:
+		bz, err = p.balance(ctx, method, args)
 	case SmartContractState:
 		bz, err = p.smartContractState(ctx, method, args)
 	default:
@@ -324,9 +327,9 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, err
 	}
 
-	contractAccount := p.ak.GetAccount(ctx, contractAddress)
-	if contractAccount == nil {
-		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	msg, err := util.GetByteArray(args[2])
@@ -341,7 +344,7 @@ func (p PrecompiledWasm) executeContract(ctx sdk.Context, stateDB vm.StateDB, se
 
 	executeMsg := &wasmtypes.MsgExecuteContract{
 		Sender:   fromAddress.String(),
-		Contract: contractAccount.GetAddress().String(),
+		Contract: resolvedAddress.String(),
 		Msg:      msg,
 		Funds:    coins,
 	}
@@ -375,9 +378,9 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 		return nil, err
 	}
 
-	contractAccount := p.ak.GetAccount(ctx, contractAddress)
-	if contractAccount == nil {
-		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	codeId, err := util.GetUint64(args[2])
@@ -392,7 +395,7 @@ func (p PrecompiledWasm) migrateContract(ctx sdk.Context, stateDB vm.StateDB, se
 
 	migrateMsg := &wasmtypes.MsgMigrateContract{
 		Sender:   fromAddress.String(),
-		Contract: contractAccount.GetAddress().String(),
+		Contract: resolvedAddress.String(),
 		CodeID:   codeId,
 		Msg:      msg,
 	}
@@ -416,9 +419,9 @@ func (p PrecompiledWasm) smartContractState(ctx sdk.Context, method *abi.Method,
 		return nil, err
 	}
 
-	contractAccount := p.ak.GetAccount(ctx, contractAddress)
-	if contractAccount == nil {
-		return nil, wasmtypes.ErrNoSuchContractFn(contractAddress.String())
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	queryData, err := util.GetByteArray(args[1])
@@ -426,10 +429,35 @@ func (p PrecompiledWasm) smartContractState(ctx sdk.Context, method *abi.Method,
 		return nil, err
 	}
 
-	res, err := p.wk.QuerySmart(ctx, contractAccount.GetAddress(), queryData)
+	res, err := p.wk.QuerySmart(ctx, resolvedAddress, queryData)
 	if err != nil {
 		return nil, err
 	}
 
 	return method.Outputs.Pack(res)
+}
+
+// balance returns the native bank balance of the exact resolved Wasm account.
+func (p PrecompiledWasm) balance(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
+	contractAddress, err := util.GetAccAddress(args[0])
+	if err != nil {
+		return nil, err
+	}
+	denom, err := util.GetString(args[1])
+	if err != nil {
+		return nil, err
+	}
+	resolvedAddress, err := p.wk.ResolveContractAddress(ctx, contractAddress)
+	if err != nil {
+		return nil, err
+	}
+	tokenType, _, err := xbanktypes.ParseDenom(denom)
+	if err != nil {
+		return nil, err
+	}
+	if tokenType != xbanktypes.Cosmos {
+		return nil, fmt.Errorf("unsupported Wasm bank balance denom %q", denom)
+	}
+	coin := p.bk.GetBalance(ctx, resolvedAddress, denom)
+	return method.Outputs.Pack(coin.Amount.BigInt())
 }

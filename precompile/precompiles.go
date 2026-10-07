@@ -32,6 +32,7 @@ import (
 	pics20 "github.com/xpladev/xpla/precompile/ics20"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
+	xplawasmkeeper "github.com/xpladev/xpla/x/wasm/keeper"
 )
 
 const bech32PrecompileBaseGas = 6_000
@@ -50,10 +51,8 @@ func NewAvailableStaticPrecompiles(
 	evmKeeper *evmkeeper.Keeper,
 	govKeeper govkeeper.Keeper,
 	slashingKeeper slashingkeeper.Keeper,
-	ak pwasm.AccountKeeper,
+	wasmKeeper *xplawasmkeeper.Keeper,
 	bk xplabankkeeper.Keeper,
-	wms pwasm.WasmMsgServer,
-	wk pwasm.WasmKeeper,
 	authAk pauth.AccountKeeper,
 	codec codec.Codec,
 	opts ...evmprecompiletypes.Option,
@@ -81,6 +80,7 @@ func NewAvailableStaticPrecompiles(
 		bk,
 		options.AddressCodec,
 	)
+	stakingPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	distributionPrecompile := distprecompile.NewPrecompile(
 		distributionKeeper,
@@ -90,6 +90,7 @@ func NewAvailableStaticPrecompiles(
 		bk,
 		options.AddressCodec,
 	)
+	distributionPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	ibcTransferPrecompile := pics20.NewPrecompile(
 		bk,
@@ -98,6 +99,7 @@ func NewAvailableStaticPrecompiles(
 		channelKeeper,
 		MockERC20Keeper{},
 	)
+	ibcTransferPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	govPrecompile := govprecompile.NewPrecompile(
 		govkeeper.NewMsgServerImpl(&govKeeper),
@@ -106,6 +108,7 @@ func NewAvailableStaticPrecompiles(
 		codec,
 		options.AddressCodec,
 	)
+	govPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	slashingPrecompile := slashingprecompile.NewPrecompile(
 		slashingKeeper,
@@ -114,6 +117,7 @@ func NewAvailableStaticPrecompiles(
 		options.ValidatorAddrCodec,
 		options.ConsensusAddrCodec,
 	)
+	slashingPrecompile.BalanceHandlerFactory = pbank.NewExactBalanceHandlerFactory(bk)
 
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile
@@ -128,9 +132,9 @@ func NewAvailableStaticPrecompiles(
 
 	// xpla precompiles
 	precompiles[pbank.Address] = pbank.NewPrecompiledBank(bk)
-	precompileWasm := pwasm.NewPrecompiledWasm(ak, wms, wk, bk)
+	precompileWasm := pwasm.NewPrecompiledWasm(xplawasmkeeper.NewMsgServerImpl(wasmKeeper), wasmKeeper, bk)
 	precompiles[pwasm.Address] = precompileWasm
-	precompiles[pauth.Address] = pauth.NewPrecompiledAuth(authAk)
+	precompiles[pauth.Address] = pauth.NewPrecompiledAuth(authAk, wasmKeeper)
 	// delegatecall wasm
 	precompiles[pwasm.DelegatecallAddress] = pwasm.NewDelegatePrecompile(precompileWasm)
 

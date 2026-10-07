@@ -101,6 +101,18 @@ interface IWasm {
     ) external returns (bytes calldata data);
     
     // Queries
+    /**
+     * @dev Returns the native Cosmos bank balance of a Wasm contract, resolving
+     * registered 20-byte aliases to the full contract address.
+     * Reverts for missing contracts, invalid denoms, or xerc20/xcw20 denoms.
+     * @param contractAddress the Wasm contract address or registered alias
+     * @param denom a Cosmos bank denom, including axpla or an IBC denom
+     * @return amount the balance in the denom's smallest unit, or zero if unheld
+     */
+    function balance(
+        address contractAddress,
+        string calldata denom
+    ) external view returns (uint256 amount);
     function smartContractState(
         address contractAddress,
         bytes calldata queryData

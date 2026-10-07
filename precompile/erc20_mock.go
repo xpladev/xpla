@@ -1,9 +1,9 @@
 package precompile
 
 import (
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/cosmos/evm/precompiles/common"
 	erc20types "github.com/cosmos/evm/x/erc20/types"

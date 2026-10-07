@@ -187,6 +187,7 @@ async function resolveWasmAddress(addr) {
 describe('xerc20 wasm precompile accounting', function () {
   let bankSendWasm
   let bech32
+  let wasmPrecompile
 
   before(async function () {
     const counterAddr = process.env.COUNTER_WASM_ADDRESS
@@ -198,6 +199,7 @@ describe('xerc20 wasm precompile accounting', function () {
     }
 
     bankSendWasm = await resolveWasmAddress(bankSendAddr)
+    wasmPrecompile = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS)
     bech32 = await ethers.getContractAt(
       'Bech32I',
       BECH32_PRECOMPILE_ADDRESS
@@ -381,7 +383,11 @@ describe('xerc20 wasm precompile accounting', function () {
     })
 
     const totalSupplyBefore = await token.totalSupply()
-    const wasmNativeBefore = await ethers.provider.getBalance(bankSendWasm.hex)
+    const wasm = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS)
+    const wasmNativeBefore = await wasm.balance.staticCall(
+      bankSendWasm.hex,
+      'axpla'
+    )
 
     const tx = await poc.executeWasmNativeFundsAndAssertBalance(
       bankSendWasm.hex,
@@ -392,7 +398,7 @@ describe('xerc20 wasm precompile accounting', function () {
     await tx.wait()
 
     expect(await ethers.provider.getBalance(pocAddress)).to.equal(0n)
-    expect(await ethers.provider.getBalance(bankSendWasm.hex)).to.equal(
+    expect(await wasm.balance.staticCall(bankSendWasm.hex, 'axpla')).to.equal(
       wasmNativeBefore + nativeAmount
     )
     expect(await token.balanceOf(bankSendWasm.hex)).to.equal(0n)
@@ -414,7 +420,7 @@ describe('xerc20 wasm precompile accounting', function () {
     const tokenAddress = await token.getAddress()
     await (await token.transfer(bankSendWasm.hex, xerc20Amount)).wait()
 
-    const wasmNativeBefore = await ethers.provider.getBalance(bankSendWasm.hex)
+    const wasmNativeBefore = await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla')
     const recipientNativeBefore = await ethers.provider.getBalance(
       recipient.address
     )
@@ -455,7 +461,7 @@ describe('xerc20 wasm precompile accounting', function () {
         replyCaught: replyState.caught,
         wasmXerc20Balance: await token.balanceOf(bankSendWasm.hex),
         recipientXerc20Balance: await token.balanceOf(recipient.address),
-        wasmNativeBalance: await ethers.provider.getBalance(bankSendWasm.hex),
+        wasmNativeBalance: await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla'),
         recipientNativeBalance: await ethers.provider.getBalance(
           recipient.address
         ),
@@ -488,7 +494,7 @@ describe('xerc20 wasm precompile accounting', function () {
     const xerc20Denom = `xerc20:${tokenAddress.toLowerCase()}`
     await (await token.transfer(bankSendWasm.hex, xerc20Amount)).wait()
 
-    const wasmNativeBefore = await ethers.provider.getBalance(bankSendWasm.hex)
+    const wasmNativeBefore = await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla')
     const recipientNativeBefore = await ethers.provider.getBalance(
       recipient.address
     )
@@ -543,7 +549,7 @@ describe('xerc20 wasm precompile accounting', function () {
         replyCaught: replyState.caught,
         wasmXerc20Balance: await token.balanceOf(bankSendWasm.hex),
         recipientXerc20Balance: await token.balanceOf(recipient.address),
-        wasmNativeBalance: await ethers.provider.getBalance(bankSendWasm.hex),
+        wasmNativeBalance: await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla'),
         recipientNativeBalance: await ethers.provider.getBalance(
           recipient.address
         ),
@@ -577,7 +583,7 @@ describe('xerc20 wasm precompile accounting', function () {
     const xerc20Denom = `xerc20:${tokenAddress.toLowerCase()}`
     await (await token.transfer(bankSendWasm.hex, xerc20Amount)).wait()
 
-    const wasmNativeBefore = await ethers.provider.getBalance(bankSendWasm.hex)
+    const wasmNativeBefore = await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla')
     const recipientNativeBefore = await ethers.provider.getBalance(
       recipient.address
     )
@@ -629,7 +635,7 @@ describe('xerc20 wasm precompile accounting', function () {
         replyError: replyState.error,
         wasmXerc20Balance: await token.balanceOf(bankSendWasm.hex),
         recipientXerc20Balance: await token.balanceOf(recipient.address),
-        wasmNativeBalance: await ethers.provider.getBalance(bankSendWasm.hex),
+        wasmNativeBalance: await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla'),
         recipientNativeBalance: await ethers.provider.getBalance(
           recipient.address
         ),

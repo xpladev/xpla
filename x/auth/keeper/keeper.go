@@ -1,44 +1,36 @@
 package keeper
 
 import (
-	"cosmossdk.io/collections"
-	ccodec "cosmossdk.io/collections/codec"
-	"cosmossdk.io/core/address"
-	"cosmossdk.io/core/store"
+	"context"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-
 	"github.com/xpladev/xpla/x/auth/types"
 )
 
+// AccountKeeper adds query address resolution while inheriting exact account
+// identity and storage operations from the SDK keeper.
 type AccountKeeper struct {
 	authkeeper.AccountKeeper
-
-	addressCodec address.Codec
-
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-
-	// State
-	SliceAddresses collections.Map[sdk.AccAddress, sdk.AccAddress]
 }
 
-func NewAccountKeeper(
-	cdc codec.BinaryCodec, storeService store.KVStoreService, proto func() sdk.AccountI,
-	maccPerms map[string][]string, ac address.Codec, bech32Prefix, authority string,
-) AccountKeeper {
+func NewAccountKeeper(base authkeeper.AccountKeeper) AccountKeeper {
+	return AccountKeeper{AccountKeeper: base}
+}
 
-	sb := collections.NewSchemaBuilder(storeService)
-
-	ak := AccountKeeper{
-		AccountKeeper:  authkeeper.NewAccountKeeper(cdc, storeService, proto, maccPerms, ac, bech32Prefix, authority),
-		addressCodec:   ac,
-		cdc:            cdc,
-		storeService:   storeService,
-		SliceAddresses: collections.NewMap(sb, types.SliceAddressStoreKeyPrefix, "sliceAddresses", sdk.AccAddressKey, ccodec.KeyToValueCodec(sdk.AccAddressKey)),
+// ResolveAccountAddress returns nil when neither an exact account nor an alias exists.
+func (k AccountKeeper) ResolveAccountAddress(ctx context.Context, addr sdk.AccAddress, wasmKeeper types.WasmKeeper) (sdk.AccAddress, error) {
+	if account := k.GetAccount(ctx, addr); account != nil {
+		return account.GetAddress(), nil
 	}
-
-	return ak
+	if len(addr) != 20 {
+		return nil, nil
+	}
+	contractAddr, found, err := wasmKeeper.ResolveWasmAlias(ctx, addr)
+	if err != nil || !found {
+		return nil, err
+	}
+	// Wasm resolution already validates the target account. Both consumers need
+	// only its address; SDK RPC queries load the account when building responses.
+	return contractAddr, nil
 }

@@ -43,6 +43,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -86,6 +87,7 @@ import (
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
+	xplawasmkeeper "github.com/xpladev/xpla/x/wasm/keeper"
 )
 
 const (
@@ -109,7 +111,7 @@ type AppKeepers struct {
 	GovKeeper      *govkeeper.Keeper
 	UpgradeKeeper  *upgradekeeper.Keeper
 	ParamsKeeper   paramskeeper.Keeper //nolint:staticcheck
-	WasmKeeper     wasmkeeper.Keeper
+	WasmKeeper     xplawasmkeeper.Keeper
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	IBCKeeper             *ibckeeper.Keeper
 	ICAHostKeeper         icahostkeeper.Keeper
@@ -182,7 +184,7 @@ func NewAppKeeper(
 	bApp.SetParamStore(appKeepers.ConsensusParamsKeeper.ParamsStore)
 
 	// Add normal keepers
-	appKeepers.AccountKeeper = xplaauthkeeper.NewAccountKeeper(
+	appKeepers.AccountKeeper = xplaauthkeeper.NewAccountKeeper(authkeeper.NewAccountKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
@@ -190,7 +192,7 @@ func NewAppKeeper(
 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		govModAddress,
-	)
+	))
 
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[authzkeeper.StoreKey]),
@@ -423,7 +425,7 @@ func NewAppKeeper(
 		panic("error while reading wasm config: " + err.Error())
 	}
 
-	appKeepers.WasmKeeper = wasmkeeper.NewKeeper(
+	appKeepers.WasmKeeper = xplawasmkeeper.NewKeeper(wasmkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
 		appKeepers.AccountKeeper,
@@ -441,6 +443,10 @@ func NewAppKeeper(
 		wasmkeeper.BuiltInCapabilities(),
 		govModAddress,
 		wasmOpts...,
+	),
+		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
+		appKeepers.AccountKeeper,
+		maccPerms,
 	)
 
 	// Middleware Stacks
@@ -527,7 +533,7 @@ func NewAppKeeper(
 		logger,
 		appKeepers.EvmKeeper,
 		appKeepers.WasmKeeper,
-		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
+		xplawasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
 	)
 
 	appKeepers.DynamicDeflationKeeper = dynamicdeflationkeeper.NewKeeper(
@@ -574,10 +580,8 @@ func NewAppKeeper(
 			appKeepers.EvmKeeper,
 			*appKeepers.GovKeeper,
 			appKeepers.SlashingKeeper,
-			appKeepers.AccountKeeper,
+			&appKeepers.WasmKeeper,
 			appKeepers.BankKeeper,
-			wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
-			appKeepers.WasmKeeper,
 			appKeepers.AccountKeeper,
 			appCodec,
 		),

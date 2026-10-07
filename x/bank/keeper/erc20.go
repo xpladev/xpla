@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
+	evmconfig "github.com/cosmos/evm/server/config"
 	"github.com/cosmos/evm/x/vm/statedb"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/xpladev/xpla/x/bank/types"
@@ -112,61 +113,52 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 	ethTo := common.BytesToAddress(to.Bytes())
 	method := types.GetErc20Method(types.Transfer)
 
-	var (
-		res *evmtypes.MsgEthereumTxResponse
-		err error
-	)
+	data, err := ABI.Pack(method, ethTo, amount)
+	if err != nil {
+		return errorsmod.Wrap(
+			evmtypes.ErrABIPack,
+			errorsmod.Wrap(err, "failed to create transaction data").Error(),
+		)
+	}
 
-	if !callFromPrecompile {
-		res, err = k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, true, false, nil, method, ethTo, amount)
-	} else {
-		var data []byte
-		data, err = ABI.Pack(method, ethTo, amount)
-		if err != nil {
-			return errorsmod.Wrap(
-				evmtypes.ErrABIPack,
-				errorsmod.Wrap(err, "failed to create transaction data").Error(),
-			)
-		}
+	gasLimit := evmconfig.DefaultGasCap
+	if callFromPrecompile {
+		gasLimit = ctx.GasMeter().GasRemaining()
+	}
+	// Internal transfers can originate from a Wasm contract whose 20-byte suffix
+	// has no auth account. Unlike CallEVM's GetSequence, GetNonce permits that
+	// absence without resolving the sender to the Wasm account.
+	msg := core.Message{
+		From:       ethSender,
+		To:         &contractAddress,
+		Nonce:      k.ek.GetNonce(ctx, ethSender),
+		Value:      big.NewInt(0),
+		GasLimit:   gasLimit,
+		GasPrice:   big.NewInt(0),
+		GasTipCap:  big.NewInt(0),
+		GasFeeCap:  big.NewInt(0),
+		Data:       data,
+		AccessList: ethtypes.AccessList{},
+	}
 
-		msg := core.Message{
-			From:       ethSender,
-			To:         &contractAddress,
-			Nonce:      k.ek.GetNonce(ctx, ethSender),
-			Value:      big.NewInt(0),
-			GasLimit:   ctx.GasMeter().GasRemaining(),
-			GasPrice:   big.NewInt(0),
-			GasTipCap:  big.NewInt(0),
-			GasFeeCap:  big.NewInt(0),
-			Data:       data,
-			AccessList: ethtypes.AccessList{},
-		}
-
-		res, err = k.ek.ApplyMessage(ctx, stateDB, msg, nil, false, true, true)
-		if err != nil || res.Failed() {
-			// A nested precompile failure consumes the caller's full remaining gas budget.
+	res, err := k.ek.ApplyMessage(ctx, stateDB, msg, nil, !callFromPrecompile, callFromPrecompile, true)
+	if err != nil || res.Failed() {
+		// Native VM failures and all nested precompile failures consume the full
+		// remaining SDK gas budget, matching the existing call paths.
+		if callFromPrecompile || err == nil {
 			gasMeter := ctx.GasMeter()
 			gasMeter.RefundGas(gasMeter.GasConsumed(), "reset the gas count")
 			gasMeter.ConsumeGas(gasMeter.Limit(), "apply evm transaction")
-			if err == nil {
-				return errorsmod.Wrapf(
-					errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError),
-					"contract call failed: method '%s', contract '%s'",
-					method,
-					contractAddress,
-				)
-			}
 		}
 		if err == nil {
-			ctx.GasMeter().ConsumeGas(res.MaxUsedGas, "apply evm message")
+			err = errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError)
 		}
+		return errorsmod.Wrapf(err, "contract call failed: method '%s', contract '%s'", method, contractAddress)
 	}
-
-	if err != nil {
-		if callFromPrecompile {
-			return errorsmod.Wrapf(err, "contract call failed: method '%s', contract '%s'", method, contractAddress)
-		}
-		return err
+	if callFromPrecompile {
+		ctx.GasMeter().ConsumeGas(res.MaxUsedGas, "apply evm message")
+	} else {
+		ctx.GasMeter().ConsumeGas(res.GasUsed, "apply evm message")
 	}
 
 	unpacked, err := ABI.Unpack(method, res.Return())

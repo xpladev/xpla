@@ -19,6 +19,7 @@ import (
 
 	"github.com/xpladev/xpla/precompile/util"
 	xplatypes "github.com/xpladev/xpla/types"
+	xplaauthtypes "github.com/xpladev/xpla/x/auth/types"
 )
 
 var _ vm.PrecompiledContract = PrecompiledAuth{}
@@ -35,6 +36,7 @@ type PrecompiledAuth struct {
 	cmn.Precompile
 	abi.ABI
 	ak AccountKeeper
+	wk xplaauthtypes.WasmKeeper
 }
 
 func init() {
@@ -45,7 +47,7 @@ func init() {
 	}
 }
 
-func NewPrecompiledAuth(ak AccountKeeper) PrecompiledAuth {
+func NewPrecompiledAuth(ak AccountKeeper, wk xplaauthtypes.WasmKeeper) PrecompiledAuth {
 	p := PrecompiledAuth{
 		Precompile: cmn.Precompile{
 			KvGasConfig:          storetypes.KVGasConfig(),
@@ -53,6 +55,7 @@ func NewPrecompiledAuth(ak AccountKeeper) PrecompiledAuth {
 		},
 		ABI: ABI,
 		ak:  ak,
+		wk:  wk,
 	}
 	p.SetAddress(common.HexToAddress(hexAddress))
 
@@ -123,13 +126,12 @@ func (p PrecompiledAuth) account(ctx sdk.Context, method *abi.Method, args []int
 	}
 
 	var strAddress string
-	if p.ak.HasAccount(ctx, address) {
-		// address: contract or address
-		account := p.ak.GetAccount(ctx, address)
-		strAddress = account.GetAddress().String()
-	} else {
-		// cannot query
-		strAddress = ""
+	resolved, err := p.ak.ResolveAccountAddress(ctx, address, p.wk)
+	if err != nil {
+		return nil, err
+	}
+	if resolved != nil {
+		strAddress = resolved.String()
 	}
 
 	return method.Outputs.Pack(strAddress)
