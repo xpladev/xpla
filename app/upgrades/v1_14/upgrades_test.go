@@ -18,12 +18,14 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256r1"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	xplaapp "github.com/xpladev/xpla/app"
 	apphelpers "github.com/xpladev/xpla/app/helpers"
@@ -94,10 +96,31 @@ func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
 	evmParams.HistoryServeWindow = 1234
 	require.NoError(t, app.EvmKeeper.SetParams(ctx, evmParams))
 
+	p256Key, err := secp256r1.GenPrivKey()
+	require.NoError(t, err)
+	longPubKey := p256Key.PubKey()
+	longAddress := sdk.AccAddress(longPubKey.Address())
+	require.Len(t, longAddress, 32)
+	longAccount := app.AccountKeeper.NewAccountWithAddress(ctx, longAddress)
+	require.NoError(t, longAccount.SetPubKey(longPubKey))
+	require.NoError(t, longAccount.SetSequence(1))
+	app.AccountKeeper.SetAccount(ctx, longAccount)
+	longAccountNumber := longAccount.GetAccountNumber()
+	longSuffix := sdk.AccAddress(bytes.Clone(longAddress[len(longAddress)-20:]))
+
+	creator := sdk.AccAddress(bytes.Repeat([]byte{0x71}, 20))
+	creatorAccount := app.AccountKeeper.NewAccountWithAddress(ctx, creator)
+	require.NoError(t, creatorAccount.SetSequence(7))
+	app.AccountKeeper.SetAccount(ctx, creatorAccount)
+	longBalance := sdk.NewCoins(axpla(13))
+	creatorBalance := sdk.NewCoins(axpla(17))
+
 	require.NoError(t, app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, sdk.NewCoins(
-		axpla(107),
+		axpla(137),
 		sdk.NewInt64Coin("ufoo", 3),
 	)))
+	require.NoError(t, app.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, longAddress, longBalance))
+	require.NoError(t, app.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, creator, creatorBalance))
 	mintAddress := app.AccountKeeper.GetModuleAddress(minttypes.ModuleName)
 	require.NoError(t, app.DistrKeeper.FundCommunityPool(ctx, sdk.NewCoins(axpla(7)), mintAddress))
 	require.NoError(t, app.BankKeeper.SendCoinsFromModuleToModule(
@@ -132,8 +155,6 @@ func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
 	require.False(t, exists)
 	require.True(t, app.UpgradeKeeper.HasHandler(v1_14.UpgradeName))
 
-	creator := sdk.AccAddress(bytes.Repeat([]byte{0x71}, 20))
-	app.AccountKeeper.SetAccount(ctx, app.AccountKeeper.NewAccountWithAddress(ctx, creator))
 	wasmCode, err := os.ReadFile(filepath.Join("..", "..", "..", "tests", "solidity", "suites", "misc", "any_dispatch.wasm"))
 	require.NoError(t, err)
 	contractKeeper := wasmkeeper.NewDefaultPermissionKeeper(&app.WasmKeeper)
@@ -157,6 +178,12 @@ func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
 	require.NoError(t, legacyAliases.Set(ctx, govAlias, maliciousGovTarget))
 	require.NoError(t, legacyAliases.Set(ctx, arbitraryAlias, arbitraryTarget))
 	require.NoError(t, legacyAliases.Set(ctx, contractAlias, arbitraryTarget))
+	require.NoError(t, legacyAliases.Set(ctx, longSuffix, longAddress))
+	require.Nil(t, app.AccountKeeper.GetAccount(ctx, longSuffix))
+	require.Nil(t, app.WasmKeeper.GetContractInfo(ctx, longAddress))
+	require.Equal(t, longBalance, app.BankKeeper.GetAllBalances(ctx, longAddress))
+	require.Equal(t, uint64(7), app.AccountKeeper.GetAccount(ctx, creator).GetSequence())
+	require.Equal(t, creatorBalance, app.BankKeeper.GetAllBalances(ctx, creator))
 
 	require.NoError(t, app.UpgradeKeeper.ApplyUpgrade(ctx, upgradetypes.Plan{
 		Name:   v1_14.UpgradeName,
@@ -245,7 +272,21 @@ func TestApplyUpgradeSetsModuleParamsAndPreservesState(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, found)
 	require.Equal(t, 1, countAliasEntries(t, ctx.KVStore(app.GetKey(wasmtypes.StoreKey)), "wasmAlias"), "only the authoritative contract mapping survives")
+	_, found, err = app.WasmKeeper.ResolveWasmAlias(ctx, longSuffix)
+	require.NoError(t, err)
+	require.False(t, found, "non-Wasm SDK account must not gain a Wasm alias")
 	require.Zero(t, countAliasEntries(t, ctx.KVStore(app.GetKey(authtypes.StoreKey)), "sliceAddress"), "all legacy auth mappings must be removed")
+	preservedLongAccount := app.AccountKeeper.GetAccount(ctx, longAddress)
+	require.NotNil(t, preservedLongAccount)
+	require.Equal(t, longAddress, preservedLongAccount.GetAddress())
+	require.True(t, longPubKey.Equals(preservedLongAccount.GetPubKey()))
+	require.Equal(t, longAccountNumber, preservedLongAccount.GetAccountNumber())
+	require.Equal(t, uint64(1), preservedLongAccount.GetSequence())
+	require.Equal(t, longBalance, app.BankKeeper.GetAllBalances(ctx, longAddress))
+	require.Nil(t, app.AccountKeeper.GetAccount(ctx, longSuffix), "upgrade must not create a suffix account")
+	require.Zero(t, app.EvmKeeper.GetNonce(ctx, common.BytesToAddress(longSuffix)))
+	require.Equal(t, uint64(7), app.AccountKeeper.GetAccount(ctx, creator).GetSequence())
+	require.Equal(t, creatorBalance, app.BankKeeper.GetAllBalances(ctx, creator))
 }
 
 func axpla(amount int64) sdk.Coin {
