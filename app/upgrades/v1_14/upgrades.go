@@ -31,6 +31,9 @@ func CreateUpgradeHandler(
 ) upgradetypes.UpgradeHandler {
 	return func(c context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		ctx := sdk.UnwrapSDKContext(c)
+		if err := ensureDynamicDeflationPoolAccount(ctx, appKeepers.AccountKeeper); err != nil {
+			return nil, err
+		}
 		if err := migrateWasmAliases(ctx, appKeepers); err != nil {
 			return nil, err
 		}
