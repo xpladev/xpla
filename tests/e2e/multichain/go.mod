@@ -8,7 +8,9 @@ require (
 	cosmossdk.io/math v1.5.3
 	github.com/cosmos/cosmos-sdk v0.53.6
 	github.com/cosmos/evm v0.6.3
+	github.com/cosmos/ibc-go/v10 v10.5.0
 	github.com/cosmos/interchaintest/v10 v10.0.1
+	github.com/ethereum/go-ethereum v1.16.2
 	github.com/moby/moby v27.5.1+incompatible
 	github.com/stretchr/testify v1.11.1
 	github.com/xpladev/xpla v1.7.1
@@ -83,7 +85,6 @@ require (
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/gogoproto v1.7.2 // indirect
 	github.com/cosmos/iavl v1.2.6 // indirect
-	github.com/cosmos/ibc-go/v10 v10.5.0 // indirect
 	github.com/cosmos/ics23/go v0.11.0 // indirect
 	github.com/cosmos/interchain-security/v7 v7.0.0-20250408210344-06e0dc6bf6d6 // indirect
 	github.com/cosmos/ledger-cosmos-go v1.0.0 // indirect
@@ -106,7 +107,6 @@ require (
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/ethereum/c-kzg-4844/v2 v2.1.0 // indirect
-	github.com/ethereum/go-ethereum v1.16.2 // indirect
 	github.com/ethereum/go-verkle v0.2.2 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -276,7 +276,7 @@ replace (
 
 	// Interchaintest
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla-2
-	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.3-xpla.1
+	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.3-xpla.2
 
 	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.16.2-xpla-evm
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
