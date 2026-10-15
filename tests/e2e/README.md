@@ -16,9 +16,9 @@ docker compose up -d
 # (or force rebuild once)
 # docker compose up --build -d
 
-# Note: e2e compose builds the shared image `xpla-localnet-e2e:latest` once
-# and all validator/volunteer nodes reuse that same image.
-# It also uses local image only (`pull_policy: never`) to avoid registry pull noise.
+# Note: e2e compose builds the shared `publish` image `xpla-localnet-e2e:latest`
+# once and bind-mounts this directory to `/opt/tests/e2e`. All validator/volunteer
+# nodes reuse that image. `pull_policy: never` avoids registry pull noise.
 
 # 2. Wait for building. Once done without error, you may check the nodes running
 docker ps
