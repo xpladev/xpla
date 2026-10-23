@@ -28,7 +28,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk 
 
 	rewardDistributeAccount := sdk.MustAccAddressFromBech32(params.RewardDistributeAccount)
 
-	totalRewards := map[string]sdk.Coin{}
+	totalRewards := sdk.NewMapCoins(sdk.NewCoins())
 
 	sk.IterateDelegations(ctx, rewardDistributeAccount, func(index int64, delegation stakingtypes.DelegationI) (stop bool) {
 		valAddr, e := sk.ValidatorAddressCodec().StringToBytes(delegation.GetValidatorAddr())
@@ -50,12 +50,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk 
 				continue
 			}
 
-			c, exist := totalRewards[coin.Denom]
-			if exist {
-				totalRewards[coin.Denom] = c.Add(coin)
-			} else {
-				totalRewards[coin.Denom] = coin
-			}
+			totalRewards.Add(coin)
 		}
 
 		return false
@@ -70,15 +65,16 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk 
 
 	feePoolRate := params.FeePoolRate.Mul(total)
 	reserveRate := params.ReserveRate.Mul(total)
-	for denom, totalReward := range totalRewards {
+	for _, totalReward := range totalRewards.ToCoins() {
+		denom := totalReward.Denom
 		feePoolReward := sdk.NewCoin(denom, feePoolRate.MulInt(totalReward.Amount).TruncateInt())
-		feePoolRewards = append(feePoolRewards, feePoolReward)
+		feePoolRewards = feePoolRewards.Add(feePoolReward)
 
 		reserveReward := sdk.NewCoin(denom, reserveRate.MulInt(totalReward.Amount).TruncateInt())
-		reserveRewards = append(reserveRewards, reserveReward)
+		reserveRewards = reserveRewards.Add(reserveReward)
 
 		communityPoolReward := sdk.NewCoin(denom, totalReward.Amount.Sub(feePoolReward.Amount).Sub(reserveReward.Amount))
-		communityPoolRewards = append(communityPoolRewards, communityPoolReward)
+		communityPoolRewards = communityPoolRewards.Add(communityPoolReward)
 	}
 
 	// fee pool

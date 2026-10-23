@@ -2,7 +2,6 @@ package wasm
 
 import (
 	"fmt"
-	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -26,7 +25,7 @@ func (p PrecompiledWasm) EmitInstantiateContractEvent(
 	sender common.Address,
 	admin common.Address,
 	contractAddress common.Address,
-	codeId *big.Int,
+	codeId uint64,
 	label string,
 	msg []byte,
 	funds sdk.Coins,
@@ -114,7 +113,7 @@ func (p PrecompiledWasm) EmitMigrateContractEvent(
 	stateDB vm.StateDB,
 	sender common.Address,
 	contractAddress common.Address,
-	codeId *big.Int,
+	codeId uint64,
 	msg []byte,
 	data []byte,
 ) (err error) {

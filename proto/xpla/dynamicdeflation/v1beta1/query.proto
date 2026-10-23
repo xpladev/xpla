@@ -1,0 +1,57 @@
+syntax = "proto3";
+package xpla.dynamicdeflation.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/dynamicdeflation/types";
+
+import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "xpla/dynamicdeflation/v1beta1/dynamic_deflation.proto";
+
+// Query defines the dynamic deflation gRPC query service.
+service Query {
+  // Params queries the candidate parameters for the next period.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/xpla/dynamicdeflation/v1beta1/params";
+  }
+  // CurrentPeriod queries the active period, if one exists.
+  rpc CurrentPeriod(QueryCurrentPeriodRequest)
+      returns (QueryCurrentPeriodResponse) {
+    option (google.api.http).get =
+        "/xpla/dynamicdeflation/v1beta1/current_period";
+  }
+  // Status compares the Dynamic Deflation Pool balance with the allocated
+  // amount.
+  rpc Status(QueryStatusRequest) returns (QueryStatusResponse) {
+    option (google.api.http).get = "/xpla/dynamicdeflation/v1beta1/status";
+  }
+}
+
+// QueryParamsRequest is the request for Query/Params.
+message QueryParamsRequest {}
+// QueryParamsResponse is the response for Query/Params.
+message QueryParamsResponse {
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// QueryCurrentPeriodRequest is the request for Query/CurrentPeriod.
+message QueryCurrentPeriodRequest {}
+// QueryCurrentPeriodResponse is the response for Query/CurrentPeriod.
+message QueryCurrentPeriodResponse { CurrentPeriod current_period = 1; }
+
+// QueryStatusRequest is the request for Query/Status.
+message QueryStatusRequest {}
+// QueryStatusResponse reports the Dynamic Deflation Pool balance and allocated
+// amount. module_balance is retained for API compatibility.
+message QueryStatusResponse {
+  cosmos.base.v1beta1.Coin module_balance = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.base.v1beta1.Coin allocated_amount = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.base.v1beta1.Coin surplus_amount = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.base.v1beta1.Coin deficit_amount = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

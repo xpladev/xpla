@@ -46,7 +46,6 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	"github.com/cosmos/evm/x/feemarket"
@@ -58,11 +57,14 @@ import (
 	burntypes "github.com/xpladev/xpla/x/burn/types"
 
 	"github.com/xpladev/xpla/x/burn"
+	"github.com/xpladev/xpla/x/dynamicdeflation"
+	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 	"github.com/xpladev/xpla/x/reward"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastaking "github.com/xpladev/xpla/x/staking"
 	"github.com/xpladev/xpla/x/volunteer"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
+	xplawasm "github.com/xpladev/xpla/x/wasm"
 )
 
 // module account permissions
@@ -80,6 +82,7 @@ var maccPerms = map[string][]string{
 	feemarkettypes.ModuleName:      nil,
 	rewardtypes.ModuleName:         nil,
 	burntypes.ModuleName:           {authtypes.Burner},
+	dynamicdeflationtypes.PoolName: {authtypes.Burner},
 	banktypes.ModuleName:           nil,
 }
 
@@ -96,10 +99,11 @@ func appModules(
 			app,
 			txConfig,
 		),
-		xplaauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
-		xplabank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		xplaauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName), app.WasmKeeper),
+		xplabank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
+		dynamicdeflation.NewAppModule(appCodec, app.DynamicDeflationKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		xplastaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
@@ -111,7 +115,7 @@ func appModules(
 		ibctm.NewAppModule(tmLightClientModule),
 		params.NewAppModule(app.ParamsKeeper), //nolint:staticcheck
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
+		xplawasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		transfer.NewAppModule(app.TransferKeeper),
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
 		pfmrouter.NewAppModule(app.PFMRouterKeeper, app.GetSubspace(pfmroutertypes.ModuleName)),
@@ -148,8 +152,8 @@ func simulationModules(
 	appCodec codec.Codec,
 ) []module.AppModuleSimulation {
 	return []module.AppModuleSimulation{
-		xplaauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
-		xplabank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		xplaauth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName), app.WasmKeeper),
+		xplabank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
@@ -158,7 +162,7 @@ func simulationModules(
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		wasm.NewAppModule(appCodec, &app.AppKeepers.WasmKeeper, app.AppKeepers.StakingKeeper, app.AppKeepers.AccountKeeper, app.AppKeepers.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
+		xplawasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		ibc.NewAppModule(app.IBCKeeper),
 		transfer.NewAppModule(app.TransferKeeper),
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
@@ -179,6 +183,7 @@ NOTE: staking module is required if HistoricalEntries param > 0
 func orderBeginBlockers() []string {
 	return []string{
 		minttypes.ModuleName,
+		dynamicdeflationtypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -259,6 +264,7 @@ func orderInitBlockers() []string {
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		minttypes.ModuleName,
+		dynamicdeflationtypes.ModuleName,
 		crisistypes.ModuleName,
 		// evm module denomination is used by the fees module, in AnteHandle
 		evmtypes.ModuleName,

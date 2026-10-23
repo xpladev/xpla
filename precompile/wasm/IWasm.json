@@ -65,9 +65,9 @@
       },
       {
         "indexed": true,
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "codeId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "indexed": false,
@@ -132,9 +132,9 @@
       },
       {
         "indexed": true,
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "codeId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "indexed": false,
@@ -151,6 +151,30 @@
     ],
     "name": "MigrateContract",
     "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "denom",
+        "type": "string"
+      }
+    ],
+    "name": "balance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
@@ -211,9 +235,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "codeId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "string",
@@ -272,9 +296,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "codeId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "string",
@@ -343,9 +367,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "codeId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "bytes",

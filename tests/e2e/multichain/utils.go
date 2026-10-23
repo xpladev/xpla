@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/interchaintest/v10/chain/cosmos/wasm"
 	"github.com/cosmos/interchaintest/v10/ibc"
 	"github.com/cosmos/interchaintest/v10/testreporter"
+	"github.com/cosmos/interchaintest/v10/testutil"
 	"github.com/moby/moby/client"
 
 	"go.uber.org/zap/zaptest"
@@ -26,6 +27,7 @@ import (
 
 	ethenc "github.com/cosmos/evm/encoding/codec"
 
+	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
 	burntypes "github.com/xpladev/xpla/x/burn/types"
 )
 
@@ -110,6 +112,7 @@ func XplaChainSpec(
 
 		cosmos.NewGenesisKV("consensus.params.block.max_gas", "50000000000"),
 		cosmos.NewGenesisKV("app_state.evm.params.evm_denom", Denom),
+		cosmos.NewGenesisKV("app_state.evm.params.active_static_precompiles", []string{"0x0000000000000000000000000000000000000802"}),
 		cosmos.NewGenesisKV("app_state.feemarket.params.min_gas_price", minGasPrice),
 		cosmos.NewGenesisKV("app_state.feemarket.params.base_fee_change_denominator", 1),
 		cosmos.NewGenesisKV("app_state.feemarket.params.elasticity_multiplier", 1),
@@ -118,6 +121,7 @@ func XplaChainSpec(
 
 	encoding := wasm.WasmEncoding()
 	ethenc.RegisterInterfaces(encoding.InterfaceRegistry)
+	ethermintenc.RegisterInterfaces(encoding.InterfaceRegistry)
 	burntypes.RegisterInterfaces(encoding.InterfaceRegistry)
 
 	return &interchaintest.ChainSpec{
@@ -141,7 +145,10 @@ func XplaChainSpec(
 			SigningAlgorithm: "eth_secp256k1",
 			// open the port for the EVM on all nodes
 			ExposeAdditionalPorts: []string{"8545/tcp"},
-			EncodingConfig:        encoding,
+			ConfigFileOverrides: map[string]any{"config/app.toml": testutil.Toml{
+				"json-rpc": testutil.Toml{"enable": true, "address": "0.0.0.0:8545", "api": "eth,net,web3", "txfee-cap": 0},
+			}},
+			EncodingConfig: encoding,
 		},
 	}
 }
@@ -186,6 +193,15 @@ type IBCChainSetup struct {
 	r           ibc.Relayer
 	ibcPathName string
 	eRep        *testreporter.RelayerExecReporter
+}
+
+// StopRelayer prevents receipt before a timeout test has reached its deadline.
+func (s *IBCChainSetup) StopRelayer(ctx context.Context) error {
+	return s.r.StopRelayer(ctx, s.eRep)
+}
+
+func (s *IBCChainSetup) GetXplaChannels(ctx context.Context) ([]ibc.ChannelOutput, error) {
+	return s.r.GetChannels(ctx, s.eRep, s.XplaChain.Config().ChainID)
 }
 
 func (s *IBCChainSetup) GetSimdChannels(ctx context.Context) ([]ibc.ChannelOutput, error) {

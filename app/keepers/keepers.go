@@ -43,6 +43,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -74,15 +75,19 @@ import (
 	vmtypes "github.com/cosmos/evm/x/vm/types"
 
 	"github.com/xpladev/xpla/precompile"
+	xplatypes "github.com/xpladev/xpla/types"
 	xplaauthkeeper "github.com/xpladev/xpla/x/auth/keeper"
 	xplabankkeeper "github.com/xpladev/xpla/x/bank/keeper"
 	burnkeeper "github.com/xpladev/xpla/x/burn/keeper"
 	burntypes "github.com/xpladev/xpla/x/burn/types"
+	dynamicdeflationkeeper "github.com/xpladev/xpla/x/dynamicdeflation/keeper"
+	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 	rewardkeeper "github.com/xpladev/xpla/x/reward/keeper"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	xplastakingkeeper "github.com/xpladev/xpla/x/staking/keeper"
 	volunteerkeeper "github.com/xpladev/xpla/x/volunteer/keeper"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
+	xplawasmkeeper "github.com/xpladev/xpla/x/wasm/keeper"
 )
 
 const (
@@ -106,7 +111,7 @@ type AppKeepers struct {
 	GovKeeper      *govkeeper.Keeper
 	UpgradeKeeper  *upgradekeeper.Keeper
 	ParamsKeeper   paramskeeper.Keeper //nolint:staticcheck
-	WasmKeeper     wasmkeeper.Keeper
+	WasmKeeper     xplawasmkeeper.Keeper
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	IBCKeeper             *ibckeeper.Keeper
 	ICAHostKeeper         icahostkeeper.Keeper
@@ -124,9 +129,10 @@ type AppKeepers struct {
 	EvmKeeper       *vmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
 
-	RewardKeeper    rewardkeeper.Keeper
-	VolunteerKeeper volunteerkeeper.Keeper
-	BurnKeeper      burnkeeper.Keeper
+	RewardKeeper           rewardkeeper.Keeper
+	DynamicDeflationKeeper dynamicdeflationkeeper.Keeper
+	VolunteerKeeper        volunteerkeeper.Keeper
+	BurnKeeper             burnkeeper.Keeper
 }
 
 func NewAppKeeper(
@@ -178,7 +184,7 @@ func NewAppKeeper(
 	bApp.SetParamStore(appKeepers.ConsensusParamsKeeper.ParamsStore)
 
 	// Add normal keepers
-	appKeepers.AccountKeeper = xplaauthkeeper.NewAccountKeeper(
+	appKeepers.AccountKeeper = xplaauthkeeper.NewAccountKeeper(authkeeper.NewAccountKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
@@ -186,7 +192,7 @@ func NewAppKeeper(
 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		govModAddress,
-	)
+	))
 
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
 		runtime.NewKVStoreService(appKeepers.keys[authzkeeper.StoreKey]),
@@ -400,7 +406,18 @@ func NewAppKeeper(
 		&wasmkeeper.QueryPlugins{
 			Stargate: wasmkeeper.AcceptListStargateQuerier(accepted, bApp.GRPCQueryRouter(), appCodec),
 		})
-	wasmOpts = append(wasmOpts, querierOpts)
+	wasmOpts = append(
+		wasmOpts,
+		querierOpts,
+		wasmkeeper.WithMessageEncoders(&wasmkeeper.MessageEncoders{
+			Any: newWasmAnyEVMEncoder(appCodec),
+		}),
+	)
+	// Wasmd v0.60.6 applies message handler decorators after its regular options.
+	// This keeps the rollback boundary outside the default handler chain and any
+	// custom message encoders merged into that chain. Preserve this ordering with
+	// a composition regression test when changing the Wasmd version or encoders.
+	wasmOpts = append(wasmOpts, wasmkeeper.WithMessageHandlerDecorator(newWasmEVMStateDBAtomicMessenger))
 
 	wasmDir := filepath.Join(homePath, "data")
 	wasmConfig, err := wasm.ReadNodeConfig(appOpts)
@@ -408,7 +425,7 @@ func NewAppKeeper(
 		panic("error while reading wasm config: " + err.Error())
 	}
 
-	appKeepers.WasmKeeper = wasmkeeper.NewKeeper(
+	appKeepers.WasmKeeper = xplawasmkeeper.NewKeeper(wasmkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
 		appKeepers.AccountKeeper,
@@ -426,6 +443,10 @@ func NewAppKeeper(
 		wasmkeeper.BuiltInCapabilities(),
 		govModAddress,
 		wasmOpts...,
+	),
+		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
+		appKeepers.AccountKeeper,
+		maccPerms,
 	)
 
 	// Middleware Stacks
@@ -485,6 +506,8 @@ func NewAppKeeper(
 	)
 
 	evmTracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
+	// Historical EVM stores may predate the CoinInfo key. Stored values
+	// still take precedence over this fallback.
 	appKeepers.EvmKeeper = vmkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[vmtypes.StoreKey],
@@ -499,7 +522,7 @@ func NewAppKeeper(
 		nil,
 		evmChainID,
 		evmTracer,
-	)
+	).WithDefaultEvmCoinInfo(xplatypes.DefaultXPLACoinInfo())
 
 	appKeepers.BankKeeper = xplabankkeeper.NewKeeper(
 		appCodec,
@@ -510,7 +533,16 @@ func NewAppKeeper(
 		logger,
 		appKeepers.EvmKeeper,
 		appKeepers.WasmKeeper,
-		wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
+		xplawasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
+	)
+
+	appKeepers.DynamicDeflationKeeper = dynamicdeflationkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(appKeepers.keys[dynamicdeflationtypes.StoreKey]),
+		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+		appKeepers.DistrKeeper,
+		govModAddress,
 	)
 
 	appKeepers.RewardKeeper = rewardkeeper.NewKeeper(
@@ -548,10 +580,8 @@ func NewAppKeeper(
 			appKeepers.EvmKeeper,
 			*appKeepers.GovKeeper,
 			appKeepers.SlashingKeeper,
-			appKeepers.AccountKeeper,
+			&appKeepers.WasmKeeper,
 			appKeepers.BankKeeper,
-			wasmkeeper.NewMsgServerImpl(&appKeepers.WasmKeeper),
-			appKeepers.WasmKeeper,
 			appKeepers.AccountKeeper,
 			appCodec,
 		),

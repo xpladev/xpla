@@ -26,7 +26,7 @@ interface IWasm {
     event InstantiateContract(
         address indexed sender,
         address indexed contractAddress,
-        uint256 indexed codeId,
+        uint64 indexed codeId,
         address admin,
         string label,
         bytes msg,
@@ -63,7 +63,7 @@ interface IWasm {
     event MigrateContract(
         address indexed sender,
         address indexed contractAddress,
-        uint256 indexed codeId,
+        uint64 indexed codeId,
         bytes msg,
         bytes data
     );
@@ -72,7 +72,7 @@ interface IWasm {
     function instantiateContract(
         address sender,
         address admin,
-        uint256 codeId,
+        uint64 codeId,
         string calldata label,
         bytes calldata msg,
         Coin[] memory funds
@@ -80,7 +80,7 @@ interface IWasm {
     function instantiateContract2(
         address sender,
         address admin,
-        uint256 codeId,
+        uint64 codeId,
         string calldata label,
         bytes calldata msg,
         Coin[] memory funds,
@@ -96,11 +96,23 @@ interface IWasm {
     function migrateContract(
         address sender,
         address contractAddress,
-        uint256 codeId,
+        uint64 codeId,
         bytes calldata msg
     ) external returns (bytes calldata data);
     
     // Queries
+    /**
+     * @dev Returns the native Cosmos bank balance of a Wasm contract, resolving
+     * registered 20-byte aliases to the full contract address.
+     * Reverts for missing contracts, invalid denoms, or xerc20/xcw20 denoms.
+     * @param contractAddress the Wasm contract address or registered alias
+     * @param denom a Cosmos bank denom, including axpla or an IBC denom
+     * @return amount the balance in the denom's smallest unit, or zero if unheld
+     */
+    function balance(
+        address contractAddress,
+        string calldata denom
+    ) external view returns (uint256 amount);
     function smartContractState(
         address contractAddress,
         bytes calldata queryData

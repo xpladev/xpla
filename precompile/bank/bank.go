@@ -7,6 +7,7 @@ import (
 
 	_ "embed"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
@@ -15,12 +16,16 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/statedb"
 
+	pcommon "github.com/xpladev/xpla/precompile/common"
 	"github.com/xpladev/xpla/precompile/util"
+	xbanktypes "github.com/xpladev/xpla/x/bank/types"
 )
 
 var _ vm.PrecompiledContract = PrecompiledBank{}
@@ -56,7 +61,7 @@ func NewPrecompiledBank(bk BankKeeper) PrecompiledBank {
 		Precompile: cmn.Precompile{
 			KvGasConfig:           storetypes.KVGasConfig(),
 			TransientKVGasConfig:  storetypes.TransientGasConfig(),
-			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bk),
+			BalanceHandlerFactory: NewExactBalanceHandlerFactory(bk),
 		},
 		ABI: ABI,
 		bk:  bk,
@@ -87,7 +92,14 @@ func (p PrecompiledBank) RequiredGas(input []byte) uint64 {
 
 func (p PrecompiledBank) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
-		return p.Execute(ctx, evm.StateDB, contract, readonly)
+		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
+
+		initialGas := ctx.GasMeter().GasConsumed()
+		bz, err := p.Execute(ctx, evm.StateDB, contract, readonly)
+		if err != nil {
+			pcommon.ChargeFailedExecutionGas(contract, ctx.GasMeter().GasConsumed()-initialGas)
+		}
+		return bz, err
 	})
 }
 
@@ -139,6 +151,9 @@ func (p PrecompiledBank) balance(ctx sdk.Context, method *abi.Method, args []int
 	if err != nil {
 		return nil, err
 	}
+	if _, _, err := xbanktypes.ParseDenom(denom); err != nil {
+		return nil, err
+	}
 
 	coin := p.bk.GetBalance(ctx, address, denom)
 
@@ -148,6 +163,9 @@ func (p PrecompiledBank) balance(ctx sdk.Context, method *abi.Method, args []int
 func (p PrecompiledBank) supplyOf(ctx sdk.Context, method *abi.Method, args []interface{}) ([]byte, error) {
 	denom, err := util.GetString(args[0])
 	if err != nil {
+		return nil, err
+	}
+	if _, _, err := xbanktypes.ParseDenom(denom); err != nil {
 		return nil, err
 	}
 
@@ -175,6 +193,22 @@ func (p PrecompiledBank) send(ctx sdk.Context, stateDB vm.StateDB, sender common
 	coins, err := util.GetCoins(args[2])
 	if err != nil {
 		return nil, err
+	}
+
+	if !coins.IsValid() {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidCoins, coins.String())
+	}
+
+	if !coins.IsAllPositive() {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidCoins, coins.String())
+	}
+
+	if err := p.bk.IsSendEnabledCoins(ctx, coins...); err != nil {
+		return nil, err
+	}
+
+	if p.bk.BlockedAddr(toAddress) {
+		return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", toAddress.String())
 	}
 
 	err = p.bk.SendCoins(ctx, fromAddress, toAddress, coins)

@@ -1,0 +1,31 @@
+syntax = "proto3";
+package xpla.dynamicdeflation.v1beta1;
+
+option go_package = "github.com/xpladev/xpla/x/dynamicdeflation/types";
+
+import "amino/amino.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "xpla/dynamicdeflation/v1beta1/dynamic_deflation.proto";
+
+// Msg defines the dynamic deflation Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // UpdateParams atomically replaces all module parameters.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "xpladev/x/dynamicdeflation/MsgUpdateParams";
+
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  Params params = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// MsgUpdateParamsResponse is the Msg/UpdateParams response type.
+message MsgUpdateParamsResponse {}

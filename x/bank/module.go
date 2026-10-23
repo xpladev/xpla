@@ -5,11 +5,11 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/bank/exported"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	authkeeper "github.com/xpladev/xpla/x/auth/keeper"
 	"github.com/xpladev/xpla/x/bank/keeper"
 )
 
@@ -25,7 +25,7 @@ type AppModule struct {
 // NewAppModule creates a new AppModule object
 func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, accountKeeper authkeeper.AccountKeeper, ss exported.Subspace) AppModule {
 	return AppModule{
-		AppModule: bank.NewAppModule(cdc, keeper.BaseKeeper, accountKeeper.AccountKeeper, ss),
+		AppModule: bank.NewAppModule(cdc, keeper.BaseKeeper, accountKeeper, ss),
 		keeper:    keeper,
 	}
 }

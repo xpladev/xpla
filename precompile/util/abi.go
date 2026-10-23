@@ -44,6 +44,14 @@ func GetBigInt(src interface{}) (sdkmath.Int, error) {
 	return sdkmath.NewIntFromBigInt(res), nil
 }
 
+func GetUint64(src interface{}) (uint64, error) {
+	res, ok := src.(uint64)
+	if !ok {
+		return 0, errors.New("invalid uint64")
+	}
+	return res, nil
+}
+
 func GetString(src interface{}) (string, error) {
 	res, ok := src.(string)
 	if !ok {

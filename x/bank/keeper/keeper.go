@@ -5,8 +5,10 @@ import (
 
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/xpladev/xpla/x/bank/types"
@@ -43,9 +45,12 @@ func NewKeeper(
 }
 
 func (k Keeper) GetBalance(goCtx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	tokenType, address, err := types.ParseDenom(denom)
+	if err != nil {
+		return sdk.Coin{Denom: denom, Amount: sdkmath.ZeroInt()}
+	}
 
-	tokenType, address := types.ParseDenom(denom)
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	switch tokenType {
 	case types.Erc20:
 		return k.bek.GetBalance(ctx, addr, address)
@@ -57,9 +62,12 @@ func (k Keeper) GetBalance(goCtx context.Context, addr sdk.AccAddress, denom str
 }
 
 func (k Keeper) GetSupply(goCtx context.Context, denom string) sdk.Coin {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	tokenType, address, err := types.ParseDenom(denom)
+	if err != nil {
+		return sdk.Coin{Denom: denom, Amount: sdkmath.ZeroInt()}
+	}
 
-	tokenType, address := types.ParseDenom(denom)
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	switch tokenType {
 	case types.Erc20:
 		return k.bek.GetSupply(goCtx, address)
@@ -76,7 +84,10 @@ func (k Keeper) SendCoins(ctx context.Context, fromAddr, toAddr sdk.AccAddress, 
 	cosmosCoins := sdk.NewCoins()
 
 	for _, coin := range amt {
-		tokenType, _ := types.ParseDenom(coin.Denom)
+		tokenType, _, err := types.ParseDenom(coin.Denom)
+		if err != nil {
+			return sdkerrors.ErrInvalidCoins.Wrapf("invalid token denom %q: %v", coin.Denom, err)
+		}
 		switch tokenType {
 		case types.Erc20:
 			evmCoins = append(evmCoins, coin)
@@ -104,7 +115,10 @@ func (k Keeper) IsSendEnabledCoins(ctx context.Context, coins ...sdk.Coin) error
 	cosmosCoins := sdk.NewCoins()
 
 	for _, coin := range coins {
-		tokenType, _ := types.ParseDenom(coin.Denom)
+		tokenType, _, err := types.ParseDenom(coin.Denom)
+		if err != nil {
+			return sdkerrors.ErrInvalidCoins.Wrapf("invalid token denom %q: %v", coin.Denom, err)
+		}
 		if tokenType == types.Cosmos {
 			cosmosCoins = append(cosmosCoins, coin)
 		}

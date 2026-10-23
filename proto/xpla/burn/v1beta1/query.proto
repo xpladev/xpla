@@ -3,6 +3,7 @@ package xpla.burn.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "xpla/burn/v1beta1/burn.proto";
 import "cosmos_proto/cosmos.proto";
@@ -27,12 +28,18 @@ service Query {
 
 // QueryOngoingProposalsRequest is the request type for the
 // Query/OngoingProposals RPC method.
-message QueryOngoingProposalsRequest {}
+message QueryOngoingProposalsRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 // QueryOngoingProposalsResponse is the response type for the
 // Query/OngoingProposals RPC method.
 message QueryOngoingProposalsResponse {
   repeated BurnProposal proposals = 1 [ (gogoproto.nullable) = false ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryOngoingProposalRequest is the request type for the Query/OngoingProposal

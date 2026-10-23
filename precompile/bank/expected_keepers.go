@@ -15,6 +15,7 @@ type BankKeeper interface {
 	SetDenomMetaData(context.Context, banktypes.Metadata)
 	GetBalance(context.Context, sdk.AccAddress, string) sdk.Coin
 	SendCoins(context.Context, sdk.AccAddress, sdk.AccAddress, sdk.Coins) error
+	IsSendEnabledCoins(context.Context, ...sdk.Coin) error
 	SpendableCoin(context.Context, sdk.AccAddress, string) sdk.Coin
 	TotalSupply(context.Context, *banktypes.QueryTotalSupplyRequest) (*banktypes.QueryTotalSupplyResponse, error)
 	BlockedAddr(sdk.AccAddress) bool

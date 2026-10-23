@@ -6,6 +6,7 @@ import (
 
 	_ "embed"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,8 +14,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
+	evmconfig "github.com/cosmos/evm/server/config"
 	"github.com/cosmos/evm/x/vm/statedb"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/xpladev/xpla/x/bank/types"
 )
 
@@ -48,9 +53,10 @@ func NewErc20Keeper(ak banktypes.AccountKeeper, ek types.EvmKeeper) Erc20Keeper 
 func (k Erc20Keeper) QueryTotalSupply(ctx sdk.Context, contractAddress common.Address) (sdkmath.Int, error) {
 	moduleAccount := k.ak.GetModuleAccount(ctx, banktypes.ModuleName)
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
+	gasCap := new(big.Int).SetUint64(ctx.GasMeter().GasRemaining())
 
 	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, nil, types.GetErc20Method(types.TotalSupply))
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, gasCap, types.GetErc20Method(types.TotalSupply))
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
@@ -74,9 +80,10 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 	moduleAccount := k.ak.GetModuleAccount(ctx, banktypes.ModuleName)
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
 	ethAccount := common.BytesToAddress(account.Bytes())
+	gasCap := new(big.Int).SetUint64(ctx.GasMeter().GasRemaining())
 
 	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, nil, types.GetErc20Method(types.BalanceOf), ethAccount)
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, gasCap, types.GetErc20Method(types.BalanceOf), ethAccount)
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
@@ -97,16 +104,64 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 }
 
 func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Address, sender, to sdk.AccAddress, amount *big.Int) error {
-	ethSender := common.BytesToAddress(sender.Bytes())
-	ethTo := common.BytesToAddress(to.Bytes())
-
-	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, ethSender, contractAddress, true, false, nil, types.GetErc20Method(types.Transfer), ethTo, amount)
-	if err != nil {
-		return err
+	stateDB, callFromPrecompile := types.EVMStateDBFromContext(ctx)
+	if !callFromPrecompile {
+		stateDB = statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
 	}
 
-	unpacked, err := ABI.Unpack(types.GetErc20Method(types.Transfer), res.Return())
+	ethSender := common.BytesToAddress(sender.Bytes())
+	ethTo := common.BytesToAddress(to.Bytes())
+	method := types.GetErc20Method(types.Transfer)
+
+	data, err := ABI.Pack(method, ethTo, amount)
+	if err != nil {
+		return errorsmod.Wrap(
+			evmtypes.ErrABIPack,
+			errorsmod.Wrap(err, "failed to create transaction data").Error(),
+		)
+	}
+
+	gasLimit := evmconfig.DefaultGasCap
+	if callFromPrecompile {
+		gasLimit = ctx.GasMeter().GasRemaining()
+	}
+	// Internal transfers can originate from a Wasm contract whose 20-byte suffix
+	// has no auth account. Unlike CallEVM's GetSequence, GetNonce permits that
+	// absence without resolving the sender to the Wasm account.
+	msg := core.Message{
+		From:       ethSender,
+		To:         &contractAddress,
+		Nonce:      k.ek.GetNonce(ctx, ethSender),
+		Value:      big.NewInt(0),
+		GasLimit:   gasLimit,
+		GasPrice:   big.NewInt(0),
+		GasTipCap:  big.NewInt(0),
+		GasFeeCap:  big.NewInt(0),
+		Data:       data,
+		AccessList: ethtypes.AccessList{},
+	}
+
+	res, err := k.ek.ApplyMessage(ctx, stateDB, msg, nil, !callFromPrecompile, callFromPrecompile, true)
+	if err != nil || res.Failed() {
+		// Native VM failures and all nested precompile failures consume the full
+		// remaining SDK gas budget, matching the existing call paths.
+		if callFromPrecompile || err == nil {
+			gasMeter := ctx.GasMeter()
+			gasMeter.RefundGas(gasMeter.GasConsumed(), "reset the gas count")
+			gasMeter.ConsumeGas(gasMeter.Limit(), "apply evm transaction")
+		}
+		if err == nil {
+			err = errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError)
+		}
+		return errorsmod.Wrapf(err, "contract call failed: method '%s', contract '%s'", method, contractAddress)
+	}
+	if callFromPrecompile {
+		ctx.GasMeter().ConsumeGas(res.MaxUsedGas, "apply evm message")
+	} else {
+		ctx.GasMeter().ConsumeGas(res.GasUsed, "apply evm message")
+	}
+
+	unpacked, err := ABI.Unpack(method, res.Return())
 	if err != nil {
 		return err
 	}

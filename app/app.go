@@ -58,7 +58,6 @@ import (
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -79,7 +78,7 @@ import (
 	"github.com/xpladev/xpla/app/openapiconsole"
 	xplaappparams "github.com/xpladev/xpla/app/params"
 	"github.com/xpladev/xpla/app/upgrades"
-	v1_11 "github.com/xpladev/xpla/app/upgrades/v1_11"
+	v1_14 "github.com/xpladev/xpla/app/upgrades/v1_14"
 	"github.com/xpladev/xpla/docs"
 	ethermintsecp256k1 "github.com/xpladev/xpla/legacy/ethermint/crypto/ethsecp256k1"
 	ethermintenc "github.com/xpladev/xpla/legacy/ethermint/encoding/codec"
@@ -98,7 +97,7 @@ var (
 	DefaultNodeHome string
 
 	Upgrades = []upgrades.Upgrade{
-		v1_11.Upgrade,
+		v1_14.Upgrade,
 	}
 )
 
@@ -358,7 +357,7 @@ func NewXplaApp(
 
 	if manager := app.SnapshotManager(); manager != nil {
 		err = manager.RegisterExtensions(
-			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper.Keeper),
 		)
 		if err != nil {
 			panic("failed to register snapshot extension: " + err.Error())
@@ -455,11 +454,9 @@ func (app *XplaApp) ModuleAccountAddrs() map[string]bool {
 }
 
 // BlockedModuleAccountAddrs returns all the app's blocked module account
-// addresses.
+// addresses. Gov is included: proposal deposits still use
+// SendCoinsFromAccountToModule, which does not check BlockedAddr.
 func (app *XplaApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
-	// remove module accounts that are ALLOWED to received funds
-	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-
 	// initialize precompile addresses to block
 	blockedPrecompilesHex := evmtypes.AvailableStaticPrecompiles
 	for _, addr := range vm.PrecompiledAddressesPrague {

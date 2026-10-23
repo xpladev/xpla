@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -153,7 +154,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	}
 	defer iterator.Close()
 
-	// Remove to jailed volunteer validator
+	// Exclude jailed and orphaned volunteer validators from this update.
 	volunteerValidators, err := k.volunteerKeeper.GetVolunteerValidators(ctx)
 	if err != nil {
 		return nil, err
@@ -164,13 +165,21 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 			return nil, err
 		}
 
-		validator := k.mustGetValidator(ctx, valAddress)
+		validator, err := k.GetValidator(ctx, valAddress)
+		if err != nil {
+			if errors.Is(err, types.ErrNoValidatorFound) {
+				delete(volunteerValidators, strValAddress)
+				continue
+			}
+
+			return nil, err
+		}
 		if validator.IsJailed() {
 			delete(volunteerValidators, strValAddress)
 		}
 	}
 
-	for count := 0; iterator.Valid() && (count < int(maxValidators)) || (len(volunteerValidators) != 0); iterator.Next() {
+	for count := 0; iterator.Valid() && (count < int(maxValidators) || len(volunteerValidators) != 0); iterator.Next() {
 		// everything that is iterated in this loop is becoming or already a
 		// part of the bonded validator set
 		valAddr := sdk.ValAddress(iterator.Value())

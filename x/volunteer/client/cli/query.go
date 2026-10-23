@@ -43,9 +43,17 @@ func GetCmdQueryVolunteerValidators() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			flagSet, err := client.FlagSetWithPageKeyDecoded(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			pageReq, err := client.ReadPageRequest(flagSet)
+			if err != nil {
+				return err
+			}
 
 			queryClient := types.NewQueryClient(clientCtx)
-			result, err := queryClient.VolunteerValidators(cmd.Context(), &types.QueryVolunteerValidatorsRequest{})
+			result, err := queryClient.VolunteerValidators(cmd.Context(), &types.QueryVolunteerValidatorsRequest{Pagination: pageReq})
 			if err != nil {
 				return err
 			}
@@ -55,6 +63,7 @@ func GetCmdQueryVolunteerValidators() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "volunteer validators")
 
 	return cmd
 }

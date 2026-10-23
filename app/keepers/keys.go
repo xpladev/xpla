@@ -31,6 +31,7 @@ import (
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	burntypes "github.com/xpladev/xpla/x/burn/types"
+	dynamicdeflationtypes "github.com/xpladev/xpla/x/dynamicdeflation/types"
 	rewardtypes "github.com/xpladev/xpla/x/reward/types"
 	volunteertypes "github.com/xpladev/xpla/x/volunteer/types"
 )
@@ -67,6 +68,7 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 		feemarkettypes.StoreKey,
 		// XPLA keys
 		burntypes.StoreKey,
+		dynamicdeflationtypes.StoreKey,
 		rewardtypes.StoreKey,
 		volunteertypes.StoreKey,
 	)

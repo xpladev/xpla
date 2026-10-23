@@ -16,14 +16,15 @@ require (
 	cosmossdk.io/x/feegrant v0.2.0
 	cosmossdk.io/x/tx v0.14.0
 	cosmossdk.io/x/upgrade v0.2.0
-	github.com/CosmWasm/wasmd v0.60.6
+	github.com/CosmWasm/wasmd v0.60.9
+	github.com/CosmWasm/wasmvm/v2 v2.3.5
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft v0.38.21
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.53.6
-	github.com/cosmos/evm v0.6.0
+	github.com/cosmos/evm v0.6.3
 	github.com/cosmos/gogoproto v1.7.2
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 v10.1.0
 	github.com/cosmos/ibc-apps/modules/rate-limiting/v10 v10.1.0
@@ -33,6 +34,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/go-metrics v0.5.4
+	github.com/holiman/uint256 v1.3.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.0
 	github.com/spf13/cast v1.10.0
@@ -65,7 +67,6 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
-	github.com/CosmWasm/wasmvm/v2 v2.3.2 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
@@ -171,7 +172,6 @@ require (
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
-	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/huandu/skiplist v1.2.1 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/iancoleman/orderedmap v0.3.0 // indirect
@@ -286,7 +286,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla-2
 
 	// xpla features
-	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.0-xpla.3
+	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm v0.6.3-xpla.2
 
 	// xpla features
 	github.com/cosmos/ledger-cosmos-go => github.com/xpladev/ledger-cosmos-go v0.16.0-xpla.1
