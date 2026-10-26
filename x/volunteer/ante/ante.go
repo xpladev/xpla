@@ -51,13 +51,13 @@ func (rdvvd RejectDelegateVolunteerValidatorDecorator) AnteHandle(ctx sdk.Contex
 func (rdvvd RejectDelegateVolunteerValidatorDecorator) checkVolunteerValidator(ctx sdk.Context, validatorAddress, delegatorAddress string) error {
 	valAddress, err := sdk.ValAddressFromBech32(validatorAddress)
 	if err != nil {
-		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "%s", err.Error())
 	}
 
 	if _, err := rdvvd.volunteerKeeper.GetVolunteerValidator(ctx, valAddress); err == nil {
 		delAddress, err := sdk.AccAddressFromBech32(delegatorAddress)
 		if err != nil {
-			return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, err.Error())
+			return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "%s", err.Error())
 		}
 
 		if delAddress.Equals(valAddress) {

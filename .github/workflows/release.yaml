@@ -26,12 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GOTOOLCHAIN: local
     strategy:
       matrix:
         build_type: ['build-release-arm64', 'build-release-amd64']
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
       - name: Set version tag
         run: echo "VERSION=$(echo ${{ github.ref_name }} | sed 's/^v//')" >> $GITHUB_ENV
       - name: Create build directory
