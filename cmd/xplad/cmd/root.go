@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 
@@ -237,12 +238,23 @@ func initRootCmd(rootCmd *cobra.Command,
 	// add keybase, auxiliary RPC, query, and tx child commands
 	keysCmd := evmclient.KeyCommands(xpla.DefaultNodeHome, true)
 	keysCmd.AddCommand(legacykeyclient.UnsafeExportLegacyEthKeyCommand())
+	reindexCmd := tmcmd.ReIndexEventCmd
+	reindexCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		serverCtx := server.GetServerContextFromCmd(cmd)
+		// CometBFT commands use global Viper rather than the SDK server context.
+		if err := viper.MergeConfigMap(serverCtx.Viper.AllSettings()); err != nil {
+			return err
+		}
+		viper.Set(tmcli.HomeFlag, serverCtx.Config.RootDir)
+		return tmcmd.RootCmd.PersistentPreRunE(cmd, args)
+	}
 	rootCmd.AddCommand(
 		server.StatusCommand(),
 		genesisCommand(txConfig, basicManager, AddGenesisAccountCmd(xpla.DefaultNodeHome)),
 		queryCommand(),
 		txCommand(basicManager),
 		keysCmd,
+		reindexCmd,
 	)
 }
 
