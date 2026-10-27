@@ -260,49 +260,60 @@ func TestExecuteTransferBoundsPrecompileCallByRemainingGasAndConsumesMaxUsedGas(
 	require.Equal(t, consumedGas+maxUsedGas, ctx.GasMeter().GasConsumed())
 }
 
-func TestExecuteTransferCommitsNativeCallAndConsumesGasUsed(t *testing.T) {
+func TestExecuteTransferNativeCallUsesRemainingGasAndConsumesGasUsed(t *testing.T) {
 	const consumedGas = uint64(12_345)
-	ctx := sdk.Context{}.
-		WithContext(context.Background()).
-		WithEventManager(sdk.NewEventManager()).
-		WithGasMeter(storetypes.NewGasMeter(100_000))
-	ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
-	from := common.HexToAddress("0x1000")
-	contract := common.HexToAddress("0x2000")
-	to := common.HexToAddress("0x3000")
-	amount := big.NewInt(7)
-	returnData, err := ABI.Methods[banktypes.GetErc20Method(banktypes.Transfer)].Outputs.Pack(true)
-	require.NoError(t, err)
-	executor := &recordingERC20EVMExecutor{
-		nonce: 9,
-		applyResponse: &evmtypes.MsgEthereumTxResponse{
-			Ret: returnData, GasUsed: 1_000, MaxUsedGas: 1_234,
-		},
-	}
-	keeper := Erc20Keeper{ek: executor}
 
-	err = keeper.ExecuteTransfer(
-		ctx,
-		contract,
-		sdk.AccAddress(from.Bytes()),
-		sdk.AccAddress(to.Bytes()),
-		amount,
-	)
-	require.NoError(t, err)
-	require.Equal(t, 1, executor.applyCalls)
-	require.Zero(t, executor.callCalls)
-	require.NotNil(t, executor.appliedStateDB)
-	require.Equal(t, from, executor.appliedMessage.From)
-	require.Equal(t, contract, *executor.appliedMessage.To)
-	require.Equal(t, uint64(9), executor.appliedMessage.Nonce)
-	require.Equal(t, evmconfig.DefaultGasCap, executor.appliedMessage.GasLimit)
-	expectedData, err := ABI.Pack(banktypes.GetErc20Method(banktypes.Transfer), to, amount)
-	require.NoError(t, err)
-	require.Equal(t, expectedData, executor.appliedMessage.Data)
-	require.True(t, executor.applyCommit)
-	require.False(t, executor.applyCallFromPrecompile)
-	require.True(t, executor.applyInternal)
-	require.Equal(t, consumedGas+1_000, ctx.GasMeter().GasConsumed())
+	for _, tc := range []struct {
+		name     string
+		gasLimit uint64
+	}{
+		{name: "below default gas cap", gasLimit: 100_000},
+		{name: "above default gas cap", gasLimit: evmconfig.DefaultGasCap + 100_000},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := sdk.Context{}.
+				WithContext(context.Background()).
+				WithEventManager(sdk.NewEventManager()).
+				WithGasMeter(storetypes.NewGasMeter(tc.gasLimit))
+			ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
+			from := common.HexToAddress("0x1000")
+			contract := common.HexToAddress("0x2000")
+			to := common.HexToAddress("0x3000")
+			amount := big.NewInt(7)
+			returnData, err := ABI.Methods[banktypes.GetErc20Method(banktypes.Transfer)].Outputs.Pack(true)
+			require.NoError(t, err)
+			executor := &recordingERC20EVMExecutor{
+				nonce: 9,
+				applyResponse: &evmtypes.MsgEthereumTxResponse{
+					Ret: returnData, GasUsed: 1_000, MaxUsedGas: 1_234,
+				},
+			}
+			keeper := Erc20Keeper{ek: executor}
+
+			err = keeper.ExecuteTransfer(
+				ctx,
+				contract,
+				sdk.AccAddress(from.Bytes()),
+				sdk.AccAddress(to.Bytes()),
+				amount,
+			)
+			require.NoError(t, err)
+			require.Equal(t, 1, executor.applyCalls)
+			require.Zero(t, executor.callCalls)
+			require.NotNil(t, executor.appliedStateDB)
+			require.Equal(t, from, executor.appliedMessage.From)
+			require.Equal(t, contract, *executor.appliedMessage.To)
+			require.Equal(t, uint64(9), executor.appliedMessage.Nonce)
+			require.Equal(t, tc.gasLimit-consumedGas, executor.appliedMessage.GasLimit)
+			expectedData, err := ABI.Pack(banktypes.GetErc20Method(banktypes.Transfer), to, amount)
+			require.NoError(t, err)
+			require.Equal(t, expectedData, executor.appliedMessage.Data)
+			require.True(t, executor.applyCommit)
+			require.False(t, executor.applyCallFromPrecompile)
+			require.True(t, executor.applyInternal)
+			require.Equal(t, consumedGas+1_000, ctx.GasMeter().GasConsumed())
+		})
+	}
 }
 
 func TestExecuteTransferPreservesNativeFailureGas(t *testing.T) {
