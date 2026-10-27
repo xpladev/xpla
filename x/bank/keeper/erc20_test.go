@@ -260,21 +260,22 @@ func TestExecuteTransferBoundsPrecompileCallByRemainingGasAndConsumesMaxUsedGas(
 	require.Equal(t, consumedGas+maxUsedGas, ctx.GasMeter().GasConsumed())
 }
 
-func TestExecuteTransferNativeCallUsesRemainingGasAndConsumesGasUsed(t *testing.T) {
+func TestExecuteTransferNativeCallUsesDefaultGasCapAndConsumesGasUsed(t *testing.T) {
 	const consumedGas = uint64(12_345)
 
 	for _, tc := range []struct {
 		name     string
-		gasLimit uint64
+		gasMeter storetypes.GasMeter
 	}{
-		{name: "below default gas cap", gasLimit: 100_000},
-		{name: "above default gas cap", gasLimit: evmconfig.DefaultGasCap + 100_000},
+		{name: "below default gas cap", gasMeter: storetypes.NewGasMeter(100_000)},
+		{name: "above default gas cap", gasMeter: storetypes.NewGasMeter(evmconfig.DefaultGasCap + 100_000)},
+		{name: "infinite gas meter", gasMeter: storetypes.NewInfiniteGasMeter()},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := sdk.Context{}.
 				WithContext(context.Background()).
 				WithEventManager(sdk.NewEventManager()).
-				WithGasMeter(storetypes.NewGasMeter(tc.gasLimit))
+				WithGasMeter(tc.gasMeter)
 			ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
 			from := common.HexToAddress("0x1000")
 			contract := common.HexToAddress("0x2000")
@@ -304,7 +305,7 @@ func TestExecuteTransferNativeCallUsesRemainingGasAndConsumesGasUsed(t *testing.
 			require.Equal(t, from, executor.appliedMessage.From)
 			require.Equal(t, contract, *executor.appliedMessage.To)
 			require.Equal(t, uint64(9), executor.appliedMessage.Nonce)
-			require.Equal(t, tc.gasLimit-consumedGas, executor.appliedMessage.GasLimit)
+			require.Equal(t, uint64(evmconfig.DefaultGasCap), executor.appliedMessage.GasLimit)
 			expectedData, err := ABI.Pack(banktypes.GetErc20Method(banktypes.Transfer), to, amount)
 			require.NoError(t, err)
 			require.Equal(t, expectedData, executor.appliedMessage.Data)

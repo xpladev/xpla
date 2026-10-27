@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
+	evmconfig "github.com/cosmos/evm/server/config"
 	"github.com/cosmos/evm/x/vm/statedb"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/xpladev/xpla/x/bank/types"
@@ -120,7 +121,10 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 		)
 	}
 
-	gasLimit := ctx.GasMeter().GasRemaining()
+	gasLimit := evmconfig.DefaultGasCap
+	if callFromPrecompile {
+		gasLimit = ctx.GasMeter().GasRemaining()
+	}
 	// Internal transfers can originate from a Wasm contract whose 20-byte suffix
 	// has no auth account. Unlike CallEVM's GetSequence, GetNonce permits that
 	// absence without resolving the sender to the Wasm account.
