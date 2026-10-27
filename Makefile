@@ -111,18 +111,16 @@ build-release-amd64: go.sum $(BUILDDIR)/
 	$(DOCKER) buildx create --name xpla-builder || true
 	$(DOCKER) buildx use xpla-builder
 	$(DOCKER) buildx build \
-		--build-arg GO_VERSION=$(GO_VERSION) \
 		--build-arg GIT_VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(COMMIT) \
-		--build-arg GOOS=linux \
-		--build-arg GOARCH=amd64 \
 		--platform linux/amd64 \
+		--target publish \
 		-t xpla:local-amd64 \
 		--load \
 		-f Dockerfile .
 	$(DOCKER) rm -f xpla-builder || true
 	$(DOCKER) create -ti --name xpla-builder xpla:local-amd64
-	$(DOCKER) cp xpla-builder:/usr/bin/xplad $(BUILDDIR)/release/xplad
+	$(DOCKER) cp xpla-builder:/bin/xplad $(BUILDDIR)/release/xplad
 	tar -czvf $(BUILDDIR)/release/xpla_$(VERSION)_Linux_x86_64.tar.gz -C $(BUILDDIR)/release/ xplad
 	rm $(BUILDDIR)/release/xplad
 	$(DOCKER) rm -f xpla-builder
@@ -131,18 +129,16 @@ build-release-arm64: go.sum $(BUILDDIR)/
 	$(DOCKER) buildx create --name xpla-builder  || true
 	$(DOCKER) buildx use xpla-builder 
 	$(DOCKER) buildx build \
-		--build-arg GO_VERSION=$(GO_VERSION) \
 		--build-arg GIT_VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(COMMIT) \
-		--build-arg GOOS=linux \
-		--build-arg GOARCH=arm64 \
 		--platform linux/arm64 \
+		--target publish \
 		-t xpla:local-arm64 \
 		--load \
 		-f Dockerfile .
 	$(DOCKER) rm -f xpla-builder || true
 	$(DOCKER) create -ti --name xpla-builder xpla:local-arm64
-	$(DOCKER) cp xpla-builder:/usr/bin/xplad $(BUILDDIR)/release/xplad 
+	$(DOCKER) cp xpla-builder:/bin/xplad $(BUILDDIR)/release/xplad 
 	tar -czvf $(BUILDDIR)/release/xpla_$(VERSION)_Linux_arm64.tar.gz -C $(BUILDDIR)/release/ xplad 
 	rm $(BUILDDIR)/release/xplad
 	$(DOCKER) rm -f xpla-builder
@@ -221,11 +217,8 @@ test-contracts-compile:
 ###############################################################################
 ###                                Docker                                   ###
 ###############################################################################
-get-heighliner:
-	go install github.com/strangelove-ventures/heighliner@latest
+.PHONY: local-image
 local-image:
-ifeq (,$(shell which heighliner))
-	echo 'heighliner' binary not found. Consider running `make get-heighliner`
-else
-	DOCKER_BUILDKIT=1 heighliner build -c $(NAME) --local --no-cache --dockerfile cosmos --build-target "make install" --pre-build "apk add --update --no-cache binutils-gold && ln -s /lib/libwasmvm_muslc.aarch64.a /lib/libwasmvm.aarch64.a" --binaries "/go/bin/xplad"
-endif
+	$(DOCKER) buildx build --target publish --load -t $(NAME):local \
+		--build-arg GIT_VERSION="$(VERSION)" \
+		--build-arg GIT_COMMIT="$(COMMIT)" .

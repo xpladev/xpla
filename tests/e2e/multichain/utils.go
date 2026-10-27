@@ -49,7 +49,7 @@ var (
 		{
 			Repository: "xpla",
 			Version:    "local",
-			UIDGID:     "1025:1025",
+			UIDGID:     "0:0",
 		},
 	}
 
