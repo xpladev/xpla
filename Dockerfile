@@ -7,7 +7,8 @@
 #   docker run --rm -it --env-file=path/to/.env --name xpla-localnet xpladev/xpla
 
 ### BUILD
-FROM golang:1.23-alpine AS build
+FROM golang:1.26-alpine AS build
+ENV GOTOOLCHAIN=local
 
 # Install required binaries
 RUN apk add --update --no-cache zip git make cmake build-base linux-headers musl-dev libc-dev binutils-gold
