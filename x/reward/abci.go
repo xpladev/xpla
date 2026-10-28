@@ -94,6 +94,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper, bk types.BankKeeper, sk 
 	for index, balance := range balances {
 		balances[index].Amount = balance.Amount.Quo(sdkmath.NewInt(int64(blockPerYear)))
 	}
+	balances = sdk.NewCoins(balances...)
 
 	if !balances.IsZero() {
 		err = bk.SendCoinsFromModuleToModule(ctx, types.ModuleName, authtypes.FeeCollectorName, balances)
