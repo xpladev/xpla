@@ -4,6 +4,7 @@ go 1.26.10
 
 require (
 	cosmossdk.io/math v1.5.3
+	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cosmos/cosmos-sdk v0.53.6
 	github.com/cosmos/evm v0.6.3
 	github.com/cosmos/ibc-go/v10 v10.5.0
@@ -57,7 +58,6 @@ require (
 	github.com/bits-and-blooms/bitset v1.24.3 // indirect
 	github.com/btcsuite/btcd v0.24.2 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.5 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.6 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect
