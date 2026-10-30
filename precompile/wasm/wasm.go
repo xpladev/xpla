@@ -90,7 +90,7 @@ func (p PrecompiledWasm) RequiredGas(input []byte) uint64 {
 // Run is the entry point for the basic call.
 func (p *PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
 	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
-		ctx, writeCache := cacheNativeWasmContext(ctx)
+		ctx, writeCache := ctx.CacheContext()
 		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
 
 		initialGas := ctx.GasMeter().GasConsumed()

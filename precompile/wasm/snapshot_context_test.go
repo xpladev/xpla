@@ -13,7 +13,7 @@ import (
 	"github.com/cosmos/evm/x/vm/store/snapshotmulti"
 )
 
-func TestCacheNativeWasmContextKeepsWritesInsideStateDBSnapshot(t *testing.T) {
+func TestWasmCacheContextKeepsWritesInsideStateDBSnapshot(t *testing.T) {
 	snapshotStore, baseStore, key := setupSnapshotContext(t)
 	snapshot := snapshotStore.Snapshot()
 	ctx := sdk.Context{}.
@@ -21,17 +21,20 @@ func TestCacheNativeWasmContextKeepsWritesInsideStateDBSnapshot(t *testing.T) {
 		WithEventManager(sdk.NewEventManager()).
 		WithGasMeter(storetypes.NewInfiniteGasMeter())
 
-	wasmCtx, writeWasm := cacheNativeWasmContext(ctx)
+	wasmCtx, writeWasm := ctx.CacheContext()
 	require.Same(t, ctx.GasMeter(), wasmCtx.GasMeter())
 	wasmCtx.KVStore(key).Set([]byte("counter"), []byte("1"))
 	wasmCtx.EventManager().EmitEvent(sdk.NewEvent("wasm_execute"))
 	require.Empty(t, ctx.EventManager().Events())
 
 	subCtx, writeSubmessage := wasmCtx.CacheContext()
+	retained := subCtx.MultiStore().GetKVStore(key).CacheWrap()
 	subCtx.KVStore(key).Set([]byte("reply"), []byte("2"))
 	writeSubmessage()
+	require.Panics(t, retained.Write)
 	writeWasm()
 	require.Equal(t, sdk.Events{sdk.NewEvent("wasm_execute")}, ctx.EventManager().Events())
+	require.Panics(t, func() { wasmCtx.KVStore(key).Get([]byte("counter")) })
 
 	require.Equal(t, []byte("1"), snapshotStore.GetKVStore(key).Get([]byte("counter")))
 	require.Equal(t, []byte("2"), snapshotStore.GetKVStore(key).Get([]byte("reply")))
@@ -43,19 +46,28 @@ func TestCacheNativeWasmContextKeepsWritesInsideStateDBSnapshot(t *testing.T) {
 	require.Nil(t, snapshotStore.GetKVStore(key).Get([]byte("reply")))
 }
 
-func TestCacheNativeWasmContextDiscardsFailedAction(t *testing.T) {
+func TestWasmCacheContextDiscardsFailedAction(t *testing.T) {
 	snapshotStore, _, key := setupSnapshotContext(t)
-	snapshotStore.Snapshot()
+	snapshot := snapshotStore.Snapshot()
 	ctx := sdk.Context{}.
 		WithMultiStore(snapshotStore).
 		WithEventManager(sdk.NewEventManager()).
 		WithGasMeter(storetypes.NewInfiniteGasMeter())
 
-	wasmCtx, _ := cacheNativeWasmContext(ctx)
+	wasmCtx, _ := ctx.CacheContext()
 	wasmCtx.KVStore(key).Set([]byte("counter"), []byte("1"))
 	wasmCtx.EventManager().EmitEvent(sdk.NewEvent("wasm_execute"))
+	retained := wasmCtx.MultiStore().GetKVStore(key).CacheWrap().(storetypes.CacheKVStore)
+	retained.Set([]byte("stale"), []byte("value"))
 
 	require.Nil(t, snapshotStore.GetKVStore(key).Get([]byte("counter")))
+	require.Empty(t, ctx.EventManager().Events())
+
+	snapshotStore.RevertToSnapshot(snapshot)
+	snapshotStore.Snapshot()
+	require.Panics(t, retained.Write)
+	require.Panics(t, wasmCtx.MultiStore().(storetypes.CacheMultiStore).Write)
+	require.Nil(t, snapshotStore.GetKVStore(key).Get([]byte("stale")))
 	require.Empty(t, ctx.EventManager().Events())
 }
 

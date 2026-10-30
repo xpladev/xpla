@@ -102,6 +102,25 @@ function findEvents(logs, iface, eventName) {
   return events
 }
 
+function requirePostCallbackNativeFailure(replyState) {
+  const replyError = replyState.error.toLowerCase()
+  if (replyError.includes('required callback skipped')) {
+    throw new Error('callback execution witness rejected: callback was skipped')
+  }
+  if (
+    !replyError.includes('insufficient funds') &&
+    !replyError.includes('codespace: sdk, code: 5')
+  ) {
+    throw new Error(
+      `expected a post-callback insufficient-funds failure, got: ${replyState.error}`
+    )
+  }
+  if (replyError.includes('stale native balance')) {
+    throw new Error(`callback observed stale native state: ${replyState.error}`)
+  }
+  return replyError
+}
+
 function normalizeAddress(address) {
   return address.toLowerCase()
 }
@@ -185,19 +204,25 @@ async function resolveWasmAddress(addr) {
 
 describe('xerc20 wasm precompile accounting', function () {
   let bankSendWasm
+  let atomicityWasm
+  let atomicityChildWasm
   let bech32
   let wasmPrecompile
 
   before(async function () {
     const counterAddr = process.env.COUNTER_WASM_ADDRESS
     const bankSendAddr = process.env.XERC20_BANK_SEND_WASM_ADDRESS
-    if (!counterAddr || !bankSendAddr) {
+    const atomicityAddr = process.env.XERC20_ATOMICITY_WASM_ADDRESS
+    const atomicityChildAddr = process.env.XERC20_ATOMICITY_CHILD_WASM_ADDRESS
+    if (!counterAddr || !bankSendAddr || !atomicityAddr || !atomicityChildAddr) {
       throw new Error(
-        'COUNTER_WASM_ADDRESS and XERC20_BANK_SEND_WASM_ADDRESS are required'
+        'COUNTER_WASM_ADDRESS, XERC20_BANK_SEND_WASM_ADDRESS, and both XERC20_ATOMICITY addresses are required'
       )
     }
 
     bankSendWasm = await resolveWasmAddress(bankSendAddr)
+    atomicityWasm = await resolveWasmAddress(atomicityAddr)
+    atomicityChildWasm = await resolveWasmAddress(atomicityChildAddr)
     wasmPrecompile = await ethers.getContractAt('IWasm', WASM_PRECOMPILE_ADDRESS)
     bech32 = await ethers.getContractAt(
       'Bech32I',
@@ -236,6 +261,14 @@ describe('xerc20 wasm precompile accounting', function () {
       throw new Error('reply_caught query response is missing an error value')
     }
     return decoded
+  }
+
+  async function queryAtomicityState(target, query) {
+    const data = await wasmPrecompile.smartContractState.staticCall(
+      target.hex,
+      ethers.toUtf8Bytes(JSON.stringify(query))
+    )
+    return JSON.parse(ethers.toUtf8String(data))
   }
 
   async function deployAdversarialFixture() {
@@ -406,6 +439,248 @@ describe('xerc20 wasm precompile accounting', function () {
     )
     expect(await token.totalSupply()).to.equal(totalSupplyBefore)
   })
+
+  it('keeps nested xerc20 state visible to a wasm query, continuing EVM, and post-commit reads', async function () {
+    const [deployer, recipient] = await ethers.getSigners()
+    const initialSupply = ethers.parseEther('100')
+    const fundedAmount = ethers.parseEther('10')
+    const sentAmount = ethers.parseEther('4')
+
+    const Token = await ethers.getContractFactory('PoCToken')
+    const token = await Token.deploy(initialSupply)
+    await token.waitForDeployment()
+
+    const tokenAddress = await token.getAddress()
+    const denom = `xerc20:${tokenAddress.toLowerCase()}`
+    const PoC = await ethers.getContractFactory('BankXerc20DoubleSpendPoC')
+    const poc = await PoC.deploy(tokenAddress, denom)
+    await poc.waitForDeployment()
+    await (await token.transfer(await poc.getAddress(), fundedAmount)).wait()
+
+    const recipientBech32 = await bech32.hexToBech32.staticCall(
+      recipient.address,
+      'xpla'
+    )
+    const wasmMsg = JSON.stringify({
+      send_then_observe: {
+        denom,
+        recipient: recipientBech32,
+        amount: sentAmount.toString(),
+      },
+    })
+
+    const tx = await poc.executeWasmFundsAndObserveEVM(
+      atomicityWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      recipient.address,
+      fundedAmount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const probe = findEvent(
+      receipt.logs,
+      poc.interface,
+      'Xerc20VisibilityProbe'
+    )
+    expect(probe, 'continuing EVM balanceOf probe must execute').to.exist
+
+    const observation = await queryAtomicityState(atomicityWasm, {
+      observation: {},
+    })
+    const wasmObserved = BigInt(observation.amount)
+    const continuingEVMObserved = probe.args.evmBalance
+    const postCommitObserved = await token.balanceOf(recipient.address)
+
+    expect(
+      {
+        wasmObserved,
+        continuingEVMObserved,
+        postCommitObserved,
+        retainedByWasm: await token.balanceOf(atomicityWasm.hex),
+      },
+      'all reads must observe the active shared StateDB branch before and after commit'
+    ).to.deep.equal({
+      wasmObserved: sentAmount,
+      continuingEVMObserved: sentAmount,
+      postCommitObserved: sentAmount,
+      retainedByWasm: fundedAmount - sentAmount,
+    })
+  })
+
+  it('keeps an earlier wasm sibling and outer continuation while rolling back a later failed child', async function () {
+    const [deployer, earlierRecipient, failedRecipient] =
+      await ethers.getSigners()
+    const outerRecipient = deployer
+    const initialSupply = ethers.parseEther('100')
+    const earlierAmount = ethers.parseEther('3')
+    const failedAmount = ethers.parseEther('4')
+    const outerAmount = ethers.parseEther('5')
+
+    const Token = await ethers.getContractFactory('AdversarialXerc20')
+    const token = await Token.deploy(initialSupply)
+    await token.waitForDeployment()
+    const tokenAddress = await token.getAddress()
+    const denom = `xerc20:${tokenAddress.toLowerCase()}`
+    const PoC = await ethers.getContractFactory('BankXerc20DoubleSpendPoC')
+    const poc = await PoC.deploy(tokenAddress, denom)
+    await poc.waitForDeployment()
+
+    await (await token.transfer(atomicityWasm.hex, earlierAmount)).wait()
+    await (await token.transfer(atomicityChildWasm.hex, failedAmount)).wait()
+    await (await token.transfer(await poc.getAddress(), outerAmount)).wait()
+    await (
+      await token.configureCallback(ethers.ZeroAddress, '0x', false, 1000)
+    ).wait()
+
+    const earlierRecipientBech32 = await bech32.hexToBech32.staticCall(
+      earlierRecipient.address,
+      'xpla'
+    )
+    const failedRecipientBech32 = await bech32.hexToBech32.staticCall(
+      failedRecipient.address,
+      'xpla'
+    )
+    const childNativeBalance = await wasmPrecompile.balance.staticCall(
+      atomicityChildWasm.hex,
+      'axpla'
+    )
+    const wasmMsg = JSON.stringify({
+      sibling_then_handled_failure: {
+        denom,
+        earlier_recipient: earlierRecipientBech32,
+        earlier_amount: earlierAmount.toString(),
+        child_contract: atomicityChildWasm.bech32,
+        child_recipient: failedRecipientBech32,
+        child_amount: failedAmount.toString(),
+        native_denom: 'axpla',
+        native_amount: (childNativeBalance + 1n).toString(),
+      },
+    })
+
+    const totalSupplyBefore = await token.totalSupply()
+    const outerRecipientBefore = await token.balanceOf(outerRecipient.address)
+    const tx = await poc.executeWasmThenTransfer(
+      atomicityWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      outerRecipient.address,
+      outerAmount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const replyState = await queryAtomicityState(atomicityWasm, {
+      reply_state: {},
+    })
+    const gasProbe = findEvent(
+      receipt.logs,
+      poc.interface,
+      'WasmFundsGasProbe'
+    )
+    expect(gasProbe, 'outer EVM must continue after the handled failure').to
+      .exist
+
+    const transfers = findEvents(receipt.logs, token.interface, 'Transfer')
+    expect(transfers).to.have.length(2)
+    expectTransfer(
+      transfers,
+      atomicityWasm.hex,
+      earlierRecipient.address,
+      earlierAmount
+    )
+    expectTransfer(
+      transfers,
+      await poc.getAddress(),
+      outerRecipient.address,
+      outerAmount
+    )
+    expect(replyState.caught).to.equal(true)
+    expect(replyState.error).not.to.equal('')
+    expect(await token.balanceOf(atomicityWasm.hex)).to.equal(0n)
+    expect(await token.balanceOf(earlierRecipient.address)).to.equal(
+      earlierAmount
+    )
+    expect(await token.balanceOf(atomicityChildWasm.hex)).to.equal(
+      failedAmount
+    )
+    expect(await token.balanceOf(failedRecipient.address)).to.equal(0n)
+    expect(await token.balanceOf(await poc.getAddress())).to.equal(0n)
+    expect(await token.balanceOf(outerRecipient.address)).to.equal(
+      outerRecipientBefore + outerAmount
+    )
+    expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+  })
+
+  for (const returnCase of [
+    { name: 'ABI false', mode: 1n },
+    { name: 'malformed return data', mode: 2n },
+  ]) {
+    it(`rolls back a state-changing xerc20 transfer that returns ${returnCase.name}`, async function () {
+      const [deployer, attemptedRecipient, outerRecipient] =
+        await ethers.getSigners()
+      const initialSupply = ethers.parseEther('100')
+      const attemptedAmount = ethers.parseEther('4')
+      const outerAmount = ethers.parseEther('5')
+
+      const Token = await ethers.getContractFactory('AdversarialXerc20')
+      const token = await Token.deploy(initialSupply)
+      await token.waitForDeployment()
+      const tokenAddress = await token.getAddress()
+      const denom = `xerc20:${tokenAddress.toLowerCase()}`
+      const PoC = await ethers.getContractFactory('BankXerc20DoubleSpendPoC')
+      const poc = await PoC.deploy(tokenAddress, denom)
+      await poc.waitForDeployment()
+
+      await (await token.transfer(atomicityWasm.hex, attemptedAmount)).wait()
+      await (await token.transfer(await poc.getAddress(), outerAmount)).wait()
+      await (
+        await token.configureTransferReturn(
+          atomicityWasm.hex,
+          returnCase.mode
+        )
+      ).wait()
+
+      const attemptedRecipientBech32 = await bech32.hexToBech32.staticCall(
+        attemptedRecipient.address,
+        'xpla'
+      )
+      const wasmMsg = JSON.stringify({
+        handled_send: {
+          denom,
+          recipient: attemptedRecipientBech32,
+          amount: attemptedAmount.toString(),
+        },
+      })
+      const totalSupplyBefore = await token.totalSupply()
+
+      const tx = await poc.executeWasmThenTransfer(
+        atomicityWasm.hex,
+        ethers.toUtf8Bytes(wasmMsg),
+        outerRecipient.address,
+        outerAmount,
+        { gasLimit: LARGE_GAS_LIMIT }
+      )
+      const receipt = await tx.wait()
+      const replyState = await queryAtomicityState(atomicityWasm, {
+        reply_state: {},
+      })
+      const transferLogCounts = await getTransferLogCounts(receipt, token)
+
+      expect(replyState.caught).to.equal(true)
+      expect(replyState.error).not.to.equal('')
+      expect(await token.balanceOf(atomicityWasm.hex)).to.equal(
+        attemptedAmount
+      )
+      expect(await token.balanceOf(attemptedRecipient.address)).to.equal(0n)
+      expect(await token.balanceOf(await poc.getAddress())).to.equal(0n)
+      expect(await token.balanceOf(outerRecipient.address)).to.equal(
+        outerAmount
+      )
+      expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+      expect(transferLogCounts).to.deep.equal({
+        receiptTransferLogCount: 1,
+        providerTransferLogCount: 1,
+      })
+    })
+  }
 
   it('rolls back xerc20 state and logs when ReplyOnError catches a later native BankMsg failure', async function () {
     const [deployer, recipient] = await ethers.getSigners()
@@ -653,6 +928,584 @@ describe('xerc20 wasm precompile accounting', function () {
       receiptTransferLogCount: 1,
       providerTransferLogCount: 1,
     })
+  })
+
+  it('exposes an unmerged wasm native sibling to xerc20 callback reentry', async function () {
+    const [, , transferRecipient] = await ethers.getSigners()
+    const {
+      deployer,
+      callbackRecipient,
+      token,
+      callback,
+      poc,
+      transferAmount,
+      callbackAmount,
+    } = await deployAdversarialFixture()
+    const nativeAmount = ethers.parseEther('1')
+    const nativeBefore = await wasmPrecompile.balance.staticCall(
+      bankSendWasm.hex,
+      'axpla'
+    )
+    const pocAddress = await poc.getAddress()
+    const callbackAddress = await callback.getAddress()
+    const totalSupplyBefore = await token.totalSupply()
+
+    await (
+      await deployer.sendTransaction({ to: pocAddress, value: nativeAmount })
+    ).wait()
+    await (
+      await callback.configureNativeBalanceWitness(
+        bankSendWasm.hex,
+        nativeBefore + nativeAmount
+      )
+    ).wait()
+    await (
+      await callback.configure(
+        callbackRecipient.address,
+        callbackAmount,
+        false
+      )
+    ).wait()
+    await (await token.configureCallbackSender(atomicityWasm.hex)).wait()
+    await (
+      await token.configureCallback(
+        callbackAddress,
+        callback.interface.encodeFunctionData('onXerc20Transfer'),
+        true,
+        0
+      )
+    ).wait()
+
+    const transferRecipientBech32 = await bech32.hexToBech32.staticCall(
+      transferRecipient.address,
+      'xpla'
+    )
+    const wasmMsg = JSON.stringify({
+      native_then_xerc20: {
+        native_denom: 'axpla',
+        native_recipient: bankSendWasm.bech32,
+        native_amount: nativeAmount.toString(),
+        xerc20_denom: `xerc20:${(await token.getAddress()).toLowerCase()}`,
+        xerc20_recipient: transferRecipientBech32,
+        xerc20_amount: transferAmount.toString(),
+      },
+    })
+
+    const tx = await poc.executeWasmMixedFunds(
+      atomicityWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      nativeAmount,
+      transferAmount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const callbackResult = findEvent(
+      receipt.logs,
+      token.interface,
+      'CallbackResult'
+    )
+    expect(callbackResult, 'the filtered xerc20 callback must execute').to.exist
+    expect(callbackResult.args.success, 'callback must see the SDK child').to
+      .equal(true)
+    const observed = findEvent(
+      receipt.logs,
+      callback.interface,
+      'NativeBalanceObserved'
+    )
+    expect(observed).to.exist
+    expect(observed.args.balance).to.equal(nativeBefore + nativeAmount)
+    expect(findEvent(receipt.logs, callback.interface, 'ReentryCompleted')).to
+      .exist
+
+    expect(
+      await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla')
+    ).to.equal(nativeBefore + nativeAmount)
+    expect(await ethers.provider.getBalance(pocAddress)).to.equal(0n)
+    expect(await token.balanceOf(pocAddress)).to.equal(0n)
+    expect(await token.balanceOf(atomicityWasm.hex)).to.equal(0n)
+    expect(await token.balanceOf(transferRecipient.address)).to.equal(
+      transferAmount
+    )
+    expect(await token.balanceOf(callbackAddress)).to.equal(0n)
+    expect(await token.balanceOf(callbackRecipient.address)).to.equal(
+      callbackAmount
+    )
+    expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+  })
+
+  it('keeps an earlier native sibling while a later same-branch xerc20 child failure is handled', async function () {
+    const [, , failedRecipient] = await ethers.getSigners()
+    const {
+      deployer,
+      callbackRecipient,
+      token,
+      callback,
+      poc,
+      transferAmount,
+      callbackAmount,
+    } = await deployAdversarialFixture()
+    const nativeAmount = ethers.parseEther('1')
+    const nativeBefore = await wasmPrecompile.balance.staticCall(
+      bankSendWasm.hex,
+      'axpla'
+    )
+    const pocAddress = await poc.getAddress()
+    const callbackAddress = await callback.getAddress()
+    const totalSupplyBefore = await token.totalSupply()
+
+    await (await token.transfer(atomicityChildWasm.hex, transferAmount)).wait()
+    await (
+      await deployer.sendTransaction({ to: pocAddress, value: nativeAmount })
+    ).wait()
+    await (
+      await callback.configureNativeBalanceWitness(
+        bankSendWasm.hex,
+        nativeBefore + nativeAmount
+      )
+    ).wait()
+    await (
+      await callback.configure(
+        callbackRecipient.address,
+        callbackAmount,
+        false
+      )
+    ).wait()
+    await (await token.configureCallbackSender(atomicityChildWasm.hex)).wait()
+    await (
+      await token.configureRequiredCallbackSender(atomicityChildWasm.hex)
+    ).wait()
+    await (
+      await token.configureCallback(
+        callbackAddress,
+        callback.interface.encodeFunctionData('onXerc20Transfer'),
+        false,
+        0
+      )
+    ).wait()
+
+    const failedRecipientBech32 = await bech32.hexToBech32.staticCall(
+      failedRecipient.address,
+      'xpla'
+    )
+    const childNativeBalance = await wasmPrecompile.balance.staticCall(
+      atomicityChildWasm.hex,
+      'axpla'
+    )
+    const wasmMsg = JSON.stringify({
+      native_sibling_then_handled_failure: {
+        native_denom: 'axpla',
+        native_recipient: bankSendWasm.bech32,
+        native_amount: nativeAmount.toString(),
+        child_contract: atomicityChildWasm.bech32,
+        child_recipient: failedRecipientBech32,
+        child_amount: transferAmount.toString(),
+        failing_native_amount: (childNativeBalance + 1n).toString(),
+        xerc20_denom: `xerc20:${(await token.getAddress()).toLowerCase()}`,
+      },
+    })
+
+    const tx = await poc.executeWasmMixedFunds(
+      atomicityWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      nativeAmount,
+      0,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const replyState = await queryAtomicityState(atomicityWasm, {
+      reply_state: {},
+    })
+    expect(replyState.caught).to.equal(true)
+    requirePostCallbackNativeFailure(replyState)
+    expect(findEvents(receipt.logs, token.interface, 'Transfer')).to.have
+      .length(0)
+    expect(
+      findEvent(receipt.logs, callback.interface, 'NativeBalanceObserved')
+    ).to.equal(null)
+    expect(findEvent(receipt.logs, callback.interface, 'ReentryCompleted')).to
+      .equal(null)
+
+    expect(
+      await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla')
+    ).to.equal(nativeBefore + nativeAmount)
+    expect(await ethers.provider.getBalance(pocAddress)).to.equal(0n)
+    expect(await token.balanceOf(atomicityChildWasm.hex)).to.equal(
+      transferAmount
+    )
+    expect(await token.balanceOf(failedRecipient.address)).to.equal(0n)
+    expect(await token.balanceOf(callbackAddress)).to.equal(callbackAmount)
+    expect(await token.balanceOf(callbackRecipient.address)).to.equal(0n)
+    expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+  })
+
+  it('rolls an unmerged native sibling and xerc20 callback back with the outer EVM frame', async function () {
+    const [, , transferRecipient] = await ethers.getSigners()
+    const {
+      deployer,
+      callbackRecipient,
+      token,
+      callback,
+      poc,
+      transferAmount,
+      callbackAmount,
+    } = await deployAdversarialFixture()
+    const nativeAmount = ethers.parseEther('1')
+    const nativeBefore = await wasmPrecompile.balance.staticCall(
+      bankSendWasm.hex,
+      'axpla'
+    )
+    const pocAddress = await poc.getAddress()
+    const callbackAddress = await callback.getAddress()
+    const totalSupplyBefore = await token.totalSupply()
+
+    await (
+      await deployer.sendTransaction({ to: pocAddress, value: nativeAmount })
+    ).wait()
+    await (
+      await callback.configureNativeBalanceWitness(
+        bankSendWasm.hex,
+        nativeBefore + nativeAmount
+      )
+    ).wait()
+    await (
+      await callback.configure(
+        callbackRecipient.address,
+        callbackAmount,
+        false
+      )
+    ).wait()
+    await (await token.configureCallbackSender(atomicityWasm.hex)).wait()
+    await (
+      await token.configureCallback(
+        callbackAddress,
+        callback.interface.encodeFunctionData('onXerc20Transfer'),
+        false,
+        0
+      )
+    ).wait()
+
+    const transferRecipientBech32 = await bech32.hexToBech32.staticCall(
+      transferRecipient.address,
+      'xpla'
+    )
+    const wasmMsg = JSON.stringify({
+      native_then_xerc20: {
+        native_denom: 'axpla',
+        native_recipient: bankSendWasm.bech32,
+        native_amount: nativeAmount.toString(),
+        xerc20_denom: `xerc20:${(await token.getAddress()).toLowerCase()}`,
+        xerc20_recipient: transferRecipientBech32,
+        xerc20_amount: transferAmount.toString(),
+      },
+    })
+
+    const tx = await poc.tryExecuteWasmMixedFundsThenRevert(
+      atomicityWasm.hex,
+      ethers.toUtf8Bytes(wasmMsg),
+      nativeAmount,
+      transferAmount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const callResult = findEvent(
+      receipt.logs,
+      poc.interface,
+      'WasmFundsCallResult'
+    )
+    expect(callResult).to.exist
+    expect(callResult.args.success).to.equal(false)
+    const forcedRevert = poc.interface.parseError(callResult.args.returnData)
+    expect(forcedRevert?.name).to.equal('ForcedOuterRevertAfterWasm')
+    expect(forcedRevert?.args.marker).to.equal(FORCED_OUTER_REVERT_MARKER)
+
+    const revertedLogAddresses = [
+      await token.getAddress(),
+      callbackAddress,
+      BANK_PRECOMPILE_ADDRESS,
+      WASM_PRECOMPILE_ADDRESS,
+    ]
+    expectNoReceiptLogsFrom(
+      receipt,
+      revertedLogAddresses,
+      'outer revert must remove the same-branch native and callback logs'
+    )
+    await expectNoProviderLogsFrom(revertedLogAddresses, receipt)
+    expect(await ethers.provider.getBalance(pocAddress)).to.equal(nativeAmount)
+    expect(
+      await wasmPrecompile.balance.staticCall(bankSendWasm.hex, 'axpla')
+    ).to.equal(nativeBefore)
+    expect(await token.balanceOf(pocAddress)).to.equal(transferAmount)
+    expect(await token.balanceOf(atomicityWasm.hex)).to.equal(0n)
+    expect(await token.balanceOf(transferRecipient.address)).to.equal(0n)
+    expect(await token.balanceOf(callbackAddress)).to.equal(callbackAmount)
+    expect(await token.balanceOf(callbackRecipient.address)).to.equal(0n)
+    expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+  })
+
+  it('supports xerc20 callback reentry against pending native state', async function () {
+    const {
+      deployer,
+      callbackRecipient,
+      token,
+      callback,
+      poc,
+      transferAmount,
+      callbackAmount,
+    } = await deployAdversarialFixture()
+    const nativeWitness = await instantiateFreshCounter()
+    const xerc20Target = await instantiateFreshCounter()
+    const nativeAmount = ethers.parseEther('1')
+    const nativeBefore = await wasmPrecompile.balance.staticCall(
+      nativeWitness.hex,
+      'axpla'
+    )
+    const pocAddress = await poc.getAddress()
+    const callbackAddress = await callback.getAddress()
+    const totalSupplyBefore = await token.totalSupply()
+
+    await (
+      await deployer.sendTransaction({ to: pocAddress, value: nativeAmount })
+    ).wait()
+    await (
+      await callback.configureNativeBalanceWitness(
+        nativeWitness.hex,
+        nativeBefore + nativeAmount
+      )
+    ).wait()
+    await (
+      await callback.configure(
+        callbackRecipient.address,
+        callbackAmount,
+        false
+      )
+    ).wait()
+    await (
+      await token.configureCallback(
+        callbackAddress,
+        callback.interface.encodeFunctionData('onXerc20Transfer'),
+        false,
+        0
+      )
+    ).wait()
+
+    const tx = await poc.executeNativeThenWasmFunds(
+      nativeWitness.hex,
+      ethers.toUtf8Bytes(INCREMENT_MSG),
+      nativeAmount,
+      xerc20Target.hex,
+      ethers.toUtf8Bytes(INCREMENT_MSG),
+      transferAmount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const observed = findEvent(
+      receipt.logs,
+      callback.interface,
+      'NativeBalanceObserved'
+    )
+    expect(observed, 'callback must read the active pending native branch').to
+      .exist
+    expect(observed.args.target).to.equal(nativeWitness.hex)
+    expect(observed.args.balance).to.equal(nativeBefore + nativeAmount)
+
+    const reentry = findEvent(
+      receipt.logs,
+      callback.interface,
+      'ReentryCompleted'
+    )
+    expect(reentry).to.exist
+    expect(reentry.args.success).to.equal(true)
+    expect(await wasmPrecompile.balance.staticCall(nativeWitness.hex, 'axpla')).to
+      .equal(nativeBefore + nativeAmount)
+    expect(await token.balanceOf(pocAddress)).to.equal(0n)
+    expect(await token.balanceOf(xerc20Target.hex)).to.equal(transferAmount)
+    expect(await token.balanceOf(callbackAddress)).to.equal(0n)
+    expect(await token.balanceOf(callbackRecipient.address)).to.equal(
+      callbackAmount
+    )
+    expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+    expect(await getCounter(nativeWitness)).to.equal(3n)
+    expect(await getCounter(xerc20Target)).to.equal(3n)
+  })
+
+  it('keeps pending native and originating xerc20 state while a callback failure is handled', async function () {
+    const {
+      deployer,
+      callbackRecipient,
+      token,
+      callback,
+      poc,
+      transferAmount,
+      callbackAmount,
+    } = await deployAdversarialFixture()
+    const nativeWitness = await instantiateFreshCounter()
+    const xerc20Target = await instantiateFreshCounter()
+    const nativeAmount = ethers.parseEther('1')
+    const nativeBefore = await wasmPrecompile.balance.staticCall(
+      nativeWitness.hex,
+      'axpla'
+    )
+    const pocAddress = await poc.getAddress()
+    const callbackAddress = await callback.getAddress()
+    const totalSupplyBefore = await token.totalSupply()
+
+    await (
+      await deployer.sendTransaction({ to: pocAddress, value: nativeAmount })
+    ).wait()
+    await (
+      await callback.configureNativeBalanceWitness(
+        nativeWitness.hex,
+        nativeBefore + nativeAmount
+      )
+    ).wait()
+    await (
+      await callback.configure(
+        callbackRecipient.address,
+        callbackAmount,
+        true
+      )
+    ).wait()
+    await (
+      await token.configureCallback(
+        callbackAddress,
+        callback.interface.encodeFunctionData('onXerc20Transfer'),
+        true,
+        0
+      )
+    ).wait()
+
+    const tx = await poc.executeNativeThenWasmFunds(
+      nativeWitness.hex,
+      ethers.toUtf8Bytes(INCREMENT_MSG),
+      nativeAmount,
+      xerc20Target.hex,
+      ethers.toUtf8Bytes(INCREMENT_MSG),
+      transferAmount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const callbackResult = findEvent(
+      receipt.logs,
+      token.interface,
+      'CallbackResult'
+    )
+    expect(callbackResult).to.exist
+    expect(callbackResult.args.success).to.equal(false)
+    expect(ethers.dataSlice(callbackResult.args.returnData, 0, 4)).to.equal(
+      callback.interface.getError('AdversarialCallbackRevert').selector
+    )
+    expect(
+      findEvent(receipt.logs, callback.interface, 'NativeBalanceObserved'),
+      'all logs from the reverted callback frame must disappear'
+    ).to.equal(null)
+    expect(
+      findEvent(receipt.logs, callback.interface, 'ReentryCompleted')
+    ).to.equal(null)
+
+    const transfers = findEvents(receipt.logs, token.interface, 'Transfer')
+    expect(transfers).to.have.length(1)
+    expectTransfer(transfers, pocAddress, xerc20Target.hex, transferAmount)
+    expect(await wasmPrecompile.balance.staticCall(nativeWitness.hex, 'axpla')).to
+      .equal(nativeBefore + nativeAmount)
+    expect(await token.balanceOf(pocAddress)).to.equal(0n)
+    expect(await token.balanceOf(xerc20Target.hex)).to.equal(transferAmount)
+    expect(await token.balanceOf(callbackAddress)).to.equal(callbackAmount)
+    expect(await token.balanceOf(callbackRecipient.address)).to.equal(0n)
+    expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+    expect(await getCounter(nativeWitness)).to.equal(3n)
+    expect(await getCounter(xerc20Target)).to.equal(3n)
+  })
+
+  it('rolls pending native state and callback reentry back with the outer frame', async function () {
+    const {
+      deployer,
+      callbackRecipient,
+      token,
+      callback,
+      poc,
+      transferAmount,
+      callbackAmount,
+    } = await deployAdversarialFixture()
+    const nativeWitness = await instantiateFreshCounter()
+    const xerc20Target = await instantiateFreshCounter()
+    const nativeAmount = ethers.parseEther('1')
+    const nativeBefore = await wasmPrecompile.balance.staticCall(
+      nativeWitness.hex,
+      'axpla'
+    )
+    const pocAddress = await poc.getAddress()
+    const callbackAddress = await callback.getAddress()
+    const totalSupplyBefore = await token.totalSupply()
+
+    await (
+      await deployer.sendTransaction({ to: pocAddress, value: nativeAmount })
+    ).wait()
+    await (
+      await callback.configureNativeBalanceWitness(
+        nativeWitness.hex,
+        nativeBefore + nativeAmount
+      )
+    ).wait()
+    await (
+      await callback.configure(
+        callbackRecipient.address,
+        callbackAmount,
+        false
+      )
+    ).wait()
+    await (
+      await token.configureCallback(
+        callbackAddress,
+        callback.interface.encodeFunctionData('onXerc20Transfer'),
+        false,
+        0
+      )
+    ).wait()
+
+    const tx = await poc.tryExecuteNativeThenWasmFundsThenRevert(
+      nativeWitness.hex,
+      ethers.toUtf8Bytes(INCREMENT_MSG),
+      nativeAmount,
+      xerc20Target.hex,
+      ethers.toUtf8Bytes(INCREMENT_MSG),
+      transferAmount,
+      { gasLimit: LARGE_GAS_LIMIT }
+    )
+    const receipt = await tx.wait()
+    const callResult = findEvent(
+      receipt.logs,
+      poc.interface,
+      'WasmFundsCallResult'
+    )
+    expect(callResult).to.exist
+    expect(callResult.args.success).to.equal(false)
+    const forcedRevert = poc.interface.parseError(callResult.args.returnData)
+    expect(forcedRevert.name).to.equal('ForcedOuterRevertAfterWasm')
+    expect(forcedRevert.args.marker).to.equal(FORCED_OUTER_REVERT_MARKER)
+
+    const revertedLogAddresses = [
+      await token.getAddress(),
+      callbackAddress,
+      BANK_PRECOMPILE_ADDRESS,
+      WASM_PRECOMPILE_ADDRESS,
+    ]
+    expectNoReceiptLogsFrom(
+      receipt,
+      revertedLogAddresses,
+      'outer revert must remove native, token, callback, and precompile logs'
+    )
+    await expectNoProviderLogsFrom(revertedLogAddresses, receipt)
+
+    expect(await ethers.provider.getBalance(pocAddress)).to.equal(nativeAmount)
+    expect(await wasmPrecompile.balance.staticCall(nativeWitness.hex, 'axpla')).to
+      .equal(nativeBefore)
+    expect(await token.balanceOf(pocAddress)).to.equal(transferAmount)
+    expect(await token.balanceOf(xerc20Target.hex)).to.equal(0n)
+    expect(await token.balanceOf(callbackAddress)).to.equal(callbackAmount)
+    expect(await token.balanceOf(callbackRecipient.address)).to.equal(0n)
+    expect(await token.totalSupply()).to.equal(totalSupplyBefore)
+    expect(await getCounter(nativeWitness)).to.equal(0n)
+    expect(await getCounter(xerc20Target)).to.equal(0n)
   })
 
   it('keeps xerc20 Funds atomic when the token re-enters the bank precompile', async function () {

@@ -72,7 +72,10 @@ func TestBalanceEntryPointGasSettlement(t *testing.T) {
 			sharedDB, found := xbanktypes.EVMStateDBFromContext(keeper.ctx)
 			require.True(t, found)
 			require.Same(t, db, sharedDB)
-			consumed := keeper.ctx.GasMeter().GasConsumed() - initialGas
+			// Every native action receives a fresh SDK meter for the current EVM
+			// frame. The enclosing context's prior consumption must not be
+			// subtracted from this action's charge.
+			consumed := keeper.ctx.GasMeter().GasConsumed()
 			require.Positive(t, consumed)
 			require.Equal(t, budget-consumed, contract.Gas, "SDK delta must settle exactly once")
 			if !tc.resolverErr {

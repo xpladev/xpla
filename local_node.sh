@@ -9,8 +9,9 @@ KEYRING="test"
 KEYALGO="eth_secp256k1"
 
 LOGLEVEL="info"
-# Set dedicated home directory for the xplad instance
-CHAINDIR="$HOME/.xpla"
+# Set dedicated home directory for the xplad instance. Tests can override this
+# without changing the user's HOME or touching an existing local chain.
+CHAINDIR="${CHAINDIR:-$HOME/.xpla}"
 
 BASEFEE=280000000000
 DENOM="axpla"
