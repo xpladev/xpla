@@ -38,7 +38,7 @@ import (
 const bech32PrecompileBaseGas = 6_000
 
 var PrecompiledAddressesXpla = []common.Address{
-	pbank.Address, pwasm.Address, pwasm.DelegatecallAddress, pauth.Address,
+	pbank.Address, pwasm.Address, pauth.Address,
 }
 
 // NewAvailableStaticPrecompiles returns the list of all available static precompiled contracts from Cosmos EVM.
@@ -132,11 +132,8 @@ func NewAvailableStaticPrecompiles(
 
 	// xpla precompiles
 	precompiles[pbank.Address] = pbank.NewPrecompiledBank(bk)
-	precompileWasm := pwasm.NewPrecompiledWasm(xplawasmkeeper.NewMsgServerImpl(wasmKeeper), wasmKeeper, bk)
-	precompiles[pwasm.Address] = precompileWasm
+	precompiles[pwasm.Address] = pwasm.NewPrecompiledWasm(xplawasmkeeper.NewMsgServerImpl(wasmKeeper), wasmKeeper, bk)
 	precompiles[pauth.Address] = pauth.NewPrecompiledAuth(authAk, wasmKeeper)
-	// delegatecall wasm
-	precompiles[pwasm.DelegatecallAddress] = pwasm.NewDelegatePrecompile(precompileWasm)
 
 	return precompiles
 }

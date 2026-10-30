@@ -30,9 +30,8 @@ import (
 var _ vm.PrecompiledContract = &PrecompiledWasm{}
 
 var (
-	Address             = common.HexToAddress(hexAddress)
-	DelegatecallAddress = common.HexToAddress(delegatecallHexAddress)
-	ABI                 = abi.ABI{}
+	Address = common.HexToAddress(hexAddress)
+	ABI     = abi.ABI{}
 
 	//go:embed IWasm.json
 	f []byte
@@ -96,23 +95,6 @@ func (p *PrecompiledWasm) Run(evm *vm.EVM, contract *vm.Contract, readonly bool)
 
 		initialGas := ctx.GasMeter().GasConsumed()
 		bz, err := p.Execute(ctx, evm.StateDB, contract, readonly, contract.Caller())
-		if err != nil {
-			pcommon.ChargeFailedExecutionGas(contract, ctx.GasMeter().GasConsumed()-initialGas)
-			return bz, err
-		}
-		writeCache()
-		return bz, nil
-	})
-}
-
-// RunDelegate is the entry point for the delegatecall-only precompile.
-func (p *PrecompiledWasm) RunDelegate(evm *vm.EVM, contract *vm.Contract, readonly bool) (bz []byte, err error) {
-	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
-		ctx, writeCache := cacheNativeWasmContext(ctx)
-		ctx = xbanktypes.WithEVMStateDB(ctx, evm.StateDB.(*statedb.StateDB))
-
-		initialGas := ctx.GasMeter().GasConsumed()
-		bz, err := p.Execute(ctx, evm.StateDB, contract, readonly, evm.Origin)
 		if err != nil {
 			pcommon.ChargeFailedExecutionGas(contract, ctx.GasMeter().GasConsumed()-initialGas)
 			return bz, err

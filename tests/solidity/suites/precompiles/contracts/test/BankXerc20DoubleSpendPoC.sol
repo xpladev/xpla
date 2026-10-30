@@ -137,8 +137,6 @@ contract Xerc20ReentryTarget {
 contract BankXerc20DoubleSpendPoC {
     IBank private constant BANK = IBank(BANK_PRECOMPILE_ADDRESS);
     IWasm private constant WASM = IWasm(WASM_PRECOMPILE_ADDRESS);
-    address private constant WASM_DELEGATE_PRECOMPILE_ADDRESS =
-        0x1000000000000000000000000000000000000044;
 
     error ForcedOuterRevertAfterWasm(bytes32 marker);
 
@@ -274,95 +272,19 @@ contract BankXerc20DoubleSpendPoC {
         emit WasmFundsCallResult(success, returnData);
     }
 
-    function executeDelegateWasmFunds(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
-    ) external {
-        _executeDelegateWasmFunds(wasmContract, wasmMsg, amount);
-    }
-
     // No token call: exhaustion here belongs to the native Wasm execution.
     function tryExecuteWasmSDKGas(
         address wasmContract,
-        bool delegate,
         uint256 gasBudget
     ) external returns (bool success, bytes memory returnData) {
         Coin[] memory funds = new Coin[](0);
         bytes memory input = abi.encodeCall(
             IWasm.executeContract,
-            (delegate ? tx.origin : address(this), wasmContract, bytes('{"increment":{}}'), funds)
+            (address(this), wasmContract, bytes('{"increment":{}}'), funds)
         );
-        address target = delegate ? WASM_DELEGATE_PRECOMPILE_ADDRESS : WASM_PRECOMPILE_ADDRESS;
         uint256 gasBeforeCall = gasleft();
-        (success, returnData) = target.call{gas: gasBudget}(input);
+        (success, returnData) = WASM_PRECOMPILE_ADDRESS.call{gas: gasBudget}(input);
         emit WasmFundsGasProbe(gasBeforeCall, gasleft());
-        emit WasmFundsCallResult(success, returnData);
-    }
-
-    function tryExecuteDelegateWasmFunds(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
-    ) external returns (bool success, bytes memory returnData) {
-        Coin[] memory funds = new Coin[](1);
-        funds[0] = Coin({denom: denom, amount: amount});
-
-        uint256 gasBeforeCall = gasleft();
-        (success, returnData) = WASM_DELEGATE_PRECOMPILE_ADDRESS.call(
-            abi.encodeCall(
-                IWasm.executeContract,
-                (tx.origin, wasmContract, wasmMsg, funds)
-            )
-        );
-        emit WasmFundsGasProbe(gasBeforeCall, gasleft());
-        emit WasmFundsCallResult(success, returnData);
-    }
-
-    function executeDelegateWasmFundsThenRevert(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
-    ) external {
-        require(msg.sender == address(this), "only self");
-
-        _executeDelegateWasmFunds(wasmContract, wasmMsg, amount);
-        revert ForcedOuterRevertAfterWasm(WASM_EXECUTION_COMPLETED_MARKER);
-    }
-
-    function _executeDelegateWasmFunds(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
-    ) internal {
-        Coin[] memory funds = new Coin[](1);
-        funds[0] = Coin({denom: denom, amount: amount});
-
-        (bool success, bytes memory returnData) = WASM_DELEGATE_PRECOMPILE_ADDRESS
-            .call(
-                abi.encodeCall(
-                    IWasm.executeContract,
-                    (tx.origin, wasmContract, wasmMsg, funds)
-                )
-            );
-        if (!success) {
-            assembly {
-                revert(add(returnData, 0x20), mload(returnData))
-            }
-        }
-    }
-
-    function tryExecuteDelegateWasmFundsThenRevert(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
-    ) external returns (bool success, bytes memory returnData) {
-        (success, returnData) = address(this).call(
-            abi.encodeCall(
-                this.executeDelegateWasmFundsThenRevert,
-                (wasmContract, wasmMsg, amount)
-            )
-        );
         emit WasmFundsCallResult(success, returnData);
     }
 
