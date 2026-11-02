@@ -274,7 +274,7 @@ replace (
 
 	// Interchaintest
 	github.com/cosmos/cosmos-sdk => github.com/xpladev/cosmos-sdk v0.53.6-xpla-2
-	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm-priv-jul2026 v0.6.4-rc4-xpla.0.20261030150653-d27f989a0952
+	github.com/cosmos/evm => github.com/DELIGHT-LABS/evm-priv-jul2026 v0.6.4-rc4-xpla.1
 
 	github.com/ethereum/go-ethereum => github.com/xpladev/go-ethereum v1.16.2-xpla-evm
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
