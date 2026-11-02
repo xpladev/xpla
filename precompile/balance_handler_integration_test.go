@@ -23,6 +23,8 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 
+	"github.com/xpladev/xpla/precompile"
+	pauth "github.com/xpladev/xpla/precompile/auth"
 	pbank "github.com/xpladev/xpla/precompile/bank"
 	pics20 "github.com/xpladev/xpla/precompile/ics20"
 	pwasm "github.com/xpladev/xpla/precompile/wasm"
@@ -31,6 +33,12 @@ import (
 )
 
 const precompileTestGas = uint64(10_000_000)
+
+func TestXplaPrecompileAddresses(t *testing.T) {
+	require.ElementsMatch(t, []common.Address{
+		pbank.Address, pwasm.Address, pauth.Address,
+	}, precompile.PrecompiledAddressesXpla)
+}
 
 func TestProductionBalanceHandlersIgnoreNonEVMAddressEvents(t *testing.T) {
 	input := testutil.CreateTestInput(t)
@@ -54,7 +62,6 @@ func TestProductionBalanceHandlersIgnoreNonEVMAddressEvents(t *testing.T) {
 		{name: "slashing", address: common.HexToAddress(evmtypes.SlashingPrecompileAddress)},
 		{name: "bank", address: pbank.Address},
 		{name: "wasm", address: pwasm.Address},
-		{name: "wasm delegate", address: pwasm.DelegatecallAddress},
 	}
 
 	for _, tc := range tests {
@@ -235,8 +242,6 @@ func productionBalanceHandlerFactory(
 	case pbank.PrecompiledBank:
 		return precompile.BalanceHandlerFactory
 	case *pwasm.PrecompiledWasm:
-		return precompile.BalanceHandlerFactory
-	case pwasm.DelegatePrecompile:
 		return precompile.BalanceHandlerFactory
 	default:
 		t.Fatalf("precompile %s does not expose a balance handler factory", address)

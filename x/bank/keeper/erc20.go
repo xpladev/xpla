@@ -51,15 +51,30 @@ func NewErc20Keeper(ak banktypes.AccountKeeper, ek types.EvmKeeper) Erc20Keeper 
 }
 
 func (k Erc20Keeper) QueryTotalSupply(ctx sdk.Context, contractAddress common.Address) (sdkmath.Int, error) {
+	stateDB, callFromPrecompile := types.EVMStateDBFromContext(ctx)
+	if !callFromPrecompile {
+		stateDB = statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
+	} else {
+		var scope *statedb.NativeScope
+		var err error
+		ctx, scope, err = stateDB.NewNativeScope(ctx)
+		if err != nil {
+			return sdkmath.ZeroInt(), err
+		}
+		defer scope.Rollback()
+		if err := stateDB.ReconcileNativeBalances(ctx); err != nil {
+			return sdkmath.ZeroInt(), err
+		}
+	}
+
 	moduleAccount := k.ak.GetModuleAccount(ctx, banktypes.ModuleName)
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
 	gasCap := new(big.Int).SetUint64(ctx.GasMeter().GasRemaining())
-
-	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, gasCap, types.GetErc20Method(types.TotalSupply))
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, callFromPrecompile, gasCap, types.GetErc20Method(types.TotalSupply))
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
+	chargeSharedQueryGas(ctx, res, callFromPrecompile)
 
 	unpacked, err := ABI.Unpack(types.GetErc20Method(types.TotalSupply), res.Return())
 	if err != nil || len(unpacked) == 0 {
@@ -77,16 +92,31 @@ func (k Erc20Keeper) QueryTotalSupply(ctx sdk.Context, contractAddress common.Ad
 }
 
 func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Address, account sdk.AccAddress) (sdkmath.Int, error) {
+	stateDB, callFromPrecompile := types.EVMStateDBFromContext(ctx)
+	if !callFromPrecompile {
+		stateDB = statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
+	} else {
+		var scope *statedb.NativeScope
+		var err error
+		ctx, scope, err = stateDB.NewNativeScope(ctx)
+		if err != nil {
+			return sdkmath.ZeroInt(), err
+		}
+		defer scope.Rollback()
+		if err := stateDB.ReconcileNativeBalances(ctx); err != nil {
+			return sdkmath.ZeroInt(), err
+		}
+	}
+
 	moduleAccount := k.ak.GetModuleAccount(ctx, banktypes.ModuleName)
 	moduleAddress := common.BytesToAddress(moduleAccount.GetAddress().Bytes())
 	ethAccount := common.BytesToAddress(account.Bytes())
 	gasCap := new(big.Int).SetUint64(ctx.GasMeter().GasRemaining())
-
-	stateDB := statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
-	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, false, gasCap, types.GetErc20Method(types.BalanceOf), ethAccount)
+	res, err := k.ek.CallEVM(ctx, stateDB, ABI, moduleAddress, contractAddress, false, callFromPrecompile, gasCap, types.GetErc20Method(types.BalanceOf), ethAccount)
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
+	chargeSharedQueryGas(ctx, res, callFromPrecompile)
 
 	unpacked, err := ABI.Unpack(types.GetErc20Method(types.BalanceOf), res.Return())
 	if err != nil || len(unpacked) == 0 {
@@ -103,12 +133,53 @@ func (k Erc20Keeper) QueryBalanceOf(ctx sdk.Context, contractAddress common.Addr
 	return balance, nil
 }
 
+// CallEVM has already charged GasUsed. A shared StateDB can contain refunds
+// earned by the outer transaction, but a read-only bridge query must not borrow
+// them. Charge only the difference to the query's unreimbursed execution cost;
+// the surrounding native scope restores the outer refund counter unchanged.
+func chargeSharedQueryGas(ctx sdk.Context, res *evmtypes.MsgEthereumTxResponse, shared bool) {
+	if !shared || res.MaxUsedGas <= res.GasUsed {
+		return
+	}
+	ctx.GasMeter().ConsumeGas(res.MaxUsedGas-res.GasUsed, "apply evm query without outer refund")
+}
+
 func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Address, sender, to sdk.AccAddress, amount *big.Int) error {
 	stateDB, callFromPrecompile := types.EVMStateDBFromContext(ctx)
 	if !callFromPrecompile {
 		stateDB = statedb.New(ctx, k.ek, statedb.NewEmptyTxConfig())
+	} else {
+		var scope *statedb.NativeScope
+		var err error
+		ctx, scope, err = stateDB.NewNativeScope(ctx)
+		if err != nil {
+			return err
+		}
+		defer scope.Rollback()
+		if err := stateDB.ReconcileNativeBalances(ctx); err != nil {
+			return err
+		}
+
+		if err := k.executeTransfer(ctx, stateDB, contractAddress, sender, to, amount, true); err != nil {
+			return err
+		}
+		if err := stateDB.FlushToCacheCtx(); err != nil {
+			return err
+		}
+		return scope.Write()
 	}
 
+	return k.executeTransfer(ctx, stateDB, contractAddress, sender, to, amount, false)
+}
+
+func (k Erc20Keeper) executeTransfer(
+	ctx sdk.Context,
+	stateDB *statedb.StateDB,
+	contractAddress common.Address,
+	sender, to sdk.AccAddress,
+	amount *big.Int,
+	callFromPrecompile bool,
+) error {
 	ethSender := common.BytesToAddress(sender.Bytes())
 	ethTo := common.BytesToAddress(to.Bytes())
 	method := types.GetErc20Method(types.Transfer)
@@ -166,7 +237,11 @@ func (k Erc20Keeper) ExecuteTransfer(ctx sdk.Context, contractAddress common.Add
 		return err
 	}
 
-	if len(unpacked) == 0 || !unpacked[0].(bool) {
+	if len(unpacked) == 0 {
+		return types.ErrErc20Transfer
+	}
+	transferred, ok := unpacked[0].(bool)
+	if !ok || !transferred {
 		return types.ErrErc20Transfer
 	}
 

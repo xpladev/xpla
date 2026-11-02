@@ -9,8 +9,9 @@ KEYRING="test"
 KEYALGO="eth_secp256k1"
 
 LOGLEVEL="info"
-# Set dedicated home directory for the xplad instance
-CHAINDIR="$HOME/.xpla"
+# Set dedicated home directory for the xplad instance. Tests can override this
+# without changing the user's HOME or touching an existing local chain.
+CHAINDIR="${CHAINDIR:-$HOME/.xpla}"
 
 BASEFEE=280000000000
 DENOM="axpla"
@@ -234,7 +235,7 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
   jq ".app_state[\"gov\"][\"params\"][\"min_deposit\"][0][\"denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"gov\"][\"params\"][\"expedited_min_deposit\"][0][\"denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"evm\"][\"params\"][\"evm_denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["evm"]["params"]["active_static_precompiles"]=["0x0000000000000000000000000000000000000100","0x0000000000000000000000000000000000000400","0x0000000000000000000000000000000000000800","0x0000000000000000000000000000000000000801","0x0000000000000000000000000000000000000805","0x0000000000000000000000000000000000000806","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005", "0x1000000000000000000000000000000000000044"]' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+  jq '.app_state["evm"]["params"]["active_static_precompiles"]=["0x0000000000000000000000000000000000000100","0x0000000000000000000000000000000000000400","0x0000000000000000000000000000000000000800","0x0000000000000000000000000000000000000801","0x0000000000000000000000000000000000000805","0x0000000000000000000000000000000000000806","0x1000000000000000000000000000000000000001","0x1000000000000000000000000000000000000004","0x1000000000000000000000000000000000000005"]' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"mint\"][\"params\"][\"mint_denom\"]=\"${DENOM}\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"mint\"][\"params\"][\"inflation_rate_change\"]=\"0.0\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
   jq ".app_state[\"mint\"][\"params\"][\"inflation_max\"]=\"0.0\"" "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"

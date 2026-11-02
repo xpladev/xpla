@@ -18,7 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	evmconfig "github.com/cosmos/evm/server/config"
-	"github.com/cosmos/evm/x/vm/statedb"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	banktypes "github.com/xpladev/xpla/x/bank/types"
@@ -241,8 +240,8 @@ func TestExecuteTransferBoundsPrecompileCallByRemainingGasAndConsumesMaxUsedGas(
 			Ret:        returnData,
 		},
 	}
-	stateDB := &statedb.StateDB{}
-	ctx = banktypes.WithEVMStateDB(ctx, stateDB)
+	ctx, stateDB, endAction := newOwnedSharedERC20StateDB(t, ctx, executor)
+	defer endAction()
 	keeper := Erc20Keeper{ek: executor}
 
 	err = keeper.ExecuteTransfer(ctx, contract, sdk.AccAddress(from.Bytes()), sdk.AccAddress(to.Bytes()), amount)
@@ -370,8 +369,8 @@ func TestExecuteTransferConsumesAllGasOnFailedPrecompileCall(t *testing.T) {
 
 	response := &evmtypes.MsgEthereumTxResponse{VmError: vm.ErrOutOfGas.Error()}
 	executor := &recordingERC20EVMExecutor{applyResponse: response}
-	stateDB := &statedb.StateDB{}
-	ctx = banktypes.WithEVMStateDB(ctx, stateDB)
+	ctx, stateDB, endAction := newOwnedSharedERC20StateDB(t, ctx, executor)
+	defer endAction()
 	keeper := Erc20Keeper{ek: executor}
 	from := common.HexToAddress("0x1000")
 	contract := common.HexToAddress("0x2000")
@@ -407,8 +406,8 @@ func TestExecuteTransferConsumesAllGasOnPrecompileApplyError(t *testing.T) {
 	ctx.GasMeter().ConsumeGas(consumedGas, "test setup")
 
 	executor := &recordingERC20EVMExecutor{applyErr: core.ErrIntrinsicGas}
-	stateDB := &statedb.StateDB{}
-	ctx = banktypes.WithEVMStateDB(ctx, stateDB)
+	ctx, stateDB, endAction := newOwnedSharedERC20StateDB(t, ctx, executor)
+	defer endAction()
 	keeper := Erc20Keeper{ek: executor}
 
 	err := keeper.ExecuteTransfer(

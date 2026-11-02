@@ -3,15 +3,20 @@ package keeper
 import (
 	"context"
 	"math/big"
+	"testing"
 
 	"cosmossdk.io/core/address"
+	storetypes "cosmossdk.io/store/types"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
+	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cosmosbanktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/evm/x/vm/statedb"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
@@ -21,6 +26,7 @@ import (
 
 type recordingERC20EVMExecutor struct {
 	banktypes.EvmKeeper
+	storeKey *storetypes.KVStoreKey
 
 	nonce uint64
 
@@ -45,6 +51,32 @@ type recordingERC20EVMExecutor struct {
 	callConsumeGas     uint64
 	callResponse       *evmtypes.MsgEthereumTxResponse
 	callErr            error
+}
+
+func newOwnedSharedERC20StateDB(
+	t *testing.T,
+	ctx sdk.Context,
+	executor *recordingERC20EVMExecutor,
+) (sdk.Context, *statedb.StateDB, func()) {
+	t.Helper()
+	key := storetypes.NewKVStoreKey("shared_erc20")
+	executor.storeKey = key
+	baseCtx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("shared_erc20_t")).
+		WithContext(ctx.Context()).
+		WithEventManager(ctx.EventManager()).
+		WithGasMeter(ctx.GasMeter())
+	stateDB := statedb.New(baseCtx, executor, statedb.NewEmptyTxConfig())
+	actionCtx, endAction, err := stateDB.BeginNativeAction()
+	require.NoError(t, err)
+	return banktypes.WithEVMStateDB(actionCtx, stateDB), stateDB, endAction
+}
+
+func (e *recordingERC20EVMExecutor) KVStoreKeys() map[string]*storetypes.KVStoreKey {
+	return map[string]*storetypes.KVStoreKey{"test": e.storeKey}
+}
+
+func (*recordingERC20EVMExecutor) GetBalance(sdk.Context, common.Address) *uint256.Int {
+	return uint256.NewInt(0)
 }
 
 type moduleAccountKeeper struct {
