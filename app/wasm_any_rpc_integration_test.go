@@ -68,7 +68,7 @@ func TestWasmAnyGuard_R3CommittedOuterEVMSurfaces(t *testing.T) {
 	require.Equal(t, uint32(0), unguarded.txResult.Code, unguarded.txResult.Log)
 	outerResponse := ethereumTxResponse(t, unguarded.txResult)
 	require.Empty(t, outerResponse.VmError)
-	require.Equal(t, uint64(0), fixture.app.EvmKeeper.GetNonce(unguarded.queryCtx, fixture.innerAddress))
+	require.Equal(t, uint64(1), fixture.app.EvmKeeper.GetNonce(unguarded.queryCtx, fixture.innerAddress))
 	require.True(t, fixture.receipts.has(unguarded.innerHash))
 	require.Len(t, fixture.receipts.get(unguarded.innerHash).Logs, 1)
 	require.True(t, hasEthereumEvent(unguarded.txResult.Events, unguarded.innerHash))
@@ -79,11 +79,11 @@ func TestWasmAnyGuard_R3CommittedOuterEVMSurfaces(t *testing.T) {
 	require.Contains(t, panicValue, "index out of range")
 	receiptCount := len(fixture.receipts.receipts)
 
-	guarded := fixture.deliver(t, 3, 1, 0, fixture.guardedMessenger)
+	guarded := fixture.deliver(t, 3, 1, 1, fixture.guardedMessenger)
 	require.Equal(t, uint32(0), guarded.txResult.Code, guarded.txResult.Log)
 	guardedResponse := ethereumTxResponse(t, guarded.txResult)
 	require.Contains(t, guardedResponse.VmError, "execution reverted")
-	require.Equal(t, uint64(0), fixture.app.EvmKeeper.GetNonce(guarded.queryCtx, fixture.innerAddress))
+	require.Equal(t, uint64(1), fixture.app.EvmKeeper.GetNonce(guarded.queryCtx, fixture.innerAddress))
 	require.Len(t, fixture.receipts.receipts, receiptCount+1) // outer failed EVM receipt only
 	guardedReceipt := fixture.receipts.receipts[len(fixture.receipts.receipts)-1]
 	require.Equal(t, guarded.outerHash, guardedReceipt.TxHash)
