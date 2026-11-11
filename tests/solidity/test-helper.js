@@ -392,6 +392,16 @@ async function uploadWasmContracts () {
       envName: 'XERC20_BANK_SEND_WASM_ADDRESS'
     },
     {
+      name: 'xERC20 atomicity WASM',
+      wasmFile: 'xerc20_atomicity.wasm',
+      labels: {
+        LABEL_PRECOMPILE: 'xerc20_atomicity_parent',
+        LABEL_REVERT: 'xerc20_atomicity_child'
+      },
+      envName: 'XERC20_ATOMICITY_WASM_ADDRESS',
+      revertEnvName: 'XERC20_ATOMICITY_CHILD_WASM_ADDRESS'
+    },
+    {
       name: 'Any dispatch WASM',
       wasmFile: 'any_dispatch.wasm',
       labels: {

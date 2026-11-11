@@ -41,11 +41,9 @@ func (k *balanceGasWasmKeeper) ResolveContractAddress(goCtx context.Context, add
 func TestBalanceEntryPointGasSettlement(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
-		delegate    bool
 		resolverErr bool
 	}{
 		{name: "regular/success"},
-		{name: "delegate/success", delegate: true},
 		{name: "regular/resolver error", resolverErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -65,25 +63,19 @@ func TestBalanceEntryPointGasSettlement(t *testing.T) {
 				keeper.failure = errors.New("balance alias lookup failed")
 			}
 			p := wasm.NewPrecompiledWasm(nil, keeper, input.BankKeeper)
-			callAddress := wasm.Address
-			if tc.delegate {
-				callAddress = wasm.DelegatecallAddress
-			}
-			contract := vm.NewContract(sender, callAddress, uint256.NewInt(0), budget, nil)
+			contract := vm.NewContract(sender, wasm.Address, uint256.NewInt(0), budget, nil)
 			var err error
 			contract.Input, err = wasm.ABI.Pack("balance", target, "axpla")
 			require.NoError(t, err)
-			var result []byte
-			if tc.delegate {
-				result, err = p.RunDelegate(evm, contract, true)
-			} else {
-				result, err = p.Run(evm, contract, true)
-			}
+			result, err := p.Run(evm, contract, true)
 			require.Equal(t, 1, keeper.calls)
 			sharedDB, found := xbanktypes.EVMStateDBFromContext(keeper.ctx)
 			require.True(t, found)
 			require.Same(t, db, sharedDB)
-			consumed := keeper.ctx.GasMeter().GasConsumed() - initialGas
+			// Every native action receives a fresh SDK meter for the current EVM
+			// frame. The enclosing context's prior consumption must not be
+			// subtracted from this action's charge.
+			consumed := keeper.ctx.GasMeter().GasConsumed()
 			require.Positive(t, consumed)
 			require.Equal(t, budget-consumed, contract.Gas, "SDK delta must settle exactly once")
 			if !tc.resolverErr {

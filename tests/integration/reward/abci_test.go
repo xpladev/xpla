@@ -15,8 +15,53 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/xpladev/xpla/tests/integration/testutil"
+	xplatypes "github.com/xpladev/xpla/types"
 	"github.com/xpladev/xpla/x/reward"
 )
+
+func TestBeginBlockerPoolPayout(t *testing.T) {
+	const ibcDenom = "ibc/0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+	tests := []struct {
+		name        string
+		axpla       int64
+		ibc         int64
+		axplaPayout int64
+		ibcPayout   int64
+	}{
+		{name: "mixed payout and dust", axpla: 21, ibc: 1, axplaPayout: 2},
+		{name: "all dust", axpla: 1, ibc: 9},
+		{name: "multiple payouts", axpla: 21, ibc: 31, axplaPayout: 2, ibcPayout: 3},
+		{name: "payout boundary", axpla: 9, ibc: 10, ibcPayout: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := testutil.CreateTestInput(t)
+			mintParams, err := input.App.MintKeeper.Params.Get(input.Ctx)
+			require.NoError(t, err)
+			mintParams.BlocksPerYear = 10
+			require.NoError(t, input.App.MintKeeper.Params.Set(input.Ctx, mintParams))
+
+			depositor := sdk.AccAddress(testutil.Pks[testutil.TempIndex].Address())
+			funding := sdk.NewCoins(
+				sdk.NewInt64Coin(xplatypes.DefaultDenom, tt.axpla),
+				sdk.NewInt64Coin(ibcDenom, tt.ibc),
+			)
+			require.NoError(t, input.InitAccountWithCoins(depositor, funding))
+			require.NoError(t, input.RewardKeeper.FundRewardPool(input.Ctx, funding, depositor))
+
+			require.NoError(t, reward.BeginBlocker(input.Ctx, input.RewardKeeper, input.BankKeeper, input.StakingKeeper, input.DistrKeeper))
+
+			payout := sdk.NewCoins(
+				sdk.NewInt64Coin(xplatypes.DefaultDenom, tt.axplaPayout),
+				sdk.NewInt64Coin(ibcDenom, tt.ibcPayout),
+			)
+			feeCollector := input.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName)
+			require.Equal(t, payout, input.BankKeeper.GetAllBalances(input.Ctx, feeCollector))
+			require.Equal(t, funding.Sub(payout...), input.RewardKeeper.PoolBalances(input.Ctx))
+		})
+	}
+}
 
 // TestBeginBlocker
 // 1. 10 validator & 100 self delegation

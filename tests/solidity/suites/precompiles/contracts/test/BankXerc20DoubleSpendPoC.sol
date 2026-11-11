@@ -14,13 +14,24 @@ contract PoCToken is ERC20 {
 }
 
 contract AdversarialXerc20 is ERC20 {
+    enum TransferReturnMode {
+        Normal,
+        False,
+        Malformed
+    }
+
     address public callbackTarget;
     bytes public callbackData;
     bool public catchCallbackRevert;
+    address public callbackSender;
+    address public requiredCallbackSender;
     uint256 public burnIterations;
     bytes32 public burnAccumulator;
+    address public adverseReturnSender;
+    TransferReturnMode public transferReturnMode;
 
     bool private callbackEntered;
+    bool private requiredCallbackSkipped;
 
     event TransferProbe(
         uint256 gasAtEntry,
@@ -48,6 +59,49 @@ contract AdversarialXerc20 is ERC20 {
         burnIterations = iterations;
     }
 
+    function configureCallbackSender(address sender) external {
+        callbackSender = sender;
+    }
+
+    function configureRequiredCallbackSender(address sender) external {
+        requiredCallbackSender = sender;
+    }
+
+    function configureTransferReturn(
+        address sender,
+        TransferReturnMode mode
+    ) external {
+        adverseReturnSender = sender;
+        transferReturnMode = mode;
+    }
+
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        address from = _msgSender();
+        _transfer(from, to, amount);
+
+        if (requiredCallbackSkipped) {
+            requiredCallbackSkipped = false;
+            return false;
+        }
+
+        if (from != adverseReturnSender) {
+            return true;
+        }
+        if (transferReturnMode == TransferReturnMode.False) {
+            return false;
+        }
+        if (transferReturnMode == TransferReturnMode.Malformed) {
+            assembly {
+                mstore(0, 1)
+                return(0, 1)
+            }
+        }
+        return true;
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -55,7 +109,15 @@ contract AdversarialXerc20 is ERC20 {
     ) internal override {
         super._beforeTokenTransfer(from, to, amount);
 
+        bool callbackRequired =
+            requiredCallbackSender != address(0) &&
+            from == requiredCallbackSender;
+
         if (from == address(0) || callbackEntered) {
+            return;
+        }
+        if (callbackSender != address(0) && from != callbackSender) {
+            requiredCallbackSkipped = callbackRequired;
             return;
         }
 
@@ -68,6 +130,7 @@ contract AdversarialXerc20 is ERC20 {
         burnAccumulator = accumulator;
 
         if (callbackTarget == address(0)) {
+            requiredCallbackSkipped = callbackRequired;
             return;
         }
 
@@ -84,12 +147,15 @@ contract AdversarialXerc20 is ERC20 {
             }
         }
 
+        require(!callbackRequired || success, "required callback failed");
+
         emit CallbackResult(success, returnData);
     }
 }
 
 contract Xerc20ReentryTarget {
     IBank private constant BANK = IBank(BANK_PRECOMPILE_ADDRESS);
+    IWasm private constant WASM = IWasm(WASM_PRECOMPILE_ADDRESS);
 
     error AdversarialCallbackRevert();
 
@@ -98,9 +164,12 @@ contract Xerc20ReentryTarget {
     address public recipient;
     uint256 public amount;
     bool public revertAfterCallback;
+    address public nativeBalanceTarget;
+    uint256 public expectedNativeBalance;
 
     event CallbackEntered(uint256 gasLeft);
     event ReentryCompleted(bool success);
+    event NativeBalanceObserved(address indexed target, uint256 balance);
 
     constructor(IERC20 token_, string memory denom_) {
         token = token_;
@@ -117,9 +186,26 @@ contract Xerc20ReentryTarget {
         revertAfterCallback = revertAfterCallback_;
     }
 
+    function configureNativeBalanceWitness(
+        address target,
+        uint256 expectedBalance
+    ) external {
+        nativeBalanceTarget = target;
+        expectedNativeBalance = expectedBalance;
+    }
+
     function onXerc20Transfer() external {
         require(msg.sender == address(token), "only token");
         emit CallbackEntered(gasleft());
+
+        if (nativeBalanceTarget != address(0)) {
+            uint256 nativeBalance = WASM.balance(nativeBalanceTarget, "axpla");
+            require(
+                nativeBalance == expectedNativeBalance,
+                "stale native balance"
+            );
+            emit NativeBalanceObserved(nativeBalanceTarget, nativeBalance);
+        }
 
         if (amount != 0) {
             Coin[] memory coins = new Coin[](1);
@@ -137,8 +223,6 @@ contract Xerc20ReentryTarget {
 contract BankXerc20DoubleSpendPoC {
     IBank private constant BANK = IBank(BANK_PRECOMPILE_ADDRESS);
     IWasm private constant WASM = IWasm(WASM_PRECOMPILE_ADDRESS);
-    address private constant WASM_DELEGATE_PRECOMPILE_ADDRESS =
-        0x1000000000000000000000000000000000000044;
 
     error ForcedOuterRevertAfterWasm(bytes32 marker);
 
@@ -152,6 +236,7 @@ contract BankXerc20DoubleSpendPoC {
     event WasmFundsCallResult(bool success, bytes returnData);
     event BankSendGasProbe(uint256 gasBeforeCall, uint256 gasAfterCall);
     event BankSendCallResult(bool success, bytes returnData);
+    event Xerc20VisibilityProbe(address indexed account, uint256 evmBalance);
 
     constructor(IERC20 token_, string memory denom_) {
         token = token_;
@@ -227,6 +312,108 @@ contract BankXerc20DoubleSpendPoC {
         return result;
     }
 
+    function executeWasmFundsAndObserveEVM(
+        address wasmContract,
+        bytes calldata wasmMsg,
+        address observedAccount,
+        uint256 amount
+    ) external returns (bytes memory) {
+        Coin[] memory funds = new Coin[](1);
+        funds[0] = Coin({denom: denom, amount: amount});
+
+        bytes memory result = WASM.executeContract(
+            address(this),
+            wasmContract,
+            wasmMsg,
+            funds
+        );
+        emit Xerc20VisibilityProbe(
+            observedAccount,
+            token.balanceOf(observedAccount)
+        );
+        return result;
+    }
+
+    function executeWasmThenTransfer(
+        address wasmContract,
+        bytes calldata wasmMsg,
+        address recipient,
+        uint256 amount
+    ) external returns (bytes memory result) {
+        Coin[] memory funds = new Coin[](0);
+        uint256 gasBeforeCall = gasleft();
+        result = WASM.executeContract(
+            address(this),
+            wasmContract,
+            wasmMsg,
+            funds
+        );
+        emit WasmFundsGasProbe(gasBeforeCall, gasleft());
+        require(token.transfer(recipient, amount), "continuation failed");
+    }
+
+    function executeNativeThenWasmFunds(
+        address nativeWasmContract,
+        bytes calldata nativeWasmMsg,
+        uint256 nativeAmount,
+        address xerc20WasmContract,
+        bytes calldata xerc20WasmMsg,
+        uint256 xerc20Amount
+    ) external {
+        _executeNativeThenWasmFunds(
+            nativeWasmContract,
+            nativeWasmMsg,
+            nativeAmount,
+            xerc20WasmContract,
+            xerc20WasmMsg,
+            xerc20Amount
+        );
+    }
+
+    function executeNativeThenWasmFundsThenRevert(
+        address nativeWasmContract,
+        bytes calldata nativeWasmMsg,
+        uint256 nativeAmount,
+        address xerc20WasmContract,
+        bytes calldata xerc20WasmMsg,
+        uint256 xerc20Amount
+    ) external {
+        require(msg.sender == address(this), "only self");
+        _executeNativeThenWasmFunds(
+            nativeWasmContract,
+            nativeWasmMsg,
+            nativeAmount,
+            xerc20WasmContract,
+            xerc20WasmMsg,
+            xerc20Amount
+        );
+        revert ForcedOuterRevertAfterWasm(WASM_EXECUTION_COMPLETED_MARKER);
+    }
+
+    function tryExecuteNativeThenWasmFundsThenRevert(
+        address nativeWasmContract,
+        bytes calldata nativeWasmMsg,
+        uint256 nativeAmount,
+        address xerc20WasmContract,
+        bytes calldata xerc20WasmMsg,
+        uint256 xerc20Amount
+    ) external returns (bool success, bytes memory returnData) {
+        (success, returnData) = address(this).call(
+            abi.encodeCall(
+                this.executeNativeThenWasmFundsThenRevert,
+                (
+                    nativeWasmContract,
+                    nativeWasmMsg,
+                    nativeAmount,
+                    xerc20WasmContract,
+                    xerc20WasmMsg,
+                    xerc20Amount
+                )
+            )
+        );
+        emit WasmFundsCallResult(success, returnData);
+    }
+
     function tryExecuteWasmFunds(
         address wasmContract,
         bytes calldata wasmMsg,
@@ -274,96 +461,121 @@ contract BankXerc20DoubleSpendPoC {
         emit WasmFundsCallResult(success, returnData);
     }
 
-    function executeDelegateWasmFunds(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
-    ) external {
-        _executeDelegateWasmFunds(wasmContract, wasmMsg, amount);
-    }
-
     // No token call: exhaustion here belongs to the native Wasm execution.
     function tryExecuteWasmSDKGas(
         address wasmContract,
-        bool delegate,
         uint256 gasBudget
     ) external returns (bool success, bytes memory returnData) {
         Coin[] memory funds = new Coin[](0);
         bytes memory input = abi.encodeCall(
             IWasm.executeContract,
-            (delegate ? tx.origin : address(this), wasmContract, bytes('{"increment":{}}'), funds)
+            (address(this), wasmContract, bytes('{"increment":{}}'), funds)
         );
-        address target = delegate ? WASM_DELEGATE_PRECOMPILE_ADDRESS : WASM_PRECOMPILE_ADDRESS;
         uint256 gasBeforeCall = gasleft();
-        (success, returnData) = target.call{gas: gasBudget}(input);
+        (success, returnData) = WASM_PRECOMPILE_ADDRESS.call{gas: gasBudget}(input);
         emit WasmFundsGasProbe(gasBeforeCall, gasleft());
         emit WasmFundsCallResult(success, returnData);
     }
 
-    function tryExecuteDelegateWasmFunds(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
-    ) external returns (bool success, bytes memory returnData) {
-        Coin[] memory funds = new Coin[](1);
-        funds[0] = Coin({denom: denom, amount: amount});
-
-        uint256 gasBeforeCall = gasleft();
-        (success, returnData) = WASM_DELEGATE_PRECOMPILE_ADDRESS.call(
-            abi.encodeCall(
-                IWasm.executeContract,
-                (tx.origin, wasmContract, wasmMsg, funds)
-            )
+    function _executeNativeThenWasmFunds(
+        address nativeWasmContract,
+        bytes calldata nativeWasmMsg,
+        uint256 nativeAmount,
+        address xerc20WasmContract,
+        bytes calldata xerc20WasmMsg,
+        uint256 xerc20Amount
+    ) internal {
+        Coin[] memory nativeFunds = new Coin[](1);
+        nativeFunds[0] = Coin({denom: "axpla", amount: nativeAmount});
+        WASM.executeContract(
+            address(this),
+            nativeWasmContract,
+            nativeWasmMsg,
+            nativeFunds
         );
-        emit WasmFundsGasProbe(gasBeforeCall, gasleft());
-        emit WasmFundsCallResult(success, returnData);
+
+        Coin[] memory xerc20Funds = new Coin[](1);
+        xerc20Funds[0] = Coin({denom: denom, amount: xerc20Amount});
+        WASM.executeContract(
+            address(this),
+            xerc20WasmContract,
+            xerc20WasmMsg,
+            xerc20Funds
+        );
     }
 
-    function executeDelegateWasmFundsThenRevert(
+    function executeWasmMixedFunds(
         address wasmContract,
         bytes calldata wasmMsg,
-        uint256 amount
+        uint256 nativeAmount,
+        uint256 xerc20Amount
+    ) external returns (bytes memory) {
+        return _executeWasmMixedFunds(
+            wasmContract,
+            wasmMsg,
+            nativeAmount,
+            xerc20Amount
+        );
+    }
+
+    function executeWasmMixedFundsThenRevert(
+        address wasmContract,
+        bytes calldata wasmMsg,
+        uint256 nativeAmount,
+        uint256 xerc20Amount
     ) external {
         require(msg.sender == address(this), "only self");
-
-        _executeDelegateWasmFunds(wasmContract, wasmMsg, amount);
+        _executeWasmMixedFunds(
+            wasmContract,
+            wasmMsg,
+            nativeAmount,
+            xerc20Amount
+        );
         revert ForcedOuterRevertAfterWasm(WASM_EXECUTION_COMPLETED_MARKER);
     }
 
-    function _executeDelegateWasmFunds(
+    function tryExecuteWasmMixedFundsThenRevert(
         address wasmContract,
         bytes calldata wasmMsg,
-        uint256 amount
-    ) internal {
-        Coin[] memory funds = new Coin[](1);
-        funds[0] = Coin({denom: denom, amount: amount});
-
-        (bool success, bytes memory returnData) = WASM_DELEGATE_PRECOMPILE_ADDRESS
-            .call(
-                abi.encodeCall(
-                    IWasm.executeContract,
-                    (tx.origin, wasmContract, wasmMsg, funds)
-                )
-            );
-        if (!success) {
-            assembly {
-                revert(add(returnData, 0x20), mload(returnData))
-            }
-        }
-    }
-
-    function tryExecuteDelegateWasmFundsThenRevert(
-        address wasmContract,
-        bytes calldata wasmMsg,
-        uint256 amount
+        uint256 nativeAmount,
+        uint256 xerc20Amount
     ) external returns (bool success, bytes memory returnData) {
+        uint256 gasBeforeCall = gasleft();
         (success, returnData) = address(this).call(
             abi.encodeCall(
-                this.executeDelegateWasmFundsThenRevert,
-                (wasmContract, wasmMsg, amount)
+                this.executeWasmMixedFundsThenRevert,
+                (wasmContract, wasmMsg, nativeAmount, xerc20Amount)
             )
         );
+        emit WasmFundsGasProbe(gasBeforeCall, gasleft());
         emit WasmFundsCallResult(success, returnData);
+    }
+
+    function _executeWasmMixedFunds(
+        address wasmContract,
+        bytes calldata wasmMsg,
+        uint256 nativeAmount,
+        uint256 xerc20Amount
+    ) internal returns (bytes memory result) {
+        uint256 fundsLength = (nativeAmount == 0 ? 0 : 1) +
+            (xerc20Amount == 0 ? 0 : 1);
+        Coin[] memory funds = new Coin[](fundsLength);
+        uint256 index;
+        if (nativeAmount != 0) {
+            funds[index++] = Coin({denom: "axpla", amount: nativeAmount});
+        }
+        if (xerc20Amount != 0) {
+            funds[index] = Coin({denom: denom, amount: xerc20Amount});
+        }
+
+        uint256 gasBeforeCall = gasleft();
+        result = WASM.executeContract(
+            address(this),
+            wasmContract,
+            wasmMsg,
+            funds
+        );
+        emit WasmFundsGasProbe(gasBeforeCall, gasleft());
     }
 
     function executeWasmNativeFundsAndAssertBalance(
